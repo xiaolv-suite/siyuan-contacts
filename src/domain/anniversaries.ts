@@ -46,6 +46,8 @@ export interface AnniversaryItem {
     isLunar: boolean;
     /** 提前提醒天数（默认 7 天，0~30 天） */
     remindDaysBefore?: number;
+    /** 是否关闭提醒（不再提醒/免打扰） */
+    remindDisabled?: boolean;
     /** 备注说明 */
     note?: string;
     createdAt: number;
@@ -198,6 +200,7 @@ export function upcomingAnniversaries(
 ): AnniversaryProjection[] {
     const results: AnniversaryProjection[] = [];
     for (const item of items) {
+        if (item.remindDisabled) continue;
         const projection = nextAnniversary(item, now);
         if (!projection) continue;
         const maxDays = item.remindDaysBefore ?? windowDays;
@@ -311,6 +314,7 @@ export function normalizeAnniversaryStore(raw: unknown): AnniversaryStore {
                 date: candidate.date!,
                 isLunar: Boolean(candidate.isLunar),
                 remindDaysBefore: candidate.remindDaysBefore ?? 7,
+                remindDisabled: Boolean(candidate.remindDisabled),
                 note: candidate.note?.trim() || undefined,
                 createdAt: Number.isFinite(candidate.createdAt) ? candidate.createdAt! : Date.now(),
                 updatedAt: Number.isFinite(candidate.updatedAt) ? candidate.updatedAt! : Date.now(),

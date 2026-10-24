@@ -7,6 +7,7 @@
     import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus } from "@lucide/svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import { copyPlainText } from "../../shared/clipboard";
+    import { onDestroy } from "svelte";
 
     let {
         person,
@@ -66,6 +67,24 @@
         lastInteractionTime: recent?.occurredAt,
         paused: cadencePaused,
     }));
+
+    let wechatCopied = $state(false);
+    let wechatTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function copyWechat(event: Event) {
+        event.stopPropagation();
+        if (!person.wechat) return;
+        void copyPlainText(person.wechat);
+        wechatCopied = true;
+        if (wechatTimer) clearTimeout(wechatTimer);
+        wechatTimer = setTimeout(() => {
+            wechatCopied = false;
+        }, 1500);
+    }
+
+    onDestroy(() => {
+        if (wechatTimer) clearTimeout(wechatTimer);
+    });
 </script>
 
 <!-- 卡片保留鼠标快捷打开；tabindex 仅用于关闭详情后恢复焦点，键盘入口是独立详情按钮。 -->
@@ -195,20 +214,17 @@
                     <span aria-hidden="true"><MessageCircle size={13}/></span>
                     <span
                         class="lvct-person-card__meta-value"
+                        class:lvct-text-success={wechatCopied}
                         role="button"
                         tabindex="0"
-                        title="点击复制微信号"
-                        onclick={(event) => {
-                            event.stopPropagation();
-                            void copyPlainText(person.wechat);
-                        }}
+                        title={wechatCopied ? "微信号已复制到剪贴板" : "点击复制微信号"}
+                        onclick={copyWechat}
                         onkeydown={(event) => {
                             if (event.key === "Enter" || event.key === " ") {
-                                event.stopPropagation();
-                                void copyPlainText(person.wechat);
+                                copyWechat(event);
                             }
                         }}
-                    >{person.wechat}</span>
+                    >{wechatCopied ? "已复制微信号 ✓" : person.wechat}</span>
                 </div>
             {/if}
             {#if person.email}<div><span aria-hidden="true"><Mail size={13}/></span><a class="lvct-person-card__meta-value" href={mailHref(person.email)} onclick={(event) => event.stopPropagation()}>{person.email}</a></div>{/if}

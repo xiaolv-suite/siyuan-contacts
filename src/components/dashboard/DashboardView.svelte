@@ -1301,6 +1301,20 @@ import { toLocalDateKey } from "../../domain/interactions";
                                     <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>未来 7 天不再提醒</button>
                                     <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthday(card.person))}>跳过本年</button>
                                     <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>不再提醒</button>
+                                {:else if card.reasons.some((reason) => reason.kind === "followup")}
+                                    {@const fuReason = card.reasons.find((r) => r.kind === "followup" && r.followUpId)}
+                                    {#if fuReason?.followUpId}
+                                        {@const fuTitle = fuReason.label || card.person.name}
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "threeDays", "3天后", fuTitle, toLocalToday()))}>顺延 3 天</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "nextMonday", "下周一", fuTitle, toLocalToday()))}>顺延 1 周</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "nextMonth", "1个月后", fuTitle, toLocalToday()))}>顺延 1 个月</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => completeFollowUp(fuReason.followUpId!, fuTitle))}>完成跟进（不再提醒）</button>
+                                        <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => skipFollowUp(fuReason.followUpId!, fuTitle))}>取消计划（不再提醒）</button>
+                                    {/if}
+                                {:else if card.reasons.some((reason) => reason.kind === "anniversary")}
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(card.person))}>今天不再提醒</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>未来 7 天不再提醒</button>
+                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>不再提醒</button>
                                 {/if}
                                 <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => createFollowUpFor(card.person))}>建跟进（联系一下）</button>
                                 {#if card.bucket === "stale"}
