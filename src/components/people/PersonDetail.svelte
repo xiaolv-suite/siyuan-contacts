@@ -125,6 +125,7 @@ import StatusNotice from "../StatusNotice.svelte";
         onRemoveGiftIdea,
         onLoadAnniversaries,
         onAddAnniversary,
+        onUpdateAnniversary,
         onRemoveAnniversary,
         onLoadProjects,
         onAddProject,
@@ -212,6 +213,7 @@ import StatusNotice from "../StatusNotice.svelte";
         /** E-36 重要日期与周年纪念日（可选） */
         onLoadAnniversaries?: (personDocId: string) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
         onAddAnniversary?: (item: import("../../domain/anniversaries").AnniversaryItem) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
+        onUpdateAnniversary?: (personDocId: string, annivId: string, patch: Partial<import("../../domain/anniversaries").AnniversaryItem>) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
         onRemoveAnniversary?: (personDocId: string, annivId: string) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
         /** E-37 协作项目与主题关联（可选） */
         onLoadProjects?: (personDocId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
@@ -1046,6 +1048,21 @@ import StatusNotice from "../StatusNotice.svelte";
         if (!onRemoveAnniversary) return;
         try {
             const list = await onRemoveAnniversary(current.docId, annivId);
+            if (detailAlive) {
+                anniversaries = list;
+                onChanged();
+                if (onSyncDocProfile) void onSyncDocProfile(current).catch(() => {});
+            }
+        } catch (error) {
+            if (detailAlive) anniversariesError = requestErrorMessage(error);
+        }
+    }
+
+    async function handleToggleAnnivRemind(anniv: AnniversaryItem) {
+        if (!onUpdateAnniversary) return;
+        const nextDisabled = !anniv.remindDisabled;
+        try {
+            const list = await onUpdateAnniversary(current.docId, anniv.id, { remindDisabled: nextDisabled });
             if (detailAlive) {
                 anniversaries = list;
                 onChanged();
@@ -2465,6 +2482,21 @@ import StatusNotice from "../StatusNotice.svelte";
                                     {/if}
                                 </span>
                                 <span class="lvct-detail__topic-actions">
+                                    {#if onUpdateAnniversary}
+                                        <button
+                                            type="button"
+                                            class="b3-button b3-button--text b3-button--small"
+                                            style="font-size: 11px; padding: 1px 6px;"
+                                            title={anniv.remindDisabled ? "当前已设置为不再提醒，点击恢复提醒" : "点击设置为不再提醒（免打扰）"}
+                                            onclick={() => void handleToggleAnnivRemind(anniv)}
+                                        >
+                                            {#if anniv.remindDisabled}
+                                                <span class="lvct-text-muted">🔕 不再提醒</span>
+                                            {:else}
+                                                <span>🔔 提醒中</span>
+                                            {/if}
+                                        </button>
+                                    {/if}
                                     <button
                                         type="button"
                                         class="b3-button b3-button--cancel"

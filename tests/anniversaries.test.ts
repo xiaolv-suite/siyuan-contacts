@@ -213,3 +213,12 @@ test("E-36 anniversary 数据层：addPersonAnniversary、loadPersonAnniversarie
     memory.set(ANNIVERSARIES_STORAGE_KEY, { schemaVersion: 999, anniversaries: {} });
     await assert.rejects(() => loadAnniversaryStoreStrict(plugin), StoreIntegrityError);
 });
+
+test("AG-E36 纪念日不再提醒（remindDisabled）：开启后自动从即将到来提醒中排除", () => {
+    const item1 = mockAnniv({ id: "an-active", date: "2020-10-25", remindDaysBefore: 10 });
+    const item2 = mockAnniv({ id: "an-muted", date: "2020-10-25", remindDaysBefore: 10, remindDisabled: true });
+    const now = new Date(2026, 9, 20); // 10月20日
+    const upcoming = upcomingAnniversaries([item1, item2], 30, now);
+    assert.equal(upcoming.length, 1);
+    assert.equal(upcoming[0].item.id, "an-active");
+});
