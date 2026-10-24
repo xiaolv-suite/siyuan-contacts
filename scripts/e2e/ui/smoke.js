@@ -7632,6 +7632,177 @@ await test("E-30 群体活动与场合向导：多选参与人、表单校验、
     assert(savedInput.deriveInteractions === true, "默认应开启派生互动事件");
 });
 
+await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直达原笔记与一键防重转录", async () => {
+    let recordedNote = "";
+    let recordedType = "";
+    let openedDocId = "";
+    let mockInsights = {
+        timeline: [],
+        coAttendance: [],
+        totalEvents: 0,
+        backlinks: [
+            { blockId: "blk-01", rootId: "doc-diary-1", docTitle: "2026-10-24 工作日记", content: "和张三讨论了产品方向", date: "2026-10-24", kind: "link" },
+            { blockId: "blk-02", rootId: "doc-memo-2", docTitle: "周五随笔", content: "张三提到架构优化方案", date: "2026-10-23", kind: "mention" },
+        ],
+    };
+    mounted = mount(PersonDetail, { target: fixture, props: {
+        settings, person,
+        onRecord: async (_docId, note, type) => {
+            recordedNote = note;
+            recordedType = type;
+        },
+        onLoadInsights: async () => mockInsights,
+        onOpenPersonDoc: (docId) => { openedDocId = docId; },
+        onNavigate() {}, onDeleted() {}, onClose() {}, onChanged() {},
+    } });
+
+    // 1. 验证英雄卡上的 🔗 2 条反链引用 胶囊
+    await until(() => fixture.textContent.includes("2 条反链引用"), "未展示反链引用徽章胶囊");
+    const backlinkPill = [...fixture.querySelectorAll("button")].find((b) => b.textContent.includes("2 条反链引用"));
+    assert(backlinkPill, "未找到反链引用胶囊按钮");
+
+    // 2. 点击胶囊自动切换至互动 Tab
+    backlinkPill.click();
+    await until(() => fixture.textContent.includes("笔记与日志反链"), "点击胶囊未展开反链视窗");
+
+    // 3. 验证双模徽章
+    assert(fixture.textContent.includes("🔗 双链"), "未渲染双链徽章");
+    assert(fixture.textContent.includes("💡 提及"), "未渲染提及徽章");
+    assert(fixture.textContent.includes("2026-10-24 工作日记"), "未渲染日记标题");
+
+    // 4. 打开原笔记
+    const openDocBtn = [...fixture.querySelectorAll(".lvct-detail__timeline button")].find((b) => b.textContent.includes("打开原笔记"));
+    assert(openDocBtn, "未找到打开原笔记按钮");
+    openDocBtn.click();
+    assert(openedDocId === "doc-diary-1", "点击打开原笔记未传递正确的 rootId");
+
+    // 5. 点击「⚡ 转为互动」
+    const convertBtn = [...fixture.querySelectorAll(".lvct-detail__timeline button")].find((b) => b.textContent.includes("转为互动"));
+    assert(convertBtn, "未找到转为互动按钮");
+    convertBtn.click();
+
+    await until(() => recordedNote.includes("和张三讨论了产品方向"), "转为互动未调用 onRecord");
+    assert(recordedType === "other", "转为互动类型应为 other");
+    await until(() => convertBtn.textContent.includes("已转互动"), "转录后按钮文案未更新为 ✓ 已转互动");
+    assert(convertBtn.disabled === true, "转录后按钮应被禁用防止重复误触");
+});
+
+await test("E-36 纪念日免打扰开关（remindDisabled）：开启后不再提醒，再次点击恢复", async () => {
+    let annivList = [
+        {
+            id: "anniv-01",
+            personDocId: person.docId,
+            title: "结婚纪念日",
+            category: "wedding",
+            date: "2026-10-25",
+            isLunar: false,
+            remindDaysBefore: 7,
+            remindDisabled: false,
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+    ];
+    let updatedPatch = null;
+    mounted = mount(PersonDetail, { target: fixture, props: {
+        settings, person,
+        onLoadInsights: async () => emptyInsights(),
+        onLoadAnniversaries: async () => [...annivList],
+        onAddAnniversary: async (item) => { annivList = [item, ...annivList]; return [...annivList]; },
+        onUpdateAnniversary: async (_docId, annivId, patch) => {
+            updatedPatch = patch;
+            annivList = annivList.map((a) => a.id === annivId ? { ...a, ...patch } : a);
+            return [...annivList];
+        },
+        onRemoveAnniversary: async (_docId, annivId) => { annivList = annivList.filter((a) => a.id !== annivId); return [...annivList]; },
+        onOpenPersonDoc() {}, onNavigate() {}, onDeleted() {}, onClose() {}, onChanged() {},
+    } });
+
+    await until(() => fixture.querySelector(".lvct-detail__anniversaries"), "纪念日分区未渲染");
+    await until(() => fixture.textContent.includes("结婚纪念日"), "纪念日名称未渲染");
+
+    // 验证初始状态为 🔔 提醒中
+    const remindBtn = [...fixture.querySelectorAll(".lvct-detail__anniversaries button")].find((b) => b.textContent.includes("提醒中"));
+    assert(remindBtn, "未找到纪念日提醒开关按钮");
+
+    // 点击切换为不再提醒
+    remindBtn.click();
+    await until(() => updatedPatch && updatedPatch.remindDisabled === true, "未调用 onUpdateAnniversary 切换免打扰");
+    await until(() => fixture.textContent.includes("🔕 不再提醒"), "按钮文案未更新为 🔕 不再提醒");
+
+    // 再次点击恢复提醒
+    const mutedBtn = [...fixture.querySelectorAll(".lvct-detail__anniversaries button")].find((b) => b.textContent.includes("不再提醒"));
+    assert(mutedBtn, "未找到免打扰切换按钮");
+    mutedBtn.click();
+    await until(() => updatedPatch && updatedPatch.remindDisabled === false, "未调用 onUpdateAnniversary 恢复提醒");
+    await until(() => fixture.textContent.includes("🔔 提醒中"), "按钮文案未恢复为 🔔 提醒中");
+});
+
+await test("F-07 首页行动清单：跟进与纪念日支持【顺延】与【不再提醒】，老用户数据无损兼容", async () => {
+    let dismissedReminder = null;
+    let completedFollowUpId = null;
+    const testDashboardData = {
+        birthdays: [],
+        stale: [],
+        followUps: [],
+        actions: [
+            {
+                bucket: "today",
+                person,
+                reasons: [{ kind: "followup", label: "下午电话跟进合同", bucket: "today", followUpId: "fu-99" }],
+            },
+            {
+                bucket: "today",
+                person: { ...person, docId: "20261019000000-doc0002", name: "李四" },
+                reasons: [{ kind: "anniversary", label: "见面日", bucket: "today" }],
+            },
+        ],
+        neverOrder: {},
+        followUps: [],
+    };
+    mounted = mount(DashboardView, { target: fixture, props: {
+        settings,
+        dashboardData: testDashboardData,
+        facade: {
+            loadDashboard: async () => testDashboardData,
+            loadReminderDismissals: async () => [],
+            snoozeFollowUp: async () => {},
+            setFollowUpStatus: async (id, status) => { if (status === "done") completedFollowUpId = id; },
+            dismissReminder: async (docId, kind, until) => { dismissedReminder = { docId, kind, until }; },
+        },
+        onOpenDetail() {},
+    } });
+
+    await until(() => fixture.querySelector(".lvct-dash__action-row"), "行动清单未渲染");
+    assert(fixture.textContent.includes("下午电话跟进合同"), "未渲染跟进事项");
+    assert(fixture.textContent.includes("见面日"), "未渲染纪念日事项");
+
+    // 1. 测试跟进菜单的操作
+    const moreBtns = fixture.querySelectorAll(".lvct-dash__quick-button--more");
+    assert(moreBtns.length >= 2, "操作更多菜单按钮数量不足");
+    moreBtns[0].click(); // 展开跟进项菜单
+
+    await until(() => fixture.textContent.includes("顺延 3 天"), "跟进项未提供顺延 3 天选项");
+    assert(fixture.textContent.includes("完成跟进（不再提醒）"), "跟进项未提供完成跟进选项");
+    assert(fixture.textContent.includes("取消计划（不再提醒）"), "跟进项未提供取消计划选项");
+
+    // 点击「完成跟进（不再提醒）」
+    const doneBtn = [...fixture.querySelectorAll(".lvct-dash__rowmenu button")].find((b) => b.textContent.includes("完成跟进（不再提醒）"));
+    assert(doneBtn, "未找到完成跟进按钮");
+    doneBtn.click();
+    await until(() => completedFollowUpId === "fu-99", "点击完成跟进未调用 setFollowUpStatus");
+
+    // 2. 测试纪念日菜单的操作
+    await pause(50);
+    const updatedMoreBtns = fixture.querySelectorAll(".lvct-dash__quick-button--more");
+    assert(updatedMoreBtns.length >= 2, "操作更多菜单按钮数量不足");
+    updatedMoreBtns[1].click(); // 展开纪念日菜单
+    await until(() => fixture.textContent.includes("不再提醒"), "纪念日未提供不再提醒选项");
+    const dismissForeverBtn = [...fixture.querySelectorAll(".lvct-dash__rowmenu button")].find((b) => b.textContent.trim() === "不再提醒");
+    assert(dismissForeverBtn, "未找到纪念日不再提醒按钮");
+    dismissForeverBtn.click();
+    await until(() => dismissedReminder !== null && dismissedReminder.docId === "20261019000000-doc0002" && dismissedReminder.until === "", "点击不再提醒未派发永久暂缓");
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
