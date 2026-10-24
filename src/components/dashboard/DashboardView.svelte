@@ -10,7 +10,7 @@
     import type { ActionGroup } from "../../domain/action-list";
     import type { ReminderDismissal } from "../../domain/reminder-dismissals";
     import type { ContactSummary } from "../../domain/person";
-    import type { ViewPreferences } from "../../domain/preferences";
+    import { DEFAULT_VIEW_PREFERENCES, type ViewPreferences } from "../../domain/preferences";
     import { detectCheckinBridge } from "../../bridge/checkin";
     import ViewState from "../ViewState.svelte";
     import StatusNotice from "../StatusNotice.svelte";
@@ -32,7 +32,7 @@ import { toLocalDateKey } from "../../domain/interactions";
     let {
         facade,
         i18n,
-        preferences,
+        preferences = DEFAULT_VIEW_PREFERENCES,
         revision = 0,
         onOpenDetail,
         onOpenPeople,
@@ -140,7 +140,7 @@ import { toLocalDateKey } from "../../domain/interactions";
             return;
         }
         const docSet = new Set(personDocIds);
-        const matched = data.allPeople.filter((p) => docSet.has(p.docId));
+        const matched = (data.allPeople ?? []).filter((p) => docSet.has(p.docId));
         if (matched.length === 0) {
             onOpenPeople();
             return;
@@ -198,8 +198,8 @@ import { toLocalDateKey } from "../../domain/interactions";
     }
     async function dismissBirthdayUntil(person: ContactSummary, until: string, label: string): Promise<void> {
         /* C06：覆盖已有暂缓前先快照，撤销时精确恢复 */
-        const previous = (await facade.loadReminderDismissals())
-            .find((entry) => entry.personDocId === person.docId && entry.kind === "birthday");
+        const list = await facade.loadReminderDismissals?.().catch(() => []) ?? [];
+        const previous = list.find((entry) => entry.personDocId === person.docId && entry.kind === "birthday");
         await facade.dismissReminder(person.docId, "birthday", until);
         setUndo(
             `已${label}「${person.name}」的生日提醒，可在设置-提醒中恢复`,
@@ -224,8 +224,8 @@ import { toLocalDateKey } from "../../domain/interactions";
         await dismissBirthdayUntil(person, "", "不再提醒");
     }
     async function dismissStaleReminder(person: ContactSummary): Promise<void> {
-        const previous = (await facade.loadReminderDismissals())
-            .find((entry) => entry.personDocId === person.docId && entry.kind === "stale");
+        const list = await facade.loadReminderDismissals?.().catch(() => []) ?? [];
+        const previous = list.find((entry) => entry.personDocId === person.docId && entry.kind === "stale");
         await facade.dismissReminder(person.docId, "stale", "");
         setUndo(
             `已不再提醒「${person.name}」，可在设置-提醒中恢复`,
@@ -237,8 +237,8 @@ import { toLocalDateKey } from "../../domain/interactions";
         await refresh();
     }
     async function dismissNeverToday(person: ContactSummary): Promise<void> {
-        const previous = (await facade.loadReminderDismissals())
-            .find((entry) => entry.personDocId === person.docId && entry.kind === "stale");
+        const list = await facade.loadReminderDismissals?.().catch(() => []) ?? [];
+        const previous = list.find((entry) => entry.personDocId === person.docId && entry.kind === "stale");
         await facade.dismissReminder(person.docId, "stale", toLocalToday());
         setUndo(
             `今天先跳过「${person.name}」的提醒`,
@@ -480,7 +480,7 @@ import { toLocalDateKey } from "../../domain/interactions";
         clockTick;
         return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "short" }).format(new Date());
     });
-    const todayBirthdays = $derived.by(() => data?.birthdays.filter((item) => item.bucket === "today") ?? []);
+    const todayBirthdays = $derived.by(() => data?.birthdays?.filter((item) => item.bucket === "today") ?? []);
 
     // C06：会话内撤销——只保留最近一次操作的反向闭包，跨刷新/重启不保留
     let undoAction: { run: () => Promise<void> } | null = $state(null);
@@ -511,9 +511,9 @@ import { toLocalDateKey } from "../../domain/interactions";
         errorText = "";
         try {
             const result = await facade.loadDashboard({
-                birthdayWindowDays: preferences.birthdayWindowDays,
-                staleThresholdDays: preferences.staleThresholdDays,
-                reminderGraceDays: preferences.reminderGraceDays,
+                birthdayWindowDays: preferences?.birthdayWindowDays,
+                staleThresholdDays: preferences?.staleThresholdDays,
+                reminderGraceDays: preferences?.reminderGraceDays,
             });
             if (alive && version === refreshVersion) data = result;
         } catch (error) {
@@ -525,15 +525,15 @@ import { toLocalDateKey } from "../../domain/interactions";
 
     $effect(() => {
         revision;
-        preferences.birthdayWindowDays;
-        preferences.staleThresholdDays;
-        preferences.reminderGraceDays;
+        preferences?.birthdayWindowDays;
+        preferences?.staleThresholdDays;
+        preferences?.reminderGraceDays;
         void refresh();
     });
 
     function openBirthdayPeople() {
         if (!data) return;
-        const itemIds = data.birthdays
+        const itemIds = (data.birthdays ?? [])
             .filter((item) => item.bucket === "today" || item.bucket === "week")
             .map((item) => item.person.itemId);
         if (itemIds.length === 0) {
@@ -707,10 +707,12 @@ import { toLocalDateKey } from "../../domain/interactions";
     }
     const completeFollowUp = (id: string, title: string) => runFollowUp(async () => {
         /* C06：完成可撤销（待办列表只列 open，恢复即重新打开） */
+        rowMenuKey = "";
         await facade.setFollowUpStatus(id, "done");
         setUndo(`已完成「${title}」`, () => facade.setFollowUpStatus(id, "open"));
     }, `已完成「${title}」`);
     const skipFollowUp = (id: string, title: string) => runFollowUp(async () => {
+        rowMenuKey = "";
         await facade.setFollowUpStatus(id, "cancelled");
         setUndo(`已跳过「${title}」，可在人物详情中重新打开`, () => facade.setFollowUpStatus(id, "open"));
     }, `已跳过「${title}」，可在人物详情中重新打开`);

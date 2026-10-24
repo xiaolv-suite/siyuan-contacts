@@ -1152,18 +1152,21 @@ import StatusNotice from "../StatusNotice.svelte";
     let siyuanRefTimer: ReturnType<typeof setTimeout> | null = null;
     let siyuanUriCopied = $state(false);
     let siyuanUriTimer: ReturnType<typeof setTimeout> | null = null;
+    let convertedBlockIds = $state<string[]>([]);
 
     async function convertBacklinkToInteraction(item: import("../../services/insights").BacklinkMentionItem) {
-        if (!item || busy) return;
+        if (!item || busy || convertedBlockIds.includes(item.blockId)) return;
         const note = item.content.trim() || `在文档《${item.docTitle}》中提及`;
         busy = true;
         try {
             await onRecord(current.docId, note, "other");
+            convertedBlockIds = [...convertedBlockIds, item.blockId];
             await loadInsights();
             onChanged();
             if (onSyncDocProfile) void onSyncDocProfile(current).catch(() => {});
         } catch (err) {
             console.warn("[LvContacts] 反链转互动未完成", err);
+            if (detailAlive) insightsError = requestErrorMessage(err);
         } finally {
             busy = false;
         }
@@ -3316,10 +3319,11 @@ import StatusNotice from "../StatusNotice.svelte";
                                 <button
                                     type="button"
                                     class="b3-button b3-button--outline b3-button--small"
-                                    title="一键将该日志记录转录为正式互动事件，更新最近联系时间"
-                                    disabled={busy}
+                                    class:lvct-text-success={convertedBlockIds.includes(bItem.blockId)}
+                                    title={convertedBlockIds.includes(bItem.blockId) ? "已转录为互动事件" : "一键将该日志记录转录为正式互动事件，更新最近联系时间"}
+                                    disabled={busy || convertedBlockIds.includes(bItem.blockId)}
                                     onclick={() => convertBacklinkToInteraction(bItem)}
-                                >⚡ 转为互动</button>
+                                >{convertedBlockIds.includes(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
                             </div>
                         </div>
                     {/each}

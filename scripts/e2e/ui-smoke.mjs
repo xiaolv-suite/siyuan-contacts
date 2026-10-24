@@ -14,9 +14,15 @@ const root = resolve(import.meta.dirname, "../..");
 const browserPath = [
     process.env.LVCT_TEST_BROWSER,
     "C:/Program Files/Google/Chrome/Application/chrome.exe",
-    "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+    "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
+    process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, "Google/Chrome/Application/chrome.exe") : undefined,
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
 ].find((candidate) => candidate && existsSync(candidate));
-if (!browserPath) throw new Error("未找到测试浏览器，请用 LVCT_TEST_BROWSER 指定 Chromium 可执行文件");
+if (!browserPath) throw new Error("未找到 Chrome 浏览器（严禁使用 Edge），请用 LVCT_TEST_BROWSER 指定 Chrome/Chromium 路径");
+
+async function runSmokeOnce() {
 const profile = mkdtempSync(join(tmpdir(), "lvct-ui-"));
 
 let resolveReport;
@@ -267,3 +273,24 @@ await new Promise((r) => setTimeout(r, 300));
         await server.close();
     }
 }
+}
+
+async function runWithConflictRetry(maxAttempts = 3) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            await runSmokeOnce();
+            return;
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            const isConflict = /EADDRINUSE|端口|未启动|Connection refused|ECONNREFUSED|lock/i.test(msg);
+            if (isConflict && attempt < maxAttempts) {
+                console.warn(`[E2E] 检测到可能与其它插件或进程产生冲突 (${msg})，等待 5 分钟后再次尝试 (第 ${attempt}/${maxAttempts} 次)...`);
+                await new Promise((r) => setTimeout(r, 5 * 60 * 1000));
+            } else {
+                throw err;
+            }
+        }
+    }
+}
+
+await runWithConflictRetry();
