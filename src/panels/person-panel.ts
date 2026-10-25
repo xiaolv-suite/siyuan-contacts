@@ -17,6 +17,7 @@ import { copyPlainText } from "../shared/clipboard";
 import { svelteDialog } from "../libs/dialog";
 import { requestPersonNavigation, subscribeDataChanged } from "../libs/data-events";
 import PersonEditDialog from "../components/people/PersonEditDialog.svelte";
+import QuickRecordDialog from "../components/people/QuickRecordDialog.svelte";
 import { translateText } from "../domain/translation";
 import type { Plugin } from "siyuan";
 import type { ContactsSettings } from "../domain/model";
@@ -358,6 +359,14 @@ function buildStrip(
 
     const actions = document.createElement("div");
     actions.className = "lvct-strip__actions";
+
+    const record = document.createElement("button");
+    record.className = "b3-button b3-button--small b3-button--text lvct-strip__record-btn";
+    record.textContent = t(context, "stripRecord", "记互动");
+    record.title = t(context, "stripRecordTitle", "为 {name} 记录一笔互动", { name: person.name });
+    record.addEventListener("click", () => openRecordDialog(context, protyle, person));
+    actions.appendChild(record);
+
     const edit = document.createElement("button");
     edit.className = "b3-button b3-button--small b3-button--text";
     edit.textContent = t(context, "stripEdit", "编辑资料");
@@ -387,6 +396,23 @@ function makeBadge(text: string, className: string): HTMLSpanElement {
     badge.className = `lvct-strip__badge ${className}`;
     badge.textContent = text;
     return badge;
+}
+
+function openRecordDialog(context: PanelContext, protyle: ProtyleLike, person: ContactSummary): void {
+    if (!context.settings || context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
+    svelteDialog({
+        title: `记一笔互动 · ${person.name}`,
+        width: "500px",
+        component: QuickRecordDialog,
+        props: {
+            plugin: context.plugin,
+            person,
+            i18n: context.i18n,
+            onSaved: () => {
+                void updateStrip(context, protyle, person.docId);
+            },
+        },
+    });
 }
 
 function openEditDialog(context: PanelContext, protyle: ProtyleLike, person: ContactSummary): void {

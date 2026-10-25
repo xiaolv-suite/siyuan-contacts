@@ -17,6 +17,7 @@ import { getRoster, invalidateRoster } from "../../../src/services/roster";
 import { applyContactCandidateFields, batchUpdateContacts, createContact, retryContactFields, updateContactFields } from "../../../src/services/contacts";
 import { retryVcfContacts } from "../../../src/services/vcard";
 import PersonEditDialog from "../../../src/components/people/PersonEditDialog.svelte";
+import QuickRecordDialog from "../../../src/components/people/QuickRecordDialog.svelte";
 import ExchangeLedger from "../../../src/components/people/ExchangeLedger.svelte";
 import PersonAliases from "../../../src/components/people/PersonAliases.svelte";
 import DetailPanelsFixture from "./DetailPanelsFixture.svelte";
@@ -5947,6 +5948,8 @@ await test("人物档案条会前简报展示真实互动事实", async () => {
     assert(briefing.textContent.includes("最近互动"), "会前简报缺少最近互动标签");
     assert(briefing.textContent.includes("确认下周合作安排"), "会前简报缺少互动备注");
     assert(!briefing.textContent.includes("预留"), "会前简报仍显示占位内容");
+    assert(element.querySelector(".lvct-strip__record-btn"), "档案条动作栏未提供快捷记互动按钮");
+    assert(element.querySelector(".lvct-strip__record-btn").textContent.includes("记互动"), "记互动按钮文本不正确");
 });
 
 await test("档案条显示待跟进与相关人计数，chips 超量折叠为 +N", async () => {
@@ -7758,6 +7761,54 @@ await test("E-87 反链批量转录与视窗折叠：一键全转入与清爽折
     assert(recordedEvents[0].type === "call", "第二条打电话应识别为 call");
     assert(recordedEvents[0].options.skipDocSync === true, "批量转录应开启 skipDocSync 合并落盘防抖");
     await until(() => !fixture.querySelector(".lvct-detail__backlinks-convert-all"), "全部转录后批量按钮应自动隐藏");
+});
+
+await test("D-01 文档档案条快捷记互动弹窗：QuickRecordDialog 分类切换、备注录入与保存闭环", async () => {
+    let savedTriggered = false;
+    let closedTriggered = false;
+    const memory = new Map();
+    memory.set("interaction-events.json", { schemaVersion: 1, events: [], tombstones: [] });
+    const mockPlugin = {
+        loadData: async (k) => memory.get(k) ?? null,
+        saveData: async (k, v) => { memory.set(k, v); },
+    };
+    kernel.handler = async () => ({ code: 0, msg: "", data: {} });
+
+    mounted = mount(QuickRecordDialog, { target: fixture, props: {
+        plugin: mockPlugin,
+        person,
+        onSaved: () => { savedTriggered = true; },
+        onClose: () => { closedTriggered = true; },
+    } });
+
+    await until(() => fixture.querySelector(".lvct-quick-record-dialog"), "未渲染快捷记互动弹窗");
+    assert(fixture.textContent.includes("互动日期"), "未展示日期选择器");
+    assert(fixture.textContent.includes("互动类型"), "未展示互动类型");
+
+    // 切换类型为电话
+    const callChip = [...fixture.querySelectorAll(".b3-chip")].find((b) => b.textContent.includes("电话"));
+    assert(callChip, "未找到电话分类按钮");
+    callChip.click();
+    await until(() => callChip.classList.contains("b3-chip--primary"), "选中后未高亮主要样式");
+
+    // 输入备注
+    const textarea = fixture.querySelector("textarea");
+    assert(textarea, "未找到备注多行文本框");
+    input(textarea, "电话沟通下周签约事宜");
+
+    // 点击保存
+    const saveBtn = [...fixture.querySelectorAll("button")].find((b) => b.textContent.includes("保存互动"));
+    assert(saveBtn, "未找到保存互动按钮");
+    saveBtn.click();
+
+    await until(() => savedTriggered, "未触发 onSaved 回调");
+    await until(() => closedTriggered, "保存后未自动触发 onClose 关闭弹窗");
+
+    // 验证底层存储
+    const savedStore = memory.get("interaction-events.json");
+    assert(savedStore && savedStore.events.length === 1, "互动未成功落盘到自管存储");
+    assert(savedStore.events[0].note === "电话沟通下周签约事宜", "互动备注不匹配");
+    assert(savedStore.events[0].type === "call", "互动类型应为 call");
 });
 
 await test("E-36 纪念日免打扰开关（remindDisabled）：开启后不再提醒，再次点击恢复", async () => {
