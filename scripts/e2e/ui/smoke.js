@@ -7670,16 +7670,22 @@ await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直
     backlinkPill.click();
     await until(() => fixture.textContent.includes("笔记与日志反链"), "点击胶囊未展开反链视窗");
 
-    // 3. 验证双模徽章
-    assert(fixture.textContent.includes("🔗 双链"), "未渲染双链徽章");
-    assert(fixture.textContent.includes("💡 提及"), "未渲染提及徽章");
+    // 3. 验证双模徽章与按月时序分组
+    assert(fixture.textContent.includes("2026年10月"), "未渲染反链按月分组标题");
+    assert(fixture.textContent.includes("双链"), "未渲染双链徽章");
+    assert(fixture.textContent.includes("提及"), "未渲染提及徽章");
     assert(fixture.textContent.includes("2026-10-24 工作日记"), "未渲染日记标题");
 
-    // 4. 打开原笔记
+    // 4. 打开原笔记与复制块引
     const openDocBtn = [...fixture.querySelectorAll(".lvct-detail__timeline button")].find((b) => b.textContent.includes("打开原笔记"));
     assert(openDocBtn, "未找到打开原笔记按钮");
     openDocBtn.click();
     assert(openedDocId === "doc-diary-1", "点击打开原笔记未传递正确的 rootId");
+
+    const copyBlockBtn = [...fixture.querySelectorAll(".lvct-detail__timeline button")].find((b) => b.textContent.includes("复制块引"));
+    assert(copyBlockBtn, "未找到复制块引按钮");
+    copyBlockBtn.click();
+    await until(() => copyBlockBtn.textContent.includes("已复制链接"), "点击复制块引后未展示微反馈");
 
     // 5. 点击「⚡ 转为互动」
     const convertBtn = [...fixture.querySelectorAll(".lvct-detail__timeline button")].find((b) => b.textContent.includes("转为互动"));
