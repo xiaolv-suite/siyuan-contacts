@@ -2,7 +2,26 @@
     import { requestErrorMessage } from "../../shared/error-presenter";
     /** 人物详情窗口：档案字段、互动与关系列表（增删，内核自动维护双向回链） */
     import { onDestroy, tick, untrack } from "svelte";
-    import { CalendarDays, Copy, ExternalLink, ChevronDown, ChevronRight, Network, Check, Link, FileText, Star, RefreshCw, Phone } from "@lucide/svelte";
+    import {
+        CalendarDays,
+        Copy,
+        ExternalLink,
+        ChevronDown,
+        ChevronRight,
+        Network,
+        Check,
+        Link,
+        Link2,
+        Lightbulb,
+        Zap,
+        Bell,
+        BellOff,
+        Calendar,
+        FileText,
+        Star,
+        RefreshCw,
+        Phone,
+    } from "@lucide/svelte";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
     import type { DetailSectionKey, DetailCollapsedSections } from "../../domain/preferences";
@@ -2101,11 +2120,11 @@ import StatusNotice from "../StatusNotice.svelte";
                     <button
                         type="button"
                         class="lvct-chip lvct-chip--group font-size-11"
-                        style="cursor: pointer; padding: 2px 8px;"
+                        style="cursor: pointer; padding: 2px 8px; display: inline-flex; align-items: center;"
                         title="点击查看全库笔记与日记对该人物的反链与提及"
                         onclick={() => void selectTab("activity")}
                     >
-                        🔗 {insights.backlinks.length} 条反链引用
+                        <Link2 size={13} class="lvct-icon-inline" /> {insights.backlinks.length} 条反链引用
                     </button>
                 {/if}
             </div>
@@ -2628,9 +2647,9 @@ import StatusNotice from "../StatusNotice.svelte";
                                             onclick={() => void handleToggleAnnivRemind(anniv)}
                                         >
                                             {#if anniv.remindDisabled}
-                                                <span class="lvct-text-muted">🔕 不再提醒</span>
+                                                <span class="lvct-text-muted" style="display: inline-flex; align-items: center;"><BellOff size={12} class="lvct-icon-inline" /> 🔕 不再提醒</span>
                                             {:else}
-                                                <span>🔔 提醒中</span>
+                                                <span style="display: inline-flex; align-items: center;"><Bell size={12} class="lvct-icon-inline" /> 🔔 提醒中</span>
                                             {/if}
                                         </button>
                                     {/if}
@@ -3434,7 +3453,7 @@ import StatusNotice from "../StatusNotice.svelte";
                         {:else}
                             <ChevronDown size={14} />
                         {/if}
-                        <h4 style="margin: 0;">🔗 笔记与日志反链（{insights.backlinks.length}）</h4>
+                        <h4 style="margin: 0; display: inline-flex; align-items: center;"><Link2 size={15} class="lvct-icon-inline" /> 🔗 笔记与日志反链（{insights.backlinks.length}）</h4>
                         {#if unconvertedCount > 0}
                             <span class="lvct-chip lvct-bucket--today" style="font-size: 10px; padding: 1px 6px;">{unconvertedCount} 条待转入</span>
                         {:else}
@@ -3445,9 +3464,10 @@ import StatusNotice from "../StatusNotice.svelte";
                         <button
                             type="button"
                             class="b3-button b3-button--outline b3-button--small lvct-detail__backlinks-convert-all"
+                            style="display: inline-flex; align-items: center;"
                             disabled={busy || batchConverting}
                             onclick={convertAllBacklinks}
-                        >⚡ 全部转为互动（{unconvertedCount}）</button>
+                        ><Zap size={12} class="lvct-icon-inline" /> ⚡ 全部转为互动（{unconvertedCount}）</button>
                     {/if}
                 </div>
                 {#if !backlinksCollapsed}
@@ -3489,19 +3509,19 @@ import StatusNotice from "../StatusNotice.svelte";
                         {#each filteredBacklinks as bItem (bItem.blockId)}
                             {@const timeInfo = parseBacklinkOccurredTime(bItem)}
                             {@const inferredType = inferInteractionType(bItem.content)}
-                            <div class="lvct-detail__timeline-row" style="background: color-mix(in srgb, var(--lvct-accent) 4%, var(--lvct-bg-surface)); flex-direction: column; align-items: stretch; gap: 6px;">
+                            <div class="lvct-detail__timeline-row lvct-backlink-card">
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <span class="ft__on-surface" style="font-weight: 600;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
-                                            📅 {timeInfo.localDate}
+                                        <span class="ft__on-surface" style="font-weight: 600; display: inline-flex; align-items: center;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
+                                            <Calendar size={13} class="lvct-icon-inline" /> {timeInfo.localDate}
                                         </span>
-                                        <span class="lvct-chip lvct-chip--group font-size-11">
-                                            📝 {bItem.docTitle}
+                                        <span class="lvct-chip lvct-chip--group font-size-11" style="display: inline-flex; align-items: center;">
+                                            <FileText size={12} class="lvct-icon-inline" /> {bItem.docTitle}
                                         </span>
                                         {#if bItem.kind === "link"}
-                                            <span class="lvct-chip font-size-10" style="background: color-mix(in srgb, #0284c7 14%, transparent); color: #0284c7; font-weight: 600;">🔗 双链</span>
+                                            <span class="lvct-chip--link-pill"><Link2 size={11} class="lvct-icon-inline" /> 🔗 双链</span>
                                         {:else}
-                                            <span class="lvct-chip font-size-10" style="background: color-mix(in srgb, #ea580c 14%, transparent); color: #ea580c; font-weight: 600;">💡 提及</span>
+                                            <span class="lvct-chip--mention-pill"><Lightbulb size={11} class="lvct-icon-inline" /> 💡 提及</span>
                                         {/if}
                                         <span class="lvct-chip font-size-10" style="background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
                                             {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
