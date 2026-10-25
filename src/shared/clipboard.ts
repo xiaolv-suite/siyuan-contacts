@@ -8,12 +8,10 @@ export async function copyPlainText(value: string): Promise<void> {
     copyPending = true;
     try {
         if (typeof navigator !== "undefined" && typeof navigator.clipboard?.writeText === "function") {
-            try {
-                await navigator.clipboard.writeText(value);
-                return;
-            } catch {
-                // Clipboard API 权限受阻（如未聚焦或无安全上下文）时降级至选区复制
-            }
+            // A rejected asynchronous request is reported to the caller. Starting a
+            // second copy after navigation could steal focus from a different view.
+            await navigator.clipboard.writeText(value);
+            return;
         }
         copyWithSelection(value);
     } finally {
