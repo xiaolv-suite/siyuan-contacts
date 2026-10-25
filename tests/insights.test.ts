@@ -34,6 +34,15 @@ test("buildTimeline：倒序、同场人数聚合", () => {
     assert.equal(timeline[2].groupSize, 1, "单人记录");
 });
 
+test("buildTimeline：透传 externalRef 支撑反链块引用跨会话永久识别", () => {
+    const events = [
+        event({ id: "e-ref", personDocId: "d-a", externalRef: "block:20261025000000-blk001" }),
+    ];
+    const timeline = buildTimeline(events, "d-a");
+    assert.equal(timeline.length, 1);
+    assert.equal(timeline[0].externalRef, "block:20261025000000-blk001");
+});
+
 test("buildCoAttendance：同场次数统计，无关事件不计入", () => {
     const co = buildCoAttendance(EVENTS, "d-a");
     assert.deepEqual(co, [

@@ -152,7 +152,7 @@ import StatusNotice from "../StatusNotice.svelte";
             personDocId: string,
             note?: string,
             type?: import("../../domain/interactions").InteractionType,
-            options?: { occurredAt?: number; source?: import("../../domain/interactions").InteractionSource; externalRef?: string },
+            options?: { occurredAt?: number; source?: import("../../domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean },
         ) => Promise<void>;
         onDeleteInteraction?: (personDocId: string, eventId: string) => Promise<void>;
         /** 人物洞察（时间线+共同出席） */
@@ -1163,6 +1163,37 @@ import StatusNotice from "../StatusNotice.svelte";
     let siyuanUriCopied = $state(false);
     let siyuanUriTimer: ReturnType<typeof setTimeout> | null = null;
     let convertedBlockIds = $state<string[]>([]);
+    const allConvertedBlockIds = $derived.by(() => {
+        const ids = new Set<string>(convertedBlockIds);
+        if (insights?.timeline) {
+            for (const item of insights.timeline) {
+                if (item.externalRef?.startsWith("block:")) {
+                    ids.add(item.externalRef.slice("block:".length));
+                }
+            }
+        }
+        return ids;
+    });
+
+    let backlinkQuery = $state("");
+    let backlinkFilterKind = $state<"all" | "link" | "mention">("all");
+
+    const filteredBacklinks = $derived.by(() => {
+        if (!insights?.backlinks) return [];
+        let list = insights.backlinks;
+        if (backlinkFilterKind !== "all") {
+            list = list.filter((item) => item.kind === backlinkFilterKind);
+        }
+        const q = backlinkQuery.trim().toLowerCase();
+        if (q) {
+            list = list.filter((item) =>
+                item.content.toLowerCase().includes(q) ||
+                item.docTitle.toLowerCase().includes(q) ||
+                item.date.includes(q),
+            );
+        }
+        return list;
+    });
 
     interface EditingBacklinkDraft {
         blockId: string;
@@ -1220,7 +1251,7 @@ import StatusNotice from "../StatusNotice.svelte";
 
     async function convertAllBacklinks() {
         if (!insights?.backlinks || busy || batchConverting) return;
-        const unconverted = insights.backlinks.filter((item) => !convertedBlockIds.includes(item.blockId));
+        const unconverted = insights.backlinks.filter((item) => !allConvertedBlockIds.has(item.blockId));
         if (unconverted.length === 0) return;
         batchConverting = true;
         busy = true;
@@ -1234,6 +1265,7 @@ import StatusNotice from "../StatusNotice.svelte";
                     occurredAt: timeInfo.occurredAt,
                     source: "diary",
                     externalRef: `block:${item.blockId}`,
+                    skipDocSync: true,
                 });
                 newlyConverted.push(item.blockId);
             }
@@ -1251,7 +1283,7 @@ import StatusNotice from "../StatusNotice.svelte";
     }
 
     async function convertBacklinkToInteraction(item: import("../../services/insights").BacklinkMentionItem) {
-        if (!item || busy || convertedBlockIds.includes(item.blockId)) return;
+        if (!item || busy || allConvertedBlockIds.has(item.blockId)) return;
         const timeInfo = parseBacklinkOccurredTime(item);
         const note = cleanInteractionNote(item.content, item.docTitle);
         const type = inferInteractionType(item.content);
@@ -3387,7 +3419,7 @@ import StatusNotice from "../StatusNotice.svelte";
 
         <!-- Issue #87：笔记与日志反向链接（Backlinks / 提及）视窗 -->
         {#if insights && insights.backlinks && insights.backlinks.length > 0}
-            {@const unconvertedCount = insights.backlinks.filter((item) => !convertedBlockIds.includes(item.blockId)).length}
+            {@const unconvertedCount = insights.backlinks.filter((item) => !allConvertedBlockIds.has(item.blockId)).length}
             <div class="lvct-detail__section" style="margin-top: 14px; border-top: 1px dashed var(--b3-theme-surface-lighter); padding-top: 12px;">
                 <div class="lvct-detail__section-head" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div
@@ -3405,6 +3437,8 @@ import StatusNotice from "../StatusNotice.svelte";
                         <h4 style="margin: 0;">🔗 笔记与日志反链（{insights.backlinks.length}）</h4>
                         {#if unconvertedCount > 0}
                             <span class="lvct-chip lvct-bucket--today" style="font-size: 10px; padding: 1px 6px;">{unconvertedCount} 条待转入</span>
+                        {:else}
+                            <span class="lvct-chip lvct-chip--group font-size-10" style="padding: 1px 6px;">已全部转入 ✓</span>
                         {/if}
                     </div>
                     {#if !backlinksCollapsed && unconvertedCount > 0}
@@ -3417,11 +3451,42 @@ import StatusNotice from "../StatusNotice.svelte";
                     {/if}
                 </div>
                 {#if !backlinksCollapsed}
-                    <p class="ft__smaller ft__on-surface" style="margin: 0 0 8px 20px;">
-                        在日记或随笔中使用双链 ((姓名)) 记录的事情，自动汇总在此；转录将精准还原历史真实时间。
-                    </p>
+                    <div class="lvct-detail__activity-filters" style="margin-bottom: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                        <input
+                            class="b3-text-field fn__flex-1 lvct-detail__backlinks-search"
+                            type="search"
+                            placeholder="搜索反链笔记标题、内容或日期…"
+                            aria-label="搜索反链笔记标题、内容或日期"
+                            bind:value={backlinkQuery}
+                            style="min-width: 140px;"
+                        />
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11"
+                            class:b3-chip--primary={backlinkFilterKind === "all"}
+                            onclick={() => (backlinkFilterKind = "all")}
+                        >全部 ({insights.backlinks.length})</button>
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11"
+                            class:b3-chip--primary={backlinkFilterKind === "link"}
+                            onclick={() => (backlinkFilterKind = "link")}
+                        >🔗 双链 ({insights.backlinks.filter((i) => i.kind === "link").length})</button>
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11"
+                            class:b3-chip--primary={backlinkFilterKind === "mention"}
+                            onclick={() => (backlinkFilterKind = "mention")}
+                        >💡 提及 ({insights.backlinks.filter((i) => i.kind === "mention").length})</button>
+                    </div>
                     <div class="lvct-detail__timeline">
-                        {#each insights.backlinks as bItem (bItem.blockId)}
+                        {#if filteredBacklinks.length === 0}
+                            <div class="lvct-detail__empty-notice" style="padding: 12px; text-align: center; color: var(--b3-theme-on-surface); font-size: 12px;">
+                                没有匹配的反链记录。
+                                <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => { backlinkQuery = ""; backlinkFilterKind = "all"; }}>清除筛选</button>
+                            </div>
+                        {/if}
+                        {#each filteredBacklinks as bItem (bItem.blockId)}
                             {@const timeInfo = parseBacklinkOccurredTime(bItem)}
                             {@const inferredType = inferInteractionType(bItem.content)}
                             <div class="lvct-detail__timeline-row" style="background: color-mix(in srgb, var(--lvct-accent) 4%, var(--lvct-bg-surface)); flex-direction: column; align-items: stretch; gap: 6px;">
@@ -3449,7 +3514,7 @@ import StatusNotice from "../StatusNotice.svelte";
                                             title="在思源中打开该日志文档"
                                             onclick={() => onOpenPersonDoc(bItem.rootId)}
                                         >打开原笔记</button>
-                                        {#if !convertedBlockIds.includes(bItem.blockId)}
+                                        {#if !allConvertedBlockIds.has(bItem.blockId)}
                                             <button
                                                 type="button"
                                                 class="b3-button b3-button--text b3-button--small lvct-detail__backlink-edit-btn"
@@ -3461,11 +3526,11 @@ import StatusNotice from "../StatusNotice.svelte";
                                         <button
                                             type="button"
                                             class="b3-button b3-button--outline b3-button--small"
-                                            class:lvct-text-success={convertedBlockIds.includes(bItem.blockId)}
-                                            title={convertedBlockIds.includes(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
-                                            disabled={busy || convertedBlockIds.includes(bItem.blockId)}
+                                            class:lvct-text-success={allConvertedBlockIds.has(bItem.blockId)}
+                                            title={allConvertedBlockIds.has(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
+                                            disabled={busy || allConvertedBlockIds.has(bItem.blockId)}
                                             onclick={() => convertBacklinkToInteraction(bItem)}
-                                        >{convertedBlockIds.includes(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
+                                        >{allConvertedBlockIds.has(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
                                     </div>
                                 </div>
                                 <div class="lvct-detail__timeline-note" style="margin: 0; padding-left: 2px;">

@@ -7713,9 +7713,11 @@ await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直
 await test("E-87 反链批量转录与视窗折叠：一键全转入与清爽折叠", async () => {
     let recordedEvents = [];
     let mockInsights = {
-        timeline: [],
+        timeline: [
+            { eventId: "ev-hist-1", localDate: "2026-10-21", source: "diary", type: "meal", groupSize: 1, externalRef: "block:b-01" },
+        ],
         coAttendance: [],
-        totalEvents: 0,
+        totalEvents: 1,
         backlinks: [
             { blockId: "b-01", rootId: "doc-1", docTitle: "日记1", content: "和张三聚餐吃火锅", date: "2026-10-21", kind: "link" },
             { blockId: "b-02", rootId: "doc-2", docTitle: "日记2", content: "给张三打了个电话", date: "2026-10-22", kind: "link" },
@@ -7734,14 +7736,27 @@ await test("E-87 反链批量转录与视窗折叠：一键全转入与清爽折
     const backlinkPill = [...fixture.querySelectorAll("button")].find((b) => b.textContent.includes("2 条反链引用"));
     backlinkPill.click();
 
-    await until(() => fixture.textContent.includes("全部转为互动"), "未显示一键全部转录按钮");
+    // 1. 验证跨会话永久记忆：b-01 虽在反链列表，但 timeline 中已有对应 block:b-01，应自动识别为已转互动
+    await until(() => fixture.textContent.includes("1 条待转入"), "历史已转条目未自动扣减待转入计数");
+    assert(fixture.textContent.includes("✓ 已转互动"), "历史已转条目未渲染 ✓ 已转互动 状态");
+
+    // 2. 测试反链关键词即时搜索
+    const searchInput = fixture.querySelector(".lvct-detail__backlinks-search");
+    assert(searchInput, "未找到反链搜索输入框");
+    input(searchInput, "电话");
+    await until(() => !fixture.textContent.includes("吃火锅"), "搜索电话时仍显示了火锅条目");
+    assert(fixture.textContent.includes("打了个电话"), "未匹配搜索电话条目");
+    input(searchInput, ""); // 清空搜索
+
+    // 3. 批量转入剩下的 1 条
+    await until(() => fixture.textContent.includes("全部转为互动（1）"), "未显示一键全部转录按钮");
     const convertAllBtn = fixture.querySelector(".lvct-detail__backlinks-convert-all");
     assert(convertAllBtn, "未找到一键全部转录按钮");
     convertAllBtn.click();
 
-    await until(() => recordedEvents.length === 2, "批量转录未全部调用 onRecord");
-    assert(recordedEvents[0].type === "meal", "第一条吃火锅应识别为 meal");
-    assert(recordedEvents[1].type === "call", "第二条打电话应识别为 call");
+    await until(() => recordedEvents.length === 1, "批量转录应仅转录未转录的 1 条");
+    assert(recordedEvents[0].type === "call", "第二条打电话应识别为 call");
+    assert(recordedEvents[0].options.skipDocSync === true, "批量转录应开启 skipDocSync 合并落盘防抖");
     await until(() => !fixture.querySelector(".lvct-detail__backlinks-convert-all"), "全部转录后批量按钮应自动隐藏");
 });
 

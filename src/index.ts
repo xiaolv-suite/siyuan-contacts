@@ -962,10 +962,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         personDocId: string,
         note?: string,
         type?: import("./domain/interactions").InteractionType,
-        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string },
+        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean },
     ): Promise<void> {
         await recordInteraction(this, { personDocId, note, type, ...options });
-        void syncInteractionDocSection(this, personDocId).catch(() => {});
+        if (!options?.skipDocSync) {
+            void syncInteractionDocSection(this, personDocId).catch(() => {});
+        }
         if (this.settings?.checkinItemId) {
             const date = toLocalDateKey(options?.occurredAt ? new Date(options.occurredAt) : new Date());
             void logCheckinEventSafely({
