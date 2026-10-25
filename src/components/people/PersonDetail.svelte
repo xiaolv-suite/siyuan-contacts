@@ -1251,6 +1251,41 @@ import StatusNotice from "../StatusNotice.svelte";
         return list;
     });
 
+    const backlinkMonthGroups = $derived.by(() => {
+        const list = filteredBacklinks.map((bItem) => {
+            const timeInfo = parseBacklinkOccurredTime(bItem);
+            return {
+                ...bItem,
+                timeInfo,
+                localDate: timeInfo.localDate,
+            };
+        });
+        return groupByMonth(list);
+    });
+
+    let copiedBlockUriId = $state("");
+    let copiedBlockUriTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function copyBlockUri(blockId: string) {
+        if (!blockId) return;
+        const uri = `siyuan://blocks/${blockId}`;
+        try {
+            await copyPlainText(uri);
+            copiedBlockUriId = blockId;
+            if (copiedBlockUriTimer) clearTimeout(copiedBlockUriTimer);
+            copiedBlockUriTimer = setTimeout(() => {
+                if (copiedBlockUriId === blockId) copiedBlockUriId = "";
+            }, 1500);
+        } catch (err) {
+            console.warn("[LvContacts] 复制块引用失败", err);
+            copiedBlockUriId = blockId;
+            if (copiedBlockUriTimer) clearTimeout(copiedBlockUriTimer);
+            copiedBlockUriTimer = setTimeout(() => {
+                if (copiedBlockUriId === blockId) copiedBlockUriId = "";
+            }, 1500);
+        }
+    }
+
     interface EditingBacklinkDraft {
         blockId: string;
         date: string;
@@ -1418,6 +1453,7 @@ import StatusNotice from "../StatusNotice.svelte";
         if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
         if (siyuanUriTimer) clearTimeout(siyuanUriTimer);
         if (timelineCopyTimer) clearTimeout(timelineCopyTimer);
+        if (copiedBlockUriTimer) clearTimeout(copiedBlockUriTimer);
         if (docSyncTimer) clearTimeout(docSyncTimer);
         if (copiedTopicTimer) clearTimeout(copiedTopicTimer);
         if (copiedFieldTimer) clearTimeout(copiedFieldTimer);
@@ -3576,92 +3612,112 @@ import StatusNotice from "../StatusNotice.svelte";
                                 {/if}
                             </div>
                         {/if}
-                        {#each filteredBacklinks as bItem (bItem.blockId)}
-                            {@const timeInfo = parseBacklinkOccurredTime(bItem)}
-                            {@const inferredType = inferInteractionType(bItem.content)}
-                            <div class="lvct-detail__timeline-row lvct-backlink-card">
-                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <span class="ft__on-surface" style="font-weight: 600; display: inline-flex; align-items: center;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
-                                            <Calendar size={13} class="lvct-icon-inline" /> {timeInfo.localDate}
-                                        </span>
-                                        <span class="lvct-chip lvct-chip--group font-size-11" style="display: inline-flex; align-items: center;">
-                                            <FileText size={12} class="lvct-icon-inline" /> {bItem.docTitle}
-                                        </span>
-                                        {#if bItem.kind === "link"}
-                                            <span class="lvct-chip--link-pill"><Link2 size={11} class="lvct-icon-inline" /> 🔗 双链</span>
-                                        {:else}
-                                            <span class="lvct-chip--mention-pill"><Lightbulb size={11} class="lvct-icon-inline" /> 💡 提及</span>
-                                        {/if}
-                                        <span class="lvct-chip font-size-10" style="background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
-                                            {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
-                                        </span>
-                                    </div>
-                                    <div class="fn__flex" style="gap: 4px; align-items: center;">
-                                        <button
-                                            type="button"
-                                            class="b3-button b3-button--text b3-button--small"
-                                            title="在思源中打开该日志文档"
-                                            onclick={() => onOpenPersonDoc(bItem.rootId)}
-                                        >打开原笔记</button>
-                                        {#if !allConvertedBlockIds.has(bItem.blockId)}
+                        {#each backlinkMonthGroups as group (group.month)}
+                            <div class="lvct-detail__month-head" style="margin-top: 10px; margin-bottom: 6px;">
+                                {group.label}（{group.items.length} 条反链）
+                            </div>
+                            {#each group.items as bItem (bItem.blockId)}
+                                {@const timeInfo = bItem.timeInfo}
+                                {@const inferredType = inferInteractionType(bItem.content)}
+                                <div class="lvct-detail__timeline-row lvct-backlink-card">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                            <span class="ft__on-surface" style="font-weight: 600; display: inline-flex; align-items: center;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
+                                                <Calendar size={13} class="lvct-icon-inline" /> {timeInfo.localDate}
+                                            </span>
+                                            <span class="lvct-chip lvct-chip--group font-size-11" style="display: inline-flex; align-items: center;">
+                                                <FileText size={12} class="lvct-icon-inline" /> {bItem.docTitle}
+                                            </span>
+                                            {#if bItem.kind === "link"}
+                                                <span class="lvct-chip--link-pill"><Link2 size={11} class="lvct-icon-inline" /> 🔗 双链</span>
+                                            {:else}
+                                                <span class="lvct-chip--mention-pill"><Lightbulb size={11} class="lvct-icon-inline" /> 💡 提及</span>
+                                            {/if}
+                                            <span class="lvct-chip font-size-10" style="background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
+                                                {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
+                                            </span>
+                                        </div>
+                                        <div class="fn__flex" style="gap: 4px; align-items: center;">
                                             <button
                                                 type="button"
-                                                class="b3-button b3-button--text b3-button--small lvct-detail__backlink-edit-btn"
-                                                title="微调发生日期、分类与备注后再转录"
+                                                class="b3-button b3-button--text b3-button--small"
+                                                title="在思源中打开该日志文档"
+                                                onclick={() => onOpenPersonDoc(bItem.rootId)}
+                                            >打开原笔记</button>
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--text b3-button--small lvct-detail__copy-block-ref-btn"
+                                                style="display: inline-flex; align-items: center; gap: 2px;"
+                                                title="复制当前段落的思源块引用深度定位链接"
+                                                onclick={() => copyBlockUri(bItem.blockId)}
+                                            >
+                                                {#if copiedBlockUriId === bItem.blockId}
+                                                    <Check size={11} class="lvct-text-success" />
+                                                    <span class="lvct-text-success">已复制链接 ✓</span>
+                                                {:else}
+                                                    <Link size={11} />
+                                                    <span>复制块引</span>
+                                                {/if}
+                                            </button>
+                                            {#if !allConvertedBlockIds.has(bItem.blockId)}
+                                                <button
+                                                    type="button"
+                                                    class="b3-button b3-button--text b3-button--small lvct-detail__backlink-edit-btn"
+                                                    title="微调发生日期、分类与备注后再转录"
+                                                    disabled={busy}
+                                                    onclick={() => startEditBacklink(bItem)}
+                                                >{editingBacklink?.blockId === bItem.blockId ? "收起微调" : "微调转入"}</button>
+                                            {/if}
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--outline b3-button--small"
+                                                class:lvct-text-success={allConvertedBlockIds.has(bItem.blockId)}
+                                                title={allConvertedBlockIds.has(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
+                                                disabled={busy || allConvertedBlockIds.has(bItem.blockId)}
+                                                onclick={() => convertBacklinkToInteraction(bItem)}
+                                            >{allConvertedBlockIds.has(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
+                                        </div>
+                                    </div>
+                                    <div class="lvct-detail__timeline-note" style="margin: 0; padding-left: 2px;">
+                                        {bItem.content}
+                                    </div>
+                                    {#if editingBacklink && editingBacklink.blockId === bItem.blockId}
+                                        <div class="lvct-detail__quick-form lvct-detail__backlink-edit-box" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; padding: 8px; background: var(--b3-theme-surface); border-radius: 6px; border: 1px solid var(--b3-theme-surface-lighter);">
+                                            <input
+                                                class="b3-text-field"
+                                                type="date"
+                                                style="width: 135px;"
+                                                bind:value={editingBacklink.date}
+                                                aria-label="互动发生日期"
+                                            />
+                                            <select class="b3-select" bind:value={editingBacklink.type} aria-label="互动类型">
+                                                {#each INTERACTION_TYPES as itype}
+                                                    <option value={itype}>{INTERACTION_TYPE_LABELS[itype].icon} {INTERACTION_TYPE_LABELS[itype].label}</option>
+                                                {/each}
+                                            </select>
+                                            <input
+                                                class="b3-text-field fn__flex-1"
+                                                type="text"
+                                                placeholder="互动备注内容"
+                                                bind:value={editingBacklink.note}
+                                                aria-label="互动备注内容"
+                                            />
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--small lvct-detail__backlink-commit-btn"
+                                                disabled={busy || !editingBacklink.note.trim()}
+                                                onclick={commitEditBacklink}
+                                            >确认转入</button>
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--text b3-button--small"
                                                 disabled={busy}
-                                                onclick={() => startEditBacklink(bItem)}
-                                            >{editingBacklink?.blockId === bItem.blockId ? "收起微调" : "微调转入"}</button>
-                                        {/if}
-                                        <button
-                                            type="button"
-                                            class="b3-button b3-button--outline b3-button--small"
-                                            class:lvct-text-success={allConvertedBlockIds.has(bItem.blockId)}
-                                            title={allConvertedBlockIds.has(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
-                                            disabled={busy || allConvertedBlockIds.has(bItem.blockId)}
-                                            onclick={() => convertBacklinkToInteraction(bItem)}
-                                        >{allConvertedBlockIds.has(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
-                                    </div>
+                                                onclick={() => (editingBacklink = null)}
+                                            >取消</button>
+                                        </div>
+                                    {/if}
                                 </div>
-                                <div class="lvct-detail__timeline-note" style="margin: 0; padding-left: 2px;">
-                                    {bItem.content}
-                                </div>
-                                {#if editingBacklink && editingBacklink.blockId === bItem.blockId}
-                                    <div class="lvct-detail__quick-form lvct-detail__backlink-edit-box" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; padding: 8px; background: var(--b3-theme-surface); border-radius: 6px; border: 1px solid var(--b3-theme-surface-lighter);">
-                                        <input
-                                            class="b3-text-field"
-                                            type="date"
-                                            style="width: 135px;"
-                                            bind:value={editingBacklink.date}
-                                            aria-label="互动发生日期"
-                                        />
-                                        <select class="b3-select" bind:value={editingBacklink.type} aria-label="互动类型">
-                                            {#each INTERACTION_TYPES as itype}
-                                                <option value={itype}>{INTERACTION_TYPE_LABELS[itype].icon} {INTERACTION_TYPE_LABELS[itype].label}</option>
-                                            {/each}
-                                        </select>
-                                        <input
-                                            class="b3-text-field fn__flex-1"
-                                            type="text"
-                                            placeholder="互动备注内容"
-                                            bind:value={editingBacklink.note}
-                                            aria-label="互动备注内容"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="b3-button b3-button--small lvct-detail__backlink-commit-btn"
-                                            disabled={busy || !editingBacklink.note.trim()}
-                                            onclick={commitEditBacklink}
-                                        >确认转入</button>
-                                        <button
-                                            type="button"
-                                            class="b3-button b3-button--text b3-button--small"
-                                            disabled={busy}
-                                            onclick={() => (editingBacklink = null)}
-                                        >取消</button>
-                                    </div>
-                                {/if}
-                            </div>
+                            {/each}
                         {/each}
                     </div>
                 {/if}
