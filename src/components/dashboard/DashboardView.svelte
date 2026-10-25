@@ -1,7 +1,23 @@
 <script lang="ts">
     /** 首页仪表盘：统计 + 近期生日（公/农历）+ 久未联系 */
     import type { ContactsPluginFacade } from "../../types";
-    import { Users, Share2, Cake, UserX } from "@lucide/svelte";
+    import {
+        Users,
+        Share2,
+        Cake,
+        UserX,
+        Sparkles,
+        AlertTriangle,
+        Flame,
+        Leaf,
+        Wind,
+        Snowflake,
+        Circle,
+        TrendingUp,
+        MapPin,
+        Calendar,
+        Pin,
+    } from "@lucide/svelte";
     import { pickActions, pickSummaryCounts } from "../../services/dashboard";
     import { newFollowUpRequestId } from "../../services/followups";
     import type { DashboardData } from "../../services/dashboard";
@@ -941,13 +957,13 @@ import { toLocalDateKey } from "../../domain/interactions";
             {@const activeRate = data.people > 0 ? Math.round((activeCount / data.people) * 100) : 0}
             <div class="lvct-dash__milestone-banner fn__flex" role="status" aria-label="人脉维护激励">
                 <div class="lvct-dash__milestone-left fn__flex">
-                    <span class="lvct-dash__milestone-emoji">🌟</span>
+                    <span class="lvct-dash__milestone-emoji" style="display: inline-flex; align-items: center;"><Sparkles size={16} style="color: #f59e0b;" /></span>
                     <div class="lvct-dash__milestone-content">
                         <b>{activeRate >= 80 ? "人脉连接状态极佳！" : activeRate >= 50 ? "人际网络稳步升温中！" : "开启温暖连接的新起点："}</b>
                         <span>
                             已建立连接 {activeCount} 人（覆盖率 {activeRate}%）
-                            {#if data.birthdaysThisWeek > 0} · 🎂 本周有 {data.birthdaysThisWeek} 位好友生日{/if}
-                            {#if overdueCount > 0} · ⚠️ 建议处理 {overdueCount} 条待办{/if}
+                            {#if data.birthdaysThisWeek > 0} · <Cake size={13} class="lvct-icon-inline" /> 本周有 {data.birthdaysThisWeek} 位好友生日{/if}
+                            {#if overdueCount > 0} · <AlertTriangle size={13} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办{/if}
                         </span>
                     </div>
                 </div>
@@ -1072,20 +1088,20 @@ import { toLocalDateKey } from "../../domain/interactions";
                     <!-- 紧凑微型胶囊 -->
                     <div class="lvct-heat-chips">
                         <button type="button" class="b3-chip lvct-chip--hot font-size-11" onclick={() => openHeatPeople("hot", "温热")} title="点击在名册中查看温热人脉">
-                            🔥 温热 {data.heatDistribution.hot.count}
+                            <Flame size={12} class="lvct-icon-inline" /> 温热 {data.heatDistribution.hot.count}
                         </button>
                         <button type="button" class="b3-chip lvct-chip--warm font-size-11" onclick={() => openHeatPeople("warm", "常温")} title="点击在名册中查看常温人脉">
-                            🌿 常温 {data.heatDistribution.warm.count}
+                            <Leaf size={12} class="lvct-icon-inline" /> 常温 {data.heatDistribution.warm.count}
                         </button>
                         <button type="button" class="b3-chip lvct-chip--cool font-size-11" onclick={() => openHeatPeople("cool", "微凉")} title="点击在名册中查看微凉人脉">
-                            🍂 微凉 {data.heatDistribution.cool.count}
+                            <Wind size={12} class="lvct-icon-inline" /> 微凉 {data.heatDistribution.cool.count}
                         </button>
                         <button type="button" class="b3-chip lvct-chip--cold font-size-11" onclick={() => openHeatPeople("cold", "渐冻")} title="点击在名册中查看渐冻人脉">
-                            ❄️ 渐冻 {data.heatDistribution.cold.count}
+                            <Snowflake size={12} class="lvct-icon-inline" /> 渐冻 {data.heatDistribution.cold.count}
                         </button>
                         {#if data.heatDistribution.unknown.count > 0}
                             <button type="button" class="b3-chip font-size-11" onclick={() => openHeatPeople("unknown", "未互动")} title="点击在名册中查看未曾互动的联系人">
-                                ⚪ 未互动 {data.heatDistribution.unknown.count}
+                                <Circle size={10} class="lvct-icon-inline" /> 未互动 {data.heatDistribution.unknown.count}
                             </button>
                         {/if}
                     </div>
@@ -1096,7 +1112,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                     <div class="lvct-home__card lvct-dash__chart-card">
                         <div class="lvct-dash__chart-header">
                             <div class="lvct-dash__chart-title-wrap">
-                                <span class="lvct-dash__chart-icon">📈</span>
+                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><TrendingUp size={14} style="color: #0284c7;" /></span>
                                 <span class="lvct-dash__chart-title">近期互动走势</span>
                                 <span class="lvct-text-muted font-size-11">（共 {data.monthlyTrend.totalCount} 次）</span>
                             </div>
@@ -1130,7 +1146,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                     <div class="lvct-home__card lvct-dash__chart-card">
                         <div class="lvct-dash__chart-header">
                             <div class="lvct-dash__chart-title-wrap">
-                                <span class="lvct-dash__chart-icon">📍</span>
+                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><MapPin size={14} style="color: #ea580c;" /></span>
                                 <span class="lvct-dash__chart-title">城市与出差</span>
                             </div>
                             <button
@@ -1187,7 +1203,7 @@ import { toLocalDateKey } from "../../domain/interactions";
             {#if weekGlanceDays.length > 0}
                 <div class="lvct-week-glance" role="region" aria-label="本周人脉日程滑轨">
                     <div class="lvct-week-glance__header">
-                        <span class="lvct-week-glance__title">📅 本周日程视窗</span>
+                        <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} class="lvct-icon-inline" /> 📅 本周日程视窗</span>
                         {#if selectedGlanceOffset !== null}
                             <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => (selectedGlanceOffset = null)}>
                                 查看全部行动
@@ -1210,8 +1226,8 @@ import { toLocalDateKey } from "../../domain/interactions";
                                 <span class="lvct-week-glance__day">{day.dayName}</span>
                                 <span class="lvct-week-glance__num">{day.dayNum}</span>
                                 <div class="lvct-week-glance__dots">
-                                    {#if day.birthdays.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--bday" title="有生日">🎂</span>{/if}
-                                    {#if day.followUps.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--fu" title="有待办">📌</span>{/if}
+                                    {#if day.birthdays.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--bday" title="有生日"><Cake size={11} /></span>{/if}
+                                    {#if day.followUps.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--fu" title="有待办"><Pin size={11} /></span>{/if}
                                     {#if day.totalEvents === 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--empty">·</span>{/if}
                                 </div>
                             </button>
@@ -1230,19 +1246,19 @@ import { toLocalDateKey } from "../../domain/interactions";
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text b3-button--small"
-                                        style="padding: 2px 6px; font-size: 11.5px; border-radius: 4px; background: color-mix(in srgb, #f59e0b 14%, var(--lvct-bg-surface)); color: #d97706;"
+                                        style="padding: 2px 6px; font-size: 11.5px; border-radius: 4px; background: color-mix(in srgb, #f59e0b 14%, var(--lvct-bg-surface)); color: #d97706; display: inline-flex; align-items: center;"
                                         title={`查看 ${b.person.name} 详情`}
                                         onclick={() => onOpenDetail(b.person)}
-                                    >🎂 {b.person.name}</button>
+                                    ><Cake size={11} class="lvct-icon-inline" /> {b.person.name}</button>
                                 {/each}
                                 {#each selectedGlanceDay.followUps as f (f.item.id)}
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text b3-button--small"
-                                        style="padding: 2px 6px; font-size: 11.5px; border-radius: 4px; background: color-mix(in srgb, var(--lvct-accent) 12%, var(--lvct-bg-surface)); color: var(--lvct-accent);"
+                                        style="padding: 2px 6px; font-size: 11.5px; border-radius: 4px; background: color-mix(in srgb, var(--lvct-accent) 12%, var(--lvct-bg-surface)); color: var(--lvct-accent); display: inline-flex; align-items: center;"
                                         title={f.person ? `查看 ${f.person.name} 详情` : f.item.title || "跟进"}
                                         onclick={() => { if (f.person) onOpenDetail(f.person); }}
-                                    >📌 {f.item.title || "保持联系"}{f.person ? `（${f.person.name}）` : ""}</button>
+                                    ><Pin size={11} class="lvct-icon-inline" /> {f.item.title || "保持联系"}{f.person ? `（${f.person.name}）` : ""}</button>
                                 {/each}
                             {/if}
                         </div>
