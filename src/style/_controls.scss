@@ -20,7 +20,8 @@
 
 .lvct-tab-root,
 .lvct-dialog-root,
-.lvct-doc-strip {
+.lvct-doc-strip,
+.lvct-workbench {
 
     font-family: var(--lvct-font-family);
     color: var(--lvct-text-1);
@@ -184,10 +185,10 @@
         }
     }
 
-    /* ---------- 输入框 / 下拉：柔和描边 + 微凹槽内阴影 + 焦点呼吸环 ---------- */
+    /* 文本输入框 / 下拉框：柔和描边 + 微凹槽内阴影 + 焦点品牌呼吸环 */
     .b3-text-field,
     .b3-select {
-        border-radius: var(--lvct-r-md);
+        border-radius: var(--lv-r-sm, 6px);
         border: var(--lvct-control-border-width) solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
         background: var(--lvct-bg-surface);
         color: var(--lvct-text-1);
@@ -201,20 +202,55 @@
 
         &::placeholder { color: var(--lvct-text-3); }
 
-        &:focus {
-            border-color: var(--lvct-accent);
-            box-shadow: 0 0 0 var(--lvct-focus-ring-size) var(--lvct-accent-soft), inset 0 1px 1px rgba(0, 0, 0, 0.02);
-            outline: none;
+        &:hover:not(:disabled):not(:focus) {
+            border-color: var(--lvct-border-strong);
         }
 
-        /* 控件在未聚焦时也给出边界反馈，避免浅色主题中与卡片表面融为一体。 */
-        &:hover:not(:disabled):not(:focus) {
-            border-color: color-mix(in srgb, var(--lvct-accent) 36%, var(--lvct-border-subtle));
+        &:focus {
+            border-color: var(--lv-brand, #ea580c);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-brand, #ea580c) 18%, transparent);
+            outline: none;
         }
 
         &:disabled {
             opacity: var(--lvct-state-disabled-opacity);
             cursor: not-allowed;
+        }
+    }
+
+    /* 胶囊控件（Chip）：自控高度、圆角与对比度，摆脱宿主灰色污染 */
+    .b3-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--lvct-sp-1, 4px);
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.2;
+        padding: 3px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
+        color: var(--lvct-text-1);
+        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--lvct-accent) 12%, transparent);
+            color: var(--lvct-accent);
+            border-color: color-mix(in srgb, var(--lvct-accent) 30%, transparent);
+        }
+
+        &--primary {
+            background: var(--lv-brand, #ea580c);
+            color: #ffffff;
+            border-color: var(--lv-brand, #ea580c);
+            font-weight: 600;
+
+            &:hover:not(:disabled) {
+                background: color-mix(in srgb, var(--lv-brand, #ea580c) 88%, #000);
+                color: #ffffff;
+            }
         }
     }
 

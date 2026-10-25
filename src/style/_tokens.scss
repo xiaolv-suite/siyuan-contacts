@@ -20,7 +20,8 @@
 
 .lvct-tab-root,
 .lvct-dialog-root,
-.lvct-doc-strip {
+.lvct-doc-strip,
+.lvct-workbench {
 
     /* ---------- 0. 原始值（Primitive） ----------
      * 原始值只在这一层出现；组件应使用下方语义/组件令牌。保留少量
@@ -247,6 +248,19 @@
     --lvct-state-disabled-opacity: 0.5;
     --lvct-dur-reduced: 1.6s;
     --lvct-dur-none: 0.01ms;
+
+    /* ---------- 16. 宿主主题隔离屏障（Host Theme Isolation） ----------
+     * 用户要求：UI 不用跟宿主主题适配，按照小驴自有品牌设计系统完全自主呈现。
+     * 强行接管宿主主色、背景与边框变量，阻断一切第三方杂乱主题对插件内部的恶性污染。 */
+    --b3-theme-primary: var(--lv-brand);
+    --b3-theme-primary-light: color-mix(in srgb, var(--lv-brand) 12%, transparent);
+    --b3-theme-background: var(--lvct-bg-canvas);
+    --b3-theme-surface: var(--lvct-bg-surface);
+    --b3-theme-surface-lighter: var(--lvct-border-subtle);
+    --b3-theme-error: var(--lvct-danger);
+    --b3-theme-success: var(--lvct-success);
+    --b3-theme-info: var(--lvct-info);
+    --b3-theme-secondary: #d97706;
 }
 
 @media (max-width: 640px) {
@@ -265,45 +279,57 @@
  * ========================================================================== */
 html[data-theme-mode="dark"] .lvct-tab-root,
 html[data-theme-mode="dark"] .lvct-dialog-root,
-html[data-theme-mode="dark"] .lvct-doc-strip {
+html[data-theme-mode="dark"] .lvct-doc-strip,
+html[data-theme-mode="dark"] .lvct-workbench {
     --lvct-brand-from: #51cfc4;
     --lvct-brand-to: #7adfd4;
     --lvct-highlight: #f08a7c;
 
-    --lvct-bg-app: #11181c;
-    --lvct-bg-base: #141c21;
-    --lvct-bg-canvas: #11181c;
-    --lvct-bg-sidebar: #172227;
-    --lvct-bg-surface: #1d282d;
-    --lvct-surface-2: #25343a;
-    --lvct-surface-muted: #25343a;
-    --lvct-surface-tint: #223039;
-    --lvct-surface-inset: #202b30;
-    --lvct-bg-elevated: #223039;
-    --lvct-bg-elevated-glass: color-mix(in srgb, #223039 90%, transparent);
-    --lvct-bg-hover: #2b3e43;
-    --lvct-bg-active: #153c43;
-    --lvct-text-1: #eff8f7;
-    --lvct-text-2: #d4e4e3;
-    --lvct-text-3: #9db5b5;
-    --lvct-border-subtle: #2b3c42;
-    --lvct-border-strong: #385058;
-    --lvct-border-hairline: #31434a;
-    --lvct-accent: #57d1c6;
-    --lvct-accent-fill: #40bdb4;
-    --lvct-accent-text: #80e5dc;
-    --lvct-accent-hover: #96ede5;
-    --lvct-on-accent: #071f21;
-    --lvct-accent-soft: #153c43;
-    --lvct-success: #4cbb7f;
-    --lvct-success-soft: #1f3329;
-    --lvct-danger: #f07c7c;
-    --lvct-danger-soft: #3a2428;
-    --lvct-info: #68b5dc;
-    --lvct-info-soft: #1e3040;
-    --lvct-graph-text: var(--b3-theme-on-surface, #d0d0dc);
-    --lvct-graph-edge: var(--lvct-text-3);
-    --lvct-graph-surface: var(--lvct-bg-surface);
+    --lvct-bg-app: #0b1120;
+    --lvct-bg-base: #0f172a;
+    --lvct-bg-canvas: #0b1120;
+    --lvct-bg-sidebar: #0f172a;
+    --lvct-bg-surface: #1e293b;
+    --lvct-surface-2: #334155;
+    --lvct-surface-muted: #1e293b;
+    --lvct-surface-tint: #1e293b;
+    --lvct-surface-inset: #0f172a;
+    --lvct-bg-elevated: #1e293b;
+    --lvct-bg-elevated-glass: color-mix(in srgb, #1e293b 90%, transparent);
+    --lvct-bg-hover: #334155;
+    --lvct-bg-active: #1e3a5f;
+    --lvct-text-1: #f8fafc;
+    --lvct-text-2: #cbd5e1;
+    --lvct-text-3: #94a3b8;
+    --lvct-border-subtle: #334155;
+    --lvct-border-strong: #475569;
+    --lvct-border-hairline: #1e293b;
+    --lvct-accent: #38bdf8;
+    --lvct-accent-fill: #0284c7;
+    --lvct-accent-text: #38bdf8;
+    --lvct-accent-hover: #0ea5e9;
+    --lvct-on-accent: #ffffff;
+    --lvct-accent-soft: rgba(56, 189, 248, 0.14);
+    --lvct-success: #4ade80;
+    --lvct-success-soft: rgba(74, 222, 128, 0.14);
+    --lvct-danger: #f87171;
+    --lvct-danger-soft: rgba(248, 113, 113, 0.14);
+    --lvct-info: #60a5fa;
+    --lvct-info-soft: rgba(96, 165, 250, 0.14);
+    --lvct-graph-text: #e2e8f0;
+    --lvct-graph-edge: #64748b;
+    --lvct-graph-surface: #1e293b;
+
+    /* 宿主主题隔离屏障暗色对齐 */
+    --b3-theme-primary: #f97316;
+    --b3-theme-primary-light: color-mix(in srgb, #f97316 16%, transparent);
+    --b3-theme-background: var(--lvct-bg-canvas);
+    --b3-theme-surface: var(--lvct-bg-surface);
+    --b3-theme-surface-lighter: var(--lvct-border-subtle);
+    --b3-theme-error: var(--lvct-danger);
+    --b3-theme-success: var(--lvct-success);
+    --b3-theme-info: var(--lvct-info);
+    --b3-theme-secondary: #f59e0b;
 
     --lvct-canvas-glow: color-mix(in srgb, var(--lvct-accent) 11%, transparent);
     --lvct-card-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
