@@ -3542,6 +3542,24 @@ import StatusNotice from "../StatusNotice.svelte";
                             </span>
                             <span class="lvct-detail__timeline-source">{sourceLabels[item.source]}</span>
                             {#if item.groupSize > 1}<span class="lvct-chip">{item.groupSize} 人同场</span>{/if}
+                            {#if item.externalRef?.startsWith("block:")}
+                                {@const refBlockId = item.externalRef.slice(6)}
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-detail__timeline-source-link"
+                                    style="padding: 1px 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 2px;"
+                                    title="复制该记录对应的思源笔记块深度定位链接"
+                                    onclick={() => copyBlockUri(refBlockId)}
+                                >
+                                    {#if copiedBlockUriId === refBlockId}
+                                        <Check size={11} class="lvct-text-success" />
+                                        <span class="lvct-text-success">已复制</span>
+                                    {:else}
+                                        <Link size={11} />
+                                        <span>原文</span>
+                                    {/if}
+                                </button>
+                            {/if}
                             {#if onDeleteInteraction}
                                 <button class="b3-button b3-button--text" title="删除这条互动" aria-label={`删除 ${item.localDate} 的互动`} disabled={busy} onclick={() => deleteTimelineItem(item.eventId)}>删除</button>
                             {/if}

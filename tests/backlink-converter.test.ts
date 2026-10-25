@@ -40,6 +40,22 @@ test("parseBacklinkOccurredTime：从日记标题精准提取当时发生的历�
     });
     assert.equal(r3.localDate, "2026-05-20");
     assert.equal(r3.sourceKind, "diary_title");
+
+    // 多级层级路径（如 /日记/2026年/10月/24日/随笔）
+    const r4 = parseBacklinkOccurredTime({
+        docTitle: "随笔记录",
+        hpath: "/日记/2026年/10月/24日/随笔记录",
+    });
+    assert.equal(r4.localDate, "2026-10-24");
+    assert.equal(r4.sourceKind, "diary_title");
+
+    // 斜杠层级路径（如 /Daily/2026/10/24/note）
+    const r5 = parseBacklinkOccurredTime({
+        docTitle: "note",
+        hpath: "/Daily/2026/10/24/note",
+    });
+    assert.equal(r5.localDate, "2026-10-24");
+    assert.equal(r5.sourceKind, "diary_title");
 });
 
 test("parseBacklinkOccurredTime：标题无日期时，回退使用块创建时间 created", () => {

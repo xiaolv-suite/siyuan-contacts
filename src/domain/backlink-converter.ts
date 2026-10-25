@@ -10,7 +10,7 @@ export interface BacklinkOccurredInfo {
     sourceKind: "diary_title" | "block_created" | "block_updated" | "doc_id" | "fallback_now";
 }
 
-const DATE_REGEX = /(?:^|[^0-9])(20\d{2})[-/年._](0?[1-9]|1[0-2])[-/月._](0?[1-9]|[12]\d|3[01])(?:$|[^0-9])/;
+const DATE_REGEX = /(?:^|[^0-9])(20\d{2})[-/年._\s]+(0?[1-9]|1[0-2])[-/月._\s]+(0?[1-9]|[12]\d|3[01])(?:$|[^0-9])/;
 const DATE_COMPACT_REGEX = /(?:^|[^0-9])(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?:$|[^0-9])/;
 
 function padZero(num: number): string {
