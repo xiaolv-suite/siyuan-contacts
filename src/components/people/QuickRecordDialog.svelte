@@ -14,6 +14,9 @@
     import { syncInteractionDocSection } from "../../services/doc-section";
     import { translateText } from "../../domain/translation";
     import { requestErrorMessage } from "../../shared/error-presenter";
+    import { emitDataChanged } from "../../libs/data-events";
+    import { logCheckinEventSafely } from "../../libs/ecosystem-bridge-kit";
+    import type { ContactsSettings } from "../../domain/model";
     import { onMount } from "svelte";
 
     let {
@@ -57,6 +60,16 @@
                 occurredAt,
                 source: "manual",
             });
+            const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
+            if (pluginSettings?.checkinItemId) {
+                void logCheckinEventSafely({
+                    itemId: pluginSettings.checkinItemId,
+                    value: 1,
+                    externalRef: `contacts:${person.docId}:${targetDate}:${occurredAt}`,
+                    note: note.trim() ? `与联系人互动：${note.trim()}` : "与联系人互动跟进",
+                }).catch(() => {});
+            }
+            emitDataChanged({ topics: ["people"], docIds: [person.docId] });
             void syncInteractionDocSection(plugin, person.docId).catch(() => {});
             onSaved?.();
             onClose();

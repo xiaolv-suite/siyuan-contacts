@@ -977,11 +977,13 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 note: note ? `与联系人互动：${note}` : "与联系人互动跟进",
             }).catch(() => {});
         }
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
     }
 
     async deleteInteraction(personDocId: string, eventId: string): Promise<void> {
         await deleteInteraction(this, eventId, personDocId);
         void syncInteractionDocSection(this, personDocId).catch(() => {});
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
     }
 
     async syncPersonDocument(person: ContactSummary): Promise<void> {
@@ -993,15 +995,24 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     async createPersonExchange(input: import("./services/exchanges").CreatePersonExchangeInput) {
-        return createPersonExchange(this, input);
+        const token = this.lifecycleToken;
+        const result = await createPersonExchange(this, input);
+        emitDataChanged({ topics: ["people"], docIds: [input.personDocId] }, token);
+        return result;
     }
 
     async updatePersonExchange(id: string, patch: import("./domain/exchanges").ExchangePatch, expected?: Pick<import("./domain/exchanges").ExchangeRecord, "updatedAt">) {
-        return updatePersonExchange(this, id, patch, expected);
+        const token = this.lifecycleToken;
+        const result = await updatePersonExchange(this, id, patch, expected);
+        emitDataChanged({ topics: ["people"] }, token);
+        return result;
     }
 
     async changePersonExchangeStatus(id: string, status: import("./domain/exchanges").ExchangeStatus, settledOn?: string, expected?: Pick<import("./domain/exchanges").ExchangeRecord, "updatedAt">) {
-        return changePersonExchangeStatus(this, id, status, settledOn, expected);
+        const token = this.lifecycleToken;
+        const result = await changePersonExchangeStatus(this, id, status, settledOn, expected);
+        emitDataChanged({ topics: ["people"] }, token);
+        return result;
     }
 
     async listPersonAliases(personDocId: string) {
