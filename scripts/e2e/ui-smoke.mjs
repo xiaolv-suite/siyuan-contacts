@@ -228,6 +228,12 @@ try {
     if (mobile) parameters.set("mobile", "1");
     if (process.env.LVCT_UI_HOST === "1") parameters.set("host", "1");
     if (process.env.LVCT_UI_FILTER) parameters.set("filter", process.env.LVCT_UI_FILTER);
+    try {
+        await call("Browser.grantPermissions", {
+            origin: `http://127.0.0.1:${address.port}`,
+            permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"],
+        });
+    } catch {}
     await call("Page.navigate", { url: `http://127.0.0.1:${address.port}/scripts/e2e/ui/index.html?${parameters}` });
 await new Promise((r) => setTimeout(r, 300));
     const results = await Promise.race([

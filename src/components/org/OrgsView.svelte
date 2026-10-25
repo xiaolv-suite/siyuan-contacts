@@ -373,7 +373,7 @@
             <div class="lvct-home__card lvct-orgs-cockpit" role="region" aria-label="选定组织架构全景">
                 <div class="lvct-orgs-cockpit__header">
                     <div class="lvct-orgs-cockpit__title-wrap">
-                        <span class="lvct-orgs-cockpit__tag">🏢 组织人脉全貌</span>
+                        <span class="lvct-orgs-cockpit__tag" style="display: inline-flex; align-items: center;"><Building2 size={13} class="lvct-icon-inline" /> 组织人脉全貌</span>
                         <h4>{activeSelectedOrg.name}</h4>
                         <span class="lvct-text-muted font-size-12">（共 {activeOrgMembers.length} 名成员）</span>
                     </div>

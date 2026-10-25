@@ -2,7 +2,7 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users } from "@lucide/svelte";
     import ViewState from "../ViewState.svelte";
     import StatusNotice from "../StatusNotice.svelte";
     import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
@@ -1569,16 +1569,16 @@
                     {#if layoutMenuOpen}
                         <div class="lvct-graph__layout-menu" role="menu">
                             <button type="button" class:active={activeLayout === "cose"} onclick={() => changeLayout("cose")}>
-                                <Network size={14} /> 🌐 力导向聚类 (CoSE)
+                                <Network size={14} class="lvct-icon-inline" /> 力导向聚类 (CoSE)
                             </button>
                             <button type="button" class:active={activeLayout === "concentric"} onclick={() => changeLayout("concentric")}>
-                                <Target size={14} /> 🎯 六度辐射圈 (六度人脉)
+                                <Target size={14} class="lvct-icon-inline" /> 六度辐射圈 (六度人脉)
                             </button>
                             <button type="button" class:active={activeLayout === "breadthfirst"} onclick={() => changeLayout("breadthfirst")}>
-                                <GitFork size={14} /> 🌳 层级展开 (族谱树)
+                                <GitFork size={14} class="lvct-icon-inline" /> 层级展开 (族谱树)
                             </button>
                             <button type="button" class:active={activeLayout === "circle"} onclick={() => changeLayout("circle")}>
-                                <CircleDot size={14} /> ⭕ 全局环形 (全景圈)
+                                <CircleDot size={14} class="lvct-icon-inline" /> 全局环形 (全景圈)
                             </button>
                         </div>
                     {/if}
@@ -1612,10 +1612,10 @@
                         <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
                             已在人脉数据库中登记为正式双向关系。
                             {#if activeEvidence.commonOrgNames && activeEvidence.commonOrgNames.length > 0}
-                                <div>🏢 共同组织：{activeEvidence.commonOrgNames.join("、")}</div>
+                                <div style="display: flex; align-items: center; gap: 4px;"><Building2 size={13} class="lvct-icon-inline" /> 共同组织：{activeEvidence.commonOrgNames.join("、")}</div>
                             {/if}
                             {#if activeEvidence.coAttendanceCount && activeEvidence.coAttendanceCount > 0}
-                                <div>👥 同场活动：{activeEvidence.coAttendanceCount} 次</div>
+                                <div style="display: flex; align-items: center; gap: 4px;"><Users size={13} class="lvct-icon-inline" /> 同场活动：{activeEvidence.coAttendanceCount} 次</div>
                             {/if}
                         </div>
                     {:else if activeEvidence.kind === "member"}

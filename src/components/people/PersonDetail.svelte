@@ -21,6 +21,9 @@
         Star,
         RefreshCw,
         Phone,
+        Pin,
+        FolderGit2,
+        MapPin,
     } from "@lucide/svelte";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
@@ -847,6 +850,11 @@ import StatusNotice from "../StatusNotice.svelte";
             }, 1500);
         } catch (err) {
             console.warn("[LvContacts] 复制谈资备忘失败", err);
+            copiedTopicId = topic.id;
+            if (copiedTopicTimer) clearTimeout(copiedTopicTimer);
+            copiedTopicTimer = setTimeout(() => {
+                if (copiedTopicId === topic.id) copiedTopicId = "";
+            }, 1500);
         }
     }
 
@@ -2096,7 +2104,7 @@ import StatusNotice from "../StatusNotice.svelte";
                 {#if current.birthday}<span class="ft__smaller ft__on-surface">生日 {formatBirthdayDisplay(current.birthday, current.isLunar)}</span>{/if}
                 {#if personRegion.city && personRegion.city !== "未知"}
                     <span class="lvct-detail__group-chip" title="所在城市">
-                        <span>📍 {personRegion.province && personRegion.province !== personRegion.city ? `${personRegion.province} · ` : ""}{personRegion.city}</span>
+                        <span style="display: inline-flex; align-items: center;"><MapPin size={12} class="lvct-icon-inline" /> {personRegion.province && personRegion.province !== personRegion.city ? `${personRegion.province} · ` : ""}{personRegion.city}</span>
                         {#if onOpenPeople}
                             <button
                                 type="button"
@@ -2429,7 +2437,7 @@ import StatusNotice from "../StatusNotice.svelte";
                     <ul class="lvct-detail__topics-list" aria-label={text("topicsListAria", "会面谈资备忘列表")}>
                         {#each topics as topic (topic.id)}
                             <li class="lvct-detail__topic-item">
-                                <span class="lvct-detail__topic-text">📌 {topic.text}</span>
+                                <span class="lvct-detail__topic-text" style="display: inline-flex; align-items: center;"><Pin size={12} class="lvct-icon-inline" /> {topic.text}</span>
                                 <span class="lvct-detail__topic-actions">
                                     <button
                                         type="button"
@@ -2728,8 +2736,8 @@ import StatusNotice from "../StatusNotice.svelte";
                         {#each projects as proj (proj.id)}
                             <li class="lvct-detail__topic-item">
                                 <span class="lvct-detail__topic-text">
-                                    <span class="lvct-chip lvct-bucket--soon">
-                                        📁 {proj.role || "项目"}
+                                    <span class="lvct-chip lvct-bucket--soon" style="display: inline-flex; align-items: center;">
+                                        <FolderGit2 size={12} class="lvct-icon-inline" /> {proj.role || "项目"}
                                     </span>
                                     <b>{proj.title}</b>
                                     {#if proj.docId}
