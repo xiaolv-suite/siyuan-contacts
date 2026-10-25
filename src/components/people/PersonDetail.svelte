@@ -1189,6 +1189,35 @@ import StatusNotice from "../StatusNotice.svelte";
     let siyuanRefTimer: ReturnType<typeof setTimeout> | null = null;
     let siyuanUriCopied = $state(false);
     let siyuanUriTimer: ReturnType<typeof setTimeout> | null = null;
+    let timelineCopied = $state(false);
+    let timelineCopyTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function copyTimelineMarkdown() {
+        if (filteredTimeline.length === 0) return;
+        const lines = [`## 与 ${current.name} 的往来记录`, ""];
+        for (const item of filteredTimeline) {
+            const typeLabel = INTERACTION_TYPE_LABELS[item.type]?.label ?? "互动";
+            const icon = INTERACTION_TYPE_LABELS[item.type]?.icon ?? "📝";
+            const noteStr = item.note ? `：${item.note}` : "";
+            lines.push(`- ${item.localDate} ${icon} ${typeLabel}${noteStr}`);
+        }
+        try {
+            await copyPlainText(lines.join("\n"));
+            timelineCopied = true;
+            if (timelineCopyTimer) clearTimeout(timelineCopyTimer);
+            timelineCopyTimer = setTimeout(() => {
+                timelineCopied = false;
+            }, 1500);
+        } catch (err) {
+            console.warn("[LvContacts] 复制往来记录失败", err);
+            timelineCopied = true;
+            if (timelineCopyTimer) clearTimeout(timelineCopyTimer);
+            timelineCopyTimer = setTimeout(() => {
+                timelineCopied = false;
+            }, 1500);
+        }
+    }
+
     let convertedBlockIds = $state<string[]>([]);
     const allConvertedBlockIds = $derived.by(() => {
         const ids = new Set<string>(convertedBlockIds);
@@ -1388,6 +1417,7 @@ import StatusNotice from "../StatusNotice.svelte";
         if (briefingCopyTimer) clearTimeout(briefingCopyTimer);
         if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
         if (siyuanUriTimer) clearTimeout(siyuanUriTimer);
+        if (timelineCopyTimer) clearTimeout(timelineCopyTimer);
         if (docSyncTimer) clearTimeout(docSyncTimer);
         if (copiedTopicTimer) clearTimeout(copiedTopicTimer);
         if (copiedFieldTimer) clearTimeout(copiedFieldTimer);
@@ -3340,7 +3370,26 @@ import StatusNotice from "../StatusNotice.svelte";
     {/if}
 
     <section class="lvct-detail__section">
-        <h4>互动与共同出席{insights ? `（共 ${insights.totalEvents} 条）` : ""}</h4>
+        <div class="lvct-detail__section-head" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <h4 style="margin: 0;">互动与共同出席{insights ? `（共 ${insights.totalEvents} 条）` : ""}</h4>
+            {#if filteredTimeline.length > 0}
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small lvct-detail__copy-timeline-btn"
+                    style="display: inline-flex; align-items: center; gap: 4px;"
+                    title="将当前联系人的互动往来记录格式化为 Markdown 列表复制到剪贴板"
+                    onclick={copyTimelineMarkdown}
+                >
+                    {#if timelineCopied}
+                        <Check size={12} class="lvct-text-success" />
+                        <span class="lvct-text-success">已复制往来记录 ✓</span>
+                    {:else}
+                        <Copy size={12} />
+                        <span>复制往来记录</span>
+                    {/if}
+                </button>
+            {/if}
+        </div>
         {#if historyToday.length > 0}
             <div class="lvct-detail__history" role="region" aria-label="历史上的今天">
                 <b><CalendarDays size={14} aria-hidden="true" /> 历史上的今天</b>

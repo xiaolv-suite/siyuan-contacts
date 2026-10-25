@@ -7761,6 +7761,12 @@ await test("E-87 反链批量转录与视窗折叠：一键全转入与清爽折
     assert(recordedEvents[0].type === "call", "第二条打电话应识别为 call");
     assert(recordedEvents[0].options.skipDocSync === true, "批量转录应开启 skipDocSync 合并落盘防抖");
     await until(() => !fixture.querySelector(".lvct-detail__backlinks-convert-all"), "全部转录后批量按钮应自动隐藏");
+
+    // 4. 测试往来记录一键复制
+    const copyTimelineBtn = fixture.querySelector(".lvct-detail__copy-timeline-btn");
+    assert(copyTimelineBtn, "未找到复制往来记录按钮");
+    copyTimelineBtn.click();
+    await until(() => copyTimelineBtn.textContent.includes("已复制往来记录"), "点击复制往来记录后未展示已复制微反馈");
 });
 
 await test("D-01 文档档案条快捷记互动弹窗：QuickRecordDialog 分类切换、备注录入与保存闭环", async () => {
