@@ -4,7 +4,7 @@
     import { formatBirthdayDisplay, nextBirthday } from "../../domain/occasions";
     import { formatRelativeInteraction } from "../../domain/format";
     import { computeRelationshipHealth, heatLevelColorClass } from "../../domain/cadence";
-    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus } from "@lucide/svelte";
+    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake } from "@lucide/svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import { copyPlainText } from "../../shared/clipboard";
     import { onDestroy } from "svelte";
@@ -53,6 +53,7 @@
     function mailHref(email: string): string {
         return `mailto:${email}`;
     }
+
     const birthday = $derived(nextBirthday(person.birthday, person.isLunar));
     const recentLabel = $derived.by(() => {
         if (recentUnknown) return "最近互动待核实";
@@ -70,6 +71,8 @@
 
     let wechatCopied = $state(false);
     let wechatTimer: ReturnType<typeof setTimeout> | null = null;
+    let emailCopied = $state(false);
+    let emailTimer: ReturnType<typeof setTimeout> | null = null;
 
     function copyWechat(event: Event) {
         event.stopPropagation();
@@ -82,8 +85,20 @@
         }, 1500);
     }
 
+    function copyEmail(event: Event) {
+        event.stopPropagation();
+        if (!person.email) return;
+        void copyPlainText(person.email);
+        emailCopied = true;
+        if (emailTimer) clearTimeout(emailTimer);
+        emailTimer = setTimeout(() => {
+            emailCopied = false;
+        }, 1500);
+    }
+
     onDestroy(() => {
         if (wechatTimer) clearTimeout(wechatTimer);
+        if (emailTimer) clearTimeout(emailTimer);
     });
 </script>
 
@@ -122,7 +137,7 @@
                     <strong class="lvct-person-card__name" title={person.name}>{person.name}</strong>
                     {#if person.isSelf}<span class="lvct-chip lvct-bucket--today">本人</span>{/if}
                     {#if person.group}<span class="lvct-chip lvct-chip--group font-size-11">{person.group}</span>{/if}
-                    {#if birthday}<span class="lvct-person-card__bday font-size-11">🎂 {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天后`}</span>{/if}
+                    {#if birthday}<span class="lvct-person-card__bday font-size-11" style="display: inline-flex; align-items: center;"><Cake size={11} class="lvct-icon-inline" /> {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天后`}</span>{/if}
                 </div>
                 {#if orgLine || (person.profile && person.profile.affiliations?.state === "known")}
                     <div class="lvct-person-card__org lvct-text-muted font-size-11" title={orgLine}>
@@ -227,7 +242,24 @@
                     >{wechatCopied ? "已复制微信号 ✓" : person.wechat}</span>
                 </div>
             {/if}
-            {#if person.email}<div><span aria-hidden="true"><Mail size={13}/></span><a class="lvct-person-card__meta-value" href={mailHref(person.email)} onclick={(event) => event.stopPropagation()}>{person.email}</a></div>{/if}
+            {#if person.email}
+                <div>
+                    <span aria-hidden="true"><Mail size={13}/></span>
+                    <a
+                        class="lvct-person-card__meta-value"
+                        class:lvct-text-success={emailCopied}
+                        href={mailHref(person.email)}
+                        title={emailCopied ? "邮箱已复制到剪贴板" : "点击发信（按住 Ctrl 点击复制）"}
+                        onclick={(event) => {
+                            event.stopPropagation();
+                            if (event.ctrlKey || event.metaKey) {
+                                event.preventDefault();
+                                copyEmail(event);
+                            }
+                        }}
+                    >{emailCopied ? "已复制邮箱 ✓" : person.email}</a>
+                </div>
+            {/if}
             <div>
                 <span aria-hidden="true"><Clock3 size={13}/></span>
                 <span class="lvct-person-card__meta-value">{recentLabel}</span>

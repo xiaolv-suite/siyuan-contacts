@@ -233,7 +233,7 @@
                         <!-- 周边联动提示 -->
                         {#if nearbyCities.length > 0}
                             <div class="lvct-region-dialog__nearby">
-                                <span class="lvct-region-dialog__nearby-label">💡 同省及周边人脉：</span>
+                                <span class="lvct-region-dialog__nearby-label" style="display: inline-flex; align-items: center;"><MapPin size={12} class="lvct-icon-inline" /> 同省及周边人脉：</span>
                                 {#each nearbyCities as near (near.city)}
                                     <button
                                         type="button"

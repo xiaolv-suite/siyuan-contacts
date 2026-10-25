@@ -3468,15 +3468,25 @@ import StatusNotice from "../StatusNotice.svelte";
                             <span class="lvct-chip lvct-chip--group font-size-10" style="padding: 1px 6px;">已全部转入 ✓</span>
                         {/if}
                     </div>
-                    {#if !backlinksCollapsed && unconvertedCount > 0}
+                    <div class="fn__flex" style="gap: 6px; align-items: center;">
                         <button
                             type="button"
-                            class="b3-button b3-button--outline b3-button--small lvct-detail__backlinks-convert-all"
-                            style="display: inline-flex; align-items: center;"
-                            disabled={busy || batchConverting}
-                            onclick={convertAllBacklinks}
-                        ><Zap size={12} class="lvct-icon-inline" /> ⚡ 全部转为互动（{unconvertedCount}）</button>
-                    {/if}
+                            class="b3-button b3-button--text b3-button--small lvct-detail__backlinks-refresh-btn"
+                            style="display: inline-flex; align-items: center; gap: 4px;"
+                            title="重新扫描全库笔记中的双链与提及反链"
+                            disabled={busy || insightsLoading}
+                            onclick={() => void loadInsights()}
+                        ><RefreshCw size={12} class={insightsLoading ? "fn__rotate" : ""} /> 刷新反链</button>
+                        {#if !backlinksCollapsed && unconvertedCount > 0}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--outline b3-button--small lvct-detail__backlinks-convert-all"
+                                style="display: inline-flex; align-items: center;"
+                                disabled={busy || batchConverting}
+                                onclick={convertAllBacklinks}
+                            ><Zap size={12} class="lvct-icon-inline" /> ⚡ 全部转为互动（{unconvertedCount}）</button>
+                        {/if}
+                    </div>
                 </div>
                 {#if !backlinksCollapsed}
                     <div class="lvct-detail__activity-filters" style="margin-bottom: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
@@ -3509,9 +3519,12 @@ import StatusNotice from "../StatusNotice.svelte";
                     </div>
                     <div class="lvct-detail__timeline">
                         {#if filteredBacklinks.length === 0}
-                            <div class="lvct-detail__empty-notice" style="padding: 12px; text-align: center; color: var(--b3-theme-on-surface); font-size: 12px;">
-                                没有匹配的反链记录。
-                                <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => { backlinkQuery = ""; backlinkFilterKind = "all"; }}>清除筛选</button>
+                            <div class="lvct-detail__empty-notice" style="padding: 24px 16px; text-align: center; color: var(--b3-theme-on-surface); font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+                                <FileText size={28} style="opacity: 0.35;" />
+                                <span>没有匹配的反链记录。</span>
+                                {#if backlinkQuery || backlinkFilterKind !== "all"}
+                                    <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => { backlinkQuery = ""; backlinkFilterKind = "all"; }}>清除筛选</button>
+                                {/if}
                             </div>
                         {/if}
                         {#each filteredBacklinks as bItem (bItem.blockId)}
