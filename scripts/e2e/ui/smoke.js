@@ -7773,6 +7773,12 @@ await test("E-87 反链批量转录与视窗折叠：一键全转入与清爽折
     assert(copyTimelineBtn, "未找到复制往来记录按钮");
     copyTimelineBtn.click();
     await until(() => copyTimelineBtn.textContent.includes("已复制往来记录"), "点击复制往来记录后未展示已复制微反馈");
+
+    // 5. 测试复制反链摘要
+    const copySummaryBtn = fixture.querySelector(".lvct-detail__backlinks-copy-summary");
+    assert(copySummaryBtn, "未找到复制反链摘要按钮");
+    copySummaryBtn.click();
+    await until(() => copySummaryBtn.textContent.includes("已复制反链摘要"), "未展示已复制反链摘要微反馈");
 });
 
 await test("D-01 文档档案条快捷记互动弹窗：QuickRecordDialog 分类切换、备注录入与保存闭环", async () => {

@@ -1286,6 +1286,34 @@ import StatusNotice from "../StatusNotice.svelte";
         }
     }
 
+    let backlinkSummaryCopied = $state(false);
+    let backlinkSummaryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function copyBacklinkSummaryMarkdown() {
+        if (!filteredBacklinks.length) return;
+        const lines = [`## 关于 ${current.name} 的笔记反链与提及（共 ${filteredBacklinks.length} 条）`, ""];
+        for (const b of filteredBacklinks) {
+            const timeInfo = parseBacklinkOccurredTime(b);
+            const kindTag = b.kind === "mention" ? "💡 提及" : "🔗 双链";
+            lines.push(`- ${timeInfo.localDate} ${kindTag} 📝 《${b.docTitle}》：${b.content}`);
+        }
+        try {
+            await copyPlainText(lines.join("\n"));
+            backlinkSummaryCopied = true;
+            if (backlinkSummaryTimer) clearTimeout(backlinkSummaryTimer);
+            backlinkSummaryTimer = setTimeout(() => {
+                backlinkSummaryCopied = false;
+            }, 1500);
+        } catch (err) {
+            console.warn("[LvContacts] 复制反链摘要失败", err);
+            backlinkSummaryCopied = true;
+            if (backlinkSummaryTimer) clearTimeout(backlinkSummaryTimer);
+            backlinkSummaryTimer = setTimeout(() => {
+                backlinkSummaryCopied = false;
+            }, 1500);
+        }
+    }
+
     interface EditingBacklinkDraft {
         blockId: string;
         date: string;
@@ -1454,6 +1482,7 @@ import StatusNotice from "../StatusNotice.svelte";
         if (siyuanUriTimer) clearTimeout(siyuanUriTimer);
         if (timelineCopyTimer) clearTimeout(timelineCopyTimer);
         if (copiedBlockUriTimer) clearTimeout(copiedBlockUriTimer);
+        if (backlinkSummaryTimer) clearTimeout(backlinkSummaryTimer);
         if (docSyncTimer) clearTimeout(docSyncTimer);
         if (copiedTopicTimer) clearTimeout(copiedTopicTimer);
         if (copiedFieldTimer) clearTimeout(copiedFieldTimer);
@@ -1495,6 +1524,13 @@ import StatusNotice from "../StatusNotice.svelte";
                     samePeriod: p.samePeriod,
                     overlapText: p.overlapText,
                 })),
+            })),
+            backlinks: (insights?.backlinks ?? []).slice(0, 5).map((b) => ({
+                date: b.date,
+                docTitle: b.docTitle,
+                content: b.content,
+                kind: b.kind,
+                blockId: b.blockId,
             })),
         });
     });
@@ -3553,7 +3589,22 @@ import StatusNotice from "../StatusNotice.svelte";
                             <span class="lvct-chip lvct-chip--group font-size-10" style="padding: 1px 6px;">已全部转入 ✓</span>
                         {/if}
                     </div>
-                    <div class="fn__flex" style="gap: 6px; align-items: center;">
+                    <div class="fn__flex" style="gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text b3-button--small lvct-detail__backlinks-copy-summary"
+                            style="display: inline-flex; align-items: center; gap: 4px;"
+                            title="复制当前过滤后的全部笔记反链为 Markdown 文本"
+                            onclick={copyBacklinkSummaryMarkdown}
+                        >
+                            {#if backlinkSummaryCopied}
+                                <Check size={12} class="lvct-text-success" />
+                                <span class="lvct-text-success">已复制反链摘要 ✓</span>
+                            {:else}
+                                <Copy size={12} />
+                                <span>复制反链摘要</span>
+                            {/if}
+                        </button>
                         <button
                             type="button"
                             class="b3-button b3-button--text b3-button--small lvct-detail__backlinks-refresh-btn"

@@ -54,6 +54,14 @@ export interface BriefingCommonOrg {
     peers?: readonly (string | BriefingCommonOrgPeer)[];
 }
 
+export interface BriefingBacklink {
+    date: string;
+    docTitle: string;
+    content: string;
+    kind?: "link" | "mention";
+    blockId?: string;
+}
+
 export interface BriefingExportInput {
     person: ContactSummary;
     timeline: readonly BriefingTimelineEntry[];
@@ -72,6 +80,8 @@ export interface BriefingExportInput {
     exchanges?: readonly BriefingExchange[];
     /** 共同组织背景（同单位/同学校同窗） */
     commonOrgs?: readonly BriefingCommonOrg[];
+    /** 笔记与日志提及（反链） */
+    backlinks?: readonly BriefingBacklink[];
     /** 可选排除的章节 ID 集合 */
     excludedSections?: readonly string[];
 }
@@ -97,6 +107,7 @@ export function buildBriefingMarkdown(input: BriefingExportInput): string {
         anniversaries,
         exchanges,
         commonOrgs,
+        backlinks,
         excludedSections = [],
     } = input;
     const isExcluded = (sectionId: string) => excludedSections.includes(sectionId);
@@ -225,6 +236,18 @@ export function buildBriefingMarkdown(input: BriefingExportInput): string {
             lines.push("");
             lines.push("## 共同出席");
             for (const item of attendance) lines.push(`- 与 ${escapeMarkdown(item.name)} 同场 ${item.count} 次`);
+        }
+    }
+
+    // 笔记与日志提及
+    const validBacklinks = (backlinks ?? []).filter((b) => Boolean(b.content?.trim()));
+    if (!isExcluded("backlinks") && validBacklinks.length > 0) {
+        lines.push("");
+        lines.push(`## 笔记与日志提及（${validBacklinks.length} 条）`);
+        for (const b of validBacklinks) {
+            const kindTag = b.kind === "mention" ? "[提及]" : "[双链]";
+            const linkStr = b.blockId ? `[《${escapeMarkdown(b.docTitle)}》](siyuan://blocks/${b.blockId})` : `《${escapeMarkdown(b.docTitle)}》`;
+            lines.push(`- ${b.date || "近期"} ${kindTag} 源自 ${linkStr}：${escapeMarkdown(b.content.trim())}`);
         }
     }
 
