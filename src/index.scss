@@ -8079,10 +8079,10 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     transition: background var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-micro) var(--lvct-ease);
 
     &--active {
-        background: var(--lvct-accent-soft);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lvct-accent) 14%, transparent);
-        color: var(--lvct-accent);
-        font-weight: var(--lvct-fw-medium);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lv-brand, #ea580c) 20%, transparent);
+        color: var(--lv-brand, #ea580c);
+        font-weight: 600;
     }
 }
 
@@ -8138,9 +8138,11 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 .lvct-person-card,
 .lvct-orgs-view__card,
 .lvct-settings__panel {
-    border-color: color-mix(in srgb, var(--lvct-border-subtle) 78%, transparent);
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 78%, transparent);
     border-radius: var(--lvct-r-card);
     box-shadow: var(--lvct-shadow-1);
+    background: var(--lvct-bg-surface);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 周度 7 天时序滑轨（Weekly Glance Strip） */
