@@ -7635,6 +7635,7 @@ await test("E-30 群体活动与场合向导：多选参与人、表单校验、
 await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直达原笔记与一键防重转录", async () => {
     let recordedNote = "";
     let recordedType = "";
+    let recordedOptions = null;
     let openedDocId = "";
     let mockInsights = {
         timeline: [],
@@ -7647,9 +7648,10 @@ await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直
     };
     mounted = mount(PersonDetail, { target: fixture, props: {
         settings, person,
-        onRecord: async (_docId, note, type) => {
+        onRecord: async (_docId, note, type, options) => {
             recordedNote = note;
             recordedType = type;
+            recordedOptions = options;
         },
         onLoadInsights: async () => mockInsights,
         onOpenPersonDoc: (docId) => { openedDocId = docId; },
@@ -7682,7 +7684,13 @@ await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直
     convertBtn.click();
 
     await until(() => recordedNote.includes("和张三讨论了产品方向"), "转为互动未调用 onRecord");
-    assert(recordedType === "other", "转为互动类型应为 other");
+    assert(recordedNote.includes("（源自笔记《2026-10-24 工作日记》）"), "内容应智能附加来源出处");
+    assert(recordedType === "meeting", "“讨论产品方向”应智能识别为 meeting 类型");
+    assert(recordedOptions !== null, "未传递 options 配置");
+    assert(recordedOptions.source === "diary", "source 来源应为 diary");
+    assert(recordedOptions.externalRef === "block:blk-01", "externalRef 应绑定原块 ID");
+    const occurredDate = new Date(recordedOptions.occurredAt);
+    assert(occurredDate.getFullYear() === 2026 && occurredDate.getMonth() + 1 === 10 && occurredDate.getDate() === 24, "occurredAt 必须还原为历史日记真实日期 2026-10-24");
     await until(() => convertBtn.textContent.includes("已转互动"), "转录后按钮文案未更新为 ✓ 已转互动");
     assert(convertBtn.disabled === true, "转录后按钮应被禁用防止重复误触");
 });
