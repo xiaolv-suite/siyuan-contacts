@@ -1164,6 +1164,92 @@ import StatusNotice from "../StatusNotice.svelte";
     let siyuanUriTimer: ReturnType<typeof setTimeout> | null = null;
     let convertedBlockIds = $state<string[]>([]);
 
+    interface EditingBacklinkDraft {
+        blockId: string;
+        date: string;
+        type: InteractionType;
+        note: string;
+        originalItem: import("../../services/insights").BacklinkMentionItem;
+    }
+    let editingBacklink = $state<EditingBacklinkDraft | null>(null);
+    let batchConverting = $state(false);
+    let backlinksCollapsed = $state(false);
+
+    function startEditBacklink(item: import("../../services/insights").BacklinkMentionItem) {
+        if (editingBacklink?.blockId === item.blockId) {
+            editingBacklink = null;
+            return;
+        }
+        const timeInfo = parseBacklinkOccurredTime(item);
+        const note = cleanInteractionNote(item.content, item.docTitle);
+        const type = inferInteractionType(item.content);
+        editingBacklink = {
+            blockId: item.blockId,
+            date: timeInfo.localDate,
+            type,
+            note,
+            originalItem: item,
+        };
+    }
+
+    async function commitEditBacklink() {
+        const draft = editingBacklink;
+        if (!draft || busy) return;
+        const item = draft.originalItem;
+        const targetDate = draft.date || toLocalDateKey();
+        const occurredAt = new Date(`${targetDate}T12:00:00`).getTime();
+        busy = true;
+        try {
+            await onRecord(current.docId, draft.note.trim() || undefined, draft.type, {
+                occurredAt,
+                source: "diary",
+                externalRef: `block:${item.blockId}`,
+            });
+            convertedBlockIds = [...convertedBlockIds, item.blockId];
+            editingBacklink = null;
+            await loadInsights();
+            onChanged();
+            if (onSyncDocProfile) void onSyncDocProfile(current).catch(() => {});
+        } catch (err) {
+            console.warn("[LvContacts] 反链微调转互动未完成", err);
+            if (detailAlive) insightsError = requestErrorMessage(err);
+        } finally {
+            busy = false;
+        }
+    }
+
+    async function convertAllBacklinks() {
+        if (!insights?.backlinks || busy || batchConverting) return;
+        const unconverted = insights.backlinks.filter((item) => !convertedBlockIds.includes(item.blockId));
+        if (unconverted.length === 0) return;
+        batchConverting = true;
+        busy = true;
+        const newlyConverted: string[] = [];
+        try {
+            for (const item of unconverted) {
+                const timeInfo = parseBacklinkOccurredTime(item);
+                const note = cleanInteractionNote(item.content, item.docTitle);
+                const type = inferInteractionType(item.content);
+                await onRecord(current.docId, note, type, {
+                    occurredAt: timeInfo.occurredAt,
+                    source: "diary",
+                    externalRef: `block:${item.blockId}`,
+                });
+                newlyConverted.push(item.blockId);
+            }
+            convertedBlockIds = [...convertedBlockIds, ...newlyConverted];
+            await loadInsights();
+            onChanged();
+            if (onSyncDocProfile) void onSyncDocProfile(current).catch(() => {});
+        } catch (err) {
+            console.warn("[LvContacts] 批量反链转互动未完成", err);
+            if (detailAlive) insightsError = requestErrorMessage(err);
+        } finally {
+            busy = false;
+            batchConverting = false;
+        }
+    }
+
     async function convertBacklinkToInteraction(item: import("../../services/insights").BacklinkMentionItem) {
         if (!item || busy || convertedBlockIds.includes(item.blockId)) return;
         const timeInfo = parseBacklinkOccurredTime(item);
@@ -3301,56 +3387,129 @@ import StatusNotice from "../StatusNotice.svelte";
 
         <!-- Issue #87：笔记与日志反向链接（Backlinks / 提及）视窗 -->
         {#if insights && insights.backlinks && insights.backlinks.length > 0}
+            {@const unconvertedCount = insights.backlinks.filter((item) => !convertedBlockIds.includes(item.blockId)).length}
             <div class="lvct-detail__section" style="margin-top: 14px; border-top: 1px dashed var(--b3-theme-surface-lighter); padding-top: 12px;">
-                <div class="lvct-detail__section-head" style="margin-bottom: 8px;">
-                    <div>
+                <div class="lvct-detail__section-head" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div
+                        role="button"
+                        tabindex="0"
+                        style="cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none;"
+                        onclick={() => (backlinksCollapsed = !backlinksCollapsed)}
+                        onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); backlinksCollapsed = !backlinksCollapsed; } }}
+                    >
+                        {#if backlinksCollapsed}
+                            <ChevronRight size={14} />
+                        {:else}
+                            <ChevronDown size={14} />
+                        {/if}
                         <h4 style="margin: 0;">🔗 笔记与日志反链（{insights.backlinks.length}）</h4>
-                        <p class="ft__smaller ft__on-surface" style="margin: 2px 0 0;">
-                            在日记或随笔中使用双链 ((姓名)) 记录的事情，自动汇总在此。
-                        </p>
+                        {#if unconvertedCount > 0}
+                            <span class="lvct-chip lvct-bucket--today" style="font-size: 10px; padding: 1px 6px;">{unconvertedCount} 条待转入</span>
+                        {/if}
                     </div>
+                    {#if !backlinksCollapsed && unconvertedCount > 0}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline b3-button--small lvct-detail__backlinks-convert-all"
+                            disabled={busy || batchConverting}
+                            onclick={convertAllBacklinks}
+                        >⚡ 全部转为互动（{unconvertedCount}）</button>
+                    {/if}
                 </div>
-                <div class="lvct-detail__timeline">
-                    {#each insights.backlinks as bItem (bItem.blockId)}
-                        {@const timeInfo = parseBacklinkOccurredTime(bItem)}
-                        {@const inferredType = inferInteractionType(bItem.content)}
-                        <div class="lvct-detail__timeline-row" style="background: color-mix(in srgb, var(--lvct-accent) 4%, var(--lvct-bg-surface));">
-                            <span class="ft__on-surface" style="font-weight: 600;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
-                                📅 {timeInfo.localDate}
-                            </span>
-                            <span class="lvct-detail__timeline-note">
-                                <span class="lvct-chip lvct-chip--group font-size-11" style="margin-right: 4px;">
-                                    📝 {bItem.docTitle}
-                                </span>
-                                {#if bItem.kind === "link"}
-                                    <span class="lvct-chip font-size-10" style="margin-right: 4px; background: color-mix(in srgb, #0284c7 14%, transparent); color: #0284c7; font-weight: 600;">🔗 双链</span>
-                                {:else}
-                                    <span class="lvct-chip font-size-10" style="margin-right: 4px; background: color-mix(in srgb, #ea580c 14%, transparent); color: #ea580c; font-weight: 600;">💡 提及</span>
+                {#if !backlinksCollapsed}
+                    <p class="ft__smaller ft__on-surface" style="margin: 0 0 8px 20px;">
+                        在日记或随笔中使用双链 ((姓名)) 记录的事情，自动汇总在此；转录将精准还原历史真实时间。
+                    </p>
+                    <div class="lvct-detail__timeline">
+                        {#each insights.backlinks as bItem (bItem.blockId)}
+                            {@const timeInfo = parseBacklinkOccurredTime(bItem)}
+                            {@const inferredType = inferInteractionType(bItem.content)}
+                            <div class="lvct-detail__timeline-row" style="background: color-mix(in srgb, var(--lvct-accent) 4%, var(--lvct-bg-surface)); flex-direction: column; align-items: stretch; gap: 6px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <span class="ft__on-surface" style="font-weight: 600;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
+                                            📅 {timeInfo.localDate}
+                                        </span>
+                                        <span class="lvct-chip lvct-chip--group font-size-11">
+                                            📝 {bItem.docTitle}
+                                        </span>
+                                        {#if bItem.kind === "link"}
+                                            <span class="lvct-chip font-size-10" style="background: color-mix(in srgb, #0284c7 14%, transparent); color: #0284c7; font-weight: 600;">🔗 双链</span>
+                                        {:else}
+                                            <span class="lvct-chip font-size-10" style="background: color-mix(in srgb, #ea580c 14%, transparent); color: #ea580c; font-weight: 600;">💡 提及</span>
+                                        {/if}
+                                        <span class="lvct-chip font-size-10" style="background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
+                                            {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
+                                        </span>
+                                    </div>
+                                    <div class="fn__flex" style="gap: 4px; align-items: center;">
+                                        <button
+                                            type="button"
+                                            class="b3-button b3-button--text b3-button--small"
+                                            title="在思源中打开该日志文档"
+                                            onclick={() => onOpenPersonDoc(bItem.rootId)}
+                                        >打开原笔记</button>
+                                        {#if !convertedBlockIds.includes(bItem.blockId)}
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--text b3-button--small lvct-detail__backlink-edit-btn"
+                                                title="微调发生日期、分类与备注后再转录"
+                                                disabled={busy}
+                                                onclick={() => startEditBacklink(bItem)}
+                                            >{editingBacklink?.blockId === bItem.blockId ? "收起微调" : "微调转入"}</button>
+                                        {/if}
+                                        <button
+                                            type="button"
+                                            class="b3-button b3-button--outline b3-button--small"
+                                            class:lvct-text-success={convertedBlockIds.includes(bItem.blockId)}
+                                            title={convertedBlockIds.includes(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
+                                            disabled={busy || convertedBlockIds.includes(bItem.blockId)}
+                                            onclick={() => convertBacklinkToInteraction(bItem)}
+                                        >{convertedBlockIds.includes(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
+                                    </div>
+                                </div>
+                                <div class="lvct-detail__timeline-note" style="margin: 0; padding-left: 2px;">
+                                    {bItem.content}
+                                </div>
+                                {#if editingBacklink && editingBacklink.blockId === bItem.blockId}
+                                    <div class="lvct-detail__quick-form lvct-detail__backlink-edit-box" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; padding: 8px; background: var(--b3-theme-surface); border-radius: 6px; border: 1px solid var(--b3-theme-surface-lighter);">
+                                        <input
+                                            class="b3-text-field"
+                                            type="date"
+                                            style="width: 135px;"
+                                            bind:value={editingBacklink.date}
+                                            aria-label="互动发生日期"
+                                        />
+                                        <select class="b3-select" bind:value={editingBacklink.type} aria-label="互动类型">
+                                            {#each INTERACTION_TYPES as itype}
+                                                <option value={itype}>{INTERACTION_TYPE_LABELS[itype].icon} {INTERACTION_TYPE_LABELS[itype].label}</option>
+                                            {/each}
+                                        </select>
+                                        <input
+                                            class="b3-text-field fn__flex-1"
+                                            type="text"
+                                            placeholder="互动备注内容"
+                                            bind:value={editingBacklink.note}
+                                            aria-label="互动备注内容"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="b3-button b3-button--small lvct-detail__backlink-commit-btn"
+                                            disabled={busy || !editingBacklink.note.trim()}
+                                            onclick={commitEditBacklink}
+                                        >确认转入</button>
+                                        <button
+                                            type="button"
+                                            class="b3-button b3-button--text b3-button--small"
+                                            disabled={busy}
+                                            onclick={() => (editingBacklink = null)}
+                                        >取消</button>
+                                    </div>
                                 {/if}
-                                <span class="lvct-chip font-size-10" style="margin-right: 4px; background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
-                                    {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
-                                </span>
-                                {bItem.content}
-                            </span>
-                            <div class="fn__flex" style="gap: 4px; align-items: center;">
-                                <button
-                                    type="button"
-                                    class="b3-button b3-button--text b3-button--small"
-                                    title="在思源中打开该日志文档"
-                                    onclick={() => onOpenPersonDoc(bItem.rootId)}
-                                >打开原笔记</button>
-                                <button
-                                    type="button"
-                                    class="b3-button b3-button--outline b3-button--small"
-                                    class:lvct-text-success={convertedBlockIds.includes(bItem.blockId)}
-                                    title={convertedBlockIds.includes(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
-                                    disabled={busy || convertedBlockIds.includes(bItem.blockId)}
-                                    onclick={() => convertBacklinkToInteraction(bItem)}
-                                >{convertedBlockIds.includes(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>
                             </div>
-                        </div>
-                    {/each}
-                </div>
+                        {/each}
+                    </div>
+                {/if}
             </div>
         {/if}
     </section>

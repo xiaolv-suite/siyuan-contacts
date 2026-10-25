@@ -7693,6 +7693,56 @@ await test("E-87 笔记与日志反链（Backlinks）视窗：双模感知、直
     assert(occurredDate.getFullYear() === 2026 && occurredDate.getMonth() + 1 === 10 && occurredDate.getDate() === 24, "occurredAt 必须还原为历史日记真实日期 2026-10-24");
     await until(() => convertBtn.textContent.includes("已转互动"), "转录后按钮文案未更新为 ✓ 已转互动");
     assert(convertBtn.disabled === true, "转录后按钮应被禁用防止重复误触");
+
+    // 6. 测试第二条反链的「微调转入」
+    await pause(50);
+    const editBtn = fixture.querySelector(".lvct-detail__backlink-edit-btn");
+    assert(editBtn, "未找到微调转入按钮");
+    editBtn.click();
+    await until(() => fixture.querySelector(".lvct-detail__backlink-edit-box"), "微调表单未展开");
+    const editNoteInput = fixture.querySelector(".lvct-detail__backlink-edit-box input[type='text']");
+    assert(editNoteInput, "未找到微调备注输入框");
+    input(editNoteInput, "微调后的自定备注");
+    const commitBtn = fixture.querySelector(".lvct-detail__backlink-commit-btn");
+    assert(commitBtn, "未找到确认转入按钮");
+    commitBtn.click();
+
+    await until(() => recordedNote === "微调后的自定备注", "微调转入未正确传递修改后的备注");
+});
+
+await test("E-87 反链批量转录与视窗折叠：一键全转入与清爽折叠", async () => {
+    let recordedEvents = [];
+    let mockInsights = {
+        timeline: [],
+        coAttendance: [],
+        totalEvents: 0,
+        backlinks: [
+            { blockId: "b-01", rootId: "doc-1", docTitle: "日记1", content: "和张三聚餐吃火锅", date: "2026-10-21", kind: "link" },
+            { blockId: "b-02", rootId: "doc-2", docTitle: "日记2", content: "给张三打了个电话", date: "2026-10-22", kind: "link" },
+        ],
+    };
+    mounted = mount(PersonDetail, { target: fixture, props: {
+        settings, person,
+        onRecord: async (_docId, note, type, options) => {
+            recordedEvents.push({ note, type, options });
+        },
+        onLoadInsights: async () => mockInsights,
+        onOpenPersonDoc() {}, onNavigate() {}, onDeleted() {}, onClose() {}, onChanged() {},
+    } });
+
+    await until(() => fixture.textContent.includes("2 条反链引用"), "未展示反链引用胶囊");
+    const backlinkPill = [...fixture.querySelectorAll("button")].find((b) => b.textContent.includes("2 条反链引用"));
+    backlinkPill.click();
+
+    await until(() => fixture.textContent.includes("全部转为互动"), "未显示一键全部转录按钮");
+    const convertAllBtn = fixture.querySelector(".lvct-detail__backlinks-convert-all");
+    assert(convertAllBtn, "未找到一键全部转录按钮");
+    convertAllBtn.click();
+
+    await until(() => recordedEvents.length === 2, "批量转录未全部调用 onRecord");
+    assert(recordedEvents[0].type === "meal", "第一条吃火锅应识别为 meal");
+    assert(recordedEvents[1].type === "call", "第二条打电话应识别为 call");
+    await until(() => !fixture.querySelector(".lvct-detail__backlinks-convert-all"), "全部转录后批量按钮应自动隐藏");
 });
 
 await test("E-36 纪念日免打扰开关（remindDisabled）：开启后不再提醒，再次点击恢复", async () => {
