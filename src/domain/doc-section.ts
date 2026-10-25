@@ -48,10 +48,12 @@ function cleanMarkdownLine(text: string | undefined): string {
 }
 
 const INTERACTION_ICONS: Record<string, string> = {
+    meeting: "🤝 见面",
     meet: "🤝 见面",
     call: "📞 电话",
     message: "💬 消息",
     meal: "🍽️ 聚餐",
+    email: "✉️ 邮件",
     mail: "✉️ 邮件",
     other: "📝 互动",
 };
@@ -61,7 +63,15 @@ export function interactionSectionMarkdown(events: readonly InteractionEvent[]):
     const lines = ["## 往来记录", ""];
     for (const event of events) {
         const typeStr = (event.type && INTERACTION_ICONS[event.type]) ? INTERACTION_ICONS[event.type] : "📝 互动";
-        const note = cleanMarkdownLine(event.note);
+        let note = cleanMarkdownLine(event.note);
+        if (event.externalRef?.startsWith("block:")) {
+            const blockId = event.externalRef.slice("block:".length);
+            if (/（源自笔记《(.*?)》）/.test(note)) {
+                note = note.replace(/（源自笔记《(.*?)》）/, `（源自笔记 [《$1》](siyuan://blocks/${blockId})）`);
+            } else if (!note.includes("siyuan://blocks/")) {
+                note = note ? `${note} [🔗 原文](siyuan://blocks/${blockId})` : `[🔗 原文](siyuan://blocks/${blockId})`;
+            }
+        }
         const noteStr = note ? `：${note}` : "";
         lines.push(`- ${event.localDate} ${typeStr}${noteStr}`);
     }

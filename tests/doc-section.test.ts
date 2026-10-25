@@ -80,6 +80,24 @@ test("interactionSectionMarkdown：生成往来记录 Markdown 列表与图标�
     assert.match(md, /- 2026-10-20 📞 电话：电话同步进度/);
 });
 
+test("interactionSectionMarkdown：反链转录条目出处自动升级为思源原生块引深度链接", () => {
+    const events: InteractionEvent[] = [
+        {
+            id: "ev-link",
+            personDocId: "20261023000000-doc001",
+            occurredAt: 1761234567000,
+            localDate: "2026-10-24",
+            type: "meeting",
+            note: "和张三讨论了产品规划与技术方案（源自笔记《2026-10-24 工作日记》）",
+            source: "diary",
+            externalRef: "block:20261024100000-blk0001",
+        },
+    ];
+    const md = interactionSectionMarkdown(events);
+    assert.match(md, /🤝 见面/);
+    assert.match(md, /\[《2026-10-24 工作日记》\]\(siyuan:\/\/blocks\/20261024100000-blk0001\)/);
+});
+
 test("followupsSectionMarkdown：生成待办跟进任务 Markdown", () => {
     const items: FollowUpItem[] = [
         {
