@@ -142,3 +142,25 @@ test("AG-E38: 简报导出支持共同组织、纪念日、人情账本与谈资
     assert.ok(excludedMd.includes("## 共同组织背景"));
     assert.ok(excludedMd.includes("## 重要日期与纪念日"));
 });
+
+test("简报导出：支持整合笔记与日志提及反链（backlinks）分区", () => {
+    const input: BriefingExportInput = {
+        ...base,
+        backlinks: [
+            {
+                date: "2026-10-24",
+                docTitle: "工作日记",
+                content: "讨论了产品方向",
+                kind: "link",
+                blockId: "blk-001",
+            },
+        ],
+    };
+    const md = buildBriefingMarkdown(input);
+    assert.ok(md.includes("## 笔记与日志提及（1 条）"));
+    assert.ok(md.includes("[双链] 源自 [《工作日记》](siyuan://blocks/blk-001)：讨论了产品方向"));
+
+    // 验证排除
+    const excluded = buildBriefingMarkdown({ ...input, excludedSections: ["backlinks"] });
+    assert.ok(!excluded.includes("## 笔记与日志提及"));
+});

@@ -100,7 +100,7 @@ export async function runAliasRegression({ test, assert, kernel, settings, fixtu
                 onSelect: (id) => { selected = id; },
             } });
             fixture.querySelector("button").click();
-            await tick();
+            await until(() => fixture.querySelector("input"), "选人器搜索框未展开");
             const search = fixture.querySelector("input");
             search.value = "老张";
             search.dispatchEvent(new Event("input", { bubbles: true }));
