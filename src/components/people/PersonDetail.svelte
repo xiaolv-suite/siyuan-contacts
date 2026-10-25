@@ -3424,7 +3424,6 @@ import StatusNotice from "../StatusNotice.svelte";
                         {#each insights.backlinks as bItem (bItem.blockId)}
                             {@const timeInfo = parseBacklinkOccurredTime(bItem)}
                             {@const inferredType = inferInteractionType(bItem.content)}
-                            {@const isEditing = editingBacklink?.blockId === bItem.blockId}
                             <div class="lvct-detail__timeline-row" style="background: color-mix(in srgb, var(--lvct-accent) 4%, var(--lvct-bg-surface)); flex-direction: column; align-items: stretch; gap: 6px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
