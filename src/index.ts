@@ -958,15 +958,20 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         return loadDashboard(this, this.settings, { ...DEFAULT_DASHBOARD_OPTIONS, ...options });
     }
 
-    async recordInteraction(personDocId: string, note?: string, type?: import("./domain/interactions").InteractionType): Promise<void> {
-        await recordInteraction(this, { personDocId, note, type });
+    async recordInteraction(
+        personDocId: string,
+        note?: string,
+        type?: import("./domain/interactions").InteractionType,
+        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string },
+    ): Promise<void> {
+        await recordInteraction(this, { personDocId, note, type, ...options });
         void syncInteractionDocSection(this, personDocId).catch(() => {});
         if (this.settings?.checkinItemId) {
-            const date = toLocalDateKey();
+            const date = toLocalDateKey(options?.occurredAt ? new Date(options.occurredAt) : new Date());
             void logCheckinEventSafely({
                 itemId: this.settings.checkinItemId,
                 value: 1,
-                externalRef: `contacts:${personDocId}:${date}:${Date.now()}`,
+                externalRef: `contacts:${personDocId}:${date}:${options?.occurredAt ?? Date.now()}`,
                 note: note ? `与联系人互动：${note}` : "与联系人互动跟进",
             }).catch(() => {});
         }

@@ -345,6 +345,7 @@ export interface BacklinkMentionItem {
     content: string;
     docTitle: string;
     hpath: string;
+    created: string;
     updated: string;
     date: string;
     kind: "link" | "mention";
@@ -359,7 +360,7 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
     const safeLimit = Math.max(1, Math.min(limit, 200));
     // 1. 显式双链引用 (kind: "link")
     const linkRows = await querySql<unknown>(
-        `SELECT r.block_id AS blockId, r.root_id AS rootId, r.content, b.hpath, b.updated ` +
+        `SELECT r.block_id AS blockId, r.root_id AS rootId, r.content, b.hpath, b.created, b.updated ` +
         `FROM refs r ` +
         `LEFT JOIN blocks b ON r.block_id = b.id ` +
         `WHERE r.def_block_root_id = '${personDocId}' AND r.root_id != '${personDocId}' ` +
@@ -369,10 +370,12 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
         const row = assertKernelRecord("/api/query/sql", raw);
         const hpath = typeof row.hpath === "string" ? row.hpath : "";
         const docTitle = hpath ? hpath.split("/").filter(Boolean).pop() || "未命名文档" : "未命名文档";
+        const created = typeof row.created === "string" ? row.created : "";
         const updated = typeof row.updated === "string" ? row.updated : "";
         let date = "";
-        if (updated.length >= 8) {
-            date = `${updated.slice(0, 4)}-${updated.slice(4, 6)}-${updated.slice(6, 8)}`;
+        const stamp = created || updated;
+        if (stamp.length >= 8) {
+            date = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`;
         }
         const rawContent = typeof row.content === "string" ? row.content : "";
         return {
@@ -381,6 +384,7 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
             content: cleanBlockRefText(rawContent),
             docTitle,
             hpath,
+            created,
             updated,
             date,
             kind: "link",
@@ -396,7 +400,7 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
         const safeName = escapeSqlString(name);
         try {
             const mentionRows = await querySql<unknown>(
-                `SELECT id AS blockId, root_id AS rootId, content, hpath, updated ` +
+                `SELECT id AS blockId, root_id AS rootId, content, hpath, created, updated ` +
                 `FROM blocks ` +
                 `WHERE type IN ('p', 'i', 'h') ` +
                 `  AND content LIKE '%${safeName}%' ` +
@@ -408,10 +412,12 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
                 const blockId = typeof row.blockId === "string" ? row.blockId : "";
                 const hpath = typeof row.hpath === "string" ? row.hpath : "";
                 const docTitle = hpath ? hpath.split("/").filter(Boolean).pop() || "未命名文档" : "未命名文档";
+                const created = typeof row.created === "string" ? row.created : "";
                 const updated = typeof row.updated === "string" ? row.updated : "";
                 let date = "";
-                if (updated.length >= 8) {
-                    date = `${updated.slice(0, 4)}-${updated.slice(4, 6)}-${updated.slice(6, 8)}`;
+                const stamp = created || updated;
+                if (stamp.length >= 8) {
+                    date = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`;
                 }
                 const rawContent = typeof row.content === "string" ? row.content : "";
                 return {
@@ -420,6 +426,7 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
                     content: cleanBlockRefText(rawContent),
                     docTitle,
                     hpath,
+                    created,
                     updated,
                     date,
                     kind: "mention" as const,

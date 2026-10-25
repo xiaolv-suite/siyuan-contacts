@@ -58,6 +58,11 @@ import StatusNotice from "../StatusNotice.svelte";
         newProjectId,
         type PersonProjectItem,
     } from "../../domain/projects";
+    import {
+        parseBacklinkOccurredTime,
+        inferInteractionType,
+        cleanInteractionNote,
+    } from "../../domain/backlink-converter";
     import { newExchangeRequestId } from "../../services/exchanges";
 
     let {
@@ -143,7 +148,12 @@ import StatusNotice from "../StatusNotice.svelte";
         availableGroups?: readonly string[];
         revision?: number;
         /** 记一笔互动（facade.recordInteraction） */
-        onRecord: (personDocId: string, note?: string, type?: import("../../domain/interactions").InteractionType) => Promise<void>;
+        onRecord: (
+            personDocId: string,
+            note?: string,
+            type?: import("../../domain/interactions").InteractionType,
+            options?: { occurredAt?: number; source?: import("../../domain/interactions").InteractionSource; externalRef?: string },
+        ) => Promise<void>;
         onDeleteInteraction?: (personDocId: string, eventId: string) => Promise<void>;
         /** 人物洞察（时间线+共同出席） */
         onLoadInsights: (docId: string) => Promise<import("../../services/insights").PersonInsights>;
@@ -1156,10 +1166,16 @@ import StatusNotice from "../StatusNotice.svelte";
 
     async function convertBacklinkToInteraction(item: import("../../services/insights").BacklinkMentionItem) {
         if (!item || busy || convertedBlockIds.includes(item.blockId)) return;
-        const note = item.content.trim() || `在文档《${item.docTitle}》中提及`;
+        const timeInfo = parseBacklinkOccurredTime(item);
+        const note = cleanInteractionNote(item.content, item.docTitle);
+        const type = inferInteractionType(item.content);
         busy = true;
         try {
-            await onRecord(current.docId, note, "other");
+            await onRecord(current.docId, note, type, {
+                occurredAt: timeInfo.occurredAt,
+                source: "diary",
+                externalRef: `block:${item.blockId}`,
+            });
             convertedBlockIds = [...convertedBlockIds, item.blockId];
             await loadInsights();
             onChanged();
@@ -3296,8 +3312,12 @@ import StatusNotice from "../StatusNotice.svelte";
                 </div>
                 <div class="lvct-detail__timeline">
                     {#each insights.backlinks as bItem (bItem.blockId)}
+                        {@const timeInfo = parseBacklinkOccurredTime(bItem)}
+                        {@const inferredType = inferInteractionType(bItem.content)}
                         <div class="lvct-detail__timeline-row" style="background: color-mix(in srgb, var(--lvct-accent) 4%, var(--lvct-bg-surface));">
-                            <span class="ft__on-surface" style="font-weight: 600;">{bItem.date || "近期"}</span>
+                            <span class="ft__on-surface" style="font-weight: 600;" title={timeInfo.sourceKind === "diary_title" ? "根据日记标题识别发生日期" : "根据段落创建时间识别发生日期"}>
+                                📅 {timeInfo.localDate}
+                            </span>
                             <span class="lvct-detail__timeline-note">
                                 <span class="lvct-chip lvct-chip--group font-size-11" style="margin-right: 4px;">
                                     📝 {bItem.docTitle}
@@ -3307,6 +3327,9 @@ import StatusNotice from "../StatusNotice.svelte";
                                 {:else}
                                     <span class="lvct-chip font-size-10" style="margin-right: 4px; background: color-mix(in srgb, #ea580c 14%, transparent); color: #ea580c; font-weight: 600;">💡 提及</span>
                                 {/if}
+                                <span class="lvct-chip font-size-10" style="margin-right: 4px; background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
+                                    {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
+                                </span>
                                 {bItem.content}
                             </span>
                             <div class="fn__flex" style="gap: 4px; align-items: center;">
@@ -3320,7 +3343,7 @@ import StatusNotice from "../StatusNotice.svelte";
                                     type="button"
                                     class="b3-button b3-button--outline b3-button--small"
                                     class:lvct-text-success={convertedBlockIds.includes(bItem.blockId)}
-                                    title={convertedBlockIds.includes(bItem.blockId) ? "已转录为互动事件" : "一键将该日志记录转录为正式互动事件，更新最近联系时间"}
+                                    title={convertedBlockIds.includes(bItem.blockId) ? "已转录为互动事件" : `按历史日期 ${timeInfo.localDate} 转录为正式互动事件`}
                                     disabled={busy || convertedBlockIds.includes(bItem.blockId)}
                                     onclick={() => convertBacklinkToInteraction(bItem)}
                                 >{convertedBlockIds.includes(bItem.blockId) ? "✓ 已转互动" : "⚡ 转为互动"}</button>

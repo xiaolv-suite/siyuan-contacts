@@ -43,8 +43,13 @@ export interface ContactsPluginFacade {
     scanAnchorCandidates(options?: AnchorScanOptions): Promise<AnchorScanResult>;
     /** 仪表盘聚合（近期生日/久未联系/统计） */
     loadDashboard(options?: Partial<DashboardOptions>): Promise<DashboardData>;
-    /** 记一笔互动（幂等） */
-    recordInteraction(personDocId: string, note?: string, type?: import("./domain/interactions").InteractionType): Promise<void>;
+    /** 记一笔互动（幂等，支持指定历史发生时间与来源） */
+    recordInteraction(
+        personDocId: string,
+        note?: string,
+        type?: import("./domain/interactions").InteractionType,
+        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string },
+    ): Promise<void>;
     deleteInteraction(personDocId: string, eventId: string): Promise<void>;
     /** 人物洞察：互动时间线 + 共同出席统计 */
     loadPersonInsights(docId: string): Promise<PersonInsights>;
