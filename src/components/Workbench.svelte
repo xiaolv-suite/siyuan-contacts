@@ -870,7 +870,7 @@
                     detailCollapsedSections: nextSections,
                 });
             }}
-            onRecord={(personDocId, note, type) => facade.recordInteraction(personDocId, note, type)}
+            onRecord={(personDocId, note, type, options) => facade.recordInteraction(personDocId, note, type, options)}
             onDeleteInteraction={(personDocId, eventId) => facade.deleteInteraction(personDocId, eventId)}
             onLoadInsights={(docId) => facade.loadPersonInsights(docId)}
             onLoadPersonNote={(docId) => facade.loadPersonNote(docId)}
