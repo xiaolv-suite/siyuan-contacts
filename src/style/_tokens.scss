@@ -45,8 +45,11 @@
     /* ---------- 1. 品牌色（青色主色 + 珊瑚提醒色） ---------- */
     /* Epoch 6 联邦规范：爱马仕暖干邑橙（#EA580C）＋ 绿松石天青灵珠（#0284C7） */
     --lv-brand: #EA580C; /* 暖干邑橙 */
+    --lv-brand-hover: #C2410C;
     --lv-brand-soft: color-mix(in srgb, var(--lv-brand) 12%, transparent);
     --lv-accent-cyan: #0284C7; /* 绿松石天青点缀 */
+    --lv-accent-cyan-hover: #0369A1;
+    --lv-accent-cyan-soft: color-mix(in srgb, var(--lv-accent-cyan) 12%, transparent);
     --lv-r-sm: 6px;
     --lv-r-md: 12px;
     --lv-r-lg: 20px;
@@ -281,6 +284,13 @@ html[data-theme-mode="dark"] .lvct-tab-root,
 html[data-theme-mode="dark"] .lvct-dialog-root,
 html[data-theme-mode="dark"] .lvct-doc-strip,
 html[data-theme-mode="dark"] .lvct-workbench {
+    --lv-brand: #f97316;
+    --lv-brand-hover: #fb923c;
+    --lv-brand-soft: color-mix(in srgb, var(--lv-brand) 16%, transparent);
+    --lv-accent-cyan: #38bdf8;
+    --lv-accent-cyan-hover: #7dd3fc;
+    --lv-accent-cyan-soft: color-mix(in srgb, var(--lv-accent-cyan) 16%, transparent);
+
     --lvct-brand-from: #51cfc4;
     --lvct-brand-to: #7adfd4;
     --lvct-highlight: #f08a7c;
