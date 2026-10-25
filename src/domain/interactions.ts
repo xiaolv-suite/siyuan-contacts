@@ -229,6 +229,7 @@ export interface TimelineItem {
     /** 同场人数（含本人）；同场事件才 >1 */
     groupSize: number;
     occurredAt?: number;
+    externalRef?: string;
 }
 
 /**
@@ -290,6 +291,7 @@ export function buildTimeline(
                 type: inferInteractionType(event),
                 groupSize: key === undefined ? 1 : participants.get(key)?.size ?? 1,
                 occurredAt: event.occurredAt,
+                ...(event.externalRef ? { externalRef: event.externalRef } : {}),
             };
         })
         .sort((a, b) => (
