@@ -3,7 +3,6 @@
  * 纯函数，零外部依赖（严格遵守 domain/ 架构约束）。
  */
 import type { InteractionType } from "./interactions.ts";
-import { cleanBlockRefText } from "./format.ts";
 
 export interface BacklinkOccurredInfo {
     occurredAt: number;
@@ -171,9 +170,10 @@ export function inferInteractionType(content: string): InteractionType {
  */
 export function cleanInteractionNote(rawContent: string, docTitle?: string): string {
     if (!rawContent) return "";
-    let cleaned = cleanBlockRefText(rawContent);
+    // 1. 先剥离双链标记语法，但保留换行结构以支持多行列表符清洗
+    let cleaned = rawContent.replace(/\(\(\d{14}-[a-z0-9]{7}(?:\s+["']([^"']+)["'])?\)\)/g, (_match, anchor) => anchor || "链接");
 
-    // 清除行首列表符号、引用标记与复选框
+    // 2. 清除行首列表符号、引用标记与复选框
     cleaned = cleaned
         .replace(/^[ \t]*[-*+][ \t]+/gm, "")
         .replace(/^[ \t]*\d+[.、][ \t]+/gm, "")
@@ -182,9 +182,9 @@ export function cleanInteractionNote(rawContent: string, docTitle?: string): str
         .replace(/\s+/g, " ")
         .trim();
 
-    // 附加优雅的来源说明
+    // 3. 附加优雅的来源说明（有意义的文档标题才附加）
     const title = docTitle?.trim();
-    if (title && !cleaned.includes(title)) {
+    if (title && title !== "未命名文档" && title !== "未命名" && !cleaned.includes(title)) {
         cleaned = `${cleaned}（源自笔记《${title}》）`;
     }
 

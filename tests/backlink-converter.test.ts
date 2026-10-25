@@ -115,4 +115,9 @@ test("cleanInteractionNote：清洗列表符、任务框并附加自然出处", 
     const raw2 = "在2026-10-24 工作日记中已记录了面谈内容";
     const cleaned2 = cleanInteractionNote(raw2, "2026-10-24 工作日记");
     assert.equal(cleaned2, "在2026-10-24 工作日记中已记录了面谈内容");
+
+    // 多行列表符清洗
+    const raw3 = "- 事项一：方案沟通\n* 事项二：预算评审";
+    const cleaned3 = cleanInteractionNote(raw3, "未命名文档");
+    assert.equal(cleaned3, "事项一：方案沟通 事项二：预算评审");
 });

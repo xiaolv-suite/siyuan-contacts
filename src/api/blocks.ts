@@ -363,11 +363,16 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
         `SELECT r.block_id AS blockId, r.root_id AS rootId, r.content, b.hpath, b.created, b.updated ` +
         `FROM refs r ` +
         `LEFT JOIN blocks b ON r.block_id = b.id ` +
-        `WHERE r.def_block_root_id = '${personDocId}' AND r.root_id != '${personDocId}' ` +
+        `WHERE (r.def_block_root_id = '${personDocId}' OR r.def_block_id = '${personDocId}') AND r.root_id != '${personDocId}' ` +
         `ORDER BY b.updated DESC LIMIT ${safeLimit}`,
     );
-    const linkItems: BacklinkMentionItem[] = linkRows.map((raw) => {
+    const linkItems: BacklinkMentionItem[] = [];
+    const seenBlockIds = new Set<string>();
+    for (const raw of linkRows) {
         const row = assertKernelRecord("/api/query/sql", raw);
+        const blockId = typeof row.blockId === "string" ? row.blockId : "";
+        if (!blockId || seenBlockIds.has(blockId)) continue;
+        seenBlockIds.add(blockId);
         const hpath = typeof row.hpath === "string" ? row.hpath : "";
         const docTitle = hpath ? hpath.split("/").filter(Boolean).pop() || "未命名文档" : "未命名文档";
         const created = typeof row.created === "string" ? row.created : "";
@@ -378,8 +383,8 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
             date = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`;
         }
         const rawContent = typeof row.content === "string" ? row.content : "";
-        return {
-            blockId: typeof row.blockId === "string" ? row.blockId : "",
+        linkItems.push({
+            blockId,
             rootId: typeof row.rootId === "string" ? row.rootId : "",
             content: cleanBlockRefText(rawContent),
             docTitle,
@@ -388,10 +393,8 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
             updated,
             date,
             kind: "link",
-        };
-    });
-
-    const seenBlockIds = new Set(linkItems.map((item) => item.blockId));
+        });
+    }
 
     // 2. 正文提及嗅探 (kind: "mention")：仅在姓名合法且字符数 >= 2 时检索
     let mentionItems: BacklinkMentionItem[] = [];
