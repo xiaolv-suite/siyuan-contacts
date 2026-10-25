@@ -9627,3 +9627,78 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         background: color-mix(in srgb, var(--b3-theme-on-surface) 6%, transparent);
     }
 }
+
+/* ============================================================================
+ * UX-04 · 反链视窗 Bento 瓷贴与内联矢量图标规范
+ * ========================================================================== */
+
+.lvct-icon-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: -2px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.lvct-backlink-card {
+    background: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 4%, var(--lvct-bg-surface));
+    border: 1px solid var(--b3-theme-surface-lighter);
+    border-radius: var(--lv-r-md, 8px);
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+        border-color: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 24%, var(--b3-theme-surface-lighter));
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+}
+
+.lvct-chip--link-pill {
+    background: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 12%, transparent);
+    color: var(--lv-accent-cyan, #0284c7);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.lvct-chip--mention-pill {
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+    color: var(--lv-brand, #ea580c);
+    font-weight: 600;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.lvct-quick-record-dialog {
+    --lv-r-input: 8px;
+
+    .b3-text-field {
+        border-radius: var(--lv-r-input);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:focus {
+            border-color: var(--b3-theme-primary);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--b3-theme-primary) 18%, transparent);
+        }
+    }
+
+    .b3-chip {
+        transition: all 0.15s ease;
+        cursor: pointer;
+
+        &:active {
+            transform: scale(0.96);
+        }
+    }
+}

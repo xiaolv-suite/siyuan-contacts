@@ -14,6 +14,7 @@
     import { syncInteractionDocSection } from "../../services/doc-section";
     import { translateText } from "../../domain/translation";
     import { requestErrorMessage } from "../../shared/error-presenter";
+    import { onMount } from "svelte";
 
     let {
         plugin,
@@ -36,6 +37,11 @@
     let note = $state("");
     let busy = $state(false);
     let errorMessage = $state("");
+    let textareaEl: HTMLTextAreaElement | undefined = $state();
+
+    onMount(() => {
+        textareaEl?.focus();
+    });
 
     async function handleSave() {
         if (busy) return;
@@ -113,12 +119,14 @@
     <div class="lvct-form__item" style="margin: 0;">
         <span class="ft__smaller ft__on-surface" style="margin-bottom: 4px; display: block;">{text("dialogNote", "互动详情与备注")}</span>
         <textarea
+            bind:this={textareaEl}
             class="b3-text-field fn__block"
             rows="4"
             placeholder={text("dialogNotePlaceholder", "记录这次交流的核心事实、沟通要点或约定事项…")}
             bind:value={note}
             disabled={busy}
         ></textarea>
+        <span class="ft__smaller ft__on-surface" style="margin-top: 4px; display: block; opacity: 0.7;">支持按 Ctrl+Enter 快捷保存，Esc 快速关闭</span>
     </div>
 
     <div class="fn__flex" style="justify-content: flex-end; gap: 8px; margin-top: 4px;">
