@@ -4693,8 +4693,8 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
 }
 
 .lvct-detail__tabs button.lvct-detail__tab--active {
-    border-bottom-color: var(--lvct-accent);
-    color: var(--lvct-accent);
+    border-bottom-color: var(--lv-brand, #ea580c);
+    color: var(--lv-brand, #ea580c);
     font-weight: var(--lvct-fw-bold);
 }
 
@@ -5381,16 +5381,16 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     flex-direction: column;
     gap: 2px;
     font-size: 12.5px;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
     line-height: 1.4;
 
     b {
         font-weight: 650;
-        color: var(--b3-theme-on-background);
+        color: var(--lvct-text-1);
     }
 
     span {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         font-size: 12px;
     }
 }
@@ -5398,7 +5398,7 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 .lvct-dash__milestone-btn {
     font-size: 12px;
     font-weight: 600;
-    color: var(--lvct-accent, var(--b3-theme-primary));
+    color: var(--lv-brand, #ea580c);
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -5467,6 +5467,12 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     align-items: flex-start;
     gap: 3px;
     cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: var(--lvct-shadow-2);
+    }
     text-align: left;
     transition:
         transform var(--lvct-dur-base) var(--lvct-ease),
@@ -8348,7 +8354,7 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover {
-        border-color: color-mix(in srgb, var(--lvct-accent) 36%, var(--lvct-border-subtle));
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 35%, var(--lvct-border-subtle));
         box-shadow: var(--lvct-shadow-2);
         transform: translateY(-2px);
     }
@@ -9645,7 +9651,7 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 
 .lvct-backlink-card {
     background: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 4%, var(--lvct-bg-surface));
-    border: 1px solid var(--b3-theme-surface-lighter);
+    border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lv-r-md, 8px);
     padding: 10px 14px;
     display: flex;
@@ -9655,8 +9661,8 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover {
-        border-color: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 24%, var(--b3-theme-surface-lighter));
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border-color: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 32%, var(--lvct-border-subtle));
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
     }
 }
 
