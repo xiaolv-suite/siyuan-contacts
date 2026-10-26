@@ -346,7 +346,7 @@
                         {#if logoUrlOf(org) && failedLogoUrls[org.docId] !== logoUrlOf(org)}
                             <img class="lvct-orgs-view__card-logo" src={logoUrlOf(org)} alt="" width="40" height="40" loading="lazy" decoding="async" onerror={() => markLogoFailed(org.docId, logoUrlOf(org))} />
                         {:else}
-                            <span class="lvct-orgs-view__card-icon" aria-hidden="true"><Building2 size={16} /></span>
+                            <span class="lvct-orgs-view__card-icon" aria-hidden="true">{org.name.slice(0, 1)}</span>
                         {/if}
                         <b class="lvct-orgs-view__card-name">{org.name}</b>
                         {#if org.profile?.shortName}<span class="lvct-chip lvct-chip--group">{org.profile.shortName}</span>{/if}
