@@ -459,7 +459,7 @@
                                     <div class="fn__flex" style="align-items: center; gap: 4px;">
                                         <b>{member.personName}</b>
                                         {#if leader}
-                                            <span class="lvct-chip font-size-10" style="padding: 0 4px; background: color-mix(in srgb, #f59e0b 16%, transparent); color: #d97706; font-weight: 600;">负责人</span>
+                                            <span class="lvct-chip font-size-10" style="padding: 0 4px; background: var(--lv-heat-cool-soft); color: var(--lv-heat-cool); font-weight: 600;">负责人</span>
                                         {/if}
                                     </div>
                                     <span class="lvct-text-muted font-size-11">

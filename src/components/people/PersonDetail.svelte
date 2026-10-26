@@ -2359,7 +2359,17 @@ import StatusNotice from "../StatusNotice.svelte";
         <dl class="lvct-detail__relationship-grid">
             <div>
                 <dt>最近互动</dt>
-                <dd>{insightsLoading ? "读取中…" : insightsError ? "读取失败" : lastContactLabel || "尚无互动"}</dd>
+                <dd>
+                    {insightsLoading ? "读取中…" : insightsError ? "读取失败" : lastContactLabel || "尚无互动"}
+                    {#if insights && insights.timeline && insights.timeline.length > 0}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text b3-button--small"
+                            style="padding: 0 4px; font-size: 11px; margin-left: 4px;"
+                            onclick={() => void selectTab("activity")}
+                        >全部 {insights.timeline.length} 条往来 &gt;</button>
+                    {/if}
+                </dd>
             </div>
             <div>
                 <dt>待办跟进</dt>
