@@ -4287,6 +4287,11 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
         background: linear-gradient(135deg, color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 78%, #ffffff), var(--lv-accent-cyan, #0284c7));
         box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
+
+    &--city {
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lv-heat-cool, #d97706) 78%, #ffffff), var(--lv-heat-cool, #d97706));
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-heat-cool, #d97706) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
 }
 
 .lvct-strip__main {
@@ -4341,6 +4346,13 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     background: var(--lv-heat-cool-soft);
     color: var(--lv-heat-cool);
     border-color: color-mix(in srgb, var(--lv-heat-cool) 28%, transparent);
+}
+
+.lvct-strip__badge--city {
+    background: var(--lv-heat-cool-soft);
+    color: var(--lv-heat-cool);
+    border-color: color-mix(in srgb, var(--lv-heat-cool) 28%, transparent);
+    font-weight: 600;
 }
 
 .lvct-strip__badge--activity {
