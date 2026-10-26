@@ -307,7 +307,14 @@
     {:else if filteredOrgs.length === 0 && !errorText && !loading && !organizationLoadError && organizationFilterActive}
         <ViewState title={text("orgsNoMatchTitle", "没有匹配的组织")}
             description={text("orgsNoMatchDesc", "试试其他名称或清除筛选条件。")}>
-            <button type="button" class="b3-button b3-button--outline" onclick={() => { organizationQuery = ""; organizationStatus = "all"; }}>{text("orgsClearFilters", "清除筛选")}</button>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                {#if onCreateOrganization}
+                    <button type="button" class="b3-button b3-button--primary" onclick={onCreateOrganization}>
+                        <Plus size={14} class="lvct-icon-inline" /> {organizationQuery.trim() ? `新建组织（${organizationQuery.trim()}）` : "新建组织"}
+                    </button>
+                {/if}
+                <button type="button" class="b3-button b3-button--outline" onclick={() => { organizationQuery = ""; organizationStatus = "all"; }}>{text("orgsClearFilters", "清除筛选")}</button>
+            </div>
         </ViewState>
     {:else if filteredOrgs.length === 0 && !errorText && !loading && !organizationLoadError}
         <ViewState title={text("orgsEmptyTitle", "还没有组织")}

@@ -2655,23 +2655,23 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     line-height: 1.4;
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
     background: var(--lvct-bg-surface);
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.15s ease;
 
     &:hover:not(&--active) {
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-background);
-        border-color: color-mix(in srgb, var(--b3-theme-primary) 40%, var(--lvct-border-subtle));
+        background: var(--lvct-bg-hover);
+        color: var(--lvct-text-1);
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 35%, var(--lvct-border-subtle));
     }
 
     &--active {
-        background: color-mix(in srgb, var(--b3-theme-primary) 12%, var(--lvct-bg-surface));
-        color: var(--b3-theme-primary);
-        border-color: var(--b3-theme-primary);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface));
+        color: var(--lv-brand, #ea580c);
+        border-color: var(--lv-brand, #ea580c);
         font-weight: 600;
-        box-shadow: 0 1px 3px color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
+        box-shadow: 0 1px 3px color-mix(in srgb, var(--lv-brand, #ea580c) 18%, transparent);
     }
 
     &--starred {

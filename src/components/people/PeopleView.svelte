@@ -33,7 +33,7 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
-    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network } from "@lucide/svelte";
+    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star } from "@lucide/svelte";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
     import { confirmDialog } from "../../libs/confirm-dialog";
@@ -1908,7 +1908,7 @@
                     class:lvct-people__group-tab--active={filterStarredOnly}
                     onclick={() => { filterStarredOnly = !filterStarredOnly; visibleCount = PAGE_SIZE; }}
                     title="只看星标常用联系人"
-                >⭐ 常用 ({starredCount})</button>
+                ><Star size={12} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />常用 ({starredCount})</button>
             {/if}
             <button
                 type="button"
