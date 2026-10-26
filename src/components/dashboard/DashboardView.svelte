@@ -1154,13 +1154,13 @@ import { toLocalDateKey } from "../../domain/interactions";
                     </div>
                 {/if}
 
-                <!-- 3. 城市分布与出差助手 -->
+                <!-- 3. 城市分布与行程助手 -->
                 {#if data.topRegions}
                     <div class="lvct-home__card lvct-dash__chart-card">
                         <div class="lvct-dash__chart-header">
                             <div class="lvct-dash__chart-title-wrap">
-                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><MapPin size={14} style="color: #ea580c;" /></span>
-                                <span class="lvct-dash__chart-title">城市与出差</span>
+                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><MapPin size={14} style="color: var(--lv-brand, #ea580c);" /></span>
+                                <span class="lvct-dash__chart-title">城市与行程</span>
                             </div>
                             <button
                                 type="button"
@@ -1168,7 +1168,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                                 style="padding: 0 4px; font-size: 11px;"
                                 onclick={() => (regionExplorerOpen = true)}
                             >
-                                出差规划 &gt;
+                                行程助手 &gt;
                             </button>
                         </div>
                         <div class="lvct-region-chips">
@@ -1674,7 +1674,7 @@ import { toLocalDateKey } from "../../domain/interactions";
 {/if}
 
 {#if regionExplorerOpen && data?.allPeople}
-    <LvctDialog title={text("regionExplorerTitle", "城市分布与出差规划")} wide onClose={() => (regionExplorerOpen = false)}>
+    <LvctDialog title={text("regionExplorerTitle", "城市人脉与行程助手")} wide onClose={() => (regionExplorerOpen = false)}>
         <RegionExplorerDialog
             contacts={data.allPeople}
             {i18n}
