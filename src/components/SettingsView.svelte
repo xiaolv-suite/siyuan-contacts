@@ -6,7 +6,7 @@ import type { ViewPreferences } from "../domain/preferences";
     import type { InteractionImportSummary } from "../domain/interaction-backup";
     import { useCloseGuard } from "./close-guard";
     import StatusNotice from "./StatusNotice.svelte";
-    import { SlidersHorizontal, Database, Bell, Sparkles, Plug, Info } from "@lucide/svelte";
+    import { SlidersHorizontal, Database, Bell, Sparkles, Plug, Info, RotateCcw } from "@lucide/svelte";
     import { translateText } from "../domain/translation";
     import { BRAND_AVATAR_IMAGE_MAX_LENGTH, DEFAULT_VIEW_PREFERENCES, isValidBrandAvatarImage, isValidPreferenceDays, normalizeViewPreferences } from "../domain/preferences";
     import { rebasePreferenceDraft } from "../domain/preferences-concurrency";
@@ -1406,9 +1406,9 @@ import type { ViewPreferences } from "../domain/preferences";
                             {#each trashEntries as entry (entry.id)}
                                 <li>
                                     <div>
-                                        {entry.name}
+                                        <b>{entry.name}</b>
                                         {#if entry.snapshot.group} · {entry.snapshot.group}{/if}
-                                        <span class="ft__smaller ft__on-surface">（剩余 {daysUntilTrashExpiration(entry)} 天）</span>
+                                        <span class="lvct-chip font-size-10" style="padding: 1px 6px; margin-left: 6px; background: var(--lv-brand-soft); color: var(--lv-brand);">剩余 {daysUntilTrashExpiration(entry)} 天</span>
                                     </div>
                                     <div class="ft__smaller ft__on-surface">
                                         {#if entry.snapshot.phone}电话 {entry.snapshot.phone}{/if}
@@ -1419,7 +1419,7 @@ import type { ViewPreferences } from "../domain/preferences";
                                         class="b3-button b3-button--outline"
                                         disabled={trashBusy || trashLoading || !facade.restoreContactFromTrash}
                                         onclick={() => void restoreTrashEntry(entry.id)}
-                                    >恢复联系人</button>
+                                    ><RotateCcw size={12} class="lvct-icon-inline" />恢复联系人</button>
                                 </li>
                             {/each}
                         </ul>

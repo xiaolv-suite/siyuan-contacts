@@ -7507,10 +7507,12 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
         min-width: 40px;
         max-width: 40px;
         border-radius: 10px;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 18%, var(--lvct-bg-surface)), var(--lvct-accent-soft));
-        border: 1px solid color-mix(in srgb, var(--lvct-accent) 26%, transparent);
-        color: var(--lvct-accent-fill);
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-accent) 16%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        font-size: 16px;
+        font-weight: 700;
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 78%, #ffffff), var(--lv-accent-cyan, #0284c7));
+        border: 1px solid color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 26%, transparent);
+        color: #ffffff;
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.45);
     }
 
     /* Logo 来自用户上传或外部链接，不能让原始尺寸改变卡片标题区域。 */
