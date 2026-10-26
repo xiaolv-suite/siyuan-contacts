@@ -1677,6 +1677,7 @@ import { toLocalDateKey } from "../../domain/interactions";
     <LvctDialog title={text("regionExplorerTitle", "城市人脉与行程助手")} wide onClose={() => (regionExplorerOpen = false)}>
         <RegionExplorerDialog
             contacts={data.allPeople}
+            notebookId={facade.settings?.notebookId}
             {i18n}
             onApplyRegionFilter={(region) => {
                 regionExplorerOpen = false;

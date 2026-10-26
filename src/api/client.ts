@@ -260,6 +260,13 @@ export async function createDocWithMd(notebookId: string, hPath: string, markdow
     });
 }
 
+/** 创建或获取当天的日记文档（Daily Note） */
+export async function createDailyNote(notebookId: string, app = ""): Promise<string> {
+    return kernelPost("/api/filetree/createDailyNote", { notebook: notebookId, app }, {
+        decode: (data) => decodeNodeId("/api/filetree/createDailyNote", data),
+    });
+}
+
 /**
  * 文档改名（B13 组织改名）。spike:b13 通道7 实证（v3.8.6）：
  * path 参数必须是回读核实的物理路径（含嵌套父文档；传 hpath 报 invalid document path）；

@@ -12,6 +12,7 @@
     } from "../../domain/interactions";
     import { recordInteraction } from "../../data/interactions";
     import { syncInteractionDocSection } from "../../services/doc-section";
+    import { appendInteractionToDailyNote } from "../../services/diary";
     import { translateText } from "../../domain/translation";
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { emitDataChanged } from "../../libs/data-events";
@@ -41,6 +42,7 @@
     const yesterdayStr = toLocalDateKey(new Date(Date.now() - 86400000));
     const dayBeforeYesterdayStr = toLocalDateKey(new Date(Date.now() - 86400000 * 2));
     let note = $state("");
+    let syncToDailyNote = $state(true);
     let busy = $state(false);
     let errorMessage = $state("");
     let textareaEl: HTMLTextAreaElement | undefined = $state();
@@ -74,6 +76,16 @@
             }
             emitDataChanged({ topics: ["people"], docIds: [person.docId] });
             void syncInteractionDocSection(plugin, person.docId).catch(() => {});
+            if (syncToDailyNote && pluginSettings?.notebookId) {
+                void appendInteractionToDailyNote(pluginSettings.notebookId, {
+                    personDocId: person.docId,
+                    personName: person.name,
+                    localDate: targetDate,
+                    type,
+                    note: note.trim() || undefined,
+                    occurredAt,
+                }).catch(() => {});
+            }
             onSaved?.();
             onClose();
         } catch (err) {
@@ -151,6 +163,11 @@
         ></textarea>
         <span class="ft__smaller ft__on-surface" style="margin-top: 4px; display: block; opacity: 0.7;">支持按 Ctrl+Enter 快捷保存，Esc 快速关闭</span>
     </div>
+
+    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--lvct-text-2); margin-top: -4px;">
+        <input type="checkbox" bind:checked={syncToDailyNote} disabled={busy} />
+        <span>同步写入思源当日日记文档（带人物双链）</span>
+    </label>
 
     <div class="fn__flex" style="justify-content: flex-end; gap: 8px; margin-top: 4px;">
         <button

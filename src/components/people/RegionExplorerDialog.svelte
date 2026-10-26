@@ -13,14 +13,17 @@
     import { copyPlainText } from "../../shared/clipboard.ts";
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { onDestroy } from "svelte";
-    import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone } from "@lucide/svelte";
+    import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText } from "@lucide/svelte";
+    import { syncCityTopicDocument } from "../../services/city-topic";
 
     let {
         contacts = [],
+        notebookId,
         onApplyRegionFilter,
         onClose,
     }: {
         contacts: readonly ContactSummary[];
+        notebookId?: string;
         i18n?: Readonly<Record<string, string>>;
         onApplyRegionFilter: (region: string) => void;
         onClose: () => void;
@@ -33,6 +36,28 @@
     // 复制成功的提示状态
     let copySuccess = $state(false);
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
+    let syncingDoc = $state(false);
+    let syncDocSuccess = $state(false);
+    let syncDocTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function handleSyncCityDoc() {
+        if (!notebookId || !selectedCity || selectedCity === "未知" || currentContacts.length === 0 || syncingDoc) return;
+        syncingDoc = true;
+        try {
+            const res = await syncCityTopicDocument({
+                notebookId,
+                city: selectedCity,
+                contacts: currentContacts,
+            });
+            if (res?.docId) {
+                syncDocSuccess = true;
+                if (syncDocTimer) clearTimeout(syncDocTimer);
+                syncDocTimer = setTimeout(() => { syncDocSuccess = false; }, 3000);
+            }
+        } finally {
+            syncingDoc = false;
+        }
+    }
 
     // 按地域分组统计
     const regionGroups = $derived.by(() => groupContactsByRegion(contacts));
@@ -133,6 +158,7 @@
 
     onDestroy(() => {
         if (copyTimer) clearTimeout(copyTimer);
+        if (syncDocTimer) clearTimeout(syncDocTimer);
     });
 
     function handleApplyAndClose(city: string) {
@@ -262,6 +288,21 @@
 
                     <!-- 操作按钮组 -->
                     <div class="lvct-region-dialog__actions">
+                        {#if notebookId && selectedCity && selectedCity !== "未知" && currentContacts.length > 0}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--outline b3-button--small"
+                                onclick={handleSyncCityDoc}
+                                disabled={syncingDoc}
+                                title="在当前思源笔记本生成或更新《城市人脉 · {selectedCity}》实体专题文档"
+                            >
+                                {#if syncDocSuccess}
+                                    <Check size={14} class="lvct-text-success" /> 已同步城市文档
+                                {:else}
+                                    <FileText size={14} /> {syncingDoc ? "正在同步…" : "生成思源城市文档"}
+                                {/if}
+                            </button>
+                        {/if}
                         <button
                             type="button"
                             class="b3-button b3-button--outline b3-button--small"
