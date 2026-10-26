@@ -59,6 +59,13 @@
         plan = { ...plan, fields: { ...plan.fields, [key]: { choice, customValue } } };
     }
 
+    function mergeBothValues(key: keyof ContactMergePlan["fields"]): void {
+        const valA = primaryValue(key).trim();
+        const valB = secondaryValue(key).trim();
+        const merged = [valA, valB].filter(Boolean).join("、");
+        updateFieldChoice(key, "custom", merged);
+    }
+
     function switchPrimarySecondary(): void {
         // 切换主次人物（用户可能想保留 B 资料）
         const swapped: ContactMergePlan = buildDefaultMergePlan(secondary, primary);
@@ -179,6 +186,15 @@
                     />
                     <span>自定义</span>
                 </label>
+                {#if primaryValue(field as keyof ContactMergePlan["fields"]) && secondaryValue(field as keyof ContactMergePlan["fields"]) && primaryValue(field as keyof ContactMergePlan["fields"]) !== secondaryValue(field as keyof ContactMergePlan["fields"])}
+                    <button
+                        type="button"
+                        class="b3-chip font-size-10"
+                        style="padding: 1px 6px;"
+                        onclick={() => mergeBothValues(field as keyof ContactMergePlan["fields"])}
+                        title="合并保留主次双方的值（顿号分隔）"
+                    >保留两者</button>
+                {/if}
                 {#if sel.choice === "custom"}
                     <input
                         class="b3-text-field fn__block lvct-merge__custom"
@@ -272,36 +288,42 @@
     gap: 8px;
     align-items: center;
     padding: 6px 8px;
-    border-bottom: 1px dashed var(--b3-border-color, rgba(0,0,0,0.08));
+    border-bottom: 1px solid var(--lvct-border-subtle);
+}
+.lvct-merge__headrow {
+    background: var(--lvct-bg-app);
+    border-radius: var(--lvct-r-sm, 6px);
 }
 .lvct-merge__col { min-width: 0; overflow-wrap: anywhere; }
-.lvct-merge__col--label { font-weight: 600; }
+.lvct-merge__col--label { font-weight: 600; color: var(--lvct-text-1); }
 .lvct-merge__col--choice { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.lvct-merge__radio { display: inline-flex; align-items: center; gap: 4px; }
+.lvct-merge__radio { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--lvct-text-2); }
 .lvct-merge__custom { width: 100%; min-width: 120px; }
 .lvct-merge__preview {
-    border: 1px solid var(--b3-border-color, rgba(0,0,0,0.16));
-    border-radius: 6px;
-    padding: 8px 12px;
-    background: var(--b3-theme-surface, transparent);
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-md, 8px);
+    padding: 10px 14px;
+    background: var(--lvct-bg-app);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
-.lvct-merge__preview h4 { margin: 0 0 8px 0; }
+.lvct-merge__preview h4 { margin: 0 0 8px 0; color: var(--lvct-text-1); }
 .lvct-merge__preview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
     gap: 6px 12px;
     margin: 0;
 }
-.lvct-merge__preview-grid dt { color: var(--b3-theme-on-surface-light); font-size: 12px; }
-.lvct-merge__preview-grid dd { margin: 0; }
+.lvct-merge__preview-grid dt { color: var(--lvct-text-3); font-size: 12px; }
+.lvct-merge__preview-grid dd { margin: 0; color: var(--lvct-text-1); }
 .lvct-merge__errors {
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--b3-theme-error);
-    background: color-mix(in srgb, var(--b3-theme-error) 12%, transparent);
+    color: var(--lvct-danger, #e11d48);
+    background: var(--lvct-danger-soft);
+    border: 1px solid color-mix(in srgb, var(--lvct-danger, #e11d48) 28%, transparent);
     padding: 6px 10px;
-    border-radius: 4px;
+    border-radius: var(--lvct-r-sm, 6px);
 }
 .lvct-merge__footer {
     display: flex;
