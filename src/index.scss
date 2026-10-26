@@ -7451,8 +7451,8 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
         &--archived { opacity: 1; }
 
         &--selected {
-            border-color: var(--b3-theme-primary) !important;
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--b3-theme-primary) 20%, transparent), var(--lvct-shadow-2) !important;
+            border-color: var(--lv-brand, #ea580c) !important;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-brand, #ea580c) 20%, transparent), var(--lvct-shadow-2) !important;
         }
 
         &:hover {
@@ -7586,19 +7586,19 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 .lvct-orgs-overview-num {
     font-size: 18px;
     font-weight: 700;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
     line-height: 1.1;
 }
 
 .lvct-orgs-overview-label {
     font-size: 11.5px;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
 }
 
 .lvct-orgs-overview-divider {
     width: 1px;
     height: 24px;
-    background: var(--b3-theme-surface-lighter);
+    background: var(--lvct-border-subtle);
 }
 
 /* 组织架构与成员工作台看板（Master-Detail） */
@@ -7620,7 +7620,7 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
         flex-wrap: wrap;
         gap: var(--lvct-sp-2);
         padding-bottom: 8px;
-        border-bottom: 1px solid var(--b3-theme-surface-lighter);
+        border-bottom: 1px solid var(--lvct-border-subtle);
     }
 
     &__title-wrap {
@@ -7633,7 +7633,7 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
             margin: 0;
             font-size: 15px;
             font-weight: 700;
-            color: var(--b3-theme-on-background);
+            color: var(--lvct-text-1);
         }
     }
 
@@ -7642,8 +7642,8 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
         font-weight: 600;
         padding: 2px 8px;
         border-radius: var(--lvct-r-pill);
-        background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
-        color: var(--b3-theme-primary);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+        color: var(--lv-brand, #ea580c);
     }
 
     &__actions {
@@ -7663,8 +7663,9 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
         gap: 8px;
-        max-height: 280px;
+        max-height: 320px;
         overflow-y: auto;
+        scrollbar-gutter: stable;
     }
 
     &__member-item {
@@ -7672,16 +7673,15 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
         align-items: center;
         gap: 8px;
         padding: 6px 10px;
-        border-radius: var(--lvct-r-md);
-        background: color-mix(in srgb, var(--lvct-bg-app) 70%, var(--lvct-bg-surface));
-        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
+        background: var(--lvct-bg-app);
+        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
+        border-radius: var(--lvct-r-sm);
         transition: all 0.15s ease;
 
         &:hover {
-            border-color: var(--b3-theme-primary);
-            background: var(--lvct-bg-surface);
+            background: var(--lvct-bg-hover);
+            border-color: var(--lvct-border-strong);
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
     }
 
