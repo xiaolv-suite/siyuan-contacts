@@ -48,7 +48,7 @@ export interface ContactsPluginFacade {
         personDocId: string,
         note?: string,
         type?: import("./domain/interactions").InteractionType,
-        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean },
+        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean; skipDailyNoteSync?: boolean },
     ): Promise<void>;
     deleteInteraction(personDocId: string, eventId: string): Promise<void>;
     /** 人物洞察：互动时间线 + 共同出席统计 */

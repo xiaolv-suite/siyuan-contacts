@@ -294,12 +294,12 @@
                                 class="b3-button b3-button--outline b3-button--small"
                                 onclick={handleSyncCityDoc}
                                 disabled={syncingDoc}
-                                title="在当前思源笔记本生成或更新《城市人脉 · {selectedCity}》实体专题文档"
+                                title={`在思源中生成或受控更新《${selectedCity}》文档（仅更新人脉受控区，保留手写攻略与生活记录）`}
                             >
                                 {#if syncDocSuccess}
-                                    <Check size={14} class="lvct-text-success" /> 已同步城市文档
+                                    <Check size={14} class="lvct-text-success" /> 已同步《{selectedCity}》文档
                                 {:else}
-                                    <FileText size={14} /> {syncingDoc ? "正在同步…" : "生成思源城市文档"}
+                                    <FileText size={14} /> {syncingDoc ? "正在同步…" : `同步《${selectedCity}》文档`}
                                 {/if}
                             </button>
                         {/if}

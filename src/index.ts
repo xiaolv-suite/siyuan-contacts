@@ -78,6 +78,7 @@ import { listPendingOrganizationOperations, inspectOrganizationOperation, resume
 import { saveOrganizationMember, editOrganizationMember, deleteOrganizationMember, replaceOrganizationMemberWithProjection, moveOrganizationMemberWithProjection } from "./services/org-member-writes";
 import { loadViewPreferences, saveViewPreferences, createPreferenceRequests } from "./services/preferences";
 import { exportInteractionJson } from "./services/interaction-export";
+import { appendInteractionToDailyNote } from "./services/diary";
 import { loadExportSummary } from "./services/export-center";
 import { exportVcfText } from "./services/vcard";
 import {
@@ -962,11 +963,26 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         personDocId: string,
         note?: string,
         type?: import("./domain/interactions").InteractionType,
-        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean },
+        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean; skipDailyNoteSync?: boolean },
     ): Promise<void> {
         await recordInteraction(this, { personDocId, note, type, ...options });
         if (!options?.skipDocSync) {
             void syncInteractionDocSection(this, personDocId).catch(() => {});
+        }
+        if (!options?.skipDailyNoteSync && this.settings?.notebookId) {
+            const notebookId = this.settings.notebookId;
+            const date = toLocalDateKey(options?.occurredAt ? new Date(options.occurredAt) : new Date());
+            void this.listContacts().then((roster) => {
+                const person = roster.find((p) => p.docId === personDocId);
+                return appendInteractionToDailyNote(notebookId, {
+                    personDocId,
+                    personName: person?.name || "联系人",
+                    localDate: date,
+                    type,
+                    note,
+                    occurredAt: options?.occurredAt,
+                });
+            }).catch(() => {});
         }
         if (this.settings?.checkinItemId) {
             const date = toLocalDateKey(options?.occurredAt ? new Date(options.occurredAt) : new Date());

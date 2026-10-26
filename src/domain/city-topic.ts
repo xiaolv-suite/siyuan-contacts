@@ -14,21 +14,24 @@ export interface CityTopicInput {
 }
 
 export const CITY_TOPIC_ATTR = "custom-lvct-city";
+export const CITY_CONTACTS_SECTION_ATTR = "custom-lvct-city-contacts";
 
 /**
- * 生成在思源笔记中沉淀为《城市人脉 · {城市}》文档的正文 Markdown。
- * 包含常驻好友双链、关联机构双链与统计指标，在思源知识图谱中形成以城市为枢纽的星系拓扑。
+ * 生成在思源城市文档（以正式市级城市名命名）中维护的独立受控人脉区块 Markdown。
+ * 契约：
+ * 1. 文档标题即为标准市级城市名（如“深圳”、“南京”）；
+ * 2. 插件仅在此独立受控区块内更新人脉双链与关联机构；
+ * 3. 严格保留用户在文档其他区域自行添加的城市攻略、酒店餐厅、生活随笔等内容。
  */
-export function buildCityTopicDocumentMarkdown(input: CityTopicInput): string {
+export function buildCityTopicSectionMarkdown(input: CityTopicInput): string {
     const lines: string[] = [];
-    const cityName = input.city.trim() || "未命名城市";
     const orgCount = input.organizations ? input.organizations.length : 0;
     
-    lines.push(`# 📍 城市人脉 · ${cityName}`);
+    lines.push("## 城市人脉网络");
     lines.push(`> 城市人脉全貌：共 ${input.contacts.length} 位好友 · ${orgCount} 家关联机构 · 更新时间：${input.generatedDate}`);
     lines.push("");
 
-    lines.push("## 常驻与同城好友");
+    lines.push("### 常驻与同城好友");
     if (input.contacts.length === 0) {
         lines.push("- 当前暂无常驻该城市的联系人");
     } else {
@@ -46,7 +49,7 @@ export function buildCityTopicDocumentMarkdown(input: CityTopicInput): string {
     lines.push("");
 
     if (input.organizations && input.organizations.length > 0) {
-        lines.push("## 关联组织与机构");
+        lines.push("### 关联组织与机构");
         for (const org of input.organizations) {
             const cleanOrgName = escapeLinkLabel(org.name);
             lines.push(`- [${cleanOrgName}](siyuan://blocks/${org.docId})`);
@@ -55,4 +58,11 @@ export function buildCityTopicDocumentMarkdown(input: CityTopicInput): string {
     }
 
     return lines.join("\n");
+}
+
+/** 初始新建城市文档时的完整骨架（文档标题即正式城市名，下方接人脉受控区块） */
+export function buildCityInitialDocumentMarkdown(input: CityTopicInput): string {
+    const cityName = input.city.trim() || "未命名城市";
+    const sectionMd = buildCityTopicSectionMarkdown(input);
+    return `# ${cityName}\n\n${sectionMd}`;
 }
