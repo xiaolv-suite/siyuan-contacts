@@ -1520,7 +1520,7 @@
         <ViewState title={people.length === 0 ? text("graphEmptyNoPeopleTitle", "还没有联系人") : text("graphEmptyNoMatchTitle", "没有匹配的节点")}
             description={emptyStateDescription}>
             {#if people.length > 0}
-                <button class="b3-button b3-button--outline" onclick={clearFilters}>{text("graphClearFilters", "清除筛选")}</button>
+                <button class="b3-button b3-button--primary" onclick={clearFilters}>{text("graphClearFilters", "清除筛选")}</button>
             {/if}
             {#if people.length === 0 && onOpenCreatePerson}
                 <button class="b3-button b3-button--outline" onclick={onOpenCreatePerson}>{text("graphCreatePerson", "新建联系人")}</button>
