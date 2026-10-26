@@ -3989,7 +3989,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
 .lvct-graph-view__hover-card {
     position: absolute;
     z-index: var(--lvct-z-popover);
-    width: min(220px, calc(100% - 24px));
+    width: min(280px, calc(100% - 24px));
     max-height: calc(100% - 24px);
     overflow: auto;
     box-sizing: border-box;
@@ -4002,6 +4002,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     -webkit-backdrop-filter: blur(14px) saturate(1.15);
     box-shadow: var(--lvct-shadow-2);
     pointer-events: auto;
+    animation: lvct-pop-in 0.16s var(--lvct-ease-spring);
 
     .ft__smaller {
         display: block;
