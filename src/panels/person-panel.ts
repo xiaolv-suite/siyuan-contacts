@@ -361,7 +361,7 @@ function buildStrip(
     actions.className = "lvct-strip__actions";
 
     const record = document.createElement("button");
-    record.className = "b3-button b3-button--small b3-button--text lvct-strip__record-btn";
+    record.className = "b3-button b3-button--small b3-button--primary lvct-strip__record-btn";
     record.textContent = t(context, "stripRecord", "记互动");
     record.title = t(context, "stripRecordTitle", "为 {name} 记录一笔互动", { name: person.name });
     record.addEventListener("click", () => openRecordDialog(context, protyle, person));
