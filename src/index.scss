@@ -2590,30 +2590,31 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
 }
 
 .lvct-people__alphabet-btn {
-    min-width: 20px;
-    height: 22px;
+    min-width: 22px;
+    height: 24px;
     padding: 0 4px;
     font-size: 11px;
     font-weight: 500;
-    line-height: 22px;
+    line-height: 24px;
     text-align: center;
     border: none;
     border-radius: 4px;
     background: transparent;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.15s ease;
 
     &:hover:not(:disabled) {
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-background);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+        color: var(--lv-brand, #ea580c);
     }
 
     &--active {
-        background: var(--b3-theme-primary) !important;
+        background: var(--lv-brand, #ea580c) !important;
         color: #ffffff !important;
         font-weight: 700;
+        box-shadow: 0 1px 4px color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
     }
 
     &--all {
@@ -8394,17 +8395,34 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 
 .lvct-settings__nav-item {
     min-height: var(--lvct-control-h);
-    padding: 9px 11px;
-    border-radius: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: var(--lvct-text-2);
+    font-size: var(--lvct-fs-body);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+
+    &:hover {
+        background: var(--lvct-bg-hover);
+        color: var(--lvct-text-1);
+    }
 
     &--active {
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lvct-accent) 14%, transparent);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+        color: var(--lv-brand, #ea580c);
+        font-weight: 600;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lv-brand, #ea580c) 20%, transparent);
     }
 }
 
 .lvct-settings__panel {
-    padding: 24px;
+    padding: 28px;
     border-radius: var(--lvct-r-panel);
+    background: var(--lvct-bg-surface);
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
+    box-shadow: var(--lvct-shadow-card);
 }
 
 .lvct-settings__panel h2 {
