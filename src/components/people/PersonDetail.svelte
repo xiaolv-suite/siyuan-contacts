@@ -24,6 +24,7 @@
         Pin,
         FolderGit2,
         MapPin,
+        Plus,
     } from "@lucide/svelte";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
@@ -1219,6 +1220,15 @@ import StatusNotice from "../StatusNotice.svelte";
     }
 
     let convertedBlockIds = $state<string[]>([]);
+    let recordInputEl: HTMLInputElement | undefined = $state();
+
+    async function scrollToRecordSection() {
+        if (await selectTab("overview")) {
+            await tick();
+            recordInputEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+            recordInputEl?.focus();
+        }
+    }
     const allConvertedBlockIds = $derived.by(() => {
         const ids = new Set<string>(convertedBlockIds);
         if (insights?.timeline) {
@@ -2241,6 +2251,12 @@ import StatusNotice from "../StatusNotice.svelte";
         </div>
         <div class="lvct-detail__header-actions">
             <button class="b3-button b3-button--outline" onclick={() => (editing = true)} disabled={busy || deleting}>{text("detailEdit", "编辑")}</button>
+            <button class="b3-button b3-button--primary lvct-detail__quick-record-btn" onclick={scrollToRecordSection} title="为当前联系人快速记录一笔互动">
+                <Plus size={14} class="lvct-icon-inline" /> 记互动
+            </button>
+            <button class="b3-button b3-button--outline" onclick={openBriefingExport} title="导出格式化会面简报 Markdown">
+                <FileText size={14} class="lvct-icon-inline" /> 简报
+            </button>
             <button class="b3-button b3-button--outline" onclick={() => navigate(previousPerson)} disabled={!previousPerson || busy} title={previousPerson ? `上一位：${previousPerson.name} (Alt+←)` : undefined}>{text("detailPrevious", "上一位")}</button>
             <button class="b3-button b3-button--outline" onclick={() => navigate(nextPerson)} disabled={!nextPerson || busy} title={nextPerson ? `下一位：${nextPerson.name} (Alt+→)` : undefined}>{text("detailNext", "下一位")}</button>
         </div>
@@ -2992,6 +3008,7 @@ import StatusNotice from "../StatusNotice.svelte";
         </div>
         <div class="lvct-detail__record fn__flex">
             <input
+                bind:this={recordInputEl}
                 class="b3-text-field fn__flex-1"
                 type="text"
                 placeholder={text("detailRecordPlaceholder", "做了什么、聊了什么（可留空）")}
