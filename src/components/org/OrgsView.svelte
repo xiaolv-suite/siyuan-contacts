@@ -7,7 +7,7 @@
     import type { ContactsPluginFacade } from "../../types";
     import type { OrganizationWithMembers } from "../../services/org";
     import { filterOrganizations, type OrganizationStatusFilter } from "../../domain/organization-scan";
-    import { onDestroy, untrack } from "svelte";
+    import { onDestroy, untrack, tick } from "svelte";
     import { requestErrorMessage } from "../../shared/error-presenter";
 
     let {
@@ -44,6 +44,13 @@
     let organizationQuery = $state("");
     let organizationStatus = $state<OrganizationStatusFilter>("all");
     let failedLogoUrls = $state<Record<string, string>>({});
+    let cockpitElement: HTMLElement | undefined = $state();
+
+    async function selectOrgCard(docId: string) {
+        activeOrgDocId = docId;
+        await tick();
+        cockpitElement?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
     let refreshVersion = 0;
     let organizationLoadGeneration = 0;
     let alive = true;
@@ -333,7 +340,7 @@
                     class:lvct-orgs-view__card--selected={activeOrgDocId === org.docId}
                     data-org-doc-id={org.docId}
                     class:lvct-orgs-view__card--archived={org.archived}
-                    onclick={() => { activeOrgDocId = org.docId; }}
+                    onclick={() => void selectOrgCard(org.docId)}
                 >
                     <div class="lvct-orgs-view__card-head">
                         {#if logoUrlOf(org) && failedLogoUrls[org.docId] !== logoUrlOf(org)}
@@ -377,7 +384,7 @@
 
         <!-- 下半区：选定组织架构与成员全貌工作台看板，彻底消除空白大框 -->
         {#if activeSelectedOrg}
-            <div class="lvct-home__card lvct-orgs-cockpit" role="region" aria-label="选定组织架构全景">
+            <div class="lvct-home__card lvct-orgs-cockpit" bind:this={cockpitElement} role="region" aria-label="选定组织架构全景">
                 <div class="lvct-orgs-cockpit__header">
                     <div class="lvct-orgs-cockpit__title-wrap">
                         <span class="lvct-orgs-cockpit__tag" style="display: inline-flex; align-items: center;"><Building2 size={13} class="lvct-icon-inline" /> 组织人脉全貌</span>
