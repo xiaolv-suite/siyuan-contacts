@@ -4047,19 +4047,20 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     font-size: 11px;
     cursor: pointer;
     transition: all 0.15s ease;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
 
     &:hover {
-        background: var(--b3-theme-surface-lighter);
-        border-color: var(--b3-theme-surface-lighter);
+        background: var(--lvct-bg-hover);
+        border-color: var(--lvct-border-subtle);
+        color: var(--lvct-text-1);
     }
 
     &--active {
-        background: var(--b3-theme-surface-lighter);
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-on-background);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface));
+        border-color: var(--lv-brand, #ea580c);
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 3px color-mix(in srgb, var(--lv-brand, #ea580c) 15%, transparent);
     }
 
     &--dimmed {
