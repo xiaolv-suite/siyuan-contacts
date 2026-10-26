@@ -1777,7 +1777,7 @@
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16}/>{text("peopleImportDocs", "导入已有文档")}</button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16}/>{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); occasioning = true; }}><Calendar size={16}/>{text("peopleOccasion", "记录活动")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16}/>{text("peopleRegionExplorer", "城市与出差")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16}/>{text("peopleRegionExplorer", "城市与行程")}</button>
     {/snippet}
     <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
         {#if isMobile}
@@ -2515,7 +2515,7 @@
     {/if}
 
     {#if regionExploring}
-        <LvctDialog title={text("regionExplorerTitle", "城市分布与出差规划")} wide onClose={() => (regionExploring = false)}>
+        <LvctDialog title={text("regionExplorerTitle", "城市人脉与行程助手")} wide onClose={() => (regionExploring = false)}>
             <RegionExplorerDialog
                 contacts={people}
                 {i18n}

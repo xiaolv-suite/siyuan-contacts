@@ -11,6 +11,7 @@
     } from "../../domain/region.ts";
     import { profileText } from "../../domain/people-profiles.ts";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import { toLocalDateKey } from "../../domain/interactions.ts";
     import { onDestroy } from "svelte";
     import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone } from "@lucide/svelte";
 
@@ -84,13 +85,24 @@
         return g ? g.count : 0;
     });
 
-    // 复制出差拜访清单为 Markdown 格式
+    type TripContext = "general" | "business" | "travel" | "transit";
+    let tripContext = $state<TripContext>("general");
+
+    const TRIP_CONTEXTS: { id: TripContext; label: string; icon: string; titlePrefix: string }[] = [
+        { id: "general", label: "全部探访", icon: "📍", titlePrefix: "城市人脉探访备忘" },
+        { id: "business", label: "商务出差", icon: "💼", titlePrefix: "出差人脉拜访清单" },
+        { id: "travel", label: "度假出游", icon: "✈️", titlePrefix: "出游好友小聚备忘" },
+        { id: "transit", label: "顺路途经", icon: "🚗", titlePrefix: "顺路探望联络清单" },
+    ];
+
+    // 复制行程探访备忘录为 Markdown 格式
     async function handleCopyVisitList() {
         if (currentContacts.length === 0) return;
         const cityName = selectedCity || "未知地区";
+        const currentCtx = TRIP_CONTEXTS.find((c) => c.id === tripContext) ?? TRIP_CONTEXTS[0];
         const lines: string[] = [
-            `# 出差人脉拜访清单 - ${cityName} (共 ${currentContacts.length} 人)`,
-            `> 生成时间：${new Date().toLocaleDateString()}`,
+            `# ${currentCtx.icon} ${currentCtx.titlePrefix} - ${cityName} (共 ${currentContacts.length} 人)`,
+            `> 行程类型：${currentCtx.label} · 生成日期：${toLocalDateKey()}`,
             "",
         ];
 
@@ -135,8 +147,8 @@
         <div class="lvct-region-dialog__header-left">
             <Compass size={18} class="lvct-region-dialog__header-icon" />
             <div>
-                <h3 class="lvct-region-dialog__title">城市人脉探索与出差助手</h3>
-                <p class="lvct-region-dialog__subtitle">按城市归类通讯录联系人，一键导出拜访清单、探索同城及周边人脉</p>
+                <h3 class="lvct-region-dialog__title">城市人脉探索与行程助手</h3>
+                <p class="lvct-region-dialog__subtitle">出差出游、假期旅行、顺路途经，随时发现同城与周边好友，一键生成探访备忘录</p>
             </div>
         </div>
         <div class="lvct-region-dialog__header-search">
@@ -154,7 +166,7 @@
 
     <!-- 热门城市快捷 Chips -->
     <div class="lvct-region-dialog__quick-chips">
-        <span class="lvct-region-dialog__chips-label">热门出差地：</span>
+        <span class="lvct-region-dialog__chips-label">常去与聚居城市：</span>
         {#each hotCities as hot}
             {@const group = regionGroups.find((g) => g.city === hot)}
             <button
@@ -265,12 +277,28 @@
                             disabled={currentContacts.length === 0}
                         >
                             {#if copySuccess}
-                                <Check size={14} /> 已复制清单
+                                <Check size={14} /> 已复制探访备忘
                             {:else}
-                                <Copy size={14} /> 复制出差清单
+                                <Copy size={14} /> 复制探访备忘
                             {/if}
                         </button>
                     </div>
+                </div>
+
+                <!-- 行程类型快速切换胶囊栏 -->
+                <div style="display: flex; gap: 6px; align-items: center; padding: 0 0 10px 0; border-bottom: 1px solid var(--lvct-border-hairline, rgba(0,0,0,0.06)); margin-bottom: 12px; flex-wrap: wrap;">
+                    <span class="ft__smaller ft__on-surface font-size-11" style="color: var(--lvct-text-3);">行程类型：</span>
+                    {#each TRIP_CONTEXTS as ctx}
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11"
+                            class:b3-chip--primary={tripContext === ctx.id}
+                            onclick={() => (tripContext = ctx.id)}
+                            title={`切换为${ctx.label}模式`}
+                        >
+                            {ctx.icon} {ctx.label}
+                        </button>
+                    {/each}
                 </div>
 
                 <!-- 联系人列表 -->
