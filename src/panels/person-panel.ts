@@ -20,6 +20,9 @@ import { requestPersonNavigation, subscribeDataChanged } from "../libs/data-even
 import PersonEditDialog from "../components/people/PersonEditDialog.svelte";
 import QuickRecordDialog from "../components/people/QuickRecordDialog.svelte";
 import { translateText } from "../domain/translation";
+import { extractNormalizedRegion } from "../domain/region";
+import { CITY_TOPIC_ATTR } from "../domain/city-topic";
+import { querySql } from "../api/client";
 import type { Plugin } from "siyuan";
 import type { ContactsSettings } from "../domain/model";
 import type { ContactSummary } from "../domain/person";
@@ -122,6 +125,27 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
                 }
                 return;
             }
+
+            // 检查是否为城市人脉实体专题文档
+            const cityRows = await querySql<unknown>(
+                `SELECT content, ial FROM blocks WHERE id = '${rootId}' AND type = 'd' AND ial LIKE '%${CITY_TOPIC_ATTR}="%' LIMIT 1`,
+            ).catch(() => []);
+            if (!isCurrent()) return;
+            if (cityRows.length > 0) {
+                const row = cityRows[0] as { ial?: string; content?: string };
+                const match = row.ial?.match(new RegExp(`${CITY_TOPIC_ATTR}="([^"]+)"`));
+                const cityName = match?.[1] || row.content || "未知";
+                const cityContactsCount = roster.filter((p) => extractNormalizedRegion(p).city === cityName).length;
+                const strip = buildCityStrip(context, protyle, cityName, cityContactsCount);
+                const title = protyle.element.querySelector(".protyle-title");
+                if (title) {
+                    title.insertAdjacentElement("afterend", strip);
+                } else {
+                    protyle.element.prepend(strip);
+                }
+                return;
+            }
+
             activeStrips.delete(protyle.element);
             return;
         }
@@ -268,6 +292,69 @@ function buildOrgStrip(
         window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "orgs" } }));
     });
     actions.appendChild(openOrgsView);
+
+    strip.appendChild(avatar);
+    strip.appendChild(main);
+    strip.appendChild(actions);
+    return strip;
+}
+
+function buildCityStrip(
+    context: PanelContext,
+    _protyle: ProtyleLike,
+    cityName: string,
+    contactCount: number,
+): HTMLElement {
+    const strip = document.createElement("div");
+    strip.className = `${STRIP_CLASS} lvct-strip lvct-strip--city`;
+    strip.dataset.city = cityName;
+
+    const avatar = document.createElement("span");
+    avatar.className = "lvct-strip__avatar lvct-strip__avatar--city";
+    avatar.textContent = cityName.slice(0, 1) || "市";
+
+    const main = document.createElement("div");
+    main.className = "lvct-strip__main";
+    const identity = document.createElement("div");
+    identity.className = "lvct-strip__identity";
+
+    const name = document.createElement("b");
+    name.textContent = cityName;
+    identity.appendChild(name);
+
+    const badges = document.createElement("div");
+    badges.className = "lvct-strip__badges";
+    badges.appendChild(makeBadge("📍 城市人脉", "lvct-strip__badge--city"));
+    badges.appendChild(makeBadge(`常驻好友 ${contactCount} 人`, "lvct-strip__badge--activity"));
+    identity.appendChild(badges);
+    main.appendChild(identity);
+
+    const actions = document.createElement("div");
+    actions.className = "lvct-strip__actions";
+
+    const filterCityPeople = document.createElement("button");
+    filterCityPeople.className = "b3-button b3-button--small b3-button--primary";
+    filterCityPeople.textContent = "同城好友";
+    filterCityPeople.title = `在名册中筛选常驻「${cityName}」的联系人`;
+    filterCityPeople.addEventListener("click", () => {
+        if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
+        const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
+        openWorkbench?.call(context.plugin);
+        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "people" } }));
+    });
+    actions.appendChild(filterCityPeople);
+
+    const openTripPlanner = document.createElement("button");
+    openTripPlanner.className = "b3-button b3-button--small b3-button--outline";
+    openTripPlanner.textContent = "行程规划";
+    openTripPlanner.title = "打开小驴人脉城市与行程助手，探索同城与周边好友";
+    openTripPlanner.addEventListener("click", () => {
+        if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
+        const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
+        openWorkbench?.call(context.plugin);
+        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "home" } }));
+    });
+    actions.appendChild(openTripPlanner);
 
     strip.appendChild(avatar);
     strip.appendChild(main);
