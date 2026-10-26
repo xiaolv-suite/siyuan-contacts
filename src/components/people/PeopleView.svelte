@@ -2524,6 +2524,7 @@
                     extraFilter = { ...extraFilter, region };
                     visibleCount = PAGE_SIZE;
                 }}
+                onOpenDoc={(docId) => onOpenPersonDoc?.(docId)}
                 onClose={() => (regionExploring = false)}
             />
         </LvctDialog>

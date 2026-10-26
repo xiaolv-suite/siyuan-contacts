@@ -1276,9 +1276,13 @@ import StatusNotice from "../StatusNotice.svelte";
     let copiedBlockUriId = $state("");
     let copiedBlockUriTimer: ReturnType<typeof setTimeout> | null = null;
 
-    async function copyBlockUri(blockId: string) {
+    async function copyBlockUri(blockId: string, event?: MouseEvent) {
         if (!blockId) return;
         const uri = `siyuan://blocks/${blockId}`;
+        if (event?.ctrlKey || event?.metaKey) {
+            window.open(uri, "_self");
+            return;
+        }
         try {
             await copyPlainText(uri);
             copiedBlockUriId = blockId;
@@ -3575,8 +3579,8 @@ import StatusNotice from "../StatusNotice.svelte";
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small lvct-detail__timeline-source-link"
                                     style="padding: 1px 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 2px;"
-                                    title="复制该记录对应的思源笔记块深度定位链接"
-                                    onclick={() => copyBlockUri(refBlockId)}
+                                    title="点击复制块定位链接 (siyuan://blocks/...)，按住 Ctrl 点击可直接在思源中打开定位该块"
+                                    onclick={(e) => copyBlockUri(refBlockId, e)}
                                 >
                                     {#if copiedBlockUriId === refBlockId}
                                         <Check size={11} class="lvct-text-success" />
@@ -3744,8 +3748,8 @@ import StatusNotice from "../StatusNotice.svelte";
                                                 type="button"
                                                 class="b3-button b3-button--text b3-button--small lvct-detail__copy-block-ref-btn"
                                                 style="display: inline-flex; align-items: center; gap: 2px;"
-                                                title="复制当前段落的思源块引用深度定位链接"
-                                                onclick={() => copyBlockUri(bItem.blockId)}
+                                                title="点击复制块引用深度定位链接，按住 Ctrl 点击可直接在思源中打开定位该块"
+                                                onclick={(e) => copyBlockUri(bItem.blockId, e)}
                                             >
                                                 {#if copiedBlockUriId === bItem.blockId}
                                                     <Check size={11} class="lvct-text-success" />

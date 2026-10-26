@@ -1684,6 +1684,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                 const matched = data?.allPeople ? filterPeopleByRegion(data.allPeople, region) : [];
                 onOpenPeople({ itemIds: matched.map((p) => p.itemId), label: `城市 · ${region}` });
             }}
+            onOpenDoc={(docId) => facade.openDoc?.(docId)}
             onClose={() => (regionExplorerOpen = false)}
         />
     </LvctDialog>
