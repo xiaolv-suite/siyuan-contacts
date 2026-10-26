@@ -1246,7 +1246,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text b3-button--small"
-                                        style="padding: 2px 6px; font-size: 11.5px; border-radius: 4px; background: color-mix(in srgb, #f59e0b 14%, var(--lvct-bg-surface)); color: #d97706; display: inline-flex; align-items: center;"
+                                        style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; background: var(--lv-heat-cool-soft); color: var(--lv-heat-cool); display: inline-flex; align-items: center;"
                                         title={`查看 ${b.person.name} 详情`}
                                         onclick={() => onOpenDetail(b.person)}
                                     ><Cake size={11} class="lvct-icon-inline" /> {b.person.name}</button>
@@ -1255,7 +1255,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text b3-button--small"
-                                        style="padding: 2px 6px; font-size: 11.5px; border-radius: 4px; background: color-mix(in srgb, var(--lvct-accent) 12%, var(--lvct-bg-surface)); color: var(--lvct-accent); display: inline-flex; align-items: center;"
+                                        style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; background: var(--lv-brand-soft); color: var(--lv-brand); display: inline-flex; align-items: center;"
                                         title={f.person ? `查看 ${f.person.name} 详情` : f.item.title || "跟进"}
                                         onclick={() => { if (f.person) onOpenDetail(f.person); }}
                                     ><Pin size={11} class="lvct-icon-inline" /> {f.item.title || "保持联系"}{f.person ? `（${f.person.name}）` : ""}</button>
