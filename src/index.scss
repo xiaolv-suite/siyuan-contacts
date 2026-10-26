@@ -3036,6 +3036,13 @@ html[data-theme-mode="dark"] .lvct-notice {
     border: 1px solid color-mix(in srgb, var(--lv-heat-cool) 28%, transparent);
 }
 
+.lvct-chip--empty {
+    opacity: 0.42 !important;
+    cursor: default !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
 /* 统一覆写与美化 b3-chip，消除宿主或三方主题下生硬黑线与方角割裂 */
 .b3-chip {
     display: inline-flex;
