@@ -18,6 +18,8 @@ import {
     saveOccasionEntity,
 } from "../data/occasions.ts";
 import { appendInteractionBatch } from "../data/interactions.ts";
+import { appendOccasionToDailyNote } from "./diary";
+import type { ContactsSettings } from "../domain/model";
 import { findBlockIdByCustomAttr, upsertMarkedBlock, deleteBlock } from "../api/blocks.ts";
 import { buildOccasionMarkdown, occasionMarkerAttr } from "../domain/occasion-links.ts";
 
@@ -84,6 +86,18 @@ export async function createOccasion(
         } catch (error) {
             console.warn("[LvContacts] 场合文档受控块投影失败:", error);
         }
+    }
+
+    // 安全同步至当日思源日记（带全体参与人双链，非阻塞）
+    const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
+    if (pluginSettings?.notebookId && occasion.date) {
+        void appendOccasionToDailyNote(pluginSettings.notebookId, {
+            title: occasion.title,
+            type: occasion.type,
+            date: occasion.date,
+            place: occasion.place,
+            attendees: occasion.attendees.map((a) => ({ personDocId: a.personDocId, name: a.name })),
+        }).catch(() => {});
     }
 
     return occasion;

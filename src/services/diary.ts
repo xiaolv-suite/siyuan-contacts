@@ -5,7 +5,7 @@
  */
 import { appendBlockMd, findDailyNoteDocument, flushBlockIndex } from "../api/blocks";
 import { createDailyNote } from "../api/client";
-import { buildDailyNoteInteractionMarkdown } from "../domain/diary-sync.ts";
+import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown } from "../domain/diary-sync.ts";
 import type { InteractionType } from "../domain/interactions.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
 
@@ -66,6 +66,55 @@ export async function appendInteractionToDailyNote(
         return { dailyDocId: dailyDoc.docId, blockId };
     } catch (err) {
         console.warn("[LvContacts] 追加互动到思源日记未完成（非阻塞）：", err);
+        return null;
+    }
+}
+
+export interface AppendOccasionToDailyNoteInput {
+    title: string;
+    type?: string;
+    date: string;
+    place?: string;
+    attendees: readonly { personDocId: string; name: string }[];
+}
+
+export async function appendOccasionToDailyNote(
+    notebookId: string,
+    input: AppendOccasionToDailyNoteInput,
+): Promise<{ dailyDocId: string; blockId: string } | null> {
+    if (!notebookId || !input.title || !input.date) return null;
+
+    try {
+        let dailyDoc = await findDailyNoteDocument(notebookId, input.date);
+        const todayStr = toLocalDateKey(new Date());
+
+        if (!dailyDoc && input.date === todayStr) {
+            try {
+                const createdDocId = await createDailyNote(notebookId);
+                if (createdDocId) {
+                    await flushBlockIndex();
+                    dailyDoc = await findDailyNoteDocument(notebookId, input.date);
+                }
+            } catch {
+                // 忽略非阻塞错误
+            }
+        }
+
+        if (!dailyDoc?.docId) return null;
+
+        const markdown = buildDailyNoteOccasionMarkdown({
+            title: input.title,
+            type: input.type,
+            date: input.date,
+            place: input.place,
+            attendees: input.attendees,
+        });
+
+        const blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        await flushBlockIndex();
+        return { dailyDocId: dailyDoc.docId, blockId };
+    } catch (err) {
+        console.warn("[LvContacts] 追加多人活动到思源日记未完成（非阻塞）：", err);
         return null;
     }
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildDailyNoteInteractionMarkdown } from "../src/domain/diary-sync.ts";
+import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown } from "../src/domain/diary-sync.ts";
 import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR } from "../src/domain/city-topic.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 
@@ -29,6 +29,25 @@ test("buildDailyNoteInteractionMarkdown: 缺省类型与时间正常兜底", () 
     assert.ok(md.includes("📝"));
     assert.ok(md.includes("[李四](siyuan://blocks/20261026000000-doc002)"));
     assert.ok(md.includes("互动"));
+});
+
+test("buildDailyNoteOccasionMarkdown: 生成带全部参与人块引的多人活动记录", () => {
+    const md = buildDailyNoteOccasionMarkdown({
+        title: "大湾区开发者晚宴",
+        type: "meal",
+        date: "2026-10-26",
+        place: "深圳湾万象城",
+        attendees: [
+            { personDocId: "20261026000000-doc001", name: "张三" },
+            { personDocId: "20261026000000-doc002", name: "李四" },
+        ],
+    });
+
+    assert.ok(md.includes("🍽️"));
+    assert.ok(md.includes("大湾区开发者晚宴"));
+    assert.ok(md.includes("@ 深圳湾万象城"));
+    assert.ok(md.includes("[张三](siyuan://blocks/20261026000000-doc001)"));
+    assert.ok(md.includes("[李四](siyuan://blocks/20261026000000-doc002)"));
 });
 
 test("buildCityTopicSectionMarkdown & buildCityInitialDocumentMarkdown: 正式市级名称与受控人脉区块生成", () => {
