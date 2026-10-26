@@ -3939,7 +3939,7 @@ import StatusNotice from "../StatusNotice.svelte";
                     <option value={0}>全部互动</option>
                 </select>
             </label>
-            <pre class="lvct-briefing-preview">{briefingPreview}</pre>
+            <pre class="lvct-briefing-preview" class:lvct-briefing-preview--copied={briefingCopied}>{briefingPreview}</pre>
             <div class="lvct-form__actions">
                 <button class="b3-button b3-button--cancel" onclick={() => (briefingExportOpen = false)}>关闭</button>
                 <button class="b3-button b3-button--primary" onclick={copyBriefing}>
