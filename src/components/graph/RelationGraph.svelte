@@ -1842,17 +1842,17 @@
                     <span class="ft__smaller ft__on-surface">{snapshot.result.reason}</span>
                 {:else if pathMode}
                     {#each pathPeople as person, index (person.docId)}
-                        {#if index > 0}<span class="ft__on-surface" aria-hidden="true">→</span>{/if}
-                        <button class="b3-button b3-button--text" onclick={() => openSnapshotPerson(person)}>{person.name} · {person.docId}</button>
+                        {#if index > 0}<span class="lvct-graph-path-arrow" aria-hidden="true">→</span>{/if}
+                        <button class="b3-button b3-button--text lvct-graph-path-btn" onclick={() => openSnapshotPerson(person)}>{person.name} · {person.docId}</button>
                     {:else}
                         <span class="ft__smaller ft__on-surface">{text("graphNoPath", "当前图内没有连接路径")}</span>
                     {/each}
                 {:else}
-                {#each resultPeople as person (person.docId)}
-                    <button class="b3-button b3-button--text" onclick={() => openSnapshotPerson(person)}>{person.name} · {person.docId}</button>
-                {:else}
-                    <span class="ft__smaller ft__on-surface">{compareId ? text("graphNoCommon", "当前图内没有共同联系人") : secondMode ? text("graphNoSecond", "当前图内没有二度关系") : text("graphNoDirect", "当前图内没有直接关系")}</span>
-                {/each}
+                    {#each resultPeople as person (person.docId)}
+                        <button class="b3-button b3-button--text lvct-graph-path-btn" onclick={() => openSnapshotPerson(person)}>{person.name} · {person.docId}</button>
+                    {:else}
+                        <span class="ft__smaller ft__on-surface">{compareId ? text("graphNoCommon", "当前图内没有共同联系人") : secondMode ? text("graphNoSecond", "当前图内没有二度关系") : text("graphNoDirect", "当前图内没有直接关系")}</span>
+                    {/each}
                 {/if}
             </div>
         {/if}
