@@ -1609,7 +1609,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
 
 .lvct-people__cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
     gap: var(--lvct-sp-3);
     align-content: start;
     grid-auto-rows: max-content;
@@ -1618,6 +1618,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     overflow-anchor: none;
     flex: 1;
     min-height: 0;
+    scrollbar-gutter: stable;
 }
 
 /* 长列表窗口化占位：必须占满网格行，避免离屏数据卸载后滚动高度塌陷。 */
@@ -8097,19 +8098,21 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 .lvct-workbench__header {
     position: relative;
     z-index: 2;
-    min-height: 112px;
-    padding: 30px clamp(18px, 3vw, 42px) 22px;
+    min-height: 88px;
+    padding: 20px clamp(16px, 2.5vw, 36px) 16px;
     border-bottom: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 68%, transparent);
-    background: color-mix(in srgb, var(--lvct-bg-canvas) 78%, var(--lvct-bg-surface));
+    background: color-mix(in srgb, var(--lvct-bg-canvas) 85%, var(--lvct-bg-surface));
 
     h1 {
         font-size: var(--lvct-fs-page-title);
-        letter-spacing: 0;
+        letter-spacing: -0.01em;
+        line-height: 1.25;
     }
 
     p {
-        margin-top: 6px;
-        font-size: var(--lvct-fs-body);
+        margin-top: 4px;
+        font-size: var(--lvct-fs-caption);
+        color: var(--lvct-text-2);
     }
 }
 
@@ -8127,8 +8130,9 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 }
 
 .lvct-workbench__body {
-    max-width: 1280px;
+    max-width: 1400px;
     padding-bottom: 48px;
+    scrollbar-gutter: stable;
 }
 
 .lvct-home__card,
