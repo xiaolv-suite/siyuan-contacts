@@ -13,7 +13,7 @@
     import { copyPlainText } from "../../shared/clipboard.ts";
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { onDestroy } from "svelte";
-    import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText } from "@lucide/svelte";
+    import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText, ExternalLink } from "@lucide/svelte";
     import { syncCityTopicDocument } from "../../services/city-topic";
 
     let {
@@ -21,12 +21,14 @@
         notebookId,
         onApplyRegionFilter,
         onClose,
+        onOpenDoc,
     }: {
         contacts: readonly ContactSummary[];
         notebookId?: string;
         i18n?: Readonly<Record<string, string>>;
         onApplyRegionFilter: (region: string) => void;
         onClose: () => void;
+        onOpenDoc?: (docId: string) => void;
     } = $props();
 
     // 搜索关键词
@@ -39,6 +41,7 @@
     let syncingDoc = $state(false);
     let syncDocSuccess = $state(false);
     let syncDocTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastSyncedDocId = $state("");
 
     async function handleSyncCityDoc() {
         if (!notebookId || !selectedCity || selectedCity === "未知" || currentContacts.length === 0 || syncingDoc) return;
@@ -50,6 +53,7 @@
                 contacts: currentContacts,
             });
             if (res?.docId) {
+                lastSyncedDocId = res.docId;
                 syncDocSuccess = true;
                 if (syncDocTimer) clearTimeout(syncDocTimer);
                 syncDocTimer = setTimeout(() => { syncDocSuccess = false; }, 3000);
@@ -301,6 +305,16 @@
                                 {:else}
                                     <FileText size={14} /> {syncingDoc ? "正在同步…" : `同步《${selectedCity}》文档`}
                                 {/if}
+                            </button>
+                        {/if}
+                        {#if lastSyncedDocId && onOpenDoc}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text b3-button--small"
+                                onclick={() => onOpenDoc?.(lastSyncedDocId)}
+                                title="在思源主编辑器中打开该城市实体文档，撰写美食攻略与出行随笔"
+                            >
+                                <ExternalLink size={13} class="lvct-icon-inline" /> 打开《{selectedCity}》文档 ↗
                             </button>
                         {/if}
                         <button

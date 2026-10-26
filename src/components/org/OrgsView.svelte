@@ -1,7 +1,7 @@
 <script lang="ts">
     /** B13.5a 组织视图：组织卡片列表（活跃/归档），管理动作经组织管理弹窗承载。
      *  数据经 facade（listOrganizations），读取失败显式错误可重试（读故障显式化）。 */
-    import { Building2, Plus, Users, Network } from "@lucide/svelte";
+    import { Building2, Plus, Users, Network, ExternalLink } from "@lucide/svelte";
     import ViewState from "../ViewState.svelte";
     import { translateText } from "../../domain/translation";
     import type { ContactsPluginFacade } from "../../types";
@@ -377,6 +377,10 @@
                             title="在关系图谱中聚焦该组织的人脉网络"
                             onclick={() => onOpenGraphOrg?.(org.docId)}>
                             <Network size={13} /> {text("orgsViewGraph", "图谱")}</button>{/if}
+                        {#if facade?.openDoc}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                            title="在思源笔记中打开该组织的实体文档，撰写会议记录与组织随笔"
+                            onclick={() => facade.openDoc?.(org.docId)}>
+                            <ExternalLink size={13} /> {text("detailOpenDoc", "文档")}</button>{/if}
                     </div>
                 </div>
             {/each}
@@ -392,6 +396,16 @@
                         <span class="lvct-text-muted font-size-12">（共 {activeOrgMembers.length} 名成员）</span>
                     </div>
                     <div class="lvct-orgs-cockpit__actions">
+                        {#if facade?.openDoc}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text b3-button--small"
+                                onclick={() => facade.openDoc?.(activeSelectedOrg.docId)}
+                                title="在思源笔记中打开该组织的实体文档"
+                            >
+                                <ExternalLink size={13} class="lvct-icon-inline" /> 打开文档 &gt;
+                            </button>
+                        {/if}
                         <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => onOpenOrgManager(activeSelectedOrg.docId)}>
                             管理架构 &gt;
                         </button>
