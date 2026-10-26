@@ -2518,6 +2518,7 @@
         <LvctDialog title={text("regionExplorerTitle", "城市人脉与行程助手")} wide onClose={() => (regionExploring = false)}>
             <RegionExplorerDialog
                 contacts={people}
+                notebookId={settings.notebookId}
                 {i18n}
                 onApplyRegionFilter={(region) => {
                     extraFilter = { ...extraFilter, region };

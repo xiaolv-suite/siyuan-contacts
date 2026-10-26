@@ -581,3 +581,25 @@ export async function findFollowUpTaskBlocks(
     }
     return result;
 }
+
+/** 查询指定日期的日记文档（优先从指定笔记本按 hpath 查找；支持 YYYY-MM-DD 或 YYYYMMDD） */
+export async function findDailyNoteDocument(notebookId: string, dateStr: string): Promise<{ docId: string; hpath: string } | null> {
+    const compact = dateStr.replace(/-/g, "");
+    const rows = await querySql<unknown>(
+        `SELECT id, hpath FROM blocks WHERE type='d' AND box='${notebookId}' AND (hpath LIKE '%${dateStr}%' OR hpath LIKE '%${compact}%') ORDER BY updated DESC LIMIT 1`,
+    );
+    if (!rows.length) return null;
+    const row = assertKernelRecord("/api/query/sql", rows[0]);
+    return { docId: String(row.id), hpath: String(row.hpath) };
+}
+
+/** 查询指定城市的专题文档（按 custom-lvct-city 属性反查） */
+export async function findCityTopicDocument(notebookId: string, city: string): Promise<{ docId: string; hpath: string } | null> {
+    const safeCity = escapeSqlString(city);
+    const rows = await querySql<unknown>(
+        `SELECT id, hpath FROM blocks WHERE type='d' AND box='${notebookId}' AND ial LIKE '%custom-lvct-city="${safeCity}"%' LIMIT 1`,
+    );
+    if (!rows.length) return null;
+    const row = assertKernelRecord("/api/query/sql", rows[0]);
+    return { docId: String(row.id), hpath: String(row.hpath) };
+}
