@@ -5530,15 +5530,8 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 /* 首页人脉温度与城市联动图表 */
 .lvct-dash__charts-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--lvct-sp-3);
-
-    @container (max-width: 960px) {
-        grid-template-columns: 1fr;
-    }
-    @media (max-width: 960px) {
-        grid-template-columns: 1fr;
-    }
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 16px;
 }
 
 .lvct-dash__chart-card {
@@ -8172,7 +8165,7 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 .lvct-week-glance__title {
     font-size: 12px;
     font-weight: 650;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
 }
 
 .lvct-week-glance__track {
@@ -8196,26 +8189,26 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     min-width: 0;
 
     &:hover {
-        border-color: var(--b3-theme-primary);
+        border-color: var(--lv-brand, #ea580c);
         transform: translateY(-1px);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     }
 
     &--today {
-        border-color: var(--b3-theme-primary);
-        background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--lvct-bg-surface));
+        border-color: var(--lv-brand, #ea580c);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, var(--lvct-bg-surface));
         font-weight: 700;
 
         .lvct-week-glance__day {
-            color: var(--b3-theme-primary);
+            color: var(--lv-brand, #ea580c);
             font-weight: 700;
         }
     }
 
     &--active {
-        background: var(--b3-theme-primary) !important;
+        background: var(--lv-brand, #ea580c) !important;
         color: #ffffff !important;
-        border-color: var(--b3-theme-primary) !important;
+        border-color: var(--lv-brand, #ea580c) !important;
 
         .lvct-week-glance__day,
         .lvct-week-glance__num {
@@ -8226,20 +8219,21 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 
 .lvct-week-glance__day {
     font-size: 11px;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
     line-height: 1.2;
 }
 
 .lvct-week-glance__num {
     font-size: 15px;
     font-weight: 700;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
     margin: 2px 0;
 }
 
 .lvct-week-glance__dots {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 2px;
     font-size: 11px;
     line-height: 1;
@@ -8248,10 +8242,10 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 
 .lvct-week-glance__focus-bar {
     padding: 6px 10px;
-    background: color-mix(in srgb, var(--b3-theme-primary) 8%, var(--lvct-bg-surface));
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-surface));
     border-radius: var(--lvct-r-sm);
     font-size: 12px;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
 }
 
 .lvct-home__card {
