@@ -1,7 +1,7 @@
 # ROADMAP 与特性设计
 
-> 承接调研结论与开发进度（docs/PROGRESS.md）。这里记录已排期与候选特性的设计思路，
-> 新里程碑开工前先对照本文修订。
+> 📌 **最新后续开发总计划与演进路线图**已系统性更新，详见 **[小驴人脉后续开发总计划 (2026 - 2027)](NEXT-DEV-ROADMAP-2026.md)**。
+> 下文承接调研结论与历史开发进度，保留历史阶段演进记录。
 
 > 产品定位与已交付基线见 [产品愿景与后续开发总计划](PRODUCT-PLAN.md)，需求来源见 [用户反馈待办](FEEDBACK-BACKLOG.md)。当前执行顺序、任务状态和验收见 [AGENT-DEVELOPMENT-BACKLOG](AGENT-DEVELOPMENT-BACKLOG.md)；下文保留历史阶段与远期设计。
 

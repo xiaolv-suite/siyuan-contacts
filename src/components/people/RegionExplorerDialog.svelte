@@ -47,10 +47,34 @@
         if (!notebookId || !selectedCity || selectedCity === "未知" || currentContacts.length === 0 || syncingDoc) return;
         syncingDoc = true;
         try {
+            const orgNames = new Set<string>();
+            const orgMap = new Map<string, string>();
+            for (const p of contacts) {
+                const affs = p.profile?.affiliations;
+                if (affs?.state === "known") {
+                    const all = [...(affs.value.work || []), ...(affs.value.education || [])];
+                    for (const item of all) {
+                        if (item.orgName && item.orgDocId) orgMap.set(item.orgName.trim(), item.orgDocId);
+                    }
+                }
+            }
+            for (const person of currentContacts) {
+                const w = profileText(person.profile, "work");
+                if (w && w !== "未填写" && w !== "尚未核实" && w !== "—") orgNames.add(w.trim());
+                const rawPerson = person as unknown as Record<string, unknown>;
+                if (typeof rawPerson.organization === "string" && rawPerson.organization.trim()) orgNames.add(rawPerson.organization.trim());
+                if (typeof rawPerson.company === "string" && rawPerson.company.trim()) orgNames.add(rawPerson.company.trim());
+            }
+            const organizations = Array.from(orgNames).map((name) => ({
+                name,
+                docId: orgMap.get(name) || "",
+            }));
+
             const res = await syncCityTopicDocument({
                 notebookId,
                 city: selectedCity,
                 contacts: currentContacts,
+                organizations,
             });
             if (res?.docId) {
                 lastSyncedDocId = res.docId;

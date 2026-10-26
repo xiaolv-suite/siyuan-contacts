@@ -102,7 +102,7 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
         && protyle.block?.rootID === rootId && protyle.element.isConnected
         && (!context.lifecycleToken || context.lifecycleToken.isAlive());
     protyle.element.querySelector(`.${STRIP_CLASS}`)?.remove();
-    if (!rootId || !context.settings) {
+    if (!rootId || !context.settings || !/^\d{14}-[0-9a-z]{7}$/.test(rootId)) {
         activeStrips.delete(protyle.element);
         return;
     }
