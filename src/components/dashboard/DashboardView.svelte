@@ -131,6 +131,11 @@ import { toLocalDateKey } from "../../domain/interactions";
     let showAllStale = $state(false);
     let showAllFollowUps = $state(false);
     let regionExplorerOpen = $state(false);
+    let actionsContainerEl: HTMLElement | undefined = $state();
+
+    function scrollToActionsSection() {
+        actionsContainerEl?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 
     function openHeatPeople(level: RelationshipHeatLevel, label: string) {
         if (!data?.heatDistribution) return;
@@ -962,8 +967,16 @@ import { toLocalDateKey } from "../../domain/interactions";
                         <b>{activeRate >= 80 ? "人脉连接状态极佳！" : activeRate >= 50 ? "人际网络稳步升温中！" : "开启温暖连接的新起点："}</b>
                         <span>
                             已建立连接 {activeCount} 人（覆盖率 {activeRate}%）
-                            {#if data.birthdaysThisWeek > 0} · <Cake size={13} class="lvct-icon-inline" /> 本周有 {data.birthdaysThisWeek} 位好友生日{/if}
-                            {#if overdueCount > 0} · <AlertTriangle size={13} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办{/if}
+                            {#if data.birthdaysThisWeek > 0}
+                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: inherit; text-decoration: underline; text-underline-offset: 2px;" onclick={openBirthdayPeople}>
+                                    <Cake size={12} class="lvct-icon-inline" /> 本周有 {data.birthdaysThisWeek} 位好友生日
+                                </button>
+                            {/if}
+                            {#if overdueCount > 0}
+                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: inherit; text-decoration: underline; text-underline-offset: 2px;" onclick={scrollToActionsSection}>
+                                    <AlertTriangle size={12} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办
+                                </button>
+                            {/if}
                         </span>
                     </div>
                 </div>
@@ -1177,7 +1190,7 @@ import { toLocalDateKey } from "../../domain/interactions";
             </div>
         {/if}
 
-        <div class="lvct-home__card lvct-dash__actions">
+        <div class="lvct-home__card lvct-dash__actions" bind:this={actionsContainerEl}>
             <div class="lvct-dash__actions-head">
                 <div class="lvct-dash__actions-title">
                     <h3>{text("dashActionsTitle", "今日行动")}</h3>

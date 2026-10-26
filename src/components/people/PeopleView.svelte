@@ -1633,7 +1633,21 @@
             batchBusy = false;
         }
     }
+
+    function handleGlobalKeydown(event: KeyboardEvent) {
+        const active = document.activeElement;
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) {
+            return;
+        }
+        if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            event.preventDefault();
+            searchInputElement?.focus();
+            searchInputElement?.select();
+        }
+    }
 </script>
+
+<svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="lvct-people" bind:this={peopleElement}>
     <!-- B09-1：工具栏控件 snippet 化——桌面原位渲染；移动端收进「筛选与整理」底部弹层（互斥渲染，popover 单挂载） -->
