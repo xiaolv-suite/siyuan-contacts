@@ -11,7 +11,8 @@ import { loadFollowUpStoreStrict } from "../data/followups";
 import { lastInteractionByPerson } from "../domain/interactions";
 import { buildMeetingBriefing } from "../domain/briefing";
 import type { MeetingBriefingItem } from "../domain/briefing";
-import { getOrgDisplayForDoc } from "../services/org";
+import { getOrgDisplayForDoc, scanOrganizations } from "../services/org";
+import type { OrganizationSummary } from "../domain/organization-scan";
 import { formatBirthdayDisplay, nextBirthday } from "../domain/occasions";
 import { copyPlainText } from "../shared/clipboard";
 import { svelteDialog } from "../libs/dialog";
@@ -108,6 +109,19 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
         if (!isCurrent()) return;
         const person = roster.find((item) => item.docId === rootId);
         if (!person) {
+            const orgs = await scanOrganizations().catch(() => []);
+            if (!isCurrent()) return;
+            const org = orgs.find((item) => item.docId === rootId && !item.removed);
+            if (org) {
+                const strip = buildOrgStrip(context, protyle, org);
+                const title = protyle.element.querySelector(".protyle-title");
+                if (title) {
+                    title.insertAdjacentElement("afterend", strip);
+                } else {
+                    protyle.element.prepend(strip);
+                }
+                return;
+            }
             activeStrips.delete(protyle.element);
             return;
         }
@@ -195,6 +209,70 @@ function renderStripChip(context: PanelContext, item: StripChipItem): HTMLElemen
         });
     });
     return btn;
+}
+
+function buildOrgStrip(
+    context: PanelContext,
+    _protyle: ProtyleLike,
+    org: OrganizationSummary,
+): HTMLElement {
+    const strip = document.createElement("div");
+    strip.className = `${STRIP_CLASS} lvct-strip lvct-strip--org`;
+    strip.dataset.orgDocId = org.docId;
+
+    const avatar = document.createElement("span");
+    avatar.className = "lvct-strip__avatar lvct-strip__avatar--org";
+    avatar.textContent = org.name.slice(0, 1) || "组";
+
+    const main = document.createElement("div");
+    main.className = "lvct-strip__main";
+    const identity = document.createElement("div");
+    identity.className = "lvct-strip__identity";
+
+    const name = document.createElement("b");
+    name.textContent = org.name;
+    identity.appendChild(name);
+
+    const badges = document.createElement("div");
+    badges.className = "lvct-strip__badges";
+    badges.appendChild(makeBadge("🏢 组织", "lvct-strip__badge--group"));
+    if (org.archived) {
+        badges.appendChild(makeBadge("已归档", "lvct-strip__badge--muted"));
+    }
+    identity.appendChild(badges);
+    main.appendChild(identity);
+
+    const actions = document.createElement("div");
+    actions.className = "lvct-strip__actions";
+
+    const filterMembers = document.createElement("button");
+    filterMembers.className = "b3-button b3-button--small b3-button--primary";
+    filterMembers.textContent = "名册成员";
+    filterMembers.title = `在名册中筛选属于「${org.name}」的联系人`;
+    filterMembers.addEventListener("click", () => {
+        if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
+        const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
+        openWorkbench?.call(context.plugin);
+        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "people" } }));
+    });
+    actions.appendChild(filterMembers);
+
+    const openOrgsView = document.createElement("button");
+    openOrgsView.className = "b3-button b3-button--small b3-button--outline";
+    openOrgsView.textContent = "组织全景";
+    openOrgsView.title = "打开小驴人脉组织全貌看板";
+    openOrgsView.addEventListener("click", () => {
+        if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
+        const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
+        openWorkbench?.call(context.plugin);
+        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "orgs" } }));
+    });
+    actions.appendChild(openOrgsView);
+
+    strip.appendChild(avatar);
+    strip.appendChild(main);
+    strip.appendChild(actions);
+    return strip;
 }
 
 function buildStrip(
