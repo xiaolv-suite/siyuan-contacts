@@ -37,6 +37,9 @@
 
     let type = $state<InteractionType>("meeting");
     let date = $state(toLocalDateKey(new Date()));
+    const todayStr = toLocalDateKey(new Date());
+    const yesterdayStr = toLocalDateKey(new Date(Date.now() - 86400000));
+    const dayBeforeYesterdayStr = toLocalDateKey(new Date(Date.now() - 86400000 * 2));
     let note = $state("");
     let busy = $state(false);
     let errorMessage = $state("");
@@ -103,13 +106,20 @@
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <label class="lvct-form__item" style="margin: 0;">
             <span class="ft__smaller ft__on-surface" style="margin-bottom: 4px; display: block;">{text("dialogDate", "互动日期")}</span>
-            <input
-                class="b3-text-field"
-                type="date"
-                style="width: 140px;"
-                bind:value={date}
-                disabled={busy}
-            />
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <input
+                    class="b3-text-field"
+                    type="date"
+                    style="width: 135px;"
+                    bind:value={date}
+                    disabled={busy}
+                />
+                <div style="display: flex; gap: 3px; align-items: center;">
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={date === todayStr} disabled={busy} onclick={() => (date = todayStr)}>今天</button>
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={date === yesterdayStr} disabled={busy} onclick={() => (date = yesterdayStr)}>昨天</button>
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={date === dayBeforeYesterdayStr} disabled={busy} onclick={() => (date = dayBeforeYesterdayStr)}>前天</button>
+                </div>
+            </div>
         </label>
         <div class="lvct-form__item fn__flex-1" style="margin: 0;">
             <span class="ft__smaller ft__on-surface" style="margin-bottom: 4px; display: block;">{text("dialogType", "互动类型")}</span>

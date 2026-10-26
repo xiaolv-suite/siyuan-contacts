@@ -1347,6 +1347,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                                     <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>未来 7 天不再提醒</button>
                                     <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>不再提醒</button>
                                 {/if}
+                                <button class="b3-button b3-button--primary" disabled={alBusy} onclick={() => onOpenDetail(card.person)}>记一笔互动</button>
                                 <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => createFollowUpFor(card.person))}>建跟进（联系一下）</button>
                                 {#if card.bucket === "stale"}
                                     <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissStaleReminder(card.person))}>不再提醒</button>

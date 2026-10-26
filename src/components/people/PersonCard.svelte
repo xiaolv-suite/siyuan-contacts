@@ -220,7 +220,7 @@
         </div>
         {#if person.profile}<PersonProfileSummary profile={person.profile} compact hideEmpty />
         {:else if orgLine}
-            <div class="lvct-person-card__org" aria-label="单位">{orgLine}</div>
+            <div class="lvct-person-card__org" aria-label="单位" title={orgLine}>{orgLine}</div>
         {/if}
         <div class="lvct-person-card__meta">
             {#if person.phone}<div><span aria-hidden="true"><Phone size={13}/></span><a class="lvct-person-card__meta-value" href={telHref(person.phone)} onclick={(event) => event.stopPropagation()}>{person.phone}</a></div>{/if}

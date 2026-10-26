@@ -2730,6 +2730,11 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     font-weight: 500;
     margin-top: 2px;
     overflow-wrap: anywhere;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 .lvct-person-card__tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; }
 .lvct-person-card__open-doc, .lvct-people__open-doc {
