@@ -4,7 +4,7 @@
  */
 import type { InteractionType } from "./interactions.ts";
 import { INTERACTION_TYPE_LABELS } from "./interactions.ts";
-import { escapeLinkLabel } from "./format.ts";
+import { escapeLinkLabel, escapeMarkdown } from "./format.ts";
 
 export interface DiaryInteractionInput {
     personDocId: string;
@@ -12,6 +12,14 @@ export interface DiaryInteractionInput {
     type?: InteractionType;
     note?: string;
     occurredTimeStr?: string;
+}
+
+export interface DiaryOccasionInput {
+    title: string;
+    type?: string;
+    date: string;
+    place?: string;
+    attendees: readonly { personDocId: string; name: string }[];
 }
 
 /**
@@ -31,4 +39,18 @@ export function buildDailyNoteInteractionMarkdown(input: DiaryInteractionInput):
     const notePart = noteText ? `：${noteText}` : "";
 
     return `- ${meta.icon} ${timePrefix}与 ${personLink} ${meta.label}${notePart}`;
+}
+
+/**
+ * 生成追加到思源当日日记文档中的多人活动/场合列表项 Markdown：
+ * 例：`- 🍽️ 活动：大湾区开发者晚餐 @ 深圳湾（与 [张三](siyuan://blocks/id1)、[李四](siyuan://blocks/id2)）`
+ */
+export function buildDailyNoteOccasionMarkdown(input: DiaryOccasionInput): string {
+    const icon = input.type === "meal" ? "🍽️" : input.type === "meeting" ? "🤝" : input.type === "party" ? "🎉" : "📅";
+    const placeStr = input.place ? ` @ ${escapeMarkdown(input.place)}` : "";
+    const attendeeLinks = input.attendees
+        .map((a) => `[${escapeLinkLabel(a.name.trim() || "联系人")}](siyuan://blocks/${a.personDocId})`)
+        .join("、");
+    const attendeePart = attendeeLinks ? `（与 ${attendeeLinks}）` : "";
+    return `- ${icon} 活动：${escapeMarkdown(input.title)}${placeStr} ${attendeePart}`.trim();
 }

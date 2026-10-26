@@ -874,6 +874,7 @@
     });
 
     // 生效条件行（F03）：搜索/分组/标签与更多筛选的可视化，可单项清除
+    let expandAllConditions = $state(false);
     type ConditionChip = { key: string; label: string };
     const conditionChips: ConditionChip[] = $derived.by(() => {
         const chips: ConditionChip[] = [];
@@ -2048,13 +2049,31 @@
     {#if viewHint}<div class="lvct-people__viewhint" role="status">{viewHint}</div>{/if}
 
     {#if conditionChips.length > 0}
+        {@const visibleConditions = (conditionChips.length <= 4 || expandAllConditions) ? conditionChips : conditionChips.slice(0, 3)}
         <div class="lvct-people__conditions" aria-label={recentFiltersPaused ? "筛选条件（含已暂停条件）" : "生效筛选条件"}>
             <span class="ft__smaller ft__on-surface">{recentFiltersPaused ? "筛选条件（含已暂停）：" : "生效条件："}</span>
-            {#each conditionChips as chip (chip.key)}
+            {#each visibleConditions as chip (chip.key)}
                 <button type="button" class="lvct-people__condition" title="点击清除该条件" onclick={() => clearCondition(chip.key)}>
                     {chip.label} ×
                 </button>
             {/each}
+            {#if conditionChips.length > 4 && !expandAllConditions}
+                <button
+                    type="button"
+                    class="b3-chip font-size-11 lvct-people__condition-more"
+                    style="padding: 1px 7px; cursor: pointer;"
+                    onclick={() => (expandAllConditions = true)}
+                    title="展开其余生效筛选条件"
+                >+{conditionChips.length - 3} 项 ▾</button>
+            {:else if conditionChips.length > 4 && expandAllConditions}
+                <button
+                    type="button"
+                    class="b3-chip font-size-11 lvct-people__condition-more"
+                    style="padding: 1px 7px; cursor: pointer;"
+                    onclick={() => (expandAllConditions = false)}
+                    title="收起多余生效筛选条件"
+                >收起 ▴</button>
+            {/if}
             <span class="ft__smaller ft__on-surface">{recentFiltersPaused ? `· 已显示 ${filtered.length} 人，筛选范围待核实` : `· 共 ${filtered.length} 人`}</span>
             <span style="flex:1"></span>
             <button type="button" class="lvct-people__filter-clear" onclick={clearAllConditions}>清除全部</button>
