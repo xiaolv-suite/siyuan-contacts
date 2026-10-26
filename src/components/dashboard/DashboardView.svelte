@@ -1100,16 +1100,44 @@ import { toLocalDateKey } from "../../domain/interactions";
 
                     <!-- 紧凑微型胶囊 -->
                     <div class="lvct-heat-chips">
-                        <button type="button" class="b3-chip lvct-chip--hot font-size-11" onclick={() => openHeatPeople("hot", "温热")} title="点击在名册中查看温热人脉">
+                        <button
+                            type="button"
+                            class="b3-chip lvct-chip--hot font-size-11"
+                            class:lvct-chip--empty={data.heatDistribution.hot.count === 0}
+                            disabled={data.heatDistribution.hot.count === 0}
+                            onclick={() => openHeatPeople("hot", "温热")}
+                            title={data.heatDistribution.hot.count > 0 ? "点击在名册中查看温热人脉" : "当前暂无温热联系人"}
+                        >
                             <Flame size={12} class="lvct-icon-inline" /> 温热 {data.heatDistribution.hot.count}
                         </button>
-                        <button type="button" class="b3-chip lvct-chip--warm font-size-11" onclick={() => openHeatPeople("warm", "常温")} title="点击在名册中查看常温人脉">
+                        <button
+                            type="button"
+                            class="b3-chip lvct-chip--warm font-size-11"
+                            class:lvct-chip--empty={data.heatDistribution.warm.count === 0}
+                            disabled={data.heatDistribution.warm.count === 0}
+                            onclick={() => openHeatPeople("warm", "常温")}
+                            title={data.heatDistribution.warm.count > 0 ? "点击在名册中查看常温人脉" : "当前暂无常温联系人"}
+                        >
                             <Leaf size={12} class="lvct-icon-inline" /> 常温 {data.heatDistribution.warm.count}
                         </button>
-                        <button type="button" class="b3-chip lvct-chip--cool font-size-11" onclick={() => openHeatPeople("cool", "微凉")} title="点击在名册中查看微凉人脉">
+                        <button
+                            type="button"
+                            class="b3-chip lvct-chip--cool font-size-11"
+                            class:lvct-chip--empty={data.heatDistribution.cool.count === 0}
+                            disabled={data.heatDistribution.cool.count === 0}
+                            onclick={() => openHeatPeople("cool", "微凉")}
+                            title={data.heatDistribution.cool.count > 0 ? "点击在名册中查看微凉人脉" : "当前暂无微凉联系人"}
+                        >
                             <Wind size={12} class="lvct-icon-inline" /> 微凉 {data.heatDistribution.cool.count}
                         </button>
-                        <button type="button" class="b3-chip lvct-chip--cold font-size-11" onclick={() => openHeatPeople("cold", "渐冻")} title="点击在名册中查看渐冻人脉">
+                        <button
+                            type="button"
+                            class="b3-chip lvct-chip--cold font-size-11"
+                            class:lvct-chip--empty={data.heatDistribution.cold.count === 0}
+                            disabled={data.heatDistribution.cold.count === 0}
+                            onclick={() => openHeatPeople("cold", "渐冻")}
+                            title={data.heatDistribution.cold.count > 0 ? "点击在名册中查看渐冻人脉" : "当前暂无渐冻联系人"}
+                        >
                             <Snowflake size={12} class="lvct-icon-inline" /> 渐冻 {data.heatDistribution.cold.count}
                         </button>
                         {#if data.heatDistribution.unknown.count > 0}
