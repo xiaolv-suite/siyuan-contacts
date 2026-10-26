@@ -1174,13 +1174,22 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
 .lvct-briefing-preview {
     max-height: 320px;
     overflow: auto;
-    padding: var(--lvct-sp-2);
+    padding: var(--lvct-sp-3);
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-md);
-    background: var(--lvct-bg-surface);
+    background: var(--lvct-bg-app);
+    font-family: var(--lvct-font-code);
     font-size: var(--lvct-fs-caption);
+    line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
+    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+    &--copied {
+        border-color: var(--lv-heat-warm, #16a34a);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-heat-warm, #16a34a) 30%, transparent);
+        background: color-mix(in srgb, var(--lv-heat-warm, #16a34a) 6%, var(--lvct-bg-surface));
+    }
 }
 
 // F13 重复候选并排
@@ -1229,7 +1238,7 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     .lvct-review__big {
         font-size: 42px;
         font-weight: 700;
-        color: var(--lvct-accent);
+        color: var(--lv-brand, #ea580c);
     }
 }
 
@@ -1253,8 +1262,15 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-md);
     background: var(--lvct-bg-surface);
+    transition: all 0.15s ease;
 
-    b { font-size: 20px; }
+    &:hover {
+        border-color: var(--lvct-border-strong);
+        transform: translateY(-1px);
+        box-shadow: var(--lvct-shadow-1);
+    }
+
+    b { font-size: 20px; color: var(--lvct-text-1); }
     span { color: var(--lvct-text-3); font-size: var(--lvct-fs-caption); }
 }
 
@@ -1274,7 +1290,7 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     height: 8px;
     border-radius: var(--lvct-r-full, 9999px);
     overflow: hidden;
-    background: var(--b3-theme-surface-lighter);
+    background: var(--lvct-border-subtle);
     margin-bottom: var(--lvct-sp-3);
     gap: 2px;
 }
@@ -1283,9 +1299,9 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     height: 100%;
     transition: width 0.3s ease;
 
-    &--manual { background: var(--b3-theme-primary); }
-    &--diary { background: #10b981; }
-    &--api { background: #f59e0b; }
+    &--manual { background: var(--lv-brand, #ea580c); }
+    &--diary { background: var(--lv-heat-warm, #16a34a); }
+    &--api { background: var(--lv-accent-cyan, #0284c7); }
 }
 
 .lvct-review__top-item {
