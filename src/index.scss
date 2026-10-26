@@ -5602,12 +5602,12 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     }
 }
 
-.lvct-heat-bar__segment--hot { background: #ef4444; }
-.lvct-heat-bar__segment--warm { background: #10b981; }
-.lvct-heat-bar__segment--cool { background: #f59e0b; }
-.lvct-heat-bar__segment--cold { background: #3b82f6; }
-.lvct-heat-bar__segment--unknown { background: var(--b3-theme-on-surface); opacity: 0.35; }
-.lvct-heat-bar__segment--paused { background: var(--b3-theme-surface-lighter); border: 1px dashed var(--b3-theme-on-surface); }
+.lvct-heat-bar__segment--hot { background: var(--lv-heat-hot); }
+.lvct-heat-bar__segment--warm { background: var(--lv-heat-warm); }
+.lvct-heat-bar__segment--cool { background: var(--lv-heat-cool); }
+.lvct-heat-bar__segment--cold { background: var(--lv-heat-cold); }
+.lvct-heat-bar__segment--unknown { background: var(--lv-heat-muted); opacity: 0.6; }
+.lvct-heat-bar__segment--paused { background: var(--lv-heat-muted-soft); border: 1px dashed var(--lv-heat-muted); }
 
 .lvct-heat-chips, .lvct-region-chips {
     display: flex;
@@ -5617,27 +5617,27 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 }
 
 .lvct-chip--hot {
-    color: #ef4444 !important;
-    border-color: rgba(239, 68, 68, 0.35) !important;
-    background: rgba(239, 68, 68, 0.08) !important;
+    color: var(--lv-heat-hot) !important;
+    border-color: color-mix(in srgb, var(--lv-heat-hot) 35%, transparent) !important;
+    background: var(--lv-heat-hot-soft) !important;
 }
 
 .lvct-chip--warm {
-    color: #10b981 !important;
-    border-color: rgba(16, 185, 129, 0.35) !important;
-    background: rgba(16, 185, 129, 0.08) !important;
+    color: var(--lv-heat-warm) !important;
+    border-color: color-mix(in srgb, var(--lv-heat-warm) 35%, transparent) !important;
+    background: var(--lv-heat-warm-soft) !important;
 }
 
 .lvct-chip--cool {
-    color: #f59e0b !important;
-    border-color: rgba(245, 158, 11, 0.35) !important;
-    background: rgba(245, 158, 11, 0.08) !important;
+    color: var(--lv-heat-cool) !important;
+    border-color: color-mix(in srgb, var(--lv-heat-cool) 35%, transparent) !important;
+    background: var(--lv-heat-cool-soft) !important;
 }
 
 .lvct-chip--cold {
-    color: #3b82f6 !important;
-    border-color: rgba(59, 130, 246, 0.35) !important;
-    background: rgba(59, 130, 246, 0.08) !important;
+    color: var(--lv-heat-cold) !important;
+    border-color: color-mix(in srgb, var(--lv-heat-cold) 35%, transparent) !important;
+    background: var(--lv-heat-cold-soft) !important;
 }
 
 .lvct-dash__chart-card--span {
@@ -9367,10 +9367,10 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
                 padding: 3px 8px;
                 border-radius: var(--lvct-r-sm);
 
-                &.lvct-action-chip--overdue { background: var(--lvct-danger-soft); color: var(--lvct-danger); }
-                &.lvct-action-chip--today { background: var(--lvct-highlight-soft); color: var(--lvct-highlight); }
-                &.lvct-action-chip--week { background: var(--lvct-accent-soft); color: var(--lvct-accent-text); }
-                &.lvct-action-chip--stale { background: var(--lvct-surface-inset); color: var(--lvct-text-2); }
+                &.lvct-action-chip--overdue { background: var(--lvct-danger-soft); color: var(--lvct-danger); border: 1px solid color-mix(in srgb, var(--lvct-danger) 24%, transparent); }
+                &.lvct-action-chip--today { background: var(--lv-brand-soft); color: var(--lv-brand); border: 1px solid color-mix(in srgb, var(--lv-brand) 24%, transparent); }
+                &.lvct-action-chip--week { background: var(--lv-accent-cyan-soft); color: var(--lv-accent-cyan); border: 1px solid color-mix(in srgb, var(--lv-accent-cyan) 24%, transparent); }
+                &.lvct-action-chip--stale { background: var(--lv-heat-muted-soft); color: var(--lv-heat-muted); border: 1px solid color-mix(in srgb, var(--lv-heat-muted) 24%, transparent); }
             }
         }
 
@@ -9631,24 +9631,29 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     padding: 2px 7px;
 
     &--hot {
-        color: var(--b3-theme-primary);
-        background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
+        color: var(--lv-heat-hot);
+        background: var(--lv-heat-hot-soft);
+        border: 1px solid color-mix(in srgb, var(--lv-heat-hot) 28%, transparent);
     }
     &--warm {
-        color: var(--b3-theme-on-surface);
-        background: color-mix(in srgb, var(--b3-theme-on-surface) 8%, transparent);
+        color: var(--lv-heat-warm);
+        background: var(--lv-heat-warm-soft);
+        border: 1px solid color-mix(in srgb, var(--lv-heat-warm) 28%, transparent);
     }
     &--cool {
-        color: var(--b3-theme-secondary, #d97706);
-        background: color-mix(in srgb, var(--b3-theme-secondary, #d97706) 12%, transparent);
+        color: var(--lv-heat-cool);
+        background: var(--lv-heat-cool-soft);
+        border: 1px solid color-mix(in srgb, var(--lv-heat-cool) 28%, transparent);
     }
     &--cold {
-        color: var(--b3-theme-error);
-        background: color-mix(in srgb, var(--b3-theme-error) 12%, transparent);
+        color: var(--lv-heat-cold);
+        background: var(--lv-heat-cold-soft);
+        border: 1px solid color-mix(in srgb, var(--lv-heat-cold) 28%, transparent);
     }
     &--muted {
-        color: var(--b3-theme-on-surface-light);
-        background: color-mix(in srgb, var(--b3-theme-on-surface) 6%, transparent);
+        color: var(--lv-heat-muted);
+        background: var(--lv-heat-muted-soft);
+        border: 1px solid color-mix(in srgb, var(--lv-heat-muted) 28%, transparent);
     }
 }
 

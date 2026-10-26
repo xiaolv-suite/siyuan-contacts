@@ -113,6 +113,20 @@
     --lvct-info: var(--lvct-color-info);
     --lvct-info-soft: #e3f0fc;
 
+    /* ---------- 5b. 人脉关系温度高质感色谱（Relationship Heat Spectrum） ----------
+     * 统一温度条、胶囊、详情徽章与名册卡片的色彩质感。
+     * 亮色与暗色模式分别精准调校对比度与发光质感。 */
+    --lv-heat-hot: #EA580C;       /* 温热：暖干邑橙（品牌主色） */
+    --lv-heat-hot-soft: color-mix(in srgb, var(--lv-heat-hot) 14%, transparent);
+    --lv-heat-warm: #16A34A;      /* 常温：生机翡翠绿 */
+    --lv-heat-warm-soft: color-mix(in srgb, var(--lv-heat-warm) 14%, transparent);
+    --lv-heat-cool: #D97706;      /* 微凉：落叶琥珀金 */
+    --lv-heat-cool-soft: color-mix(in srgb, var(--lv-heat-cool) 14%, transparent);
+    --lv-heat-cold: #0284C7;      /* 渐冻：冰霜天青蓝 */
+    --lv-heat-cold-soft: color-mix(in srgb, var(--lv-heat-cold) 14%, transparent);
+    --lv-heat-muted: #64748B;     /* 未互动/暂停：雅致冷蓝灰 */
+    --lv-heat-muted-soft: color-mix(in srgb, var(--lv-heat-muted) 12%, transparent);
+
     /* Cytoscape 不能直接消费 CSS 变量；图谱保留稳定 fallback，同时响应宿主主题的显式颜色变量。 */
     --lvct-graph-text: var(--b3-theme-on-surface, #45475a);
     --lvct-graph-edge: var(--lvct-text-3); /* 连线是信息，不能沿用低对比度的面板边框色。 */
@@ -121,13 +135,13 @@
     /* ---------- 6. 分组色板（插件自有令牌，明暗双套；dark 覆写见文末） ----------
      * 语义固定：家人/朋友/同事/同学/其他。
      * 头像渐变 = linear-gradient(135deg, 分组色, color-mix(分组色 60%, black 10%))。
-     * 二期自定义分组从同明度/同饱和的 12 色扩展环取色，此色板即取色器数据源。 */
-    --lvct-group-family: #e05260;
-    --lvct-group-friend: #1a9e6e;
-    --lvct-group-work: #2b87db;
-    --lvct-group-school: #d95f78;
-    --lvct-group-other: #718096;
-    --lvct-group-org: #2f8fa3;
+     * 采用顶级现代设计系统高饱和度对比色谱。 */
+    --lvct-group-family: #E11D48;
+    --lvct-group-friend: #059669;
+    --lvct-group-work: #2563EB;
+    --lvct-group-school: #7C3AED;
+    --lvct-group-other: #64748B;
+    --lvct-group-org: #0D9488;
     --lvct-group-family-soft: color-mix(in srgb, var(--lvct-group-family) 14%, transparent);
     --lvct-group-friend-soft: color-mix(in srgb, var(--lvct-group-friend) 14%, transparent);
     --lvct-group-work-soft: color-mix(in srgb, var(--lvct-group-work) 14%, transparent);
@@ -314,12 +328,12 @@ html[data-theme-mode="dark"] .lvct-workbench {
     --lvct-border-subtle: #334155;
     --lvct-border-strong: #475569;
     --lvct-border-hairline: #1e293b;
-    --lvct-accent: #38bdf8;
-    --lvct-accent-fill: #0284c7;
-    --lvct-accent-text: #38bdf8;
-    --lvct-accent-hover: #0ea5e9;
+    --lvct-accent: var(--lv-brand);
+    --lvct-accent-fill: var(--lv-brand);
+    --lvct-accent-text: var(--lv-brand);
+    --lvct-accent-hover: var(--lv-brand-hover);
     --lvct-on-accent: #ffffff;
-    --lvct-accent-soft: rgba(56, 189, 248, 0.14);
+    --lvct-accent-soft: var(--lv-brand-soft);
     --lvct-success: #4ade80;
     --lvct-success-soft: rgba(74, 222, 128, 0.14);
     --lvct-danger: #f87171;
@@ -351,12 +365,25 @@ html[data-theme-mode="dark"] .lvct-workbench {
     --lvct-shadow-panel: 0 2px 6px rgba(0, 0, 0, 0.30), 0 8px 24px rgba(0, 0, 0, 0.35);
     --lvct-shadow-float: 0 6px 16px rgba(0, 0, 0, 0.45), 0 20px 48px rgba(0, 0, 0, 0.55);
 
+    /* 人脉关系温度暗色高质感色谱 */
+    --lv-heat-hot: #F97316;
+    --lv-heat-hot-soft: color-mix(in srgb, var(--lv-heat-hot) 18%, transparent);
+    --lv-heat-warm: #4ADE80;
+    --lv-heat-warm-soft: color-mix(in srgb, var(--lv-heat-warm) 18%, transparent);
+    --lv-heat-cool: #FBBF24;
+    --lv-heat-cool-soft: color-mix(in srgb, var(--lv-heat-cool) 18%, transparent);
+    --lv-heat-cold: #38BDF8;
+    --lv-heat-cold-soft: color-mix(in srgb, var(--lv-heat-cold) 18%, transparent);
+    --lv-heat-muted: #94A3B8;
+    --lv-heat-muted-soft: color-mix(in srgb, var(--lv-heat-muted) 16%, transparent);
+
     /* 分组色暗色配方：提高明度，保证图谱与头像在深色表面上的可读性 */
-    --lvct-group-family: #f2707a;
-    --lvct-group-friend: #34c98e;
-    --lvct-group-work: #54a8f5;
-    --lvct-group-school: #ef8294;
-    --lvct-group-other: #9bb0b3;
+    --lvct-group-family: #FB7185;
+    --lvct-group-friend: #34D399;
+    --lvct-group-work: #60A5FA;
+    --lvct-group-school: #A78BFA;
+    --lvct-group-other: #94A3B8;
+    --lvct-group-org: #2DD4BF;
 }
 
 /* ============================================================================
