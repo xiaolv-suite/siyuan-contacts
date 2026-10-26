@@ -30,19 +30,19 @@
     --lvct-color-ink-900: #2a2b35;
     --lvct-color-ink-700: #45475a;
     --lvct-color-ink-500: #63657a;
-    --lvct-color-brand-500: #129e9a;
-    --lvct-color-brand-700: #087f7b;
-    --lvct-color-brand-800: #06645f;
-    --lvct-color-brand-soft: #dff5f2;
+    --lvct-color-brand-500: #EA580C;
+    --lvct-color-brand-700: #C2410C;
+    --lvct-color-brand-800: #9A3412;
+    --lvct-color-brand-soft: color-mix(in srgb, var(--lv-brand) 12%, transparent);
     --lvct-color-border-200: #dfe7f3;
     --lvct-color-border-300: #cdd8e8;
     --lvct-color-canvas: #f5f7ff;
     --lvct-color-surface: #ffffff;
-    --lvct-color-danger: #e5484d;
-    --lvct-color-success: #3ba55d;
-    --lvct-color-info: #3b91c7;
+    --lvct-color-danger: #E11D48;
+    --lvct-color-success: #16A34A;
+    --lvct-color-info: #0284C7;
 
-    /* ---------- 1. 品牌色（青色主色 + 珊瑚提醒色） ---------- */
+    /* ---------- 1. 品牌色（暖干邑橙主色 + 绿松石天青点缀） ---------- */
     /* Epoch 6 联邦规范：爱马仕暖干邑橙（#EA580C）＋ 绿松石天青灵珠（#0284C7） */
     --lv-brand: #EA580C; /* 暖干邑橙 */
     --lv-brand-hover: #C2410C;
@@ -55,12 +55,12 @@
     --lv-r-lg: 20px;
     --lv-r-pill: 9999px;
 
-    /* 小驴人脉青色体系与品牌标识渐变 */
-    --lvct-brand-from: #0f9d98;
-    --lvct-brand-to: #44c8bd;
-    --lvct-brand-gradient: linear-gradient(135deg, var(--lvct-brand-from) 0%, var(--lvct-brand-to) 100%);
-    /* 点缀珊瑚：生日/提醒/图标强调；暗色下提高明度（见 dark 覆写） */
-    --lvct-highlight: #e56b5d;
+    /* 小驴人脉品牌标识渐变：暖干邑橙到落叶金的高阶渐变 */
+    --lvct-brand-from: #EA580C;
+    --lvct-brand-to: #F97316;
+    --lvct-brand-gradient: linear-gradient(135deg, var(--lv-brand) 0%, #F97316 100%);
+    /* 点缀珊瑚提醒色 */
+    --lvct-highlight: #E11D48;
     --lvct-highlight-soft: color-mix(in srgb, var(--lvct-highlight) 12%, transparent);
 
     /* ---------- 2. 语义色：表面层级（插件自有稳定配方） ----------
@@ -305,9 +305,11 @@ html[data-theme-mode="dark"] .lvct-workbench {
     --lv-accent-cyan-hover: #7dd3fc;
     --lv-accent-cyan-soft: color-mix(in srgb, var(--lv-accent-cyan) 16%, transparent);
 
-    --lvct-brand-from: #51cfc4;
-    --lvct-brand-to: #7adfd4;
-    --lvct-highlight: #f08a7c;
+    --lvct-brand-from: #F97316;
+    --lvct-brand-to: #FB923C;
+    --lvct-brand-gradient: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
+    --lvct-highlight: #FB7185;
+    --lvct-highlight-soft: color-mix(in srgb, var(--lvct-highlight) 16%, transparent);
 
     --lvct-bg-app: #0b1120;
     --lvct-bg-base: #0f172a;

@@ -2866,23 +2866,23 @@ html[data-theme-mode="dark"] .lvct-notice {
 
 /* UX-01.4：分组头像背景色（家人红/朋友绿/工作蓝/同学珊瑚/其他灰），Squircle 微渐变配方 */
 .lvct-person-card__avatar[data-group="家人"] {
-    background: linear-gradient(135deg, #f472b6, var(--lvct-group-family));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, #ffffff), var(--lvct-group-family));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-family) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="朋友"] {
-    background: linear-gradient(135deg, #34d399, var(--lvct-group-friend));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, #ffffff), var(--lvct-group-friend));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-friend) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="同事"] {
-    background: linear-gradient(135deg, #60a5fa, var(--lvct-group-work));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, #ffffff), var(--lvct-group-work));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-work) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="同学"] {
-    background: linear-gradient(135deg, #fbbf24, var(--lvct-group-school));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, #ffffff), var(--lvct-group-school));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-school) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="其他"] {
-    background: linear-gradient(135deg, #94a3b8, var(--lvct-group-other));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, #ffffff), var(--lvct-group-other));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-other) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
@@ -4573,23 +4573,23 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
 }
 
 .lvct-detail__avatar[data-group="家人"] {
-    background: linear-gradient(135deg, #f472b6, var(--lvct-group-family));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, #ffffff), var(--lvct-group-family));
     box-shadow: 0 4px 12px color-mix(in srgb, var(--lvct-group-family) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .lvct-detail__avatar[data-group="朋友"] {
-    background: linear-gradient(135deg, #34d399, var(--lvct-group-friend));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, #ffffff), var(--lvct-group-friend));
     box-shadow: 0 4px 12px color-mix(in srgb, var(--lvct-group-friend) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .lvct-detail__avatar[data-group="同事"] {
-    background: linear-gradient(135deg, #60a5fa, var(--lvct-group-work));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, #ffffff), var(--lvct-group-work));
     box-shadow: 0 4px 12px color-mix(in srgb, var(--lvct-group-work) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .lvct-detail__avatar[data-group="同学"] {
-    background: linear-gradient(135deg, #fbbf24, var(--lvct-group-school));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, #ffffff), var(--lvct-group-school));
     box-shadow: 0 4px 12px color-mix(in srgb, var(--lvct-group-school) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .lvct-detail__avatar[data-group="其他"] {
-    background: linear-gradient(135deg, #94a3b8, var(--lvct-group-other));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, #ffffff), var(--lvct-group-other));
     box-shadow: 0 4px 12px color-mix(in srgb, var(--lvct-group-other) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
@@ -5361,9 +5361,9 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     gap: var(--lvct-sp-3);
     padding: 10px 16px;
     border-radius: var(--lvct-r-lg);
-    background: linear-gradient(135deg, color-mix(in srgb, #f59e0b 14%, var(--lvct-bg-surface)), color-mix(in srgb, #ec4899 8%, var(--lvct-bg-surface)));
-    border: 1px solid color-mix(in srgb, #f59e0b 28%, var(--lvct-border-subtle));
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface)), color-mix(in srgb, var(--lv-heat-cool, #d97706) 8%, var(--lvct-bg-surface)));
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 26%, var(--lvct-border-subtle));
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lv-brand, #ea580c) 8%, transparent);
 }
 
 .lvct-dash__milestone-left {
@@ -5440,19 +5440,19 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
 
 /* Bento 色调微背景 */
 .lvct-dash__stat--people {
-    background: linear-gradient(150deg, color-mix(in srgb, #0ea5e9 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-brand, #ea580c) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
 }
 
 .lvct-dash__stat--relations {
-    background: linear-gradient(150deg, color-mix(in srgb, #8b5cf6 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
 }
 
 .lvct-dash__stat--birthdays {
-    background: linear-gradient(150deg, color-mix(in srgb, #f59e0b 8%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-heat-cool, #d97706) 8%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
 }
 
 .lvct-dash__stat--never {
-    background: linear-gradient(150deg, color-mix(in srgb, #ec4899 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--lvct-danger, #e11d48) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
 }
 
 /* UX-02.3 统计卡：左对齐渐变大数字 + 图标章 + 悬停提升 + 顶部渐变发丝线 + 漫反射微光晕 */
@@ -5946,23 +5946,23 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-accent) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 
     &[data-group="家人"] {
-        background: linear-gradient(135deg, #f472b6, var(--lvct-group-family));
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, #ffffff), var(--lvct-group-family));
         box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-family) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
     &[data-group="朋友"] {
-        background: linear-gradient(135deg, #34d399, var(--lvct-group-friend));
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, #ffffff), var(--lvct-group-friend));
         box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-friend) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
     &[data-group="同事"] {
-        background: linear-gradient(135deg, #60a5fa, var(--lvct-group-work));
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, #ffffff), var(--lvct-group-work));
         box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-work) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
     &[data-group="同学"] {
-        background: linear-gradient(135deg, #fbbf24, var(--lvct-group-school));
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, #ffffff), var(--lvct-group-school));
         box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-school) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
     &[data-group="其他"] {
-        background: linear-gradient(135deg, #94a3b8, var(--lvct-group-other));
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, #ffffff), var(--lvct-group-other));
         box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-other) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
 }
