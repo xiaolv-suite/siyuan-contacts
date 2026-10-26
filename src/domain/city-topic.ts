@@ -52,7 +52,11 @@ export function buildCityTopicSectionMarkdown(input: CityTopicInput): string {
         lines.push("### 关联组织与机构");
         for (const org of input.organizations) {
             const cleanOrgName = escapeLinkLabel(org.name);
-            lines.push(`- [${cleanOrgName}](siyuan://blocks/${org.docId})`);
+            if (org.docId) {
+                lines.push(`- [${cleanOrgName}](siyuan://blocks/${org.docId})`);
+            } else {
+                lines.push(`- ${cleanOrgName}`);
+            }
         }
         lines.push("");
     }
