@@ -204,7 +204,7 @@
                                     <span class="lvct-region-dialog__city-meta">{group.province}</span>
                                 {/if}
                             </div>
-                            <span class="b3-badge b3-badge--secondary">{group.count} 人</span>
+                            <span class="lvct-chip font-size-10" style="padding: 1px 6px;">{group.count} 人</span>
                         </button>
                     {/each}
                 {/if}
@@ -237,10 +237,11 @@
                                 {#each nearbyCities as near (near.city)}
                                     <button
                                         type="button"
-                                        class="b3-button b3-button--text b3-button--small"
+                                        class="b3-chip font-size-11"
                                         onclick={() => (selectedCity = near.city)}
+                                        title={`切换到周边城市 ${near.city}`}
                                     >
-                                        {near.city} ({near.count}人)
+                                        {near.city} <b>{near.count}</b>
                                     </button>
                                 {/each}
                             </div>
@@ -410,21 +411,23 @@
         align-items: center;
         justify-content: space-between;
         padding: 8px 10px;
-        border-radius: 4px;
+        border-radius: var(--lvct-r-sm, 6px);
         background: transparent;
         border: none;
         cursor: pointer;
         text-align: left;
         color: inherit;
-        transition: background-color 0.15s ease;
+        transition: all 0.15s ease;
     }
     .lvct-region-dialog__city-item:hover {
-        background: var(--b3-theme-surface-lighter);
+        background: var(--lvct-bg-hover);
+        color: var(--lvct-text-1);
     }
     .lvct-region-dialog__city-item--active {
-        background: var(--b3-theme-primary-lightest);
-        color: var(--b3-theme-primary);
-        font-weight: 500;
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface));
+        color: var(--lv-brand, #ea580c);
+        font-weight: 600;
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lv-brand, #ea580c) 25%, transparent);
     }
     .lvct-region-dialog__city-info {
         display: flex;
@@ -432,10 +435,12 @@
     }
     .lvct-region-dialog__city-name {
         font-size: 13px;
+        font-weight: 600;
+        color: var(--lvct-text-1);
     }
     .lvct-region-dialog__city-meta {
         font-size: 11px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-3);
     }
     /* 右侧主区域 */
     .lvct-region-dialog__main {
@@ -493,12 +498,19 @@
     }
     .lvct-region-dialog__person-card {
         padding: 10px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter);
-        border-radius: 6px;
+        border-radius: var(--lvct-r-md, 8px);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        box-shadow: var(--lvct-shadow-card);
         display: flex;
         flex-direction: column;
         gap: 8px;
+        transition: all 0.15s ease;
+    }
+    .lvct-region-dialog__person-card:hover {
+        border-color: var(--lvct-border-strong);
+        transform: translateY(-1px);
+        box-shadow: var(--lvct-shadow-2);
     }
     .lvct-region-dialog__person-top {
         display: flex;
@@ -508,15 +520,16 @@
     .lvct-region-dialog__person-avatar {
         width: 32px;
         height: 32px;
-        border-radius: 50%;
-        background: var(--b3-theme-primary-lightest);
-        color: var(--b3-theme-primary);
+        border-radius: 8px;
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand, #ea580c) 78%, #ffffff), var(--lv-brand, #ea580c));
+        color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 13px;
         flex-shrink: 0;
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-brand, #ea580c) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
     .lvct-region-dialog__person-basic {
         flex: 1;
