@@ -200,7 +200,7 @@
                 <section class="lvct-review__section" data-health-module={module.module}>
                     <div class="lvct-between">
                         <b>{moduleLabel(module.module)}</b>
-                        <span class="lvct-chip">{moduleStateLabel(module)}</span>
+                        <span class="lvct-chip" class:lvct-chip--success={module.state === "success"} class:lvct-chip--error={module.state === "failed"} class:lvct-chip--warning={module.state === "unknown"}>{moduleStateLabel(module)}</span>
                     </div>
                     <p class="ft__smaller ft__on-surface">{moduleDescription(module)}</p>
                     {#if module.state === "unknown"}

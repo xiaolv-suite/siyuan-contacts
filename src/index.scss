@@ -1531,12 +1531,22 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
 .lvct-people__condition {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
-    border: 1px solid var(--lvct-accent);
+    gap: 4px;
+    padding: 2px 10px;
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 35%, transparent);
     border-radius: var(--lvct-r-pill);
-    background: var(--lvct-accent-soft);
-    color: var(--lvct-accent);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, var(--lvct-bg-surface));
+    color: var(--lv-brand, #ea580c);
     font-size: var(--lvct-fs-caption);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 18%, var(--lvct-bg-surface));
+        border-color: var(--lv-brand, #ea580c);
+        transform: translateY(-1px);
+    }
 }
 
 .lvct-import .lvct-people__toolbar {
@@ -3008,6 +3018,24 @@ html[data-theme-mode="dark"] .lvct-notice {
     color: var(--lvct-accent);
 }
 
+.lvct-chip--success {
+    background: var(--lv-heat-warm-soft);
+    color: var(--lv-heat-warm);
+    border: 1px solid color-mix(in srgb, var(--lv-heat-warm) 28%, transparent);
+}
+
+.lvct-chip--error {
+    background: var(--lvct-danger-soft);
+    color: var(--lvct-danger);
+    border: 1px solid color-mix(in srgb, var(--lvct-danger) 28%, transparent);
+}
+
+.lvct-chip--warning {
+    background: var(--lv-heat-cool-soft);
+    color: var(--lv-heat-cool);
+    border: 1px solid color-mix(in srgb, var(--lv-heat-cool) 28%, transparent);
+}
+
 /* 统一覆写与美化 b3-chip，消除宿主或三方主题下生硬黑线与方角割裂 */
 .b3-chip {
     display: inline-flex;
@@ -3642,33 +3670,47 @@ html[data-theme-mode="dark"] .lvct-dialog-panel {
     margin: 0;
 }
 
-.lvct-people__filter,
-.lvct-people__filter-clear {
+.lvct-people__filter {
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-pill);
-    padding: 3px 9px;
+    padding: 3px 10px;
     background: var(--lvct-bg-surface);
     color: var(--lvct-text-2);
     font-size: var(--lvct-fs-caption);
     cursor: pointer;
+    transition: all 0.15s ease;
 
     &:hover,
     &:focus-visible {
-        border-color: var(--lvct-accent);
-        color: var(--lvct-accent);
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 35%, var(--lvct-border-subtle));
+        color: var(--lvct-text-1);
     }
 }
 
 .lvct-people__filter--active {
-    border-color: var(--lvct-accent);
-    background: var(--lvct-accent-soft);
-    color: var(--lvct-accent);
+    border-color: var(--lv-brand, #ea580c);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface));
+    color: var(--lv-brand, #ea580c);
+    font-weight: 600;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--lv-brand, #ea580c) 16%, transparent);
 }
 
 .lvct-people__filter-clear {
+    border: 1px solid transparent;
+    border-radius: var(--lvct-r-pill);
+    padding: 3px 9px;
     border-color: transparent;
     background: transparent;
     color: var(--lvct-text-3);
+    font-size: var(--lvct-fs-caption);
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+        color: var(--lvct-danger, #e11d48);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
 }
 
 /* ---------- 关系图谱 ---------- */
