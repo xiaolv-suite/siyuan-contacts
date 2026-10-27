@@ -23,7 +23,7 @@
         facade: ContactsPluginFacade;
         preferences: ViewPreferences;
         onPreferencesChange: (next: ViewPreferences) => Promise<ViewPreferences>;
-        onOpenDetail: (person: ContactSummary) => void;
+        onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
         onOpenPeople: (focus?: { itemIds: readonly string[]; label: string; sort?: "name" | "group" | "birthday" | "recent" }) => void;
         onOpenCreatePerson?: () => void;
         onOpenOrgs: (orgDocId?: string) => void;

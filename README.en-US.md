@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.7** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.7) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.8** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.8) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.7 (2026-10-27)
+## This release: v0.6.8 (2026-10-27)
+
+This release upgrades the Relation Graph Quick Drawer with direct interaction flow and instant flashcard extraction:
+
+- **Quick Drawer to Activity Flow**: Added direct `[Record Interaction]` button in the 320px Node Quick Drawer footer to navigate seamlessly into the interaction timeline without breaking graph topology flow.
+- **Drawer Fact to Flashcards**: Added inline mini `[Flashcard]` generation button for each drawer fact/quote to effortlessly generate Q&A text for FSRS retention.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.7 (2026-10-27)
 
 This release implements inline facts & quotes archival across all interaction channels including Person Detail:
 

@@ -4601,17 +4601,29 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         background: color-mix(in srgb, var(--lvct-bg-elevated) 40%, var(--lvct-bg-surface));
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
     }
 
     &__btn {
         flex: 1 1 0;
+        min-width: 78px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 4px;
         font-size: 12px;
         padding-block: 6px;
+        white-space: nowrap;
+    }
+}
+
+.lvct-drawer-fact-item {
+    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+    &:hover {
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, var(--lvct-border-subtle));
+        background: var(--lvct-bg-surface);
     }
 }
 
