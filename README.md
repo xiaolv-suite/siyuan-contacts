@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.1** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.1) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.2** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.2) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.1 · 2026-10-27）
+## 本次发布（v0.6.2 · 2026-10-27）
+
+本版本全面贯彻落实小驴快门中枢 Issue #146 统领排雷规范，深入加固了底层数据防线与集市生态能力：
+
+- **全仓 SQL 块 ID 与参数防注入加固（SQL Security Hardening）**：全仓凡拼入 SQL 语句的块 ID、文档 ID 与笔记本 ID，均严格前置经过 `assertSafeBlockId`（`/^\d{14}-[0-9a-z]{7}$/`）校验，彻底拦截非法字符串与畸形字符；对日记日期、城市名称等字符串参数全面接入 `escapeSqlString` 安全转义，防范注入隐患。
+- **Issue #146 快门中枢统领排雷指标全面达成**：`plugin.json` 补齐 `["小驴", "小驴人脉", "xiaolv", "lv"]` 获客关键词；桌面独立设置大窗开启；跨插件事件统一纠偏；移动端弹窗统一支持 `window.visualViewport` 软键盘动态避让。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 100% 通过；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.1 · 2026-10-27）
 
 本版本深入贯彻落实《小驴人脉后续开发总计划与演进路线图 (2026 - 2027)》，全面升维了“从笔记捕获人脉（Capture From Note）”的工作流深度：
 

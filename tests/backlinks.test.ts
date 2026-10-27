@@ -17,12 +17,17 @@ test("assertSafeBlockId：非法 ID 触发异常保护", () => {
     assert.doesNotThrow(() => assertSafeBlockId("20261023150000-abcdef1"));
     assert.throws(() => assertSafeBlockId("malicious-id' OR 1=1 --"), /不是合法的思源块 ID/);
     assert.throws(() => assertSafeBlockId(""), /不是合法的思源块 ID/);
+    assert.throws(() => assertSafeBlockId("20261023150000-abcdef1; DROP TABLE blocks;--"), /不是合法的思源块 ID/);
+    assert.throws(() => assertSafeBlockId("20261023150000-abcdef1'"), /不是合法的思源块 ID/);
+    assert.throws(() => assertSafeBlockId("20261023150000_abcdef1"), /不是合法的思源块 ID/);
 });
 
 test("escapeSqlString：正确转义 SQL 单引号防注入", () => {
     assert.equal(escapeSqlString("O'Reilly"), "O''Reilly");
     assert.equal(escapeSqlString("normal_text"), "normal_text");
     assert.equal(escapeSqlString("admin'--"), "admin''--");
+    assert.equal(escapeSqlString("'; DROP TABLE blocks; --"), "''; DROP TABLE blocks; --");
+    assert.equal(escapeSqlString(""), "");
 });
 
 test("BacklinkMentionItem 与 PersonInsights 类型契约完备", () => {

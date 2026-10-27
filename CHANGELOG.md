@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.2] — 2026-10-27
+
+重塑：全仓 SQL 块 ID 防注入加固与 Issue #146 中枢统领排雷规范闭环
+
+- **全仓 SQL 防注入加固**：拼入 SQL 前严格执行 `assertSafeBlockId` 正则校验与 `escapeSqlString` 转义。
+- **Issue #146 统领排雷闭环**：`plugin.json` 关键词补全、跨插件事件纠偏、移动端 `visualViewport` 软键盘避让等指标全量达标。
+
+验证：`pnpm check` 0/0、单测全绿、`pnpm build` 与 Release 门禁通过。
+
+
 ## [0.6.1] — 2026-10-27
 
 重塑：笔记人员捕获事实随路沉淀（Capture with Facts）与双向闭环沉淀

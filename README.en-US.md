@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.1** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.1) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.2** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.2) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.1 (2026-10-27)
+## This release: v0.6.2 (2026-10-27)
+
+This release implements comprehensive SQL security hardening and closes Issue #146:
+
+- **SQL Security Hardening**: Every block ID, document ID, and notebook ID interpolated into SQL queries is validated strictly against `/^\d{14}-[0-9a-z]{7}$/` via `assertSafeBlockId`, with string literals safely sanitized via `escapeSqlString`.
+- **Ecosystem Fleet Directives (Issue #146)**: Added full Chinese branding keywords, desktop standalone settings window, ecosystem event bus alignment, and `visualViewport` mobile soft keyboard avoidance.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.6.1 (2026-10-27)
 
 This release upgrades "Capture From Note" with inline fact and quote archival:
 

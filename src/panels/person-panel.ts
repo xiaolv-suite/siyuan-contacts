@@ -22,7 +22,7 @@ import QuickRecordDialog from "../components/people/QuickRecordDialog.svelte";
 import { translateText } from "../domain/translation";
 import { extractNormalizedRegion } from "../domain/region";
 import { CITY_TOPIC_ATTR } from "../domain/city-topic";
-import { querySql } from "../api/client";
+import { querySql, assertSafeBlockId } from "../api/client";
 import type { Plugin } from "siyuan";
 import type { ContactsSettings } from "../domain/model";
 import type { ContactSummary } from "../domain/person";
@@ -127,6 +127,7 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
             }
 
             // 检查是否为城市人脉实体专题文档
+            assertSafeBlockId(rootId, "rootId");
             const cityRows = await querySql<unknown>(
                 `SELECT content, ial FROM blocks WHERE id = '${rootId}' AND type = 'd' AND ial LIKE '%${CITY_TOPIC_ATTR}="%' LIMIT 1`,
             ).catch(() => []);
