@@ -1739,6 +1739,8 @@ import { toLocalDateKey } from "../../domain/interactions";
         <ReviewReportDialog
             i18n={facade.i18n}
             buildReport={(range) => facade.buildReviewReport(range.from, range.to)}
+            createDocReport={facade.createReviewReportDoc ? (range) => facade.createReviewReportDoc!(range) : undefined}
+            onOpenDoc={(docId) => facade.openDoc?.(docId)}
             onOpenPeople={(focus) => {
                 reviewOpen = false;
                 onOpenPeople(focus);

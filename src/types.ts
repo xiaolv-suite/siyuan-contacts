@@ -156,6 +156,8 @@ export interface ContactsPluginFacade {
     establishPotentialConnection?(firstPersonDocId: string, secondPersonDocId: string): Promise<import("./domain/relations").RelationMutationReport>;
     /** 交往回顾报表（F12）：区间互动统计（只读投影，人物条数与同场活动分口径） */
     buildReviewReport(from: string, to: string): Promise<ReviewReport>;
+    /** RF-03：将交往回顾沉淀为思源实体文档 */
+    createReviewReportDoc?(range: import("./domain/review-report").ReviewRange): Promise<{ docId: string; hpath: string } | null>;
     /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */
     loadExportSummary(): Promise<ExportSummary>;
     /** 导出全量名册为 vCard 3.0 文本（联系人页选中导出外的设置页统一入口） */

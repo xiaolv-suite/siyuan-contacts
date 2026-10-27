@@ -13,6 +13,7 @@
 import type { ContactSummary } from "./person.ts";
 import type { InteractionEvent } from "./interactions.ts";
 import { isValidDateKey } from "./date-key.ts";
+import { escapeLinkLabel } from "./format.ts";
 
 export interface ReviewRange {
     from: string;
@@ -168,4 +169,59 @@ export function buildReviewReport(params: {
         previousTotal,
         delta: total - previousTotal,
     };
+}
+
+/**
+ * 将交往回顾报表格式化为思源笔记文档 Markdown 文本（支持沉淀为回顾实体文档）。
+ * 纯函数，零外部依赖。
+ */
+export function buildReviewReportMarkdown(report: ReviewReport): string {
+    const lines: string[] = [];
+    const dateRangeStr = report.range.from && report.range.to
+        ? `${report.range.from} 至 ${report.range.to}`
+        : report.range.from || report.range.to || "全量区间";
+
+    lines.push(`# 人脉交往回顾 · ${dateRangeStr}`);
+    lines.push("");
+    lines.push(`> 统计周期：${dateRangeStr} · 生成时间：${new Date().toISOString().slice(0, 10)}`);
+    lines.push("");
+
+    lines.push("## 📊 核心指标概览");
+    const deltaStr = report.delta > 0 ? `+${report.delta} ↑` : report.delta < 0 ? `${report.delta} ↓` : "持平";
+    lines.push(`- **互动人次**：${report.total} 次（对比上一周期：${deltaStr}）`);
+    lines.push(`- **触达好友**：${report.contactedPeople} 位联系人`);
+    lines.push(`- **独立活动**：${report.activities} 场（已聚合同场多参与者事件）`);
+    lines.push(`- **记录来源**：手动记录 ${report.bySource.manual} 次 · 日记捕获 ${report.bySource.diary} 次 · 外部接口 ${report.bySource.api} 次`);
+    lines.push("");
+
+    if (report.topPeople && report.topPeople.length > 0) {
+        lines.push("## 🏆 重点深交人脉 (Top Contacts)");
+        for (const person of report.topPeople) {
+            const cleanName = escapeLinkLabel(person.name);
+            const link = person.personDocId ? `[${cleanName}](siyuan://blocks/${person.personDocId})` : cleanName;
+            lines.push(`- ${link}：本期互动 **${person.count}** 次`);
+        }
+        lines.push("");
+    }
+
+    if (report.entries && report.entries.length > 0) {
+        lines.push("## 📅 往来互动明细流水");
+        for (const entry of report.entries) {
+            const cleanName = escapeLinkLabel(entry.personName || "未命名");
+            const link = entry.personDocId ? `[${cleanName}](siyuan://blocks/${entry.personDocId})` : cleanName;
+            const noteStr = entry.note?.trim() ? ` · ${entry.note.trim()}` : "";
+            const groupStr = entry.groupSize > 1 ? ` [多人同场 · ${entry.groupSize}人]` : "";
+            lines.push(`- **${entry.localDate}** 与 ${link}${groupStr}${noteStr}`);
+        }
+        lines.push("");
+    } else {
+        lines.push("## 📅 往来互动明细流水");
+        lines.push("- 本周期内暂无已记录的往来互动事实。");
+        lines.push("");
+    }
+
+    lines.push("---");
+    lines.push("*由「小驴人脉」交往回顾引擎自动沉淀 · 保持真实、有温度的人际交往*");
+
+    return lines.join("\n");
 }
