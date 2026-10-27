@@ -9,6 +9,7 @@ import type {
 } from "../domain/external-bridge.ts";
 import type { ContactsSettings } from "../domain/model";
 import { birthdayToMs } from "../domain/person.ts";
+import { toLocalDateKey } from "../domain/interactions.ts";
 
 export interface BridgeDependencies {
     settings(): ContactsSettings;
@@ -23,6 +24,8 @@ export interface BridgeDependencies {
     create(settings: ContactsSettings, name: string, request: BridgeCreateRequest): Promise<BridgePerson>;
     event(docId: string, ref: string): Promise<{ date: string; note: string } | null>;
     record(docId: string, ref: string, occurredAt: number, note: string): Promise<{ recorded: boolean }>;
+    loadFacts?(docId: string): Promise<import("../domain/doc-section").PersonFactItem[]>;
+    saveFacts?(docId: string, items: readonly import("../domain/doc-section").PersonFactItem[]): Promise<void>;
     /** 运行期插件版本（来自 manifest）；缺省时回退到编译期常量 */
     version?(): string;
 }
@@ -63,6 +66,8 @@ export interface LvContactsBridgeApi {
     getPerson(docId: string): Promise<BridgePerson | null>;
     ensurePerson(name: string, options?: BridgeEnsureOptions): Promise<BridgePerson & { created: boolean }>;
     recordInteraction(personDocIds: readonly string[], meta?: BridgeInteractionMeta): Promise<BridgeInteractionResult>;
+    appendFact(personDocId: string, input: import("../domain/external-bridge").BridgeFactInput): Promise<import("../domain/doc-section").PersonFactItem>;
+    getFacts(personDocId: string): Promise<import("../domain/doc-section").PersonFactItem[]>;
 }
 
 function anchors(settings: ContactsSettings): BridgeAnchors {
@@ -150,7 +155,11 @@ export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBri
             return (BRIDGE_CAPABILITIES as readonly string[]).includes(capability)
                 || capability === "whenReady"
                 || capability === "getOverview"
-                || capability === "hasCapability";
+                || capability === "hasCapability"
+                || capability === "appendFact"
+                || capability === "getFacts"
+                || capability === "facts.append"
+                || capability === "facts.read";
         },
         getOverview(): ContactsBridgeOverview {
             deps.guard();
@@ -358,6 +367,39 @@ export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBri
                 }
                 return summary;
             });
+        },
+        appendFact: async (personDocId: string, input: import("../domain/external-bridge").BridgeFactInput) => {
+            deps.guard();
+            const settings = settingsFor("recordInteraction");
+            const person = resolveBridgePerson(await freshPeople(settings, "recordInteraction"), personDocId, "recordInteraction");
+            if (!person || !await reachable(settings, personDocId, "recordInteraction")) {
+                throw new BridgeError("person_not_found", "recordInteraction");
+            }
+            if (!input || typeof input.text !== "string" || !input.text.trim()) {
+                throw new BridgeError("invalid_input", "recordInteraction");
+            }
+            if (!deps.loadFacts || !deps.saveFacts) {
+                throw new BridgeError("unavailable", "recordInteraction");
+            }
+            const existing = await deps.loadFacts(personDocId);
+            const newItem: import("../domain/doc-section").PersonFactItem = {
+                id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                text: input.text.trim(),
+                category: input.category || "quote",
+                date: toLocalDateKey(new Date()),
+                ...(input.sourceRef?.trim() ? { sourceRef: input.sourceRef.trim() } : {}),
+            };
+            const next = [newItem, ...existing];
+            await deps.saveFacts(personDocId, next);
+            if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+                window.dispatchEvent(new CustomEvent("lv-contacts:data-changed", { detail: { v: 1, type: "data-changed", docId: personDocId } }));
+            }
+            return newItem;
+        },
+        getFacts: async (personDocId: string) => {
+            deps.guard();
+            if (!deps.loadFacts) return [];
+            return deps.loadFacts(personDocId);
         },
     });
 }

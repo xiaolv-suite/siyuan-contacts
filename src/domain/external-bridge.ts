@@ -8,6 +8,12 @@ export const BRIDGE_PROTOCOL = 2;
 export const BRIDGE_CAPABILITIES = Object.freeze(["searchPeople", "getPerson", "ensurePerson", "recordInteraction"] as const);
 export const BRIDGE_STORAGE_KEY = "bridge-requests.json";
 
+export interface BridgeFactInput {
+    text: string;
+    category?: import("./doc-section.ts").FactCategory;
+    sourceRef?: string;
+}
+
 export interface BridgePerson {
     docId: string;
     itemId: string;

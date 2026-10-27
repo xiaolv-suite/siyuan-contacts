@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.99** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.99) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.0** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.0) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,17 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.99 (2026-10-27)
+## This release: v0.6.0 Milestone (2026-10-27)
+
+Lv Contacts officially steps into the 6.0 milestone era, delivering ecosystem federation v2, bilateral flashcard integration, and rich personal relationship insights:
+
+- **Ecosystem Super Federation Bridge v2**: Added `appendFact` and `getFacts` capabilities to `window.LvContacts`. Seamlessly integrates with siyuan-glean for viewpoint clipping and siyuan-card for FSRS memory retention.
+- **Instant Social Knowledge Flashcards**: One-click generation of Q&A flashcards for vital preferences, dietary restrictions, and milestones directly from fact cards.
+- **Full v0.6.0 Capability Suite**: Includes interactive edge filtering, 320px quick drawer, incremental city rebase, 5 theme schemes, full-fidelity vCard, potential connections discovery, and review doc generation.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.5.99 (2026-10-27)
 
 This release implements the Review Document Generator for native SiYuan workspace knowledge consolidation:
 

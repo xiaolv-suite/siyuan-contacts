@@ -128,6 +128,12 @@ export function initExternalBridge(plugin: Plugin, getSettings: () => ContactsSe
             }
             return res;
         },
+        loadFacts: async (docId) => {
+            return (plugin as unknown as { loadPersonFacts?: (id: string) => Promise<import("../domain/doc-section").PersonFactItem[]> }).loadPersonFacts?.(docId) ?? [];
+        },
+        saveFacts: async (docId, items) => {
+            await (plugin as unknown as { savePersonFacts?: (id: string, items: readonly import("../domain/doc-section").PersonFactItem[]) => Promise<void> }).savePersonFacts?.(docId, items);
+        },
         // 桥版本单一事实源：以运行时 manifest 为准，避免与发布版本漂移
         version: () => {
             const manifestVersion = (plugin as { manifest?: { version?: string } }).manifest?.version;
