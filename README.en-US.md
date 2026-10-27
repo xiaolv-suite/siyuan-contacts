@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.8** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.8) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.9** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.9) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,17 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.8 (2026-10-27)
+## This release: v0.6.9 (2026-10-27)
+
+This release upgrades Dashboard Action cards and Potential Connections Discovery navigation:
+
+- **Direct Action to Interaction Flow**: "Record Interaction" in the Action card menu directly activates the `activity` tab, allowing zero-friction logging.
+- **Bento Category Reason Icons**: Action reason chips now feature visual icons (🎂 Birthday, 💍 Anniversary, 📌 Follow-up, 💬 Touchpoint).
+- **Potential Connection Drill-Down**: Clickable person cards in the Discovery modal to inspect details, and instant "Locate in Roster" to compare potential tie candidates.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.8 (2026-10-27)
 
 This release upgrades the Relation Graph Quick Drawer with direct interaction flow and instant flashcard extraction:
 
