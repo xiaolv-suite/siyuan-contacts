@@ -26,6 +26,7 @@
         MapPin,
         Plus,
         X,
+        Sparkles,
     } from "@lucide/svelte";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
@@ -682,6 +683,17 @@ import StatusNotice from "../StatusNotice.svelte";
             factsSaving = false;
         }
     }
+    let flashcardToastId = $state("");
+    let flashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
+    function makeFactFlashcard(fact: PersonFactItem) {
+        const catLabel = FACT_CATEGORY_META[fact.category]?.label || "社交备忘";
+        const text = `Q: [人脉常识] ${current.name} 的【${catLabel}】是什么？\nA: ${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
+        void copyPlainText(text);
+        flashcardToastId = fact.id;
+        if (flashcardToastTimer) clearTimeout(flashcardToastTimer);
+        flashcardToastTimer = setTimeout(() => { flashcardToastId = ""; }, 1800);
+    }
+
     loadFacts();
 
     // ---- 互动备注模板（F09） ----
@@ -2802,6 +2814,14 @@ import StatusNotice from "../StatusNotice.svelte";
                                             {/if}
                                         </div>
                                     </div>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-facts-del-btn"
+                                        onclick={() => makeFactFlashcard(fact)}
+                                        title={flashcardToastId === fact.id ? "已复制常识闪卡 Q&A 文本" : "一键制成常识闪卡（复制问答至小驴闪卡复习）"}
+                                    >
+                                        {#if flashcardToastId === fact.id}<Check size={13} style="color: var(--lvct-success);" />{:else}<Sparkles size={13} />{/if}
+                                    </button>
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text lvct-facts-del-btn"

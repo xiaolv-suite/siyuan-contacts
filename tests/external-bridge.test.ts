@@ -662,3 +662,32 @@ test("桥版本单一事实源：优先取 deps.version() 运行期版本，无�
     assert.equal(faultApi.version, "0.5.19");
 });
 
+test("外部服务桥：支持 appendFact 与 getFacts 扩展能力（联动小驴拾遗与闪卡）", async () => {
+    const fix = fixture();
+    const storedFacts: any[] = [];
+    const bridge = createExternalBridgeApi({
+        ...fix.deps,
+        loadFacts: async () => storedFacts,
+        saveFacts: async (_id, items) => { storedFacts.splice(0, storedFacts.length, ...items); },
+    });
+
+    assert.equal(bridge.hasCapability("appendFact"), true);
+    assert.equal(bridge.hasCapability("getFacts"), true);
+    assert.equal(bridge.hasCapability("facts.append"), true);
+    assert.equal(bridge.hasCapability("facts.read"), true);
+
+    const fact = await bridge.appendFact(firstId, {
+        text: "私有知识库的核心在权限边界",
+        category: "quote",
+        sourceRef: "2026架构大会",
+    });
+
+    assert.equal(fact.text, "私有知识库的核心在权限边界");
+    assert.equal(fact.category, "quote");
+    assert.equal(fact.sourceRef, "2026架构大会");
+
+    const facts = await bridge.getFacts(firstId);
+    assert.equal(facts.length, 1);
+    assert.equal(facts[0].id, fact.id);
+});
+
