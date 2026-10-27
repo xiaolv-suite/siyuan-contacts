@@ -28,6 +28,7 @@ import type { ViewPreferences } from "../domain/preferences";
     import OrgProjectionRepair from "./org/OrgProjectionRepair.svelte";
     import PersonPicker from "./people/PersonPicker.svelte";
     import type { MigrationImportResult } from "../services/migration-bundle";
+import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 
     let {
         facade,
@@ -428,6 +429,8 @@ import type { ViewPreferences } from "../domain/preferences";
     let brandAvatarMessage = $state("");
     let brandAvatarMessageError = $state(false);
     let brandAvatarReadRequest = 0;
+    let mappingFeedback = $state("");
+    let mappingFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
     // svelte-ignore state_referenced_locally
     let draft: ViewPreferences = $state({ ...preferences });
     // svelte-ignore state_referenced_locally
@@ -449,6 +452,7 @@ import type { ViewPreferences } from "../domain/preferences";
         preferencesAlive = false;
         preferencesRequest += 1;
         brandAvatarReadRequest += 1;
+        if (mappingFeedbackTimer) clearTimeout(mappingFeedbackTimer);
     });
     // svelte-ignore state_referenced_locally
     let anchorDraft: SettingsAnchorPatch = $state({
@@ -1022,25 +1026,25 @@ import type { ViewPreferences } from "../domain/preferences";
     function autoMatchColumns(): void {
         if (!health?.missing || !health?.availableColumns) return;
         const used = new Set(Object.values(mappingDraft).filter(Boolean));
+        let matchedCount = 0;
         for (const item of health.missing) {
+            let spec: import("../domain/fields.ts").FieldSpec;
+            try {
+                spec = fieldSpec(item.key as any);
+            } catch {
+                continue;
+            }
             const candidates = health.availableColumns.filter((c) => c.type === item.type && !used.has(c.id));
-            const matched = candidates.find((c) => {
-                const name = (c.name || "").toLowerCase().trim();
-                const exp = item.expectedName.toLowerCase().trim();
-                if (name === exp) return true;
-                if (item.key === "phone" && (name.includes("电话") || name.includes("手机") || name.includes("phone") || name.includes("mobile"))) return true;
-                if (item.key === "wechat" && (name.includes("微信") || name.includes("wechat") || name.includes("wx"))) return true;
-                if (item.key === "email" && (name.includes("邮箱") || name.includes("邮件") || name.includes("mail"))) return true;
-                if (item.key === "birthday" && (name.includes("生日") || name.includes("出生") || name.includes("birth"))) return true;
-                if (item.key === "group" && (name.includes("分组") || name.includes("分类") || name.includes("group"))) return true;
-                if (item.key === "tags" && (name.includes("标签") || name.includes("tag"))) return true;
-                return false;
-            });
+            const matched = candidates.find((c) => isSemanticallyMatchingColumn(spec, c));
             if (matched) {
                 mappingDraft[item.key] = matched.id;
                 used.add(matched.id);
+                matchedCount += 1;
             }
         }
+        mappingFeedback = matchedCount > 0 ? `已智能嗅探并匹配 ${matchedCount} 个建议列` : "未发现可自动匹配的现有列，可手动选择";
+        if (mappingFeedbackTimer) clearTimeout(mappingFeedbackTimer);
+        mappingFeedbackTimer = setTimeout(() => { mappingFeedback = ""; }, 3000);
     }
 
     async function runFieldMapRepair() {
@@ -1696,12 +1700,17 @@ import type { ViewPreferences } from "../domain/preferences";
                             <div class="lvct-settings__mapping">
                                 <div class="lvct-between" style="margin-bottom: 8px;">
                                     <b>从现有列恢复映射</b>
-                                    <button
-                                        type="button"
-                                        class="b3-button b3-button--text b3-button--small"
-                                        onclick={autoMatchColumns}
-                                        title="根据字段中文、拼音或英文语义自动匹配并填入建议列"
-                                    ><Sparkles size={13} class="lvct-icon-inline" /> 智能匹配列</button>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        {#if mappingFeedback}
+                                            <span class="ft__smaller" style="color: var(--lvct-success, #16a34a);">{mappingFeedback}</span>
+                                        {/if}
+                                        <button
+                                            type="button"
+                                            class="b3-button b3-button--text b3-button--small"
+                                            onclick={autoMatchColumns}
+                                            title="根据字段中文、拼音或英文语义自动匹配并填入建议列"
+                                        ><Sparkles size={13} class="lvct-icon-inline" /> 智能匹配列</button>
+                                    </div>
                                 </div>
                                 {#each health.missing as item (item.key)}
                                     <label class="lvct-form__item">

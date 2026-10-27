@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.11] — 2026-10-28
+
+重塑：属性视图数据库字段全量“一键自动智能嗅探”（Smart Field Mapping）与建库自愈
+
+- **全量字段智能嗅探引擎**：`domain/fields.ts` 实现 `isSemanticallyMatchingColumn`，覆盖 9 大字段与中英常见变体。
+- **初始化与对账自愈**：扫描候选与初始化建库全面接入 `smartMatch`，设置页智能匹配增加即时匹配数量反馈。
+
+验证：`pnpm check` 0/0、单测 931/931 绿灯、E2E UI 回归全部通过、Release 门禁通过。
+
+
 ## [0.6.10] — 2026-10-27
 
 重塑：关系图谱桌面级键盘快捷控制（Graph Keyboard Shortcuts）与度数直跳

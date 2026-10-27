@@ -89,7 +89,7 @@ export async function inspectWorkspace(notebookName: string): Promise<WorkspaceS
         const evaluated = [];
         for (const block of avBlocks) {
             const columns = await readColumnsStrict(block.avId, block.dbBlockId);
-            const reconciled = reconcileFieldMap(columns);
+            const reconciled = reconcileFieldMap(columns, {}, { smartMatch: true });
             evaluated.push({ block, matched: reconciled.matched, fields: reconciled.fieldMap });
         }
         const withEvidence = evaluated.filter((entry) => entry.matched > 0);
@@ -360,7 +360,7 @@ export async function scanAnchorCandidates(options: AnchorScanOptions = {}): Pro
                         hpath: doc.hpath,
                         dbBlockId: block.dbBlockId,
                         avId: block.avId,
-                        matchedFields: reconcileFieldMap(columns).matched,
+                        matchedFields: reconcileFieldMap(columns, {}, { smartMatch: true }).matched,
                     });
                 }
             }
@@ -500,7 +500,7 @@ export async function initializeWorkspace(
 
     // 物化调用幂等（v3.8.5 实证）：续建时对已物化的库也安全
     const rendered = await renderView(avId, dbBlockId, "", true);
-    const reconciled = reconcileFieldMap(rendered.view.columns);
+    const reconciled = reconcileFieldMap(rendered.view.columns, {}, { smartMatch: true });
     const reusedRelated = reconciled.fieldMap.related;
 
     const fieldMap: Record<FieldKey, string> = {} as Record<FieldKey, string>;
