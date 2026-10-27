@@ -46,6 +46,8 @@ import type { FieldRebuildPreview, SettingsRebindPreview } from "./services/sett
 import { auditWorkspaceData, auditWorkspaceDataReport, retryFailedHealthAuditModules } from "./services/health-audit";
 import { reconcileFollowUpTasksFromDoc } from "./services/followup-sync";
 import { updateContactFields, applyContactCandidateFields, listContacts as listContactsService } from "./services/contacts";
+import { detectChangedCities } from "./domain/city-topic";
+import { autoRebaseCityTopics } from "./services/city-topic";
 import { ensureSelfIdentity, designateSelfIdentity, previewSelfIdentityChange, applySelfIdentityChange } from "./services/self-identity";
 import { loadSelfIdentity } from "./data/self-identity";
 import {
@@ -178,6 +180,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private dialogInstance: ReturnType<typeof mount> | null = null;
     private requestedWorkbenchView: WorkbenchView | undefined;
     private dataChangeTimer = 0;
+    private lastRosterForCitySync: readonly ContactSummary[] = [];
     private startupTimer = 0;
     private viewRequestTimer = 0;
     private lifecycleToken: LifecycleToken = createLifecycleToken();
@@ -832,6 +835,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 await this.loadViewPreferences();
                 if (this.isLifecycleActive(lifecycleToken) && this.preferencesActive && epoch === this.preferencesEpoch && request === this.dataChangeRequest) {
                     emitDataChanged({ preferencesRevision: this.viewPreferences.revision }, lifecycleToken);
+                    void this.triggerCityTopicsAutoRebase().catch(() => {});
                 }
             } catch (error) {
                 if (this.isLifecycleActive(lifecycleToken) && this.preferencesActive && epoch === this.preferencesEpoch && request === this.dataChangeRequest) {
@@ -839,6 +843,23 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 }
             }
         }, 600);
+    }
+
+    async triggerCityTopicsAutoRebase() {
+        if (!this.settings?.notebookId) return;
+        const notebookId = this.settings.notebookId;
+        try {
+            const current = await this.listContacts();
+            if (this.lastRosterForCitySync.length > 0) {
+                const changed = detectChangedCities(this.lastRosterForCitySync, current);
+                if (changed.size > 0) {
+                    await autoRebaseCityTopics(notebookId, changed, current);
+                }
+            }
+            this.lastRosterForCitySync = current;
+        } catch {
+            // 增量后台同步静默守护，不阻断主链路
+        }
     }
 
     async reloadWorkspaceState(): Promise<WorkspaceState> {

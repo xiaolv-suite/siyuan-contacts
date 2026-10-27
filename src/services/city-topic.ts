@@ -5,9 +5,10 @@
  */
 import { findCityTopicDocument, flushBlockIndex, setBlockAttrs, upsertMarkedBlock } from "../api/blocks";
 import { createDocWithMd } from "../api/client";
-import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR } from "../domain/city-topic.ts";
+import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR, extractCityOrganizations } from "../domain/city-topic.ts";
 import type { ContactSummary } from "../domain/person.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
+import { filterContactsByRegion } from "../domain/region.ts";
 
 export interface SyncCityTopicInput {
     notebookId: string;
@@ -61,4 +62,61 @@ export async function syncCityTopicDocument(
         console.warn("[LvContacts] 同步城市专题文档失败：", err);
         return null;
     }
+}
+
+/**
+ * 如果指定城市已经存在专题文档，则执行增量受控刷新（Auto-Rebase）；若不存在则安静跳过，不创建新文档。
+ */
+export async function rebaseCityTopicIfPresent(
+    notebookId: string,
+    city: string,
+    allContacts: readonly ContactSummary[],
+): Promise<boolean> {
+    const cityName = city.trim();
+    if (!notebookId || !cityName || cityName === "未知") return false;
+
+    try {
+        const existing = await findCityTopicDocument(notebookId, cityName);
+        if (!existing?.docId) return false;
+
+        const cityContacts = filterContactsByRegion(allContacts, cityName);
+        const organizations = extractCityOrganizations(cityContacts);
+
+        const topicInput = {
+            city: cityName,
+            contacts: cityContacts,
+            organizations,
+            generatedDate: toLocalDateKey(new Date()),
+        };
+        const sectionMarkdown = buildCityTopicSectionMarkdown(topicInput);
+
+        await upsertMarkedBlock(existing.docId, CITY_CONTACTS_SECTION_ATTR, sectionMarkdown);
+        await setBlockAttrs(existing.docId, {
+            [CITY_TOPIC_ATTR]: cityName,
+            "custom-lvct-updated": String(Date.now()),
+        });
+        await flushBlockIndex();
+        return true;
+    } catch (err) {
+        console.warn(`[LvContacts] 增量刷新城市文档《${cityName}》受控区块失败：`, err);
+        return false;
+    }
+}
+
+/**
+ * 批量防抖增量受控刷新一组变动的城市文档。
+ * 仅刷新已有专题文档的城市，绝不静默新建。
+ */
+export async function autoRebaseCityTopics(
+    notebookId: string,
+    cities: Iterable<string>,
+    allContacts: readonly ContactSummary[],
+): Promise<string[]> {
+    const refreshed: string[] = [];
+    const list = Array.from(new Set(cities)).filter((c) => c && c.trim() && c !== "未知");
+    for (const city of list) {
+        const ok = await rebaseCityTopicIfPresent(notebookId, city, allContacts);
+        if (ok) refreshed.push(city);
+    }
+    return refreshed;
 }
