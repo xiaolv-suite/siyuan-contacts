@@ -1,6 +1,6 @@
 import { listNotebookDocs, NOTEBOOK_DOC_PAGE_SIZE } from "../api/blocks";
 import { mapBoundDocIds } from "../api/av";
-import { querySql } from "../api/client";
+import { querySql, assertSafeBlockId } from "../api/client";
 import { importAnchor, matchesFolderPrefix, normalizeFolderPrefix } from "../domain/import.ts";
 import type { ImportDocumentCandidate } from "../domain/import.ts";
 import type { ContactsSettings } from "../domain/model";
@@ -46,6 +46,7 @@ export async function scanImportCandidates(
             const bindings: Record<string, string> = {};
             Object.assign(bindings, await mapBoundDocIds(settings.avId, ids));
             const unbound = ids.filter((docId) => !bindings[docId]);
+            unbound.forEach((id) => assertSafeBlockId(id, "候选文档 ID"));
             const orgs = unbound.length ? await querySql<{ root_id: unknown }>(
                 `SELECT DISTINCT root_id FROM blocks WHERE root_id IN (${unbound.map((docId) => `'${docId}'`).join(",")}) AND ial LIKE '%custom-lvct-org="%'`,
             ) : [];

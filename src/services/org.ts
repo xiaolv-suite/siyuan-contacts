@@ -5,7 +5,7 @@
  */
 import type { Plugin } from "siyuan";
 import { flushBlockIndex, readMarkedBlocks, readOrganizationFact, updateBlockMd, upsertMarkedBlock, findBlockIdByCustomAttr, deleteBlock } from "../api/blocks";
-import { querySql } from "../api/client";
+import { querySql, assertSafeBlockId } from "../api/client";
 import { withStoreLock } from "../data/storage";
 import { loadOrganizationOperations } from "../data/organization-operations";
 import { organizationIalAttributes, organizationOperationComplete } from "../domain/organization-operations";
@@ -68,6 +68,7 @@ export async function scanOrganizations(): Promise<OrganizationSummary[]> {
         const states = organizationMarkerStates(roots);
         const ids = [...states.keys()];
         if (ids.length === 0) return [];
+        ids.forEach((id) => assertSafeBlockId(id, "组织文档 ID"));
         const idList = ids.map((id) => `'${id}'`).join(",");
         const docs = await querySql<unknown>(
             `SELECT id, content, hpath, box FROM blocks WHERE type='d' AND id IN (${idList})`,
