@@ -19,8 +19,15 @@ export function formatMonthDay(iso: string): string {
 
 export function validateDocumentTitle(title: string): string | null {
     if (!title.trim()) return "文档名称不能为空";
-    if (/[\/\u0000-\u001f\u007f]/.test(title)) return "文档名称不能包含斜杠或控制字符（含换行），思源内核无法原文保留这类名称";
+    if (/[\u0000-\u001f\u007f]/.test(title)) return "文档名称不能包含控制字符（含换行），思源内核无法原文保留这类名称";
     return null;
+}
+
+/**
+ * 将路径段内的半角斜杠安全转义为全角斜杠，防止思源文件树将复合名称（如 张三 / CTO）误切分为多级子目录。
+ */
+export function sanitizeHPathSegment(segment: string): string {
+    return segment.trim().replace(/\//g, "／");
 }
 
 export function documentHPath(...segments: readonly string[]): string {
@@ -28,7 +35,7 @@ export function documentHPath(...segments: readonly string[]): string {
     return "/" + segments.map((segment) => {
         const error = validateDocumentTitle(segment);
         if (error) throw new Error(error);
-        return segment.trim();
+        return sanitizeHPathSegment(segment);
     }).join("/");
 }
 

@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.2** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.2) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.3** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.3) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.2 (2026-10-27)
+## This release: v0.6.3 (2026-10-27)
+
+This release implements composite slash naming support (#19938) and native location field contract (#20325):
+
+- **Composite Slash Naming**: Lifted rigid restrictions against forward slashes in contact names, enabling composite naming (e.g. `John / Lead Architect`). Path segments are safely mapped using `sanitizeHPathSegment` with full-width slashes `／` to prevent accidental file tree folder splits while preserving the original name in headings and databases.
+- **Native Location Field Contract**: Added `"location"` column type in `AvFieldType` to seamlessly align with SiYuan 3.8.8+ location attribute view columns.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.6.2 (2026-10-27)
 
 This release implements comprehensive SQL security hardening and closes Issue #146:
 

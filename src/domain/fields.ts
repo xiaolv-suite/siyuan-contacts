@@ -14,7 +14,8 @@ export type AvFieldType =
     | "select"
     | "mSelect"
     | "checkbox"
-    | "relation";
+    | "relation"
+    | "location";
 
 /** 字段稳定键（插件内部标识，永不变更；列名可被用户随意改） */
 export type FieldKey =
