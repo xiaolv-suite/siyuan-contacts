@@ -2,7 +2,7 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus } from "@lucide/svelte";
     import { copyPlainText } from "../../shared/clipboard";
     import { profileText } from "../../domain/people-profiles";
     import { extractNormalizedRegion } from "../../domain/region";
@@ -47,7 +47,7 @@
         /** B14.5：图谱数据源模式保存在视图偏好中，重开仍用用户选定模式 */
         preferences: ViewPreferences;
         onPreferencesChange: (next: ViewPreferences) => Promise<ViewPreferences>;
-        onOpenDetail: (person: ContactSummary) => void;
+        onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
         onOpenPeople: (focus?: { itemIds: readonly string[]; label: string; sort?: "name" | "group" | "birthday" | "recent" }) => void;
         /** 空图谱时直接进入新建联系人流程；未接线时回退到联系人列表。 */
         onOpenCreatePerson?: () => void;
@@ -187,6 +187,19 @@
     });
     let copyToast: string = $state("");
     let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
+    let drawerFlashcardToastId = $state("");
+    let drawerFlashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function makeDrawerFlashcard(fact: import("../../domain/doc-section").PersonFactItem) {
+        if (!drawerPerson) return;
+        const catLabels: Record<string, string> = { quote: "观点", preference: "喜好/忌口", background: "背景经历", fact: "关键事实" };
+        const catLabel = catLabels[fact.category] || "社交备忘";
+        const text = `Q: [人脉常识] ${drawerPerson.name} 的【${catLabel}】是什么？\nA: ${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
+        void copyPlainText(text);
+        drawerFlashcardToastId = fact.id;
+        if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
+        drawerFlashcardToastTimer = setTimeout(() => { drawerFlashcardToastId = ""; }, 1800);
+    }
 
     function copyField(textToCopy: string | undefined, fieldName: string) {
         if (!textToCopy) return;
@@ -334,12 +347,13 @@
         returnObserver?.disconnect();
         clearHover();
         if (copyToastTimer) clearTimeout(copyToastTimer);
+        if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
     });
 
-    function openSnapshotPerson(person: ContactSummary) {
+    function openSnapshotPerson(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
         const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         returnObserver?.disconnect();
-        onOpenDetail(person);
+        onOpenDetail(person, initialTab);
         void tick().then(() => {
             if (!alive) return;
             const dialog = [...document.querySelectorAll(".lvct-dialog-panel")].at(-1);
@@ -1950,10 +1964,25 @@
                         {#if drawerFacts.length > 0}
                             <div class="lvct-graph-drawer__section">
                                 <div class="lvct-graph-drawer__section-title">谈资备忘</div>
-                                <div style="display: flex; flex-direction: column; gap: 4px;">
-                                    {#each drawerFacts.slice(0, 3) as f (f.id)}
-                                        <div class="ft__smaller ft__on-surface" style="padding: 4px 6px; background: var(--lvct-bg-elevated); border-radius: var(--lvct-r-sm); border: 1px solid var(--lvct-border-subtle);">
-                                            <b>{f.category === "quote" ? "💡" : f.category === "preference" ? "❤️" : f.category === "background" ? "💼" : "📌"}</b> {f.text}
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    {#each drawerFacts.slice(0, 5) as f (f.id)}
+                                        <div class="ft__smaller ft__on-surface lvct-drawer-fact-item" style="padding: 5px 8px; background: var(--lvct-bg-elevated); border-radius: var(--lvct-r-sm); border: 1px solid var(--lvct-border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                            <div style="flex: 1 1 0; min-width: 0; word-break: break-word;">
+                                                <b>{f.category === "quote" ? "💡" : f.category === "preference" ? "❤️" : f.category === "background" ? "💼" : "📌"}</b> {f.text}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--text b3-button--small"
+                                                style="padding: 1px 4px; font-size: 11px; flex-shrink: 0;"
+                                                title={drawerFlashcardToastId === f.id ? "已复制常识闪卡 Q&A 文本" : "一键制成常识闪卡（复制问答至小驴闪卡复习）"}
+                                                onclick={() => makeDrawerFlashcard(f)}
+                                            >
+                                                {#if drawerFlashcardToastId === f.id}
+                                                    <Check size={12} style="color: var(--lvct-success);" />
+                                                {:else}
+                                                    <Sparkles size={12} />
+                                                {/if}
+                                            </button>
                                         </div>
                                     {/each}
                                 </div>
@@ -1969,6 +1998,14 @@
                             title="在完整弹窗中查看与编辑该联系人"
                         >
                             <ExternalLink size={13} class="lvct-icon-inline" /> 完整档案
+                        </button>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline lvct-graph-drawer__btn"
+                            onclick={() => openSnapshotPerson(drawerPerson!, "activity")}
+                            title="直达交往互动时间流并记录"
+                        >
+                            <MessageSquarePlus size={13} class="lvct-icon-inline" /> 记互动
                         </button>
                         {#if facade?.openDoc}
                             <button
