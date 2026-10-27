@@ -6,9 +6,9 @@ import type { ViewPreferences } from "../domain/preferences";
     import type { InteractionImportSummary } from "../domain/interaction-backup";
     import { useCloseGuard } from "./close-guard";
     import StatusNotice from "./StatusNotice.svelte";
-    import { SlidersHorizontal, Database, Bell, Sparkles, Plug, Info, RotateCcw } from "@lucide/svelte";
+    import { SlidersHorizontal, Database, Bell, Sparkles, Plug, Info, RotateCcw, Check } from "@lucide/svelte";
     import { translateText } from "../domain/translation";
-    import { BRAND_AVATAR_IMAGE_MAX_LENGTH, DEFAULT_VIEW_PREFERENCES, isValidBrandAvatarImage, isValidPreferenceDays, normalizeViewPreferences } from "../domain/preferences";
+    import { BRAND_AVATAR_IMAGE_MAX_LENGTH, DEFAULT_VIEW_PREFERENCES, isValidBrandAvatarImage, isValidPreferenceDays, normalizeViewPreferences, THEME_SCHEMES } from "../domain/preferences";
     import { rebasePreferenceDraft } from "../domain/preferences-concurrency";
     import { savePreferenceChanges } from "../services/preferences";
     import { onDestroy, untrack, tick } from "svelte";
@@ -1068,7 +1068,7 @@ import type { ViewPreferences } from "../domain/preferences";
     }
 </script>
 
-<div class="lvct-settings">
+<div class="lvct-settings" data-lvct-theme={draft.themeScheme || "cognac"}>
     <div class="lvct-settings__topbar">
         <button class="b3-button b3-button--outline" onclick={() => guardedClose(onBack)}>← {text("settingsBack", "返回工作台")}</button>
         <div class="lvct-settings__heading">
@@ -1128,6 +1128,34 @@ import type { ViewPreferences } from "../domain/preferences";
                     {#if preferencesDirty}
                         <p class="lvct-settings__draft-status" role="status">有未保存修改；切换设置分区会保留草稿，返回工作台时会提示你。</p>
                     {/if}
+
+                    <!-- 多主题色彩方案切换 -->
+                    <div class="lvct-settings__row lvct-settings__theme-row">
+                        <div>
+                            <b>主题色彩方案</b>
+                            <small>选择插件界面主色调；全套卡片高光、微浮雕与状态胶囊将全量自洽联动。</small>
+                        </div>
+                        <div class="lvct-theme-picker" role="radiogroup" aria-label="主题色彩方案">
+                            {#each THEME_SCHEMES as scheme (scheme.id)}
+                                <button
+                                    type="button"
+                                    class="lvct-theme-picker__item"
+                                    class:lvct-theme-picker__item--active={draft.themeScheme === scheme.id}
+                                    onclick={() => { draft = { ...draft, themeScheme: scheme.id }; }}
+                                    title={`${scheme.label} · ${scheme.description}`}
+                                    role="radio"
+                                    aria-checked={draft.themeScheme === scheme.id}
+                                >
+                                    <span class="lvct-theme-picker__swatch" style={`background: linear-gradient(135deg, ${scheme.brandColor} 60%, ${scheme.accentColor} 100%);`}>
+                                        {#if draft.themeScheme === scheme.id}
+                                            <Check size={12} color="#ffffff" />
+                                        {/if}
+                                    </span>
+                                    <span class="lvct-theme-picker__label">{scheme.label}</span>
+                                </button>
+                            {/each}
+                        </div>
+                    </div>
 
                     <div class="lvct-settings__row lvct-settings__brand-avatar-row">
                         <div>

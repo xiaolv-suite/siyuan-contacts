@@ -4214,6 +4214,55 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     }
 }
 
+/* ---------- 主题方案调色盘 (Theme Scheme Picker) ---------- */
+.lvct-theme-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+
+    &__item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px 4px 5px;
+        background: var(--lvct-bg-elevated);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-full, 9999px);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        color: var(--lvct-text-2);
+
+        &:hover {
+            border-color: var(--lv-brand);
+            color: var(--lvct-text-1);
+        }
+
+        &--active {
+            background: color-mix(in srgb, var(--lv-brand) 12%, var(--lvct-bg-surface));
+            border-color: var(--lv-brand);
+            color: var(--lv-brand);
+            font-weight: 600;
+            box-shadow: 0 1px 4px color-mix(in srgb, var(--lv-brand) 20%, transparent);
+        }
+    }
+
+    &__swatch {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: inline-grid;
+        place-items: center;
+        flex-shrink: 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    &__label {
+        font-size: 12px;
+        line-height: 1;
+    }
+}
+
 /* ---------- 谈资与事实画像 (Person Facts) ---------- */
 .lvct-facts-list {
     list-style: none;
