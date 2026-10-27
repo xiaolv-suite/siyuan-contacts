@@ -19,7 +19,17 @@ export function formatMonthDay(iso: string): string {
 
 export function validateDocumentTitle(title: string): string | null {
     if (!title.trim()) return "文档名称不能为空";
-    if (/[\u0000-\u001f\u007f]/.test(title)) return "文档名称不能包含控制字符（含换行），思源内核无法原文保留这类名称";
+    if (/[\/\u0000-\u001f\u007f]/.test(title)) return "文档名称不能包含斜杠或控制字符（含换行），思源内核无法原文保留这类名称";
+    return null;
+}
+
+/**
+ * 联系人姓名专用校验（思源 3.8.8+ 解除斜杠限制，支持 张三 / CTO 复合命名）。
+ * 允许包含半角斜杠，严格拦截换行与控制字符。
+ */
+export function validatePersonName(name: string): string | null {
+    if (!name.trim()) return "姓名不能为空";
+    if (/[\u0000-\u001f\u007f]/.test(name)) return "姓名不能包含控制字符（含换行），思源内核无法原文保留这类名称";
     return null;
 }
 
@@ -33,9 +43,10 @@ export function sanitizeHPathSegment(segment: string): string {
 export function documentHPath(...segments: readonly string[]): string {
     if (!segments.length) throw new Error("文档路径不能为空");
     return "/" + segments.map((segment) => {
-        const error = validateDocumentTitle(segment);
+        const sanitized = sanitizeHPathSegment(segment);
+        const error = validateDocumentTitle(sanitized);
         if (error) throw new Error(error);
-        return sanitizeHPathSegment(segment);
+        return sanitized;
     }).join("/");
 }
 
