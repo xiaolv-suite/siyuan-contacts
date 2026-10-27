@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.96** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.96) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.97** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.97) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.96 (2026-10-27)
+## This release: v0.5.97 (2026-10-27)
+
+This release implements full-fidelity vCard 3.0 / RFC 6350 export and import with native mobile contacts integration:
+
+- **Full-Fidelity vCard Interoperability**: Support serialization and round-trip parsing for WeChat (`X-WECHAT`), city addresses (`ADR;TYPE=HOME`), organizations (`ORG`), and job titles (`TITLE`).
+- **Native Smartphone Contacts Compatibility**: Exported `.vcf` files display city, WeChat, and job titles directly in Apple iOS Contacts, Huawei, and Xiaomi address books.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.5.96 (2026-10-27)
 
 This release implements a theme color switcher with 5 refined palettes and live design-token synchronization:
 

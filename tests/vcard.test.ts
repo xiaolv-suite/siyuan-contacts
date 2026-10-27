@@ -487,3 +487,28 @@ test("AG-E20-METHODS-EXPORT: serializeVcf 支持多电话/邮箱/网址及 ORG/T
     assert.match(vcf, /EMAIL;TYPE=WORK:lisi@work\.com/);
     assert.match(vcf, /EMAIL;TYPE=HOME:lisi@home\.com/);
 });
+
+test("serializeVcf 与 parseVcf：支持微信号与常驻城市 ADR 双向保真", () => {
+    const person: VCardContact = base({
+        name: "赵六",
+        phone: "13900000002",
+        wechat: "zhaoliu_vip",
+        city: "深圳",
+        org: "未来网络实验室",
+        title: "技术总监",
+    });
+
+    const vcf = serializeVcf([person]);
+    assert.match(vcf, /X-WECHAT:zhaoliu_vip/);
+    assert.match(vcf, /ADR;TYPE=HOME:;;;;深圳;;/);
+    assert.match(vcf, /ORG:未来网络实验室/);
+    assert.match(vcf, /TITLE:技术总监/);
+
+    // 往返解析还原
+    const [parsed] = parseVcf(vcf);
+    assert.equal(parsed.name, "赵六");
+    assert.equal(parsed.wechat, "zhaoliu_vip");
+    assert.equal(parsed.city, "深圳");
+    assert.equal(parsed.org, "未来网络实验室");
+    assert.equal(parsed.title, "技术总监");
+});
