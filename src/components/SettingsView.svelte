@@ -1019,6 +1019,30 @@ import type { ViewPreferences } from "../domain/preferences";
         }
     }
 
+    function autoMatchColumns(): void {
+        if (!health?.missing || !health?.availableColumns) return;
+        const used = new Set(Object.values(mappingDraft).filter(Boolean));
+        for (const item of health.missing) {
+            const candidates = health.availableColumns.filter((c) => c.type === item.type && !used.has(c.id));
+            const matched = candidates.find((c) => {
+                const name = (c.name || "").toLowerCase().trim();
+                const exp = item.expectedName.toLowerCase().trim();
+                if (name === exp) return true;
+                if (item.key === "phone" && (name.includes("电话") || name.includes("手机") || name.includes("phone") || name.includes("mobile"))) return true;
+                if (item.key === "wechat" && (name.includes("微信") || name.includes("wechat") || name.includes("wx"))) return true;
+                if (item.key === "email" && (name.includes("邮箱") || name.includes("邮件") || name.includes("mail"))) return true;
+                if (item.key === "birthday" && (name.includes("生日") || name.includes("出生") || name.includes("birth"))) return true;
+                if (item.key === "group" && (name.includes("分组") || name.includes("分类") || name.includes("group"))) return true;
+                if (item.key === "tags" && (name.includes("标签") || name.includes("tag"))) return true;
+                return false;
+            });
+            if (matched) {
+                mappingDraft[item.key] = matched.id;
+                used.add(matched.id);
+            }
+        }
+    }
+
     async function runFieldMapRepair() {
         if (mappingBusy || !health) return;
         const patch = {} as FieldMapPatch;
@@ -1642,7 +1666,15 @@ import type { ViewPreferences } from "../domain/preferences";
                                 {#each health.missing as item (item.key)}<li>{item.expectedName} · {item.keyId} · {item.type}</li>{/each}
                             </ul>
                             <div class="lvct-settings__mapping">
-                                <b>从现有列恢复映射</b>
+                                <div class="lvct-between" style="margin-bottom: 8px;">
+                                    <b>从现有列恢复映射</b>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text b3-button--small"
+                                        onclick={autoMatchColumns}
+                                        title="根据字段中文、拼音或英文语义自动匹配并填入建议列"
+                                    ><Sparkles size={13} class="lvct-icon-inline" /> 智能匹配列</button>
+                                </div>
                                 {#each health.missing as item (item.key)}
                                     <label class="lvct-form__item">
                                         <span>{item.expectedName}（{item.type}）</span>

@@ -2382,16 +2382,20 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
 .lvct-settings__health {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: var(--lvct-sp-2);
-    padding: var(--lvct-sp-2) var(--lvct-sp-3);
+    padding: 10px 14px;
     border-radius: var(--lvct-r-md);
     background: var(--lvct-danger-soft);
+    border: 1px solid color-mix(in srgb, var(--lvct-danger) 28%, transparent);
     color: var(--lvct-danger);
     font-size: var(--lvct-fs-caption);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 
     &--ok {
-        background: var(--lvct-success-soft);
-        color: var(--lvct-success);
+        background: var(--lv-heat-warm-soft);
+        border-color: color-mix(in srgb, var(--lv-heat-warm) 28%, transparent);
+        color: var(--lv-heat-warm);
     }
 }
 
