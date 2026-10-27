@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.4** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.4) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.5** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.5) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.4 (2026-10-27)
+## This release: v0.6.5 (2026-10-27)
+
+This release implements inline facts & quotes archival during Quick Record (`QuickRecordDialog`):
+
+- **Quick Record with Facts**: Added toggle in `QuickRecordDialog` to simultaneously archive the interaction note as a structured social profile fact (quote, preference, background, fact).
+- **Dual Pipeline Knowledge Consolidation**: Simultaneously commits to the timeline/daily notes and appends to the person's `custom-lvct-facts` controlled section.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (928/928 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.4 (2026-10-27)
 
 This release implements the Dialogue Bubble Timeline for warm, intuitive personal interaction histories:
 

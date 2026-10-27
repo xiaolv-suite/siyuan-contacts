@@ -11,7 +11,8 @@
         type InteractionType,
     } from "../../domain/interactions";
     import { recordInteraction } from "../../data/interactions";
-    import { syncInteractionDocSection } from "../../services/doc-section";
+    import { syncInteractionDocSection, loadPersonFactsFromDoc, savePersonFactsToDoc } from "../../services/doc-section";
+import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
     import { appendInteractionToDailyNote } from "../../services/diary";
     import { translateText } from "../../domain/translation";
     import { requestErrorMessage } from "../../shared/error-presenter";
@@ -43,6 +44,8 @@
     const dayBeforeYesterdayStr = toLocalDateKey(new Date(Date.now() - 86400000 * 2));
     let note = $state("");
     let syncToDailyNote = $state(true);
+    let saveAsFact = $state(false);
+    let factCategory = $state<FactCategory>("quote");
     let busy = $state(false);
     let errorMessage = $state("");
     let textareaEl: HTMLTextAreaElement | undefined = $state();
@@ -85,6 +88,22 @@
                     note: note.trim() || undefined,
                     occurredAt,
                 }).catch(() => {});
+            }
+            if (saveAsFact && note.trim() && person?.docId) {
+                void (async () => {
+                    try {
+                        const existing = await loadPersonFactsFromDoc(person.docId);
+                        const newFact: PersonFactItem = {
+                            id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                            text: note.trim(),
+                            category: factCategory,
+                            date: targetDate,
+                        };
+                        await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
+                    } catch (e) {
+                        console.warn("[LvContacts] 快捷记互动沉淀事实失败：", e);
+                    }
+                })();
             }
             onSaved?.();
             onClose();
@@ -168,6 +187,21 @@
         <input type="checkbox" bind:checked={syncToDailyNote} disabled={busy} />
         <span>同步写入思源当日日记文档（带人物双链）</span>
     </label>
+
+    <div style="display: flex; flex-direction: column; gap: 6px; margin-top: -6px;">
+        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--lvct-text-2);">
+            <input type="checkbox" bind:checked={saveAsFact} disabled={busy} />
+            <span>💡 同时沉淀为社交画像事实（提炼观点与关键备忘）</span>
+        </label>
+        {#if saveAsFact}
+            <div style="display: flex; gap: 4px; padding-left: 20px; flex-wrap: wrap;">
+                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "quote"} disabled={busy} onclick={() => (factCategory = "quote")}>💡 观点见解</button>
+                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "preference"} disabled={busy} onclick={() => (factCategory = "preference")}>❤️ 喜好忌口</button>
+                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "background"} disabled={busy} onclick={() => (factCategory = "background")}>💼 背景经历</button>
+                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "fact"} disabled={busy} onclick={() => (factCategory = "fact")}>📌 关键事实</button>
+            </div>
+        {/if}
+    </div>
 
     <div class="fn__flex" style="justify-content: flex-end; gap: 8px; margin-top: 4px;">
         <button
