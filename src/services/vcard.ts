@@ -16,6 +16,7 @@ import { ensurePersonRequestDocument, PersonCreationUnknownError } from "./perso
 import { ATTRIBUTE_VIEW_BATCH_SIZE, bindDocsAsRows, mapBoundDocIds } from "../api/av";
 import { getRoster, invalidateRoster } from "./roster";
 import { profileText } from "../domain/people-profiles";
+import { extractNormalizedRegion } from "../domain/region";
 import { assertContactWriteReady, previewContactCreation } from "./contacts";
 import { withStoreLock } from "../data/storage";
 import { draftImportMappings, importAnchor } from "../domain/import.ts";
@@ -385,16 +386,27 @@ export async function exportVcfText(
         const contact: VCardContact = {
             name: person.name,
             phone: person.phone,
+            wechat: person.wechat,
             email: person.email,
             website: person.website,
             birthday: person.birthday,
             isLunar: person.isLunar,
             tags: person.tags,
         };
+        const region = extractNormalizedRegion(person);
+        if (region.city && region.city !== "未知") {
+            contact.city = region.city;
+        }
         if (person.profile) {
             const work = profileText(person.profile, "work");
             if (work && work !== "未填写" && work !== "尚未核实" && work !== "组织归属尚未核实") {
                 contact.org = work;
+            }
+            if (person.profile.affiliations?.state === "known") {
+                const works = person.profile.affiliations.value.work || [];
+                if (works.length > 0 && works[0].title) {
+                    contact.title = works[0].title;
+                }
             }
         }
         return contact;

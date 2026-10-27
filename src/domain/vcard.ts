@@ -51,6 +51,8 @@ export interface VCardContact {
     org?: string;
     /** 职位/头衔 */
     title?: string;
+    /** 常驻城市或地址 */
+    city?: string;
     /** 备注说明 */
     note?: string;
     /** YYYY-MM-DD；无法表示的（无年份、文本形式）为空串 */
@@ -251,7 +253,7 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
         }
     }
 
-    const supported = new Set(["VERSION", "FN", "N", "TEL", "EMAIL", "URL", "BDAY", "CATEGORIES", "X-LVCT-BDAY-LUNAR"]);
+    const supported = new Set(["VERSION", "FN", "N", "TEL", "EMAIL", "URL", "BDAY", "CATEGORIES", "X-LVCT-BDAY-LUNAR", "X-WECHAT", "ORG", "TITLE", "NOTE", "ADR"]);
     const unsupportedProperties = [...new Set(props.map((prop) => prop.name).filter((name) => !supported.has(name)))];
     for (const property of ["EMAIL", "URL"]) {
         if (all(property).length > 1) unsupportedProperties.push(`${property}（第 2 项起）`);
@@ -260,6 +262,16 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
     if (isFallbackName) needsReview.push("姓名：原卡片缺少姓名属性，已智能暂代");
     if (first("BDAY") && !bday) needsReview.push("BDAY");
     if (first("X-LVCT-BDAY-LUNAR") && !isLunar && !birthday) needsReview.push("X-LVCT-BDAY-LUNAR");
+
+    const wechat = first("X-WECHAT").trim();
+    const title = first("TITLE").trim();
+    const rawNote = first("NOTE").trim();
+    const adr = first("ADR").trim();
+    let city = "";
+    if (adr) {
+        const parts = splitUnescaped(adr, ";").map((p) => unescapeVcf(p).trim());
+        city = parts[3] || parts[4] || parts.filter(Boolean).join(" ");
+    }
 
     // Keep source order and duplicate values for the import preview. The
     // legacy scalar phone field still de-duplicates before joining, so this
@@ -280,6 +292,11 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
         birthday,
         isLunar,
         tags,
+        ...(wechat ? { wechat } : {}),
+        ...(org ? { org } : {}),
+        ...(title ? { title } : {}),
+        ...(rawNote ? { note: rawNote } : {}),
+        ...(city ? { city } : {}),
         ...(unsupportedProperties.length > 0 ? { unsupportedProperties } : {}),
         ...(needsReview.length > 0 ? { needsReview } : {}),
     };
@@ -481,6 +498,12 @@ export function serializeVcf(people: readonly VCardContact[]): string {
         }
         if (person.title?.trim()) {
             lines.push(`TITLE:${escapeVcf(person.title.trim())}`);
+        }
+        if (person.wechat?.trim()) {
+            lines.push(`X-WECHAT:${escapeVcf(person.wechat.trim())}`);
+        }
+        if (person.city?.trim()) {
+            lines.push(`ADR;TYPE=HOME:;;;;${escapeVcf(person.city.trim())};;`);
         }
 
         // 电话多值与 TYPE 标签保真导出
