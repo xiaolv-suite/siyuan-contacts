@@ -17,6 +17,66 @@ export interface CityTopicInput {
 export const CITY_TOPIC_ATTR = "custom-lvct-city";
 export const CITY_CONTACTS_SECTION_ATTR = "custom-lvct-city-contacts";
 
+export type TripContextType = "general" | "business" | "travel" | "transit";
+
+export interface TripContextMeta {
+    id: TripContextType;
+    label: string;
+    icon: string;
+    titlePrefix: string;
+}
+
+export const TRIP_CONTEXT_METAS: readonly TripContextMeta[] = [
+    { id: "general", label: "全部探访", icon: "📍", titlePrefix: "城市人脉探访备忘" },
+    { id: "business", label: "商务出差", icon: "💼", titlePrefix: "出差人脉拜访清单" },
+    { id: "travel", label: "度假出游", icon: "✈️", titlePrefix: "出游好友小聚备忘" },
+    { id: "transit", label: "顺路途经", icon: "🚗", titlePrefix: "顺路探望联络清单" },
+] as const;
+
+export interface TripItineraryInput {
+    city: string;
+    context: TripContextType;
+    contacts: readonly ContactSummary[];
+    date?: string;
+}
+
+/**
+ * 生成出差与行程探访备忘思源实体文档 Markdown。
+ * 包含思源原生任务复选框 `- [ ]`、联系人原生双链、单位与通讯录信息。
+ */
+export function buildTripItineraryMarkdown(input: TripItineraryInput): string {
+    const cityName = input.city.trim() || "未知地区";
+    const ctx = TRIP_CONTEXT_METAS.find((c) => c.id === input.context) ?? TRIP_CONTEXT_METAS[0];
+    const targetDate = input.date || new Date().toISOString().slice(0, 10);
+    const lines: string[] = [];
+
+    lines.push(`# ${ctx.icon} ${ctx.titlePrefix} · ${cityName} (共 ${input.contacts.length} 人)`);
+    lines.push("");
+    lines.push(`> 行程类型：${ctx.label} · 发生日期：${targetDate}`);
+    lines.push("");
+
+    lines.push("## 📋 拜访任务清单");
+    if (input.contacts.length === 0) {
+        lines.push("- 当前城市暂无可拜访的好友记录。");
+    } else {
+        for (const person of input.contacts) {
+            const cleanName = escapeLinkLabel(person.name);
+            const linkStr = person.docId ? `[${cleanName}](siyuan://blocks/${person.docId})` : cleanName;
+            const workText = profileText(person.profile, "work");
+            const orgStr = workText && workText !== "未填写" && workText !== "尚未核实" ? ` | ${workText}` : "";
+            const phoneStr = person.phone ? ` | 电话: ${person.phone}` : "";
+            const wechatStr = person.wechat ? ` | 微信: ${person.wechat}` : "";
+            const groupStr = person.group ? ` [${person.group}]` : "";
+            lines.push(`- [ ] ${linkStr}${groupStr}${orgStr}${phoneStr}${wechatStr}`);
+        }
+    }
+    lines.push("");
+    lines.push("---");
+    lines.push("*由「小驴人脉」城市与行程助手自动沉淀 · 保持紧密、高效的实地人际联络*");
+
+    return lines.join("\n");
+}
+
 /**
  * 生成在思源城市文档（以正式市级城市名命名）中维护的独立受控人脉区块 Markdown。
  * 契约：

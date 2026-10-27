@@ -5,7 +5,16 @@
  */
 import { findCityTopicDocument, flushBlockIndex, setBlockAttrs, upsertMarkedBlock } from "../api/blocks";
 import { createDocWithMd } from "../api/client";
-import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR, extractCityOrganizations } from "../domain/city-topic.ts";
+import {
+    buildCityTopicSectionMarkdown,
+    buildCityInitialDocumentMarkdown,
+    CITY_TOPIC_ATTR,
+    CITY_CONTACTS_SECTION_ATTR,
+    extractCityOrganizations,
+    buildTripItineraryMarkdown,
+    TRIP_CONTEXT_METAS,
+    type TripItineraryInput,
+} from "../domain/city-topic.ts";
 import type { ContactSummary } from "../domain/person.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
 import { filterContactsByRegion } from "../domain/region.ts";
@@ -119,4 +128,33 @@ export async function autoRebaseCityTopics(
         if (ok) refreshed.push(city);
     }
     return refreshed;
+}
+
+/**
+ * 将某个城市的出差/行程拜访清单沉淀为实体思源文档《出差拜访清单 · 城市 · YYYY-MM-DD》
+ */
+export async function createTripItineraryDoc(
+    notebookId: string,
+    input: TripItineraryInput,
+): Promise<{ docId: string; hpath: string } | null> {
+    if (!notebookId || !input.city.trim() || input.city.trim() === "未知") return null;
+    const cityName = input.city.trim();
+    const targetDate = input.date || toLocalDateKey(new Date());
+    const ctx = TRIP_CONTEXT_METAS.find((c) => c.id === input.context) ?? TRIP_CONTEXT_METAS[0];
+    const hpath = `/出差行程/${ctx.titlePrefix} · ${cityName} · ${targetDate}`;
+    const md = buildTripItineraryMarkdown({ ...input, city: cityName, date: targetDate });
+
+    const docId = await createDocWithMd(notebookId, hpath, md);
+    if (!docId) return null;
+
+    try {
+        await setBlockAttrs(docId, {
+            "custom-lvct-trip": cityName,
+            "custom-lvct-trip-context": input.context,
+            "custom-lvct-created": String(Date.now()),
+        });
+        await flushBlockIndex();
+    } catch {}
+
+    return { docId, hpath };
 }

@@ -14,8 +14,8 @@
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { extractCityOrganizations } from "../../domain/city-topic.ts";
     import { onDestroy } from "svelte";
-    import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText, ExternalLink } from "@lucide/svelte";
-    import { syncCityTopicDocument } from "../../services/city-topic";
+    import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText, ExternalLink, Sparkles } from "@lucide/svelte";
+    import { syncCityTopicDocument, createTripItineraryDoc } from "../../services/city-topic";
 
     let {
         contacts = [],
@@ -43,6 +43,28 @@
     let syncDocSuccess = $state(false);
     let syncDocTimer: ReturnType<typeof setTimeout> | null = null;
     let lastSyncedDocId = $state("");
+    let creatingTripDoc = $state(false);
+    let lastTripDocId = $state("");
+    let lastTripDocPath = $state("");
+
+    async function handleCreateTripDoc() {
+        if (!notebookId || !selectedCity || currentContacts.length === 0 || creatingTripDoc) return;
+        creatingTripDoc = true;
+        try {
+            const res = await createTripItineraryDoc(notebookId, {
+                city: selectedCity,
+                context: tripContext,
+                contacts: currentContacts,
+                date: toLocalDateKey(),
+            });
+            if (res?.docId) {
+                lastTripDocId = res.docId;
+                lastTripDocPath = res.hpath;
+            }
+        } finally {
+            creatingTripDoc = false;
+        }
+    }
 
     async function handleSyncCityDoc() {
         if (!notebookId || !selectedCity || selectedCity === "未知" || currentContacts.length === 0 || syncingDoc) return;
@@ -331,7 +353,7 @@
                         </button>
                         <button
                             type="button"
-                            class="b3-button b3-button--primary b3-button--small"
+                            class="b3-button b3-button--outline b3-button--small"
                             onclick={handleCopyVisitList}
                             disabled={currentContacts.length === 0}
                         >
@@ -341,6 +363,26 @@
                                 <Copy size={14} /> 复制探访备忘
                             {/if}
                         </button>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--primary b3-button--small"
+                            onclick={handleCreateTripDoc}
+                            disabled={currentContacts.length === 0 || !notebookId || creatingTripDoc}
+                            title="在当前笔记本创建出差/行程拜访实体文档"
+                        >
+                            <Sparkles size={14} /> {creatingTripDoc ? "正在沉淀…" : "沉淀为行程文档 ↗"}
+                        </button>
+                        {#if lastTripDocId}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text b3-button--small"
+                                style="color: var(--lvct-success, #16a34a);"
+                                onclick={() => onOpenDoc?.(lastTripDocId)}
+                                title={`打开《${lastTripDocPath.split("/").pop()}》`}
+                            >
+                                <ExternalLink size={13} class="lvct-icon-inline" /> 打开行程文档 ↗
+                            </button>
+                        {/if}
                     </div>
                 </div>
 
