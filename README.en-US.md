@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.97** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.97) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.98** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.98) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.97 (2026-10-27)
+## This release: v0.5.98 (2026-10-27)
+
+This release implements the Potential Connection Discovery engine and one-click bilateral relationship establishment:
+
+- **Potential Connection Discovery (connections-discovery.ts)**: Automatically detects candidates with frequent co-attendances and shared organization affiliations who lack explicit related links, computing explainable tie-strength scores.
+- **Bento Dashboard Discovery Modal**: Added action tool button and dedicated modal to inspect potential ties and establish bilateral links in seconds.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.5.97 (2026-10-27)
 
 This release implements full-fidelity vCard 3.0 / RFC 6350 export and import with native mobile contacts integration:
 

@@ -5,13 +5,17 @@
  * 文档区块副作用逐文档隔离，失败可定位、可由下一次关系编辑补同步。
  */
 import { listContacts } from "./contacts";
-import { invalidateRoster } from "./roster";
+import { invalidateRoster, getRoster } from "./roster";
 import { renderView, setCell } from "../api/av";
 import { RelatedProjectionUnknownError, resolveRelated, syncRelatedSection } from "./doc-section";
 import type { ContactsSettings } from "../domain/model";
 import type { ContactSummary } from "../domain/person";
 import { withStoreLock } from "../data/storage";
 import { rosterFromRender } from "../domain/roster";
+import type { Plugin } from "siyuan";
+import { loadInteractionStore } from "../data/interactions";
+import { discoverPotentialConnections } from "../domain/connections-discovery.ts";
+import type { PotentialConnection, DiscoverConnectionsOptions } from "../domain/connections-discovery.ts";
 import {
     nextRelatedItemIds,
     relationRetryKey,
@@ -236,4 +240,17 @@ export async function retryRelationProjections(
 export async function refreshPerson(settings: ContactsSettings, person: ContactSummary): Promise<ContactSummary | null> {
     const people = await listContacts(settings);
     return people.find((item) => item.itemId === person.itemId) ?? null;
+}
+
+/**
+ * 挖掘全库中的潜在人脉关联
+ */
+export async function discoverConnections(
+    plugin: Plugin,
+    settings: ContactsSettings,
+    options?: DiscoverConnectionsOptions,
+): Promise<PotentialConnection[]> {
+    const people = await getRoster(settings);
+    const store = await loadInteractionStore(plugin);
+    return discoverPotentialConnections(people, store.events, options);
 }
