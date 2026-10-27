@@ -25,9 +25,11 @@
         FolderGit2,
         MapPin,
         Plus,
+        X,
     } from "@lucide/svelte";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
+    import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
     import type { DetailSectionKey, DetailCollapsedSections } from "../../domain/preferences";
     import { listContacts, removeContact } from "../../services/contacts";
     import { addRelation, removeRelation, refreshPerson, retryRelationProjections } from "../../services/relations";
@@ -117,6 +119,8 @@ import StatusNotice from "../StatusNotice.svelte";
         onSyncDocProfile,
         onLoadPersonFields,
         onSavePersonFields,
+        onLoadPersonFacts,
+        onSavePersonFacts,
         onOpenPersonDoc,
         onOpenGraphPerson,
         onOpenPeople,
@@ -187,6 +191,8 @@ import StatusNotice from "../StatusNotice.svelte";
         onSyncDocProfile?: (person: ContactSummary) => Promise<void>;
         onLoadPersonFields?: (docId: string) => Promise<PersonFieldsState>;
         onSavePersonFields?: (docId: string, snapshot: PersonFieldsSnapshot, expected: PersonFieldsState) => Promise<PersonFieldsState>;
+        onLoadPersonFacts?: (docId: string) => Promise<import("../../domain/doc-section").PersonFactItem[]>;
+        onSavePersonFacts?: (docId: string, items: readonly import("../../domain/doc-section").PersonFactItem[]) => Promise<void>;
         /** B12：组织归属投影（可选：未接线时隐藏该区） */
         onLoadOrgMemberships?: (docId: string) => Promise<import("../../services/org").PersonOrgMembershipView[]>;
         /** B13.5 双向编辑（可选）：打开组织管理弹窗维护归属；未接线时隐藏按钮 */
@@ -623,6 +629,60 @@ import StatusNotice from "../StatusNotice.svelte";
 
     loadInsights();
     loadPersonNoteState();
+
+    // ---- 谈资与事实画像（RF-09 / Issue #135） ----
+    let facts: PersonFactItem[] = $state([]);
+    let factsLoading = $state(false);
+    let factsSaving = $state(false);
+    let newFactText = $state("");
+    let newFactCategory: FactCategory = $state("quote");
+    let newFactSource = $state("");
+
+    async function loadFacts(): Promise<void> {
+        if (!onLoadPersonFacts || !current?.docId) return;
+        factsLoading = true;
+        try {
+            facts = await onLoadPersonFacts(current.docId);
+        } catch {
+            facts = [];
+        } finally {
+            factsLoading = false;
+        }
+    }
+
+    async function handleAddFact(): Promise<void> {
+        if (!onSavePersonFacts || !current?.docId || !newFactText.trim() || factsSaving) return;
+        factsSaving = true;
+        try {
+            const newItem: PersonFactItem = {
+                id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                text: newFactText.trim(),
+                category: newFactCategory,
+                date: toLocalDateKey(new Date()),
+                ...(newFactSource.trim() ? { sourceRef: newFactSource.trim() } : {}),
+            };
+            const next = [newItem, ...facts];
+            await onSavePersonFacts(current.docId, next);
+            facts = next;
+            newFactText = "";
+            newFactSource = "";
+        } finally {
+            factsSaving = false;
+        }
+    }
+
+    async function handleRemoveFact(id: string): Promise<void> {
+        if (!onSavePersonFacts || !current?.docId || factsSaving) return;
+        factsSaving = true;
+        try {
+            const next = facts.filter((f) => f.id !== id);
+            await onSavePersonFacts(current.docId, next);
+            facts = next;
+        } finally {
+            factsSaving = false;
+        }
+    }
+    loadFacts();
 
     // ---- 互动备注模板（F09） ----
     const templatesSupported = $derived(Boolean(onListTemplates && onSaveTemplates));
@@ -1964,6 +2024,7 @@ import StatusNotice from "../StatusNotice.svelte";
             void loadInsights();
             void loadFollowUps();
             void loadPersonNoteState(true);
+            void loadFacts();
             void loadTopics();
             if (!cadenceDirty) void loadCadence();
         }
@@ -2700,6 +2761,106 @@ import StatusNotice from "../StatusNotice.svelte";
                             </li>
                         {/each}
                     </ul>
+                {/if}
+            {/if}
+        </section>
+    {/if}
+
+    {#if onLoadPersonFacts && onSavePersonFacts}
+        <section class="lvct-detail__section lvct-detail__person-facts">
+            <div class="lvct-detail__section-head" role="button" tabindex="0" onclick={() => toggleSection("facts")} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSection("facts"); } }} style="cursor: pointer; user-select: none;">
+                <div class="fn__flex" style="align-items: center; gap: 6px;">
+                    {#if isSectionCollapsed("facts")}
+                        <ChevronRight size={14} />
+                    {:else}
+                        <ChevronDown size={14} />
+                    {/if}
+                    <h4 style="margin: 0;">谈资与关键事实</h4>
+                    {#if facts.length > 0}
+                        <span class="lvct-chip lvct-chip--tag">{facts.length}</span>
+                    {/if}
+                </div>
+            </div>
+            {#if !isSectionCollapsed("facts")}
+                <p class="ft__smaller ft__on-surface" style="margin: 4px 0 8px 0;">记录对方的独到观点、喜好忌口、经历背景或关键事实，自动沉淀至人物文档受控区块，可作为会前准备谈资。</p>
+                {#if factsLoading}
+                    <p class="ft__smaller ft__on-surface" role="status">正在读取事实画像…</p>
+                {:else}
+                    {#if facts.length > 0}
+                        <ul class="lvct-facts-list">
+                            {#each facts as fact (fact.id)}
+                                <li class="lvct-facts-item">
+                                    <span class={`lvct-chip lvct-chip--fact lvct-chip--fact-${fact.category}`}>
+                                        {FACT_CATEGORY_META[fact.category]?.icon || '📌'} {FACT_CATEGORY_META[fact.category]?.label || '事实'}
+                                    </span>
+                                    <div class="lvct-facts-content">
+                                        <div class="lvct-facts-text">{fact.text}</div>
+                                        <div class="lvct-facts-meta">
+                                            <span>{fact.date}</span>
+                                            {#if fact.sourceRef}
+                                                <span>· 出处：{fact.sourceRef}</span>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-facts-del-btn"
+                                        onclick={() => handleRemoveFact(fact.id)}
+                                        title="删除此项事实"
+                                        disabled={factsSaving}
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                </li>
+                            {/each}
+                        </ul>
+                    {:else}
+                        <div class="ft__smaller ft__on-surface" style="padding: 4px 0 8px;">暂无记录的谈资或事实</div>
+                    {/if}
+
+                    <!-- 快速新增事实表单 -->
+                    <div class="lvct-facts-form">
+                        <div class="lvct-facts-form__cats">
+                            {#each (["quote", "preference", "background", "fact"] as const) as cat}
+                                <button
+                                    type="button"
+                                    class="b3-chip"
+                                    class:b3-chip--primary={newFactCategory === cat}
+                                    onclick={() => (newFactCategory = cat)}
+                                >
+                                    {FACT_CATEGORY_META[cat].icon} {FACT_CATEGORY_META[cat].label}
+                                </button>
+                            {/each}
+                        </div>
+                        <input
+                            class="b3-text-field"
+                            style="width: 100%; box-sizing: border-box;"
+                            placeholder={newFactCategory === "quote" ? "记录对方的金句或独到见解…" :
+                                         newFactCategory === "preference" ? "记录饮食忌口、茶酒偏好或习惯…" :
+                                         newFactCategory === "background" ? "记录过往任职、学术背景或家庭情况…" : "记录关键事实备忘…"}
+                            bind:value={newFactText}
+                            disabled={factsSaving}
+                            onkeydown={(e) => { if (e.key === "Enter" && newFactText.trim()) { e.preventDefault(); void handleAddFact(); } }}
+                        />
+                        <div class="fn__flex" style="gap: 8px; align-items: center;">
+                            <input
+                                class="b3-text-field"
+                                style="flex: 1; font-size: 11px;"
+                                placeholder="出处（可选，如：行业峰会、朋友圈）"
+                                bind:value={newFactSource}
+                                disabled={factsSaving}
+                            />
+                            <button
+                                type="button"
+                                class="b3-button b3-button--outline"
+                                style="flex-shrink: 0;"
+                                disabled={!newFactText.trim() || factsSaving}
+                                onclick={handleAddFact}
+                            >
+                                {factsSaving ? "保存中…" : "+ 记录事实"}
+                            </button>
+                        </div>
+                    </div>
                 {/if}
             {/if}
         </section>

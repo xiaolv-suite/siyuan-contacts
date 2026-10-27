@@ -148,6 +148,9 @@ export interface ContactsPluginFacade {
     updatePersonProject?(personDocId: string, projectId: string, patch: Partial<import("./domain/projects").PersonProjectItem>): Promise<import("./domain/projects").PersonProjectItem[]>;
     removePersonProject?(personDocId: string, projectId: string): Promise<import("./domain/projects").PersonProjectItem[]>;
     findCollaboratorsByProject?(matcher: { title?: string; docId?: string }): Promise<Array<{ personDocId: string; role?: string; status: import("./domain/projects").ProjectStatus; title: string }>>;
+    /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
+    loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
+    savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;
     /** 交往回顾报表（F12）：区间互动统计（只读投影，人物条数与同场活动分口径） */
     buildReviewReport(from: string, to: string): Promise<ReviewReport>;
     /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */

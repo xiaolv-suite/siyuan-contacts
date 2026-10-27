@@ -12,6 +12,10 @@ import {
     FOLLOWUPS_SECTION_ATTR,
     EXCHANGES_SECTION_ATTR,
     ANNIVERSARIES_SECTION_ATTR,
+    FACTS_SECTION_ATTR,
+    buildFactsSectionMarkdown,
+    parseFactsSectionMarkdown,
+    type PersonFactItem,
 } from "../src/domain/doc-section.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 import type { InteractionEvent } from "../src/domain/interactions.ts";
@@ -205,4 +209,60 @@ test("多行备注与标题防裂行转义：自动转为 <br /> 保证 Markdown
     const md = interactionSectionMarkdown(events);
     assert.match(md, /第一行内容 <br \/> 第二行内容 <br \/> 第三行内容/);
     assert.equal(md.split("\n").filter((l) => l.startsWith("- ")).length, 1, "多行备注不应被拆散成多个游离列表项");
+});
+
+test("buildFactsSectionMarkdown & parseFactsSectionMarkdown：谈资与事实画像序列化与往返解析", () => {
+    assert.equal(FACTS_SECTION_ATTR, "custom-lvct-facts");
+
+    const facts: PersonFactItem[] = [
+        {
+            id: "fact-01",
+            category: "quote",
+            date: "2026-10-27",
+            text: "私有知识库的治理重在权限边界与最小上下文",
+            sourceRef: "2026大模型架构研讨会",
+        },
+        {
+            id: "fact-02",
+            category: "preference",
+            date: "2026-10-27",
+            text: "花生过敏，聚餐避开坚果油；喜饮肉桂岩茶",
+        },
+        {
+            id: "fact-03",
+            category: "background",
+            date: "2026-10-26",
+            text: "曾负责腾讯云存储核心引擎，熟悉底层 Ceph 与 Raft",
+        },
+        {
+            id: "fact-04",
+            category: "fact",
+            date: "2026-10-25",
+            text: "大女儿今年考上浙大数学系",
+        },
+    ];
+
+    const md = buildFactsSectionMarkdown(facts);
+    assert.ok(md.includes("## 谈资与关键事实"));
+    assert.ok(md.includes("💡 [观点] 2026-10-27：私有知识库的治理重在权限边界与最小上下文 （出处：2026大模型架构研讨会） <!-- id:fact-01 -->"));
+    assert.ok(md.includes("❤️ [喜好/忌口] 2026-10-27：花生过敏"));
+    assert.ok(md.includes("💼 [背景经历] 2026-10-26：曾负责腾讯云存储核心引擎"));
+    assert.ok(md.includes("📌 [关键事实] 2026-10-25：大女儿今年考上浙大数学系"));
+
+    // 反向解析
+    const parsed = parseFactsSectionMarkdown(md);
+    assert.equal(parsed.length, 4);
+    assert.deepEqual(parsed[0], facts[0]);
+    assert.deepEqual(parsed[1], facts[1]);
+    assert.deepEqual(parsed[2], facts[2]);
+    assert.deepEqual(parsed[3], facts[3]);
+
+    // 容错性测试：无 ID 的手写列表行也能解析
+    const handwritten = `- 💡 [观点] 2026-10-27：本地优先才是个人知识库的终局\n- ❤️ [忌口] 2026-10-26：不吃海鲜`;
+    const parsedHandwritten = parseFactsSectionMarkdown(handwritten);
+    assert.equal(parsedHandwritten.length, 2);
+    assert.equal(parsedHandwritten[0].category, "quote");
+    assert.equal(parsedHandwritten[0].text, "本地优先才是个人知识库的终局");
+    assert.equal(parsedHandwritten[1].category, "preference");
+    assert.equal(parsedHandwritten[1].text, "不吃海鲜");
 });

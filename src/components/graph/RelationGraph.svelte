@@ -167,6 +167,24 @@
     }
     let hoverInsightsVersion = 0;
     let drawerPerson: ContactSummary | null = $state(null);
+    let drawerFacts: import("../../domain/doc-section").PersonFactItem[] = $state([]);
+
+    async function loadDrawerFacts(personDocId: string) {
+        if (!facade?.loadPersonFacts) return;
+        try {
+            drawerFacts = await facade.loadPersonFacts(personDocId);
+        } catch {
+            drawerFacts = [];
+        }
+    }
+
+    $effect(() => {
+        if (drawerPerson?.docId) {
+            void loadDrawerFacts(drawerPerson.docId);
+        } else {
+            drawerFacts = [];
+        }
+    });
     let copyToast: string = $state("");
     let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1927,6 +1945,20 @@
                                 {/if}
                             </div>
                         </div>
+
+                        <!-- 谈资与事实 -->
+                        {#if drawerFacts.length > 0}
+                            <div class="lvct-graph-drawer__section">
+                                <div class="lvct-graph-drawer__section-title">谈资备忘</div>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    {#each drawerFacts.slice(0, 3) as f (f.id)}
+                                        <div class="ft__smaller ft__on-surface" style="padding: 4px 6px; background: var(--lvct-bg-elevated); border-radius: var(--lvct-r-sm); border: 1px solid var(--lvct-border-subtle);">
+                                            <b>{f.category === "quote" ? "💡" : f.category === "preference" ? "❤️" : f.category === "background" ? "💼" : "📌"}</b> {f.text}
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
                     </div>
 
                     <div class="lvct-graph-drawer__footer">

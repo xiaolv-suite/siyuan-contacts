@@ -16,6 +16,24 @@ export const PROFILE_SECTION_ATTR = "custom-lvct-profile";
 export const FOLLOWUPS_SECTION_ATTR = "custom-lvct-followups";
 export const EXCHANGES_SECTION_ATTR = "custom-lvct-exchanges";
 export const ANNIVERSARIES_SECTION_ATTR = "custom-lvct-anniversaries";
+export const FACTS_SECTION_ATTR = "custom-lvct-facts";
+
+export type FactCategory = "quote" | "preference" | "background" | "fact";
+
+export interface PersonFactItem {
+    id: string;
+    text: string;
+    category: FactCategory;
+    date: string;
+    sourceRef?: string;
+}
+
+export const FACT_CATEGORY_META: Record<FactCategory, { label: string; icon: string }> = {
+    quote: { label: "观点", icon: "💡" },
+    preference: { label: "喜好/忌口", icon: "❤️" },
+    background: { label: "背景经历", icon: "💼" },
+    fact: { label: "关键事实", icon: "📌" },
+};
 
 export function profileSectionMarkdown(person: ContactSummary): string {
     const lines = ["## 人脉基本档案", ""];
@@ -128,4 +146,55 @@ export function anniversariesSectionMarkdown(items: readonly AnniversaryItem[]):
 export function relatedSectionMarkdown(related: readonly ContactSummary[]): string {
     const links = related.map((item) => `[${escapeLinkLabel(item.name)}](siyuan://blocks/${item.docId})`);
     return `**相关人物**：${links.join("、")}`;
+}
+
+export function buildFactsSectionMarkdown(items: readonly PersonFactItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 谈资与关键事实", ""];
+    for (const item of items) {
+        const cat = FACT_CATEGORY_META[item.category] || FACT_CATEGORY_META.fact;
+        const cleanText = cleanMarkdownLine(item.text);
+        if (!cleanText) continue;
+        const source = item.sourceRef ? ` （出处：${escapeLinkLabel(item.sourceRef)}）` : "";
+        lines.push(`- ${cat.icon} [${cat.label}] ${item.date}：${cleanText}${source} <!-- id:${item.id} -->`);
+    }
+    return lines.join("\n");
+}
+
+export function parseFactsSectionMarkdown(markdown: string): PersonFactItem[] {
+    if (!markdown) return [];
+    const items: PersonFactItem[] = [];
+    const lines = markdown.split(/\r?\n/);
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("- ")) continue;
+        const match = trimmed.match(/^- (?:(💡|❤️|💼|📌)\s*)?\[(.*?)\]\s*(\d{4}-\d{2}-\d{2})[：:]\s*(.*?)(?:\s*<!--\s*id:([a-zA-Z0-9_-]+)\s*-->)?$/);
+        if (match) {
+            const label = match[2]?.trim();
+            const date = match[3]?.trim();
+            let rawContent = match[4]?.trim() || "";
+            const id = match[5]?.trim() || `fact-${date}-${Math.random().toString(36).slice(2, 8)}`;
+
+            let sourceRef: string | undefined;
+            const sourceMatch = rawContent.match(/（出处：(.*?)）$/);
+            if (sourceMatch) {
+                sourceRef = sourceMatch[1];
+                rawContent = rawContent.replace(/（出处：(.*?)）$/, "").trim();
+            }
+
+            let category: FactCategory = "fact";
+            if (label.includes("观点")) category = "quote";
+            else if (label.includes("喜好") || label.includes("忌口") || label.includes("偏好")) category = "preference";
+            else if (label.includes("背景") || label.includes("经历")) category = "background";
+
+            items.push({
+                id,
+                date,
+                category,
+                text: rawContent,
+                ...(sourceRef ? { sourceRef } : {}),
+            });
+        }
+    }
+    return items;
 }

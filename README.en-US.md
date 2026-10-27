@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.94** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.94) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.95** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.95) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.94 (2026-10-27)
+## This release: v0.5.95 (2026-10-27)
+
+This release implements controlled document sections for Quotes & Facts and live projections in the Quick Drawer:
+
+- **Quotes & Facts Controlled Section**: Added `custom-lvct-facts` block support in person documents across 4 categories (💡 quotes, ❤️ preferences/diet, 💼 backgrounds, 📌 key facts) with lossless round-trip Markdown serialization.
+- **Bi-Directional Inspection**: Added interactive facts card in PersonDetail and synchronized key facts projection in the graph Node Quick Drawer.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.5.94 (2026-10-27)
 
 This release closes GitHub Issue #135 directive requirements and consolidates design token scales:
 
