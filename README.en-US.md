@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.91** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.91) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.92** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.92) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.91 (2026-10-27)
+## This release: v0.5.92 (2026-10-27)
+
+This release implements automatic incremental controlled updates for city topic documents and consolidates city organization extraction:
+
+- **City Topic Incremental Auto-Rebase**: Automatically detects residence city deltas in the background and safely updates the `custom-lvct-city-contacts` controlled section in existing city topic documents without overwriting personal travel notes and restaurant itineraries.
+- **Unified Organization Extraction**: Extracted multi-source organization clues (work, education, affiliations) into pure function `extractCityOrganizations`.
+
+Validation: `pnpm check` (0 errors / 0 warnings), 918 unit tests (100% pass rate); production build and release checks passed.
+
+## Previous release: v0.5.91 (2026-10-27)
 
 This release implements interactive edge legend filtering in the relationship graph and refactors the test runner infrastructure:
 

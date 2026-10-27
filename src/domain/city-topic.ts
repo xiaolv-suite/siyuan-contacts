@@ -5,6 +5,7 @@
 import type { ContactSummary } from "./person.ts";
 import { profileText } from "./people-profiles.ts";
 import { escapeLinkLabel } from "./format.ts";
+import { extractNormalizedRegion } from "./region.ts";
 
 export interface CityTopicInput {
     city: string;
@@ -69,4 +70,90 @@ export function buildCityInitialDocumentMarkdown(input: CityTopicInput): string 
     const cityName = input.city.trim() || "未命名城市";
     const sectionMd = buildCityTopicSectionMarkdown(input);
     return `# ${cityName}\n\n${sectionMd}`;
+}
+
+/**
+ * 从一组同城联系人中聚合关联组织/机构信息（名称与文档ID）。
+ * 纯函数，零外部依赖。
+ */
+export function extractCityOrganizations(
+    contacts: readonly ContactSummary[],
+    allOrganizations?: readonly { name: string; docId: string }[],
+): Array<{ name: string; docId: string }> {
+    const orgDocMap = new Map<string, string>();
+    if (allOrganizations) {
+        for (const org of allOrganizations) {
+            if (org.name?.trim() && org.docId) orgDocMap.set(org.name.trim(), org.docId);
+        }
+    }
+
+    const orgNames = new Set<string>();
+
+    for (const p of contacts) {
+        const affs = p.profile?.affiliations;
+        if (affs?.state === "known" && affs.value) {
+            const all = [
+                ...(affs.value.work || []),
+                ...(affs.value.education || []),
+                ...(affs.value.family || []),
+                ...(affs.value.unspecified || []),
+            ];
+            for (const item of all) {
+                if (item.orgName?.trim()) {
+                    const clean = item.orgName.trim();
+                    orgNames.add(clean);
+                    if (item.orgDocId) orgDocMap.set(clean, item.orgDocId);
+                }
+            }
+        }
+
+        const rawPerson = p as unknown as Record<string, unknown>;
+        if (typeof rawPerson.organization === "string" && rawPerson.organization.trim()) orgNames.add(rawPerson.organization.trim());
+        if (typeof rawPerson.company === "string" && rawPerson.company.trim()) orgNames.add(rawPerson.company.trim());
+        if (typeof rawPerson.school === "string" && rawPerson.school.trim()) orgNames.add(rawPerson.school.trim());
+    }
+
+    return Array.from(orgNames).sort().map((name) => ({
+        name,
+        docId: orgDocMap.get(name) || "",
+    }));
+}
+
+/**
+ * 对比新旧名册，检测常驻城市发生变动的所有受影响城市集合。
+ * 纯函数，零外部依赖。
+ */
+export function detectChangedCities(
+    previousContacts: readonly ContactSummary[],
+    nextContacts: readonly ContactSummary[],
+): Set<string> {
+    const prevMap = new Map<string, string>();
+    for (const p of previousContacts) {
+        const c = extractNormalizedRegion(p).city;
+        if (c && c !== "未知") prevMap.set(p.docId, c);
+    }
+
+    const nextMap = new Map<string, string>();
+    for (const p of nextContacts) {
+        const c = extractNormalizedRegion(p).city;
+        if (c && c !== "未知") nextMap.set(p.docId, c);
+    }
+
+    const affected = new Set<string>();
+
+    for (const [docId, prevCity] of prevMap) {
+        const nextCity = nextMap.get(docId);
+        if (nextCity !== prevCity) {
+            affected.add(prevCity);
+            if (nextCity) affected.add(nextCity);
+        }
+    }
+
+    for (const [docId, nextCity] of nextMap) {
+        if (!prevMap.has(docId)) {
+            affected.add(nextCity);
+        }
+    }
+
+    return affected;
 }

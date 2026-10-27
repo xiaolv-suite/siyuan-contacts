@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown } from "../src/domain/diary-sync.ts";
-import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR } from "../src/domain/city-topic.ts";
+import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR, extractCityOrganizations, detectChangedCities } from "../src/domain/city-topic.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 
 test("buildDailyNoteInteractionMarkdown: 生成带思源块引的日记互动记录", () => {
@@ -87,4 +87,76 @@ test("buildCityTopicSectionMarkdown & buildCityInitialDocumentMarkdown: 正式�
     const initialMd = buildCityInitialDocumentMarkdown(input);
     assert.ok(initialMd.startsWith("# 深圳\n\n"));
     assert.ok(initialMd.includes("## 城市人脉网络"));
+});
+
+test("extractCityOrganizations: 聚合工作单位与 profile affiliations", () => {
+    const contacts: ContactSummary[] = [
+        {
+            docId: "p1",
+            itemId: "i1",
+            name: "张三",
+            isSelf: false,
+            relatedItemIds: [],
+            profile: {
+                affiliations: {
+                    state: "known",
+                    value: {
+                        work: [{ orgName: "腾讯科技", orgDocId: "org-tencent" }],
+                    },
+                },
+            },
+        },
+        {
+            docId: "p2",
+            itemId: "i2",
+            name: "李四",
+            isSelf: false,
+            relatedItemIds: [],
+            profile: {
+                affiliations: {
+                    state: "known",
+                    value: {
+                        education: [{ orgName: "北京大学", orgDocId: "org-pku" }],
+                    },
+                },
+            },
+        },
+    ];
+
+    const orgs = extractCityOrganizations(contacts, [
+        { name: "大疆创新", docId: "org-dji" },
+    ]);
+
+    assert.deepEqual(orgs, [
+        { name: "北京大学", docId: "org-pku" },
+        { name: "腾讯科技", docId: "org-tencent" },
+    ]);
+});
+
+test("detectChangedCities: 检测名册变动中常驻城市的差量", () => {
+    const prev: ContactSummary[] = [
+        { docId: "p1", itemId: "i1", name: "张三", isSelf: false, relatedItemIds: [], address: "广东省深圳市南山区" } as ContactSummary,
+        { docId: "p2", itemId: "i2", name: "李四", isSelf: false, relatedItemIds: [], address: "北京市海淀区中关村" } as ContactSummary,
+    ];
+
+    // 1. 李四搬家去杭州
+    const next1: ContactSummary[] = [
+        { docId: "p1", itemId: "i1", name: "张三", isSelf: false, relatedItemIds: [], address: "广东省深圳市南山区" } as ContactSummary,
+        { docId: "p2", itemId: "i2", name: "李四", isSelf: false, relatedItemIds: [], address: "浙江省杭州市西湖区" } as ContactSummary,
+    ];
+    assert.deepEqual(Array.from(detectChangedCities(prev, next1)).sort(), ["北京", "杭州"]);
+
+    // 2. 新增联系人常驻成都
+    const next2: ContactSummary[] = [
+        ...prev,
+        { docId: "p3", itemId: "i3", name: "王五", isSelf: false, relatedItemIds: [], address: "四川省成都市高新区" } as ContactSummary,
+    ];
+    assert.deepEqual(Array.from(detectChangedCities(prev, next2)), ["成都"]);
+
+    // 3. 删除李四（北京）
+    const next3: ContactSummary[] = [prev[0]];
+    assert.deepEqual(Array.from(detectChangedCities(prev, next3)), ["北京"]);
+
+    // 4. 未发生城市变化
+    assert.deepEqual(Array.from(detectChangedCities(prev, prev)), []);
 });
