@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.11** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.11) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.12** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.12) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.11 (2026-10-28)
+## This release: v0.6.12 (2026-10-28)
+
+This release implements decentralized peer-to-peer task integration with Task Horizon (by 5kyfkr):
+
+- **Task Horizon Standard Task Sync in Daily Notes**: Automatically generates standard task blocks in daily notes when creating follow-up/visit plans (`custom-status="todo"`, `custom-priority="medium"`, `custom-completion-time`).
+- **Profile Deep Navigation via `custom-remark`**: Injects `custom-remark="(( personDocId 'Name Card' ))"` to allow one-click popup inspection of the contact card directly from Task Horizon.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (932/932 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.11 (2026-10-28)
 
 This release implements comprehensive Smart Field Mapping across all 9 core fields:
 

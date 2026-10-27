@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.12] — 2026-10-28
+
+重塑：Task Horizon（任务视界）去中心化点对点直连协同与名片反链穿透
+
+- **Task Horizon 标准任务块注入**：创建跟进时自动向日记追加带 `custom-status`、`custom-priority`、`custom-completion-time` 与 `custom-remark` 的任务块。
+- **名片反链穿透**：通过任务备注 `((personDocId '姓名名片'))` 反链，在 Task Horizon 中点击一秒直达人物画像。
+
+验证：`pnpm check` 0/0、单测 932/932 绿灯、E2E UI 回归全部通过、Release 门禁通过。
+
+
 ## [0.6.11] — 2026-10-28
 
 重塑：属性视图数据库字段全量“一键自动智能嗅探”（Smart Field Mapping）与建库自愈

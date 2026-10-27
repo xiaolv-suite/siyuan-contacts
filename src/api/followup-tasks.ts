@@ -47,7 +47,7 @@ function escapeHtml(value: string): string {
 function taskItemDom(item: FollowUpItem, blockId: string): string {
     const done = item.status === "done";
     const title = parseTaskMarkdown(buildTaskMarkdown(item.title, item.dueDate, done)).title;
-    return `<div data-node-id="${blockId}" data-type="NodeListItem" data-subtype="t" data-marker="*" data-task="${done ? "x" : " "}" class="li" custom-lvct-followup="${escapeHtml(item.id)}"><div class="protyle-action protyle-action--task"><svg><use xlink:href="#${done ? "iconCheck" : "iconUncheck"}"></use></svg></div><div data-node-id="${newNodeId()}" data-type="NodeParagraph" class="p"><div contenteditable="true">${escapeHtml(title)} 📅${item.dueDate}</div></div></div>`;
+    return `<div data-node-id="${blockId}" data-type="NodeListItem" data-subtype="t" data-marker="*" data-task="${done ? "x" : " "}" class="li" custom-lvct-followup="${escapeHtml(item.id)}" custom-status="${done ? "done" : "todo"}" custom-priority="medium" custom-completion-time="${item.dueDate}"><div class="protyle-action protyle-action--task"><svg><use xlink:href="#${done ? "iconCheck" : "iconUncheck"}"></use></svg></div><div data-node-id="${newNodeId()}" data-type="NodeParagraph" class="p"><div contenteditable="true">${escapeHtml(title)} 📅${item.dueDate}</div></div></div>`;
 }
 
 export async function writeFollowUpTask(rootId: string, item: FollowUpItem, blockId: string, insert: boolean): Promise<void> {

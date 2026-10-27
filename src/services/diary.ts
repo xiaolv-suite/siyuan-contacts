@@ -5,7 +5,7 @@
  */
 import { appendBlockMd, findDailyNoteDocument, flushBlockIndex } from "../api/blocks";
 import { createDailyNote } from "../api/client";
-import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown } from "../domain/diary-sync.ts";
+import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown, buildDailyNoteFollowUpTaskMarkdown, type DiaryFollowUpTaskInput } from "../domain/diary-sync.ts";
 import type { InteractionType } from "../domain/interactions.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
 
@@ -115,6 +115,42 @@ export async function appendOccasionToDailyNote(
         return { dailyDocId: dailyDoc.docId, blockId };
     } catch (err) {
         console.warn("[LvContacts] 追加多人活动到思源日记未完成（非阻塞）：", err);
+        return null;
+    }
+}
+
+/**
+ * 配合 Task Horizon (任务视界) 落地：将客户拜访/跟进待办写入指定日期的日记文档，
+ * 携带标准 custom-status, custom-priority, custom-completion-time 与名片反链 custom-remark。
+ */
+export async function appendFollowUpToDailyNote(
+    notebookId: string,
+    input: DiaryFollowUpTaskInput,
+): Promise<{ dailyDocId: string; blockId: string } | null> {
+    if (!notebookId || !input.personDocId || !input.dueDate) return null;
+
+    try {
+        let dailyDoc = await findDailyNoteDocument(notebookId, input.dueDate);
+        const todayStr = toLocalDateKey(new Date());
+
+        if (!dailyDoc && input.dueDate === todayStr) {
+            try {
+                const createdDocId = await createDailyNote(notebookId);
+                if (createdDocId) {
+                    await flushBlockIndex();
+                    dailyDoc = await findDailyNoteDocument(notebookId, input.dueDate);
+                }
+            } catch {}
+        }
+
+        if (!dailyDoc?.docId) return null;
+
+        const markdown = buildDailyNoteFollowUpTaskMarkdown(input);
+        const blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        await flushBlockIndex();
+        return { dailyDocId: dailyDoc.docId, blockId };
+    } catch (err) {
+        console.warn("[LvContacts] 追加跟进待办到思源日记未完成（非阻塞）：", err);
         return null;
     }
 }

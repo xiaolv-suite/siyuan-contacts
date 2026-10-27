@@ -54,3 +54,25 @@ export function buildDailyNoteOccasionMarkdown(input: DiaryOccasionInput): strin
     const attendeePart = attendeeLinks ? `（与 ${attendeeLinks}）` : "";
     return `- ${icon} 活动：${escapeMarkdown(input.title)}${placeStr} ${attendeePart}`.trim();
 }
+
+export interface DiaryFollowUpTaskInput {
+    personDocId: string;
+    personName: string;
+    title: string;
+    dueDate: string;
+    priority?: "low" | "medium" | "high";
+}
+
+/**
+ * Task Horizon (任务视界) / 思源原生任务块标准化生成纯函数：
+ * 生成带联系人反链的标准任务块，支持 Task Horizon 任务视界自动识别排期与反链穿透。
+ * 例：`- [ ] 📅2026-10-30 拜访【张三】：讨论技术方案 {: custom-status="todo" custom-priority="medium" custom-completion-time="2026-10-30" custom-remark="(( 20261026000000-xxxxxxx '张三名片' ))" }`
+ */
+export function buildDailyNoteFollowUpTaskMarkdown(input: DiaryFollowUpTaskInput): string {
+    const cleanName = escapeLinkLabel(input.personName.trim() || "联系人");
+    const rawNote = input.title?.trim() ? input.title.replace(/\r\n/g, " ").replace(/[\r\n]+/g, " ").trim() : "";
+    const taskTitle = rawNote ? `拜访【${cleanName}】：${rawNote}` : `拜访【${cleanName}】`;
+    const priority = input.priority || "medium";
+    const remark = `(( ${input.personDocId} '${cleanName}名片' ))`;
+    return `- [ ] 📅${input.dueDate} ${taskTitle} {: custom-status="todo" custom-priority="${priority}" custom-completion-time="${input.dueDate}" custom-remark="${remark}" }`;
+}
