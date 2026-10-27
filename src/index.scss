@@ -4248,6 +4248,23 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     gap: 10px;
 }
 
+.lvct-discovery-person-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    border-radius: var(--lvct-r-sm);
+    color: var(--lvct-text-1);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+    &:hover {
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, transparent);
+        color: var(--lv-brand, #ea580c);
+    }
+}
+
 .lvct-discovery-person {
     display: flex;
     align-items: center;

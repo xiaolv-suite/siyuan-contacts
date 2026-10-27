@@ -64,7 +64,7 @@ import { toLocalDateKey } from "../../domain/interactions";
         i18n?: Readonly<Record<string, string>>;
         preferences: ViewPreferences;
         revision?: number;
-        onOpenDetail: (person: ContactSummary) => void;
+        onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
         onOpenPeople: (focus?: { itemIds?: readonly string[]; memberDocIds?: readonly string[]; label?: string; sort?: "name" | "group" | "birthday" | "recent" }) => void;
         onOpenGraph: () => void;
         onCreate?: () => void;
@@ -1375,7 +1375,9 @@ import { toLocalDateKey } from "../../domain/interactions";
                                 </span>
                                 <span class="lvct-dash__reasons">
                                     {#each card.reasons as reason (reason.kind + (reason.followUpId ?? ""))}
-                                        <span class="lvct-chip lvct-action-chip lvct-action-chip--{reason.bucket}">{reason.label}</span>
+                                        <span class="lvct-chip lvct-action-chip lvct-action-chip--{reason.bucket}">
+                                            {#if reason.kind === "birthday"}🎂 {:else if reason.kind === "anniversary"}💍 {:else if reason.kind === "followup"}📌 {:else}💬 {/if}{reason.label}
+                                        </span>
                                     {/each}
                                 </span>
                             </button>
@@ -1421,7 +1423,7 @@ import { toLocalDateKey } from "../../domain/interactions";
                                     <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>未来 7 天不再提醒</button>
                                     <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>不再提醒</button>
                                 {/if}
-                                <button class="b3-button b3-button--primary" disabled={alBusy} onclick={() => onOpenDetail(card.person)}>记一笔互动</button>
+                                <button class="b3-button b3-button--primary" disabled={alBusy} onclick={() => onOpenDetail(card.person, "activity")}>记一笔互动</button>
                                 <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => createFollowUpFor(card.person))}>建跟进（联系一下）</button>
                                 {#if card.bucket === "stale"}
                                     <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissStaleReminder(card.person))}>不再提醒</button>
@@ -1786,22 +1788,41 @@ import { toLocalDateKey } from "../../domain/interactions";
                     {#each potentialConnections as pair (pair.id)}
                         <div class="lvct-discovery-item">
                             <div class="lvct-discovery-pair">
-                                <div class="lvct-discovery-person">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text lvct-discovery-person-btn"
+                                    onclick={() => onOpenDetail(pair.personA)}
+                                    title={`查看 ${pair.personA.name} 详情`}
+                                >
                                     <div class="lvct-discovery-avatar">{pair.personA.name.slice(0, 1)}</div>
                                     <b>{pair.personA.name}</b>
-                                </div>
+                                </button>
                                 <span class="lvct-discovery-arrow">↔</span>
-                                <div class="lvct-discovery-person">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text lvct-discovery-person-btn"
+                                    onclick={() => onOpenDetail(pair.personB)}
+                                    title={`查看 ${pair.personB.name} 详情`}
+                                >
                                     <div class="lvct-discovery-avatar">{pair.personB.name.slice(0, 1)}</div>
                                     <b>{pair.personB.name}</b>
-                                </div>
+                                </button>
                             </div>
                             <div class="lvct-discovery-reasons">
                                 {#each pair.reasons as reason}
                                     <span class="lvct-chip lvct-chip--tag">{reason}</span>
                                 {/each}
                             </div>
-                            <div class="lvct-discovery-actions">
+                            <div class="lvct-discovery-actions" style="display: flex; gap: 6px; align-items: center;">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--outline b3-button--small"
+                                    onclick={() => {
+                                        discoveryOpen = false;
+                                        onOpenPeople({ itemIds: [pair.personA.itemId, pair.personB.itemId], label: `潜在关联 · ${pair.personA.name} 与 ${pair.personB.name}` });
+                                    }}
+                                    title="在名册中筛选并对比这两人"
+                                >名册定位</button>
                                 <button
                                     type="button"
                                     class="b3-button b3-button--primary"
