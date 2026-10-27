@@ -43,6 +43,9 @@
     let date: string = $state(toLocalDateKey());
     let place: string = $state("");
     let note: string = $state("");
+    let factText: string = $state("");
+    let factCategory: import("../../domain/doc-section").FactCategory = $state("quote");
+    let factsWrittenCount = $state(0);
     let loading: boolean = $state(true);
     let running: boolean = $state(false);
     let errorText: string = $state("");
@@ -335,6 +338,25 @@
                 await applyAiExtras();
                 aiExtrasApplied = !extrasError;
             }
+            if (factText.trim() && facade.savePersonFacts && facade.loadPersonFacts) {
+                const targetDocIds = checkedIds;
+                for (const targetId of targetDocIds) {
+                    try {
+                        const existing = await facade.loadPersonFacts(targetId);
+                        const newFact: import("../../domain/doc-section").PersonFactItem = {
+                            id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                            text: factText.trim(),
+                            category: factCategory,
+                            date: date || toLocalDateKey(),
+                            sourceRef: `siyuan://blocks/${docId}`,
+                        };
+                        await facade.savePersonFacts(targetId, [newFact, ...existing]);
+                        factsWrittenCount += 1;
+                    } catch (e) {
+                        console.warn("[LvContacts] 随路沉淀事实失败：", targetId, e);
+                    }
+                }
+            }
             step = 3;
         } catch (error) {
             errorText = requestErrorMessage(error);
@@ -426,6 +448,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                 {#if result.attendeeBlockWritten}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneBlock", "笔记已写入「参与人员」双链区块")}</p>{/if}
                 {#if result.occasionLinksWritten > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneOccasionLinks", "已完成 {n} 个事项双链区块", { n: result.occasionLinksWritten })}</p>{/if}
                 {#if result.dateDocId || result.placeDocId}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneOccasionDocuments", "已关联当日日记与地点文档")}</p>{/if}
+                {#if factsWrittenCount > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> 已为 {factsWrittenCount} 位参与人员沉淀关键观点与事实</p>{/if}
             </div>
             {#if result.occasionLinkFailures.length > 0}
                 <p class="ft__smaller lvct-text-danger">
@@ -662,6 +685,42 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
             <span>{text("captureNoteLabel", "备注（可选）")}</span>
             <input class="b3-text-field fn__block" type="text" bind:value={note} placeholder={text("captureNotePlaceholder", "产品发布会")} />
         </label>
+        <div class="lvct-form__item">
+            <span>💡 观点或关键事实随路沉淀（可选）</span>
+            <div style="display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+                <button
+                    type="button"
+                    class="b3-chip"
+                    class:b3-chip--primary={factCategory === "quote"}
+                    onclick={() => (factCategory = "quote")}
+                >💡 观点见解</button>
+                <button
+                    type="button"
+                    class="b3-chip"
+                    class:b3-chip--primary={factCategory === "preference"}
+                    onclick={() => (factCategory = "preference")}
+                >❤️ 喜好忌口</button>
+                <button
+                    type="button"
+                    class="b3-chip"
+                    class:b3-chip--primary={factCategory === "background"}
+                    onclick={() => (factCategory = "background")}
+                >💼 背景经历</button>
+                <button
+                    type="button"
+                    class="b3-chip"
+                    class:b3-chip--primary={factCategory === "fact"}
+                    onclick={() => (factCategory = "fact")}
+                >📌 关键事实</button>
+            </div>
+            <input
+                class="b3-text-field fn__block"
+                placeholder="记录本文提到的核心观点、独到见解或人物事实…"
+                bind:value={factText}
+                disabled={running}
+            />
+            <small class="ft__smaller ft__on-surface">选填。勾选的参与人员文档中将自动追加此条事实（带本文来源链接出处）。</small>
+        </div>
 
         {#if errorText}
             <!-- D-35：读屏即时播报 + 焦点迁移 -->
