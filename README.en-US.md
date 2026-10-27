@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.18** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.18) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.91** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.91) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,29 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.18 (2026-10-18)
+## This release: v0.5.91 (2026-10-27)
+
+This release implements interactive edge legend filtering in the relationship graph and refactors the test runner infrastructure:
+
+- **Interactive Graph Edge Legend & Filtering**: Added dedicated edge legends for Direct Relations (solid), Org Memberships (dashed), Co-Occurrences (dotted), and Doc References (ref dotted). Click any edge legend to filter or restore edges in Cytoscape and text views instantly.
+- **Dynamic Glob Test Suite**: Modernized package.json test script with glob pattern matching, reinforced by architecture boundary tests.
+- **Dependency Upgrades**: Upgraded @lucide/svelte (^1.61.0), vite (^8.3.5), sass (^1.106.1), and svelte-check (^4.7.7).
+
+Validation: `pnpm check` (0 errors / 0 warnings), 916 unit tests (100% pass rate); production build and release checks passed.
+
+## Previous release: v0.5.90 (2026-10-27)
+
+This release implements the core stage of the 2026-2027 Roadmap, lowering database configuration thresholds and polishing design micro-textures:
+
+- **Database Field Mapping "✨ Smart Match Columns"**: One-click semantic detection across existing SiYuan attribute view columns (Phone, WeChat, Birthday, Group, Tags), mapping field IDs in seconds.
+- **Database Health Micro-Embossing**: Self-governed card styling with soft borders, inner highlights, and semantic status tinting.
+- **Tri-Entity Doc Strip**: Live floating action banner in SiYuan main editor for Persons (warm cognac), Organizations (sky cyan), and Cities (amber gold) with instant interaction recording.
+- **Bilateral Daily Note & City Doc Sync**: Multi-participant events append bi-directional block links to Daily Notes automatically; city documents maintain controlled contacts blocks without overwriting personal travel notes and restaurant itineraries.
+- **Lv Ecosystem Federation Ready**: Full bridge support with siyuan-checkin, siyuan-speed-switch (Raikiri), and `window.LvContacts`.
+
+Validation: `pnpm check` (0 errors / 0 warnings), 915 unit tests (100% pass rate), 488/488 automated UI tests across desktop, mobile, and host styles; production build and release checks passed.
+
+## Previous release: v0.5.18 (2026-10-18)
 
 This patch closes the contact-picker and organization-affiliation workflow gaps.
 

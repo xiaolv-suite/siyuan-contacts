@@ -6,7 +6,7 @@
     import ViewState from "../ViewState.svelte";
     import StatusNotice from "../StatusNotice.svelte";
     import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
-    import { GRAPH_MAX_NODES } from "../../domain/graph";
+    import { GRAPH_MAX_NODES, filterGraphEdges } from "../../domain/graph";
     import { buildGraphQuerySnapshot, graphEdgeLabel } from "../../domain/graph-query";
     import type { GraphSources, GraphQuery, GraphReferenceSource, GraphScope } from "../../domain/graph-query";
     import type { GraphNode } from "../../domain/graph";
@@ -163,6 +163,29 @@
             && leftEntries.every(([key, value]) => right[key as keyof GraphPreferencePatch] === value);
     }
     let hoverInsightsVersion = 0;
+    let hiddenEdgeKinds: Set<string> = $state(new Set());
+    const edgeLegends = $derived.by(() => {
+        const list = [
+            { kind: "related", label: "直接关系", lineClass: "solid" },
+            { kind: "member", label: "组织成员", lineClass: "dashed" },
+            { kind: "co_occurrence", label: "共同出席", lineClass: "dotted" },
+        ];
+        if (graphMode === "native") {
+            list.push({ kind: "ref", label: "文档引用", lineClass: "ref" });
+        }
+        return list;
+    });
+
+    function toggleEdgeKind(kind: string) {
+        const next = new Set(hiddenEdgeKinds);
+        if (next.has(kind)) {
+            next.delete(kind);
+        } else {
+            next.add(kind);
+        }
+        hiddenEdgeKinds = next;
+    }
+
     const groupLegend = [
         { label: "家人", className: "family" },
         { label: "朋友", className: "friend" },
@@ -189,7 +212,8 @@
         centerDocId: graphMode === "native" ? nativeCenterDocId : relationCenterDocId, orgDocId: orgNarrowId,
         search: searchText, group: groupFilter, isolatedOnly, showOrgs, depth: relationDepth, focusId, compareId, queryMode });
     const activeFilterCount = $derived(Number(Boolean(orgNarrowId)) + Number(query.scope !== "global")
-        + (graphMode === "relations" ? Number(Boolean(groupFilter)) + Number(isolatedOnly) + Number(!showOrgs) : 0));
+        + (graphMode === "relations" ? Number(Boolean(groupFilter)) + Number(isolatedOnly) + Number(!showOrgs) : 0)
+        + hiddenEdgeKinds.size);
     const snapshot = $derived(buildGraphQuerySnapshot(sources, query, references));
     // G-12：节点与联系人预建 Map 索引，避免在渲染、hover、点击与路径导出时频繁对全量数组做 .find 扫描
     const nodeById = $derived(new Map(snapshot.graph.nodes.map((node) => [node.id, node])));
@@ -197,7 +221,8 @@
     const allPeopleByDocId = $derived(new Map(people.map((person) => [person.docId, person])));
 
     const displayedOrg = $derived(hoveredPerson ? undefined : hoveredOrg ?? (selectedOrgId && nodeById.get(selectedOrgId)?.kind === "org" ? nodeById.get(selectedOrgId) : undefined));
-    const canvasData = $derived(JSON.stringify(snapshot.graph));
+    const displayGraph = $derived(filterGraphEdges(snapshot.graph, hiddenEdgeKinds));
+    const canvasData = $derived(JSON.stringify(displayGraph));
     const snapshotStatusText = $derived.by(() => loading || nativeLoading
         ? text("graphSnapshotLoading", "正在核实图查询…")
         : snapshot.state === "unknown" || snapshot.state === "center_missing" ? "范围尚未核实"
@@ -1009,6 +1034,7 @@
     function clearFilters() {
         selectedOrgId = "";
         searchText = ""; groupFilter = ""; isolatedOnly = false; orgNarrowId = "";
+        hiddenEdgeKinds = new Set();
         if (relationScope === "org") relationScope = "global";
         if (nativeScope === "org") nativeScope = "global";
     }
@@ -1489,6 +1515,21 @@
                             <i></i>{group.label}
                         </button>
                     {/each}
+                    <span class="lvct-graph-legend__divider" aria-hidden="true">|</span>
+                    {#each edgeLegends as edgeItem (edgeItem.kind)}
+                        {@const isEdgeHidden = hiddenEdgeKinds.has(edgeItem.kind)}
+                        <button
+                            type="button"
+                            class={`lvct-graph-legend__item lvct-graph-legend__item--edge lvct-graph-legend__item--edge-${edgeItem.kind}`}
+                            class:lvct-graph-legend__item--active={!isEdgeHidden}
+                            class:lvct-graph-legend__item--dimmed={isEdgeHidden}
+                            onclick={() => toggleEdgeKind(edgeItem.kind)}
+                            title={isEdgeHidden ? `点击显示【${edgeItem.label}】边` : `点击隐藏【${edgeItem.label}】边`}
+                            aria-pressed={!isEdgeHidden}
+                        >
+                            <span class={`lvct-graph-legend__line lvct-graph-legend__line--${edgeItem.lineClass}`}></span>{edgeItem.label}
+                        </button>
+                    {/each}
                 </span>
             </div>
             </div>
@@ -1541,10 +1582,10 @@
                     </li>
                 {/each}
             </ul>
-            <h3>{text("graphTextEdges", "边及来源")}（{snapshot.graph.edges.length}）</h3>
-            <ul>{#each snapshot.graph.edges.slice(0, textLimit) as edge}<li title={`${edge.source} — ${edge.target}（无向展示）`}>{nodeName(edge.source)} — {nodeName(edge.target)} · {graphEdgeLabel(edge.kind, edge.memberStatus)}{edge.coCount ? `（同场 ${edge.coCount} 次）` : ""}</li>{/each}</ul>
+            <h3>{text("graphTextEdges", "边及来源")}（{displayGraph.edges.length}）</h3>
+            <ul>{#each displayGraph.edges.slice(0, textLimit) as edge}<li title={`${edge.source} — ${edge.target}（无向展示）`}>{nodeName(edge.source)} — {nodeName(edge.target)} · {graphEdgeLabel(edge.kind, edge.memberStatus)}{edge.coCount ? `（同场 ${edge.coCount} 次）` : ""}</li>{/each}</ul>
             {#if snapshot.result.pathIds.length}<h3>{text("graphTextPath", "related 路径链")}</h3><ol>{#each snapshot.result.pathIds as id}<li title={id}>{nodeName(id)}</li>{/each}</ol>{/if}
-            <p role="status">文本已列出 {Math.min(textLimit, snapshot.graph.nodes.length)} / {snapshot.graph.nodes.length} 节点，{Math.min(textLimit, snapshot.graph.edges.length)} / {snapshot.graph.edges.length} 边；导出包含完整展示快照。</p>
+            <p role="status">文本已列出 {Math.min(textLimit, snapshot.graph.nodes.length)} / {snapshot.graph.nodes.length} 节点，{Math.min(textLimit, displayGraph.edges.length)} / {displayGraph.edges.length} 边；导出包含完整展示快照。</p>
             {#if textLimit < Math.max(snapshot.graph.nodes.length, snapshot.graph.edges.length)}<button class="b3-button b3-button--outline" onclick={() => (textLimit += 100)}>{text("graphTextMore", "继续列出节点与边")}</button>{/if}
         </section>
     {:else}

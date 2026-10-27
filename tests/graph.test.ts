@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildCoOccurrenceEdges, buildGraph, buildOrgAugmentation, capGraph, groupColor, orderGraph, queryGraphRelations } from "../src/domain/graph.ts";
+import { buildCoOccurrenceEdges, buildGraph, buildOrgAugmentation, capGraph, filterGraphEdges, groupColor, orderGraph, queryGraphRelations } from "../src/domain/graph.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 import type { InteractionEvent } from "../src/domain/interactions.ts";
 import { shortestGraphPath, secondDegreeGraphIds } from "../src/domain/graph-path.ts";
@@ -507,4 +507,35 @@ test("图谱查询快照：co_occurrence 弱联系边进入渲染图层，但不
     const p1Neighbors = queryGraphRelations(snapshot.relationGraph, "p1").neighborIds;
     assert.deepEqual(p1Neighbors, ["p2"]);
     assert.ok(!p1Neighbors.includes("p3"), "弱联系对象不得进入显式关系邻居");
+});
+
+test("filterGraphEdges：支持按边类型过滤，不影响节点列表与不可见边", () => {
+    const nodes = [
+        { id: "p1", label: "张三", group: "朋友", degree: 2 },
+        { id: "p2", label: "李四", group: "同事", degree: 1 },
+        { id: "o1", label: "开源社区", group: "组织", degree: 1, kind: "org" as const },
+    ];
+    const edges: import("../src/domain/graph.ts").GraphEdge[] = [
+        { source: "p1", target: "p2", kind: "related" },
+        { source: "o1", target: "p1", kind: "member", memberStatus: "active" },
+        { source: "p1", target: "p3", kind: "co_occurrence", coCount: 2 },
+    ];
+    const graph = { nodes, edges };
+
+    // 默认全可见
+    assert.equal(filterGraphEdges(graph).edges.length, 3);
+    assert.equal(filterGraphEdges(graph, []).edges.length, 3);
+
+    // 过滤 member 边
+    const noMember = filterGraphEdges(graph, ["member"]);
+    assert.equal(noMember.edges.length, 2);
+    assert.ok(!noMember.edges.some((e) => e.kind === "member"));
+
+    // 过滤 co_occurrence 与 related 边
+    const onlyMember = filterGraphEdges(graph, new Set(["related", "co_occurrence"]));
+    assert.equal(onlyMember.edges.length, 1);
+    assert.equal(onlyMember.edges[0].kind, "member");
+
+    // 节点保持不变
+    assert.equal(onlyMember.nodes.length, 3);
 });
