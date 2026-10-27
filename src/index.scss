@@ -5656,6 +5656,98 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     }
 }
 
+/* 对话气泡时间轴 (Dialogue Bubble Timeline) */
+.lvct-bubble-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--lvct-bg-app) 70%, var(--lvct-bg-surface));
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 70%, transparent);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+    &::before {
+        display: none; // 隐藏原有侧边微小实心点，由微图标徽章接管
+    }
+
+    &:hover {
+        background: var(--lvct-bg-surface);
+        border-color: color-mix(in srgb, var(--lv-brand) 35%, var(--lvct-border-subtle));
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+    }
+}
+
+.lvct-bubble-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--lv-brand) 12%, var(--lvct-bg-surface));
+    border: 1.5px solid color-mix(in srgb, var(--lv-brand) 25%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-top: 2px;
+}
+
+.lvct-bubble-box {
+    flex: 1 1 0%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lvct-bubble-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11px;
+}
+
+.lvct-bubble-date {
+    font-weight: 600;
+    color: var(--lvct-text-1);
+    font-family: var(--lvct-font-mono, monospace);
+}
+
+.lvct-bubble-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.lvct-bubble-note {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--lvct-text-1);
+    background: color-mix(in srgb, var(--lvct-bg-surface) 80%, transparent);
+    padding: 8px 12px;
+    border-radius: 4px 12px 12px 12px;
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 40%, transparent);
+    word-break: break-word;
+}
+
+html[data-theme-mode="dark"] .lvct-bubble-row {
+    background: color-mix(in srgb, var(--lvct-bg-base) 70%, var(--lvct-bg-surface));
+    border-color: rgba(255, 255, 255, 0.08);
+
+    &:hover {
+        background: color-mix(in srgb, var(--lv-brand) 8%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lv-brand) 40%, rgba(255, 255, 255, 0.1));
+    }
+
+    .lvct-bubble-note {
+        background: color-mix(in srgb, var(--lvct-bg-elevated) 80%, transparent);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+}
+
 /* 往来账本行现代高级微卡片 */
 .lvct-exchange-row {
     position: relative;

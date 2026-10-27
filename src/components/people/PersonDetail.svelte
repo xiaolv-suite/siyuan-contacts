@@ -3744,37 +3744,46 @@ import StatusNotice from "../StatusNotice.svelte";
                 {#each monthGroups as group (group.month)}
                     <div class="lvct-detail__month-head">{group.label}（{group.items.length}）</div>
                     {#each group.items as item (item.eventId)}
-                        <div class="lvct-detail__timeline-row">
-                            <span class="ft__on-surface">{item.localDate}</span>
-                            <span class="lvct-detail__timeline-note">
-                                <span class="lvct-chip" style="margin-right: 4px; padding: 1px 6px; font-size: 11px;">
-                                    {INTERACTION_TYPE_LABELS[item.type]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[item.type]?.label ?? "其他"}
-                                </span>
-                                {item.note || "互动"}
-                            </span>
-                            <span class="lvct-detail__timeline-source">{sourceLabels[item.source]}</span>
-                            {#if item.groupSize > 1}<span class="lvct-chip">{item.groupSize} 人同场</span>{/if}
-                            {#if item.externalRef?.startsWith("block:")}
-                                {@const refBlockId = item.externalRef.slice(6)}
-                                <button
-                                    type="button"
-                                    class="b3-button b3-button--text b3-button--small lvct-detail__timeline-source-link"
-                                    style="padding: 1px 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 2px;"
-                                    title="点击复制块定位链接 (siyuan://blocks/...)，按住 Ctrl 点击可直接在思源中打开定位该块"
-                                    onclick={(e) => copyBlockUri(refBlockId, e)}
-                                >
-                                    {#if copiedBlockUriId === refBlockId}
-                                        <Check size={11} class="lvct-text-success" />
-                                        <span class="lvct-text-success">已复制</span>
-                                    {:else}
-                                        <Link size={11} />
-                                        <span>原文</span>
-                                    {/if}
-                                </button>
-                            {/if}
-                            {#if onDeleteInteraction}
-                                <button class="b3-button b3-button--text" title="删除这条互动" aria-label={`删除 ${item.localDate} 的互动`} disabled={busy} onclick={() => deleteTimelineItem(item.eventId)}>删除</button>
-                            {/if}
+                        <div class="lvct-detail__timeline-row lvct-bubble-row">
+                            <div class="lvct-bubble-badge" title={INTERACTION_TYPE_LABELS[item.type]?.label ?? "互动"}>
+                                <span>{INTERACTION_TYPE_LABELS[item.type]?.icon ?? "💬"}</span>
+                            </div>
+                            <div class="lvct-bubble-box">
+                                <div class="lvct-bubble-header">
+                                    <span class="ft__on-surface lvct-bubble-date">{item.localDate}</span>
+                                    <span class="lvct-chip lvct-chip--type" style="padding: 1px 6px; font-size: 11px;">
+                                        {INTERACTION_TYPE_LABELS[item.type]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[item.type]?.label ?? "其他"}
+                                    </span>
+                                    <span class="lvct-detail__timeline-source">{sourceLabels[item.source]}</span>
+                                    {#if item.groupSize > 1}<span class="lvct-chip font-size-11">{item.groupSize} 人同场</span>{/if}
+                                    <div class="lvct-bubble-actions">
+                                        {#if item.externalRef?.startsWith("block:")}
+                                            {@const refBlockId = item.externalRef.slice(6)}
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--text b3-button--small lvct-detail__timeline-source-link"
+                                                style="padding: 1px 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 2px;"
+                                                title="点击复制块定位链接 (siyuan://blocks/...)，按住 Ctrl 点击可直接在思源中打开定位该块"
+                                                onclick={(e) => copyBlockUri(refBlockId, e)}
+                                            >
+                                                {#if copiedBlockUriId === refBlockId}
+                                                    <Check size={11} class="lvct-text-success" />
+                                                    <span class="lvct-text-success">已复制</span>
+                                                {:else}
+                                                    <Link size={11} />
+                                                    <span>原文</span>
+                                                {/if}
+                                            </button>
+                                        {/if}
+                                        {#if onDeleteInteraction}
+                                            <button class="b3-button b3-button--text b3-button--small" title="删除这条互动" aria-label={`删除 ${item.localDate} 的互动`} disabled={busy} onclick={() => deleteTimelineItem(item.eventId)}>删除</button>
+                                        {/if}
+                                    </div>
+                                </div>
+                                <div class="lvct-detail__timeline-note lvct-bubble-note">
+                                    {item.note || "互动"}
+                                </div>
+                            </div>
                         </div>
                     {/each}
                 {/each}
