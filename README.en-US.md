@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.93** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.93) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.94** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.94) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.93 (2026-10-27)
+## This release: v0.5.94 (2026-10-27)
+
+This release closes GitHub Issue #135 directive requirements and consolidates design token scales:
+
+- **Ecosystem Fleet Directive Closure**: Formally verified all 8 requirements from Issue #135 (brand keywords, dedicated settings window, event names, checkin bridge, Raikiri widget, monochrome vector icon, SQL guards, and visualViewport handling) and closed the issue.
+- **Deep Design Token Consolidation**: Replaced discrete hex literals across avatars, switches, badges, and shadows with `_tokens.scss` variables and dynamic `color-mix` formulas for seamless dark and high-contrast theme compatibility.
+
+Validation: `pnpm check` (0 errors / 0 warnings), 918 unit tests (100% pass rate); production build and release checks passed.
+
+## Previous release: v0.5.93 (2026-10-27)
 
 This release implements the Node Quick Drawer in the relationship graph for seamless profile inspection:
 

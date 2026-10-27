@@ -2501,7 +2501,7 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
         width: 16px;
         height: 16px;
         border-radius: 50%;
-        background: #ffffff;
+        background: var(--lvct-color-white, #ffffff);
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2), 0 2px 6px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
         transition: transform var(--lvct-dur-fast) var(--lvct-ease), width var(--lvct-dur-fast) var(--lvct-ease);
     }
@@ -2513,7 +2513,7 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     input:checked + &__track {
         background: var(--lvct-accent-fill);
 
-        .lvct-switch__thumb { transform: translateX(16px); background: #ffffff; }
+        .lvct-switch__thumb { transform: translateX(16px); background: var(--lvct-color-white, #ffffff); }
     }
 
     input:focus-visible + &__track {
@@ -2642,7 +2642,7 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
 
     &--active {
         background: var(--lv-brand, #ea580c) !important;
-        color: #ffffff !important;
+        color: var(--lvct-color-white, #ffffff) !important;
         font-weight: 700;
         box-shadow: 0 1px 4px color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
     }
@@ -2705,15 +2705,15 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     }
 
     &--starred {
-        color: #d97706;
-        border-color: rgba(245, 158, 11, 0.4);
+        color: var(--lvct-heat-chill, #d97706);
+        border-color: color-mix(in srgb, var(--lvct-heat-cool, #f59e0b) 40%, transparent);
 
         &.lvct-people__group-tab--active {
-            background: #f59e0b;
-            color: #ffffff;
-            border-color: #f59e0b;
+            background: var(--lvct-heat-cool, #f59e0b);
+            color: var(--lvct-color-white, #ffffff);
+            border-color: var(--lvct-heat-cool, #f59e0b);
             font-weight: 600;
-            box-shadow: 0 1px 4px rgba(245, 158, 11, 0.25);
+            box-shadow: 0 1px 4px color-mix(in srgb, var(--lvct-heat-cool, #f59e0b) 25%, transparent);
         }
     }
 }
@@ -2892,32 +2892,32 @@ html[data-theme-mode="dark"] .lvct-notice {
     place-items: center;
     font-size: 16px;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--lvct-color-white, #ffffff);
     flex-shrink: 0;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 80%, #ffffff 20%), var(--lvct-accent));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 80%, var(--lvct-color-white, #ffffff) 20%), var(--lvct-accent));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-accent) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 }
 
 /* UX-01.4：分组头像背景色（家人红/朋友绿/工作蓝/同学珊瑚/其他灰），Squircle 微渐变配方 */
 .lvct-person-card__avatar[data-group="家人"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, #ffffff), var(--lvct-group-family));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-family));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-family) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="朋友"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, #ffffff), var(--lvct-group-friend));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-friend));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-friend) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="同事"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, #ffffff), var(--lvct-group-work));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-work));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-work) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="同学"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, #ffffff), var(--lvct-group-school));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-school));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-school) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 .lvct-person-card__avatar[data-group="其他"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, #ffffff), var(--lvct-group-other));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-other));
     box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-other) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
@@ -3566,15 +3566,15 @@ html[data-theme-mode="dark"] .lvct-dialog-panel {
     .lv-dialog-title-badge {
         width: 22px;
         height: 22px;
-        border-radius: 6px;
-        background: #EA580C;
-        color: #ffffff;
+        border-radius: var(--lv-r-sm, 6px);
+        background: var(--lv-brand, #EA580C);
+        color: var(--lvct-color-white, #ffffff);
         display: inline-grid;
         place-items: center;
         font-size: 11px;
         font-weight: 700;
         flex-shrink: 0;
-        box-shadow: 0 2px 4px rgba(234, 88, 12, 0.25);
+        box-shadow: 0 2px 4px color-mix(in srgb, var(--lv-brand, #EA580C) 25%, transparent);
     }
 }
 
