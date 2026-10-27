@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.10** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.10) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.11** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.11) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.10 (2026-10-27)
+## This release: v0.6.11 (2026-10-28)
+
+This release implements comprehensive Smart Field Mapping across all 9 core fields:
+
+- **Smart Field Mapping Engine (`isSemanticallyMatchingColumn`)**: Supports semantic matching for phone, wechat, email, website, birthday, lunar birthday, group, tags, and relations across English and Chinese variations (e.g. `Mobile/Tel`, `WeChat/WX`, `URL/Site`, `Birth`).
+- **Instant Alignment Feedback in Setup & Settings**: Workspace initialization and field health repair automatically recognize custom database column evidence with instant match count feedback.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (931/931 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.10 (2026-10-27)
 
 This release implements desktop-class keyboard shortcuts and degree jumping for the relationship graph:
 

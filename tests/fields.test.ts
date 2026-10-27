@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validateFieldMap } from "../src/domain/fields.ts";
+import { isSemanticallyMatchingColumn, reconcileFieldMap, validateFieldMap, fieldSpec } from "../src/domain/fields.ts";
 
 const TYPES: Record<string, string> = {
     birthday: "date", lunarBirthday: "checkbox", phone: "phone", email: "email",
@@ -45,6 +45,45 @@ test("CODE-02.4 fieldMap 校验：缺键、重复映射、列不存在、类型�
 test("CODE-02.4 fieldMap 校验：不提供列清单时跳过存在性/类型核对", () => {
     const problems = validateFieldMap({ ...FULL, email: FULL.wechat });
     assert(problems.length === 1 && problems[0].message.includes("重复映射"), `应只剩重复映射问题：${JSON.stringify(problems)}`);
+});
+
+test("isSemanticallyMatchingColumn：常见中文、英文与拼音变体智能识别", () => {
+    const phoneSpec = fieldSpec("phone");
+    assert.equal(isSemanticallyMatchingColumn(phoneSpec, { id: "c1", name: "手机号码", type: "phone" }), true);
+    assert.equal(isSemanticallyMatchingColumn(phoneSpec, { id: "c2", name: "Mobile", type: "phone" }), true);
+    assert.equal(isSemanticallyMatchingColumn(phoneSpec, { id: "c3", name: "联系电话", type: "phone" }), true);
+    assert.equal(isSemanticallyMatchingColumn(phoneSpec, { id: "c4", name: "手机", type: "text" }), false, "类型不符应拒绝匹配");
+
+    const wechatSpec = fieldSpec("wechat");
+    assert.equal(isSemanticallyMatchingColumn(wechatSpec, { id: "c5", name: "微信号", type: "text" }), true);
+    assert.equal(isSemanticallyMatchingColumn(wechatSpec, { id: "c6", name: "WeChat ID", type: "text" }), true);
+
+    const bdaySpec = fieldSpec("birthday");
+    assert.equal(isSemanticallyMatchingColumn(bdaySpec, { id: "c7", name: "出生日期", type: "date" }), true);
+    assert.equal(isSemanticallyMatchingColumn(bdaySpec, { id: "c8", name: "Date of Birth", type: "date" }), true);
+
+    const webSpec = fieldSpec("website");
+    assert.equal(isSemanticallyMatchingColumn(webSpec, { id: "c9", name: "个人主页", type: "url" }), true);
+    assert.equal(isSemanticallyMatchingColumn(webSpec, { id: "c10", name: "URL", type: "url" }), true);
+});
+
+test("reconcileFieldMap：开启 smartMatch 后自动嗅探匹配变体列名", () => {
+    const columns = [
+        { id: "col-1", name: "手机号码", type: "phone" },
+        { id: "col-2", name: "微信号码", type: "text" },
+        { id: "col-3", name: "出生日期", type: "date" },
+    ];
+
+    // 默认精确匹配：不命中
+    const exactResult = reconcileFieldMap(columns);
+    assert.equal(exactResult.matched, 0);
+
+    // 开启 smartMatch：全部智能命中
+    const smartResult = reconcileFieldMap(columns, {}, { smartMatch: true });
+    assert.equal(smartResult.matched, 3);
+    assert.equal(smartResult.fieldMap.phone, "col-1");
+    assert.equal(smartResult.fieldMap.wechat, "col-2");
+    assert.equal(smartResult.fieldMap.birthday, "col-3");
 });
 import { parsePersonRelationshipLabelStore, projectPersonRelationshipLabels } from "../src/domain/person-relationship-labels.ts";
 

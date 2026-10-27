@@ -91,6 +91,46 @@ export interface FieldReconcileResult {
     lastColumnId: string;
 }
 
+export interface ReconcileFieldMapOptions {
+    /** 启用语义模糊智能嗅探（用于已有自定义数据库扫描与快速对齐） */
+    smartMatch?: boolean;
+}
+
+/**
+ * 字段智能嗅探匹配（纯函数）：判断某列是否符合某个预设字段的语义。
+ * 覆盖全部预设字段类型与中英文常见命名变体。
+ */
+export function isSemanticallyMatchingColumn(spec: FieldSpec, column: AvColumnLike): boolean {
+    if (column.type !== spec.type) return false;
+    const name = (column.name || "").toLowerCase().trim();
+    const expZh = spec.nameZh.toLowerCase().trim();
+    const expEn = spec.nameEn.toLowerCase().trim();
+    if (name === expZh || name === expEn) return true;
+
+    switch (spec.key) {
+        case "phone":
+            return name.includes("电话") || name.includes("手机") || name.includes("phone") || name.includes("mobile") || name.includes("tel");
+        case "wechat":
+            return name.includes("微信") || name.includes("wechat") || name.includes("wx") || name.includes("微信号");
+        case "email":
+            return name.includes("邮箱") || name.includes("邮件") || name.includes("mail") || name.includes("email");
+        case "website":
+            return name.includes("网站") || name.includes("网址") || name.includes("url") || name.includes("web") || name.includes("主页") || name.includes("homepage") || name.includes("site");
+        case "birthday":
+            return name.includes("生日") || name.includes("出生") || name.includes("birth") || name.includes("bday");
+        case "lunarBirthday":
+            return name.includes("农历") || name.includes("阴历") || name.includes("lunar");
+        case "group":
+            return name.includes("分组") || name.includes("分类") || name.includes("group") || name.includes("类别") || name.includes("圈子");
+        case "tags":
+            return name.includes("标签") || name.includes("tag") || name.includes("tags") || name.includes("标记");
+        case "related":
+            return name.includes("相关") || name.includes("关联") || name.includes("好友") || name.includes("联系人") || name.includes("relation");
+        default:
+            return false;
+    }
+}
+
 /**
  * 把数据库现有列对回字段契约。优先沿用已知 keyID（同类型），否则按默认列名
  * （中文或英文）＋类型匹配；每列只允许绑定一个字段，类型不符不匹配。
@@ -99,6 +139,7 @@ export interface FieldReconcileResult {
 export function reconcileFieldMap(
     columns: readonly AvColumnLike[],
     current: Partial<Record<FieldKey, string>> = {},
+    options: ReconcileFieldMapOptions = {},
 ): FieldReconcileResult {
     const fieldMap: Partial<Record<FieldKey, string>> = {};
     const used = new Set<string>();
@@ -113,7 +154,10 @@ export function reconcileFieldMap(
             column.type === spec.type &&
             (column.name === spec.nameZh || column.name === spec.nameEn),
         );
-        const column = byId ?? byDefaultName;
+        const bySemantic = options.smartMatch
+            ? columns.find((column) => !used.has(column.id) && isSemanticallyMatchingColumn(spec, column))
+            : undefined;
+        const column = byId ?? byDefaultName ?? bySemantic;
         if (!column) {
             missing.push(spec);
             continue;
