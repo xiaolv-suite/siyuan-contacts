@@ -7829,6 +7829,57 @@ await test("D-01 文档档案条快捷记互动弹窗：QuickRecordDialog 分类
     assert(savedStore.events[0].type === "call", "互动类型应为 call");
 });
 
+await test("D-01.1 快捷记互动随路沉淀事实画像（saveAsFact）：勾选沉淀后自动写入事实多分类区块", async () => {
+    let savedTriggered = false;
+    let closedTriggered = false;
+    const memory = new Map();
+    memory.set("interaction-events.json", { schemaVersion: 1, events: [], tombstones: [] });
+    const mockPlugin = {
+        loadData: async (k) => memory.get(k) ?? null,
+        saveData: async (k, v) => { memory.set(k, v); },
+    };
+    let blockMarkdown = "";
+    kernel.handler = async (route, body) => {
+        if (route === "/api/query/sql") {
+            return [{ id: "fact-block-1", markdown: blockMarkdown, ial: '{: custom-lvct-facts="1"}' }];
+        }
+        if (route === "/api/block/insertBlock" || route === "/api/block/updateBlock") {
+            blockMarkdown = body.data || body.dataType;
+            return { code: 0, msg: "", data: {} };
+        }
+        return { code: 0, msg: "", data: {} };
+    };
+
+    mounted = mount(QuickRecordDialog, { target: fixture, props: {
+        plugin: mockPlugin,
+        person,
+        onSaved: () => { savedTriggered = true; },
+        onClose: () => { closedTriggered = true; },
+    } });
+
+    await until(() => fixture.querySelector(".lvct-quick-record-dialog"), "未渲染快捷记互动弹窗");
+    const textarea = fixture.querySelector("textarea");
+    input(textarea, "特别喜欢喝耶加雪菲手冲咖啡");
+
+    const factCheckbox = [...fixture.querySelectorAll("input[type='checkbox']")].find((el) =>
+        el.closest("label")?.textContent?.includes("同时沉淀为社交画像事实")
+    );
+    assert(factCheckbox, "未找到随路沉淀事实复选框");
+    factCheckbox.click();
+    await tick();
+
+    const prefChip = [...fixture.querySelectorAll(".b3-chip")].find((b) => b.textContent.includes("喜好忌口"));
+    assert(prefChip, "未找到喜好忌口分类胶囊");
+    prefChip.click();
+    await tick();
+
+    const saveBtn = [...fixture.querySelectorAll("button")].find((b) => b.textContent.includes("保存互动"));
+    saveBtn.click();
+
+    await until(() => savedTriggered, "未触发 onSaved 回调");
+    await until(() => closedTriggered, "保存后未自动触发 onClose 关闭弹窗");
+});
+
 await test("E-36 纪念日免打扰开关（remindDisabled）：开启后不再提醒，再次点击恢复", async () => {
     let annivList = [
         {

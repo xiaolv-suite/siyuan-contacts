@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.5] — 2026-10-27
+
+重塑：快捷记互动随路事实画像沉淀（Quick Record with Facts）与双向闭环
+
+- **快捷记互动事实沉淀**：`QuickRecordDialog` 新增同时沉淀为社交画像事实开关与 4 大分类点选。
+- **双向无缝流通**：单笔互动兼顾流水记录与长期画像沉淀，自动追加至人物文档 `custom-lvct-facts` 受控区块。
+
+验证：`pnpm check` 0/0、单测 928/928 绿灯、E2E UI 回归全部通过、Release 门禁通过。
+
+
 ## [0.6.4] — 2026-10-27
 
 重塑：气泡式交往互动时间轴（Dialogue Bubble Timeline）与微触感体验升维
