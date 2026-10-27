@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.92** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.92) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.93** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.93) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,17 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.92 (2026-10-27)
+## This release: v0.5.93 (2026-10-27)
+
+This release implements the Node Quick Drawer in the relationship graph for seamless profile inspection:
+
+- **Graph Node Quick Drawer**: Click any person or organization node on the canvas to slide out a 320px quick drawer, showing avatar, group, city, affiliation, and graph degree without interrupting the topology flow.
+- **One-Click Communication Copying**: Phone, WeChat, and email entries support fast clipboard copying with emerald-green checkmark feedback.
+- **Quick Action Bar**: Direct buttons for "Full Profile ↗" and "Open Doc ↗", supporting Escape key and blank-canvas tap to dismiss smoothly.
+
+Validation: `pnpm check` (0 errors / 0 warnings), 918 unit tests (100% pass rate); production build and release checks passed.
+
+## Previous release: v0.5.92 (2026-10-27)
 
 This release implements automatic incremental controlled updates for city topic documents and consolidates city organization extraction:
 
