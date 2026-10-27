@@ -334,6 +334,20 @@ import StatusNotice from "../StatusNotice.svelte";
         if (!current) throw new Error("当前没有人物");
         await onRecord(current.docId, noteText.trim() || undefined, recordType);
         recorded = true;
+        if (detailSaveAsFact && noteText.trim() && onSavePersonFacts) {
+            const newItem: PersonFactItem = {
+                id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                text: noteText.trim(),
+                category: detailFactCategory,
+                date: toLocalDateKey(new Date()),
+            };
+            const next = [newItem, ...facts];
+            void onSavePersonFacts(current.docId, next).then(() => {
+                facts = next;
+            }).catch((err) => {
+                console.warn("[LvContacts] 记互动沉淀事实失败：", err);
+            });
+        }
         if (pendingConvertedTopicId && onRemoveTopic) {
             const topicIdToRemove = pendingConvertedTopicId;
             pendingConvertedTopicId = "";
@@ -638,6 +652,8 @@ import StatusNotice from "../StatusNotice.svelte";
     let newFactText = $state("");
     let newFactCategory: FactCategory = $state("quote");
     let newFactSource = $state("");
+    let detailSaveAsFact = $state(false);
+    let detailFactCategory: FactCategory = $state("quote");
 
     async function loadFacts(): Promise<void> {
         if (!onLoadPersonFacts || !current?.docId) return;
@@ -3218,6 +3234,20 @@ import StatusNotice from "../StatusNotice.svelte";
                 onclick={() =>
                     mutate(persistNote)}
             >{recorded ? text("detailRecorded", "已记录 ✓") : text("detailRecord", "记录")}</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--lvct-text-2);">
+                <input type="checkbox" bind:checked={detailSaveAsFact} disabled={busy} />
+                <span>💡 同时沉淀为社交画像事实（提炼观点与关键备忘）</span>
+            </label>
+            {#if detailSaveAsFact}
+                <div style="display: flex; gap: 4px; padding-left: 20px; flex-wrap: wrap;">
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={detailFactCategory === "quote"} disabled={busy} onclick={() => (detailFactCategory = "quote")}>💡 观点见解</button>
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={detailFactCategory === "preference"} disabled={busy} onclick={() => (detailFactCategory = "preference")}>❤️ 喜好忌口</button>
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={detailFactCategory === "background"} disabled={busy} onclick={() => (detailFactCategory = "background")}>💼 背景经历</button>
+                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={detailFactCategory === "fact"} disabled={busy} onclick={() => (detailFactCategory = "fact")}>📌 关键事实</button>
+                </div>
+            {/if}
         </div>
         <p class="ft__smaller ft__on-surface">记录后，首页"久未联系"会重新计时。</p>
     </section>
