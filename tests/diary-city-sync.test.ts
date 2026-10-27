@@ -1,7 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown } from "../src/domain/diary-sync.ts";
-import { buildCityTopicSectionMarkdown, buildCityInitialDocumentMarkdown, CITY_TOPIC_ATTR, CITY_CONTACTS_SECTION_ATTR, extractCityOrganizations, detectChangedCities } from "../src/domain/city-topic.ts";
+import {
+    buildCityTopicSectionMarkdown,
+    buildCityInitialDocumentMarkdown,
+    CITY_TOPIC_ATTR,
+    CITY_CONTACTS_SECTION_ATTR,
+    extractCityOrganizations,
+    detectChangedCities,
+    buildTripItineraryMarkdown,
+    TRIP_CONTEXT_METAS,
+} from "../src/domain/city-topic.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 
 test("buildDailyNoteInteractionMarkdown: 生成带思源块引的日记互动记录", () => {
@@ -159,4 +168,43 @@ test("detectChangedCities: 检测名册变动中常驻城市的差量", () => {
 
     // 4. 未发生城市变化
     assert.deepEqual(Array.from(detectChangedCities(prev, prev)), []);
+});
+
+test("buildTripItineraryMarkdown: 生成带任务复选框与人物块引的出差/行程拜访文档", () => {
+    assert.equal(TRIP_CONTEXT_METAS.length, 4);
+
+    const contacts: ContactSummary[] = [
+        {
+            docId: "doc-zs",
+            itemId: "item-zs",
+            name: "张三",
+            phone: "13800000001",
+            wechat: "zhangsan_wx",
+            isSelf: false,
+            relatedItemIds: [],
+            profile: {
+                affiliations: {
+                    state: "known",
+                    value: {
+                        work: [{ orgName: "腾讯科技", orgDocId: "org-tencent" }],
+                    },
+                },
+            },
+        },
+    ];
+
+    const md = buildTripItineraryMarkdown({
+        city: "深圳",
+        context: "business",
+        contacts,
+        date: "2026-10-27",
+    });
+
+    assert.ok(md.includes("# 💼 出差人脉拜访清单 · 深圳 (共 1 人)"));
+    assert.ok(md.includes("> 行程类型：商务出差 · 发生日期：2026-10-27"));
+    assert.ok(md.includes("## 📋 拜访任务清单"));
+    assert.ok(md.includes("- [ ] [张三](siyuan://blocks/doc-zs)"));
+    assert.ok(md.includes("电话: 13800000001"));
+    assert.ok(md.includes("微信: zhangsan_wx"));
+    assert.ok(md.includes("腾讯科技"));
 });

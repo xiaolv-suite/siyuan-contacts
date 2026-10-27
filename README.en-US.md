@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.5** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.5) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.6** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.6) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.5 (2026-10-27)
+## This release: v0.6.6 (2026-10-27)
+
+This release implements native Trip Itinerary Document generation for seamless business trip and travel planning:
+
+- **Trip Itinerary Doc Generator**: Added one-click document generation in `RegionExplorerDialog`, instantly archiving trip memos into native SiYuan documents according to 4 travel contexts (💼 Business, ✈️ Travel, 🚗 Transit, 📍 General).
+- **Interactive Checklists & Bilateral Links**: Automatically generates `- [ ]` task checkboxes, native `siyuan://blocks/{docId}` bilateral links, organizations, and contact details with direct navigation into the main editor.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.5 (2026-10-27)
 
 This release implements inline facts & quotes archival during Quick Record (`QuickRecordDialog`):
 
