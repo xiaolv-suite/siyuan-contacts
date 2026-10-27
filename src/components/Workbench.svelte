@@ -605,7 +605,7 @@
     });
 </script>
 
-<div class="lvct-workbench" bind:this={workbenchElement}>
+<div class="lvct-workbench" data-lvct-theme={currentPreferences.themeScheme || "cognac"} bind:this={workbenchElement}>
     <aside class="lvct-workbench__sidebar" aria-label={text("navigationLabel", "小驴人脉导航")}>
         <div class="lvct-workbench__brand">
             <span class="lvct-workbench__brand-mark">

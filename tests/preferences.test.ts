@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
     BRAND_AVATAR_IMAGE_MAX_LENGTH,
+    THEME_SCHEMES,
     DEFAULT_VIEW_PREFERENCES,
     isPersonStarred,
     isValidBrandAvatarImage,
@@ -509,4 +510,32 @@ test("E-14 视图偏好：人物详情区块折叠展开偏好归一化、diff �
     const patched = applyPreferencePatch(baseline, diff);
     assert.deepEqual(patched.detailCollapsedSections, { projects: true });
     assert.equal(patched.revision, baseline.revision + 1);
+});
+
+test("主题色彩方案（ThemeScheme）：5大预设、合法保留与容错归一化", () => {
+    assert.equal(THEME_SCHEMES.length, 5);
+    const ids = THEME_SCHEMES.map((s) => s.id);
+    assert.deepEqual(ids, ["cognac", "emerald", "ocean", "violet", "amber"]);
+
+    // 默认方案为暖干邑橙
+    assert.equal(DEFAULT_VIEW_PREFERENCES.themeScheme, "cognac");
+    assert.equal(normalizeViewPreferences({}).themeScheme, "cognac");
+
+    // 合法方案保留
+    assert.equal(normalizeViewPreferences({ themeScheme: "emerald" }).themeScheme, "emerald");
+    assert.equal(normalizeViewPreferences({ themeScheme: "ocean" }).themeScheme, "ocean");
+    assert.equal(normalizeViewPreferences({ themeScheme: "violet" }).themeScheme, "violet");
+    assert.equal(normalizeViewPreferences({ themeScheme: "amber" }).themeScheme, "amber");
+
+    // 非法值回退 cognac
+    assert.equal(normalizeViewPreferences({ themeScheme: "invalid" }).themeScheme, "cognac");
+    assert.equal(normalizeViewPreferences({ themeScheme: 123 }).themeScheme, "cognac");
+
+    // diff 与 patch 测试
+    const baseline = DEFAULT_VIEW_PREFERENCES;
+    const next = { ...baseline, themeScheme: "emerald" as const };
+    const diff = diffViewPreferences(baseline, next);
+    assert.deepEqual(diff, { themeScheme: "emerald" });
+    const patched = applyPreferencePatch(baseline, diff);
+    assert.equal(patched.themeScheme, "emerald");
 });

@@ -21,6 +21,55 @@ export type GraphViewMode = "relations" | "native";
 /** 文档引用图范围（B14.8/B14.4）：self=以本人为中心一度；person=以指定联系人为中心一度；global=全部登记文档 */
 export type NativeGraphScope = "self" | "person" | "global";
 
+/** 主题色彩方案预设 */
+export type ThemeScheme = "cognac" | "emerald" | "ocean" | "violet" | "amber";
+
+export interface ThemeSchemeMeta {
+    id: ThemeScheme;
+    label: string;
+    brandColor: string;
+    accentColor: string;
+    description: string;
+}
+
+export const THEME_SCHEMES: readonly ThemeSchemeMeta[] = [
+    {
+        id: "cognac",
+        label: "暖干邑橙",
+        brandColor: "#EA580C",
+        accentColor: "#0284C7",
+        description: "爱马仕轻奢暖橙与天青宝珠（默认经典）",
+    },
+    {
+        id: "emerald",
+        label: "生机翡翠",
+        brandColor: "#059669",
+        accentColor: "#D97706",
+        description: "清新典雅翡翠绿与温润落叶金",
+    },
+    {
+        id: "ocean",
+        label: "深海蔚蓝",
+        brandColor: "#2563EB",
+        accentColor: "#0D9488",
+        description: "现代克制商务蓝与松石青点缀",
+    },
+    {
+        id: "violet",
+        label: "极光紫罗兰",
+        brandColor: "#7C3AED",
+        accentColor: "#DB2777",
+        description: "深邃灵动极光紫与绮丽玫瑰",
+    },
+    {
+        id: "amber",
+        label: "暗金落叶",
+        brandColor: "#D97706",
+        accentColor: "#0284C7",
+        description: "沉稳内敛琥珀金与天青灵珠",
+    },
+] as const;
+
 /** 人物详情可选折叠区块键值（E-14） */
 export type DetailSectionKey =
     | "topics"
@@ -113,6 +162,8 @@ export interface ViewPreferences {
     readonly detailCollapsedSections: DetailCollapsedSections;
     /** 星标常用联系人文档 ID 列表（收藏置顶） */
     readonly starredDocIds: readonly string[];
+    /** 主题色彩风格偏好 */
+    readonly themeScheme: ThemeScheme;
 }
 
 export const DEFAULT_VIEW_PREFERENCES: ViewPreferences = {
@@ -138,6 +189,7 @@ export const DEFAULT_VIEW_PREFERENCES: ViewPreferences = {
     brandAvatarImage: "",
     detailCollapsedSections: {},
     starredDocIds: [],
+    themeScheme: "cognac",
 };
 
 /** 设置页数字输入的保存前校验：必须是 0–365 的整数。 */
@@ -218,7 +270,12 @@ export function normalizeViewPreferences(raw: unknown): ViewPreferences {
             ? DEFAULT_VIEW_PREFERENCES.detailCollapsedSections
             : normalizeDetailCollapsedSections(record.detailCollapsedSections),
         starredDocIds: normalizeStarredDocIds(record.starredDocIds),
+        themeScheme: isThemeScheme(record.themeScheme) ? record.themeScheme : DEFAULT_VIEW_PREFERENCES.themeScheme,
     };
+}
+
+function isThemeScheme(value: unknown): value is ThemeScheme {
+    return value === "cognac" || value === "emerald" || value === "ocean" || value === "violet" || value === "amber";
 }
 
 function normalizeStarredDocIds(raw: unknown): readonly string[] {

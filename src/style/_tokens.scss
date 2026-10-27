@@ -451,3 +451,78 @@ html[data-theme-mode="dark"] .lvct-workbench {
     }
 }
 
+/* ============================================================================
+ * 多主题色彩方案系统（Theme Color Schemes）
+ * ----------------------------------------------------------------------------
+ * 支持在根节点或父级容器通过 [data-lvct-theme="..."] 动态切换整套色调体系。
+ * 覆盖主品牌色、悬浮态、柔和底色、品牌渐变以及关键辅助色。
+ * ========================================================================== */
+
+/* ① 翡翠绿 (Emerald Jade) */
+[data-lvct-theme="emerald"],
+.lvct-tab-root[data-lvct-theme="emerald"],
+.lvct-dialog-root[data-lvct-theme="emerald"],
+.lvct-doc-strip[data-lvct-theme="emerald"],
+.lvct-workbench[data-lvct-theme="emerald"] {
+    --lv-brand: #059669;
+    --lv-brand-hover: #047857;
+    --lv-brand-soft: color-mix(in srgb, #059669 12%, transparent);
+    --lvct-brand-from: #059669;
+    --lvct-brand-to: #10B981;
+    --lvct-brand-gradient: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    --lv-accent-cyan: #D97706;
+    --lv-accent-cyan-hover: #B45309;
+    --lv-accent-cyan-soft: color-mix(in srgb, #D97706 12%, transparent);
+}
+
+/* ② 深海蓝 (Deep Ocean Blue) */
+[data-lvct-theme="ocean"],
+.lvct-tab-root[data-lvct-theme="ocean"],
+.lvct-dialog-root[data-lvct-theme="ocean"],
+.lvct-doc-strip[data-lvct-theme="ocean"],
+.lvct-workbench[data-lvct-theme="ocean"] {
+    --lv-brand: #2563EB;
+    --lv-brand-hover: #1D4ED8;
+    --lv-brand-soft: color-mix(in srgb, #2563EB 12%, transparent);
+    --lvct-brand-from: #2563EB;
+    --lvct-brand-to: #38BDF8;
+    --lvct-brand-gradient: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+    --lv-accent-cyan: #0D9488;
+    --lv-accent-cyan-hover: #0F766E;
+    --lv-accent-cyan-soft: color-mix(in srgb, #0D9488 12%, transparent);
+}
+
+/* ③ 极光紫 (Royal Amethyst) */
+[data-lvct-theme="violet"],
+.lvct-tab-root[data-lvct-theme="violet"],
+.lvct-dialog-root[data-lvct-theme="violet"],
+.lvct-doc-strip[data-lvct-theme="violet"],
+.lvct-workbench[data-lvct-theme="violet"] {
+    --lv-brand: #7C3AED;
+    --lv-brand-hover: #6D28D9;
+    --lv-brand-soft: color-mix(in srgb, #7C3AED 12%, transparent);
+    --lvct-brand-from: #7C3AED;
+    --lvct-brand-to: #A855F7;
+    --lvct-brand-gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%);
+    --lv-accent-cyan: #DB2777;
+    --lv-accent-cyan-hover: #BE185D;
+    --lv-accent-cyan-soft: color-mix(in srgb, #DB2777 12%, transparent);
+}
+
+/* ④ 暗金落叶 (Amber Gold) */
+[data-lvct-theme="amber"],
+.lvct-tab-root[data-lvct-theme="amber"],
+.lvct-dialog-root[data-lvct-theme="amber"],
+.lvct-doc-strip[data-lvct-theme="amber"],
+.lvct-workbench[data-lvct-theme="amber"] {
+    --lv-brand: #D97706;
+    --lv-brand-hover: #B45309;
+    --lv-brand-soft: color-mix(in srgb, #D97706 12%, transparent);
+    --lvct-brand-from: #D97706;
+    --lvct-brand-to: #F59E0B;
+    --lvct-brand-gradient: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    --lv-accent-cyan: #0284C7;
+    --lv-accent-cyan-hover: #0369A1;
+    --lv-accent-cyan-soft: color-mix(in srgb, #0284C7 12%, transparent);
+}
+
