@@ -266,7 +266,7 @@ test("parseVcf：本插件导出的 X-LVCT-BDAY-LUNAR 回读为农历生日", ()
 
 test("parseVcf：不支持字段明确列出，非法日期进入人工核对且不猜测", () => {
     const [contact] = parseVcf("BEGIN:VCARD\r\nFN:王五\r\nORG:示例公司\r\nADR:地址\r\nPHOTO:data\r\nBDAY:五月二十\r\nEND:VCARD");
-    assert.deepEqual(contact.unsupportedProperties, ["PHOTO"]);
+    assert.deepEqual(contact.unsupportedProperties, ["ORG", "ADR", "PHOTO"]);
     assert.deepEqual(contact.needsReview, ["BDAY"]);
     assert.equal(contact.birthday, "");
 });

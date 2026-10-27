@@ -253,7 +253,7 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
         }
     }
 
-    const supported = new Set(["VERSION", "FN", "N", "TEL", "EMAIL", "URL", "BDAY", "CATEGORIES", "X-LVCT-BDAY-LUNAR", "X-WECHAT", "ORG", "TITLE", "NOTE", "ADR"]);
+    const supported = new Set(["VERSION", "FN", "N", "TEL", "EMAIL", "URL", "BDAY", "CATEGORIES", "X-LVCT-BDAY-LUNAR"]);
     const unsupportedProperties = [...new Set(props.map((prop) => prop.name).filter((name) => !supported.has(name)))];
     for (const property of ["EMAIL", "URL"]) {
         if (all(property).length > 1) unsupportedProperties.push(`${property}（第 2 项起）`);
