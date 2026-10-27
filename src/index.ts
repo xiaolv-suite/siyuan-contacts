@@ -110,7 +110,7 @@ import { loadPersonGiftIdeas, addPersonGiftIdea, updatePersonGiftIdea, removePer
 import { listOccasions, createOccasion, deleteOccasion } from "./services/occasions";
 import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary, removePersonAnniversary, listUpcomingAnniversaries } from "./data/anniversaries.ts";
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
-import { buildReview } from "./services/review-report";
+import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1747,6 +1747,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async buildReviewReport(from: string, to: string) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return buildReview(this, this.settings, { from, to });
+    }
+
+    /** RF-03：将交往回顾沉淀为思源实体文档 */
+    async createReviewReportDoc(range: import("./domain/review-report").ReviewRange) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return exportReviewReportToDoc(this, this.settings, range);
     }
 
     async loadExportSummary() {

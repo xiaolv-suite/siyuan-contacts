@@ -17,12 +17,16 @@
         buildAuditReport,
         retryFailedAuditModules,
         onOpenPeople,
+        createDocReport,
+        onOpenDoc,
     }: {
         i18n?: Readonly<Record<string, string>>;
         buildReport?: (range: ReviewRange) => Promise<ReviewReport>;
         buildAuditReport?: (previous?: HealthAuditReport) => Promise<HealthAuditReport>;
         retryFailedAuditModules?: (report: HealthAuditReport) => Promise<HealthAuditReport>;
         onOpenPeople?: (focus: { itemIds?: readonly string[]; memberDocIds?: readonly string[]; label: string }) => void;
+        createDocReport?: (range: ReviewRange) => Promise<{ docId: string; hpath: string } | null>;
+        onOpenDoc?: (docId: string) => void;
     } = $props();
     const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
         translateText(i18n, key, fallback, values));
@@ -34,6 +38,20 @@
     let loading = $state(true);
     let errorText = $state("");
     let showEntries = $state(false);
+    let creatingDoc = $state(false);
+    let createdDocInfo: { docId: string; hpath: string } | null = $state(null);
+
+    async function handleCreateDoc() {
+        if (!createDocReport || !report || creatingDoc) return;
+        creatingDoc = true;
+        try {
+            const range = currentRange();
+            const res = await createDocReport(range);
+            if (alive) createdDocInfo = res;
+        } finally {
+            if (alive) creatingDoc = false;
+        }
+    }
     let request = 0;
     let auditReport: HealthAuditReport | null = $state(null);
     let auditLoading = $state(false);
@@ -341,6 +359,29 @@
                 </div>
             {/if}
         </div>
+
+        {#if createDocReport}
+            <div class="lvct-review__section" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--lvct-border-subtle);">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--primary"
+                        disabled={creatingDoc || !report}
+                        onclick={handleCreateDoc}
+                    >
+                        {creatingDoc ? "正在沉淀文档…" : "✨ 沉淀为思源文档 ↗"}
+                    </button>
+                    {#if createdDocInfo}
+                        <span class="ft__smaller" style="color: var(--lvct-success, #16a34a);">
+                            已生成《{createdDocInfo.hpath.split("/").pop()}》
+                            {#if onOpenDoc}
+                                <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => onOpenDoc?.(createdDocInfo!.docId)}>在主编辑器打开 ↗</button>
+                            {/if}
+                        </span>
+                    {/if}
+                </div>
+            </div>
+        {/if}
 
         <p class="ft__smaller ft__on-surface">
             {text("reviewScopeNote", "口径说明：人物互动条数按每人每条事件计；同场活动按场合去重，多人同场不重复计为多场；手工记录各自成次。所有数字可从互动记录直接数出，不含关系评分。")}

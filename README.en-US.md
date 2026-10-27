@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.5.98** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.98) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.5.99** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.99) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.5.98 (2026-10-27)
+## This release: v0.5.99 (2026-10-27)
+
+This release implements the Review Document Generator for native SiYuan workspace knowledge consolidation:
+
+- **Review Document Generation (Review Doc Generator)**: One-click export of periodic relationship reviews into native SiYuan documents (`custom-lvct-review`), consolidating interaction stats, top contacts with bilateral `siyuan://blocks/` links, and full interaction timelines.
+- **Direct Editor Navigation**: Added instant document generation button in `ReviewReportDialog` with direct "Open in Main Editor ↗" feedback.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.5.98 (2026-10-27)
 
 This release implements the Potential Connection Discovery engine and one-click bilateral relationship establishment:
 

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
     activityKey,
     buildReviewReport,
+    buildReviewReportMarkdown,
     monthToDateRange,
     previousRange,
 } from "../src/domain/review-report.ts";
@@ -107,4 +108,23 @@ test("M-10：交往报表同日事件与同名联系人排序确定性（tie-bre
         ["doc-1:e-a", "doc-1:e-c", "doc-2:e-b"],
         "同日同名条目按 personDocId、eventId 升序确定排序",
     );
+});
+
+test("buildReviewReportMarkdown：格式化交往回顾为思源笔记文档 Markdown 文本", () => {
+    const events: InteractionEvent[] = [
+        event({ id: "e1", personDocId: "doc-a", localDate: "2026-09-05", source: "diary", note: "大模型研讨会" }),
+        event({ id: "e2", personDocId: "doc-b", localDate: "2026-09-06", source: "manual", note: "咖啡馆闲聊" }),
+    ];
+    const report = buildReviewReport({ events, roster, range });
+    const md = buildReviewReportMarkdown(report);
+
+    assert.ok(md.includes("# 人脉交往回顾 · 2026-09-01 至 2026-09-30"));
+    assert.ok(md.includes("## 📊 核心指标概览"));
+    assert.ok(md.includes("- **互动人次**：2 次"));
+    assert.ok(md.includes("## 🏆 重点深交人脉 (Top Contacts)"));
+    assert.ok(md.includes("[甲](siyuan://blocks/doc-a)"));
+    assert.ok(md.includes("[乙](siyuan://blocks/doc-b)"));
+    assert.ok(md.includes("## 📅 往来互动明细流水"));
+    assert.ok(md.includes("大模型研讨会"));
+    assert.ok(md.includes("咖啡馆闲聊"));
 });
