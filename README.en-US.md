@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.3** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.3) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.4** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.4) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.3 (2026-10-27)
+## This release: v0.6.4 (2026-10-27)
+
+This release implements the Dialogue Bubble Timeline for warm, intuitive personal interaction histories:
+
+- **Dialogue Bubble Timeline**: Upgraded linear timeline items into modern chat-inspired speech bubble cards (`lvct-bubble-box`) featuring category-specific icon badges (`lvct-bubble-badge`).
+- **Visual Hierarchy & Micro-elevation**: Timestamps, occasion pills, source tags, and block links flow organically with `color-mix` dual-layer glows and subtle shadows, seamlessly tailored to dark/light themes.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (928/928 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.3 (2026-10-27)
 
 This release implements composite slash naming support (#19938) and native location field contract (#20325):
 
