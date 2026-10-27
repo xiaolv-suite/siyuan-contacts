@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { documentHPath, markdownHeading, validateDocumentTitle } from "../src/domain/format.ts";
+import { documentHPath, markdownHeading, sanitizeHPathSegment, validateDocumentTitle, validatePersonName } from "../src/domain/format.ts";
 import { emptyDraft, validateDraft } from "../src/domain/person.ts";
 import { occasionDiaryPath, occasionPlacePath } from "../src/domain/occasion-links.ts";
 import { buildTaskMarkdown, parseTaskMarkdown } from "../src/domain/followup-doc.ts";
@@ -21,6 +21,12 @@ test("无法原文保存的名称在路径或草稿阶段拒绝，不静默增�
     assert.throws(() => occasionDiaryPath("人/脉", "2026-10-04"));
     assert.throws(() => occasionPlacePath("人\n脉", "会议室"));
     assert.throws(() => documentHPath(""));
+});
+
+test("sanitizeHPathSegment：半角斜杠安全转义为全角斜杠防止层级分裂", () => {
+    const complexTitle = "张三 / 某某科技CTO";
+    assert.equal(validatePersonName(complexTitle), null, "复合斜杠无控制字符");
+    assert.equal(sanitizeHPathSegment(complexTitle), "张三 ／ 某某科技CTO", "半角斜杠转为全角斜杠");
 });
 
 test("受控日期只解析任务行末尾标记，不从标题与普通文本猜测", () => {

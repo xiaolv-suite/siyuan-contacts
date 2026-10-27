@@ -23,6 +23,23 @@ export function validateDocumentTitle(title: string): string | null {
     return null;
 }
 
+/**
+ * 联系人姓名专用校验（思源 3.8.8+ 解除斜杠限制，支持 张三 / CTO 复合命名）。
+ * 允许包含半角斜杠，严格拦截换行与控制字符。
+ */
+export function validatePersonName(name: string): string | null {
+    if (!name.trim()) return "姓名不能为空";
+    if (/[\u0000-\u001f\u007f]/.test(name)) return "姓名不能包含控制字符（含换行），思源内核无法原文保留这类名称";
+    return null;
+}
+
+/**
+ * 将路径段内的半角斜杠安全转义为全角斜杠，防止思源文件树将复合名称（如 张三 / CTO）误切分为多级子目录。
+ */
+export function sanitizeHPathSegment(segment: string): string {
+    return segment.trim().replace(/\//g, "／");
+}
+
 export function documentHPath(...segments: readonly string[]): string {
     if (!segments.length) throw new Error("文档路径不能为空");
     return "/" + segments.map((segment) => {

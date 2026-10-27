@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.2** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.2) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.3** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.3) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.2 · 2026-10-27）
+## 本次发布（v0.6.3 · 2026-10-27）
+
+本版本深入贯彻落实《小驴全生态联邦协同与排雷规范》中枢第三期关于思源最新内核特性的深化建议，实现了联系人命名自由度与地理数据契约的全面升级：
+
+- **联系人复合斜杠命名原生支持（Composite Slash Naming）**：全面解除旧版对斜杠字符的硬性阻断校验。联系人姓名现在可以直接使用如 `张三 / 某某科技CTO`、`李四 / 咨询顾问`、`Alice / Designer` 等复合形式命名；底层通过 `sanitizeHPathSegment` 自动将路径段半角斜杠安全转义为全角斜杠 `／`（Unicode `\uFF0F`），彻底避免思源文件树将其误切分为多级子目录，而在文档标题（Heading）与属性数据库中完整保留原版半角斜杠；对换行符、制表符等不可见破坏性控制字符保持严格拦截。
+- **属性数据库原生地理位置字段契约扩充（Location Field Support）**：在 `AvFieldType` 底层字段类型中扩充登记思源官方原生地理位置列类型 `"location"`（#20325），为后续空间地理热力分布图谱奠定稳固契约底座。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 100% 通过；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.2 · 2026-10-27）
 
 本版本全面贯彻落实小驴快门中枢 Issue #146 统领排雷规范，深入加固了底层数据防线与集市生态能力：
 
