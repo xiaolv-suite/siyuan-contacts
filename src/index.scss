@@ -4177,6 +4177,41 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     &--other i { background: var(--lvct-group-other); }
     /* B14.6 组织节点（数据编码固定色，与画布 ORG_NODE_COLOR 一致） */
     &--org i { background: var(--lvct-group-org); border-radius: 2px; }
+
+    &--edge {
+        font-weight: 500;
+    }
+}
+
+.lvct-graph-legend__divider {
+    color: var(--lvct-border-subtle);
+    margin-inline: var(--lvct-sp-1);
+    opacity: 0.6;
+    user-select: none;
+}
+
+.lvct-graph-legend__line {
+    display: inline-block;
+    width: 14px;
+    height: 0;
+    vertical-align: middle;
+    flex-shrink: 0;
+
+    &--solid {
+        border-top: 2px solid var(--lv-brand, #ea580c);
+    }
+
+    &--dashed {
+        border-top: 2px dashed var(--lv-accent-cyan, #0284c7);
+    }
+
+    &--dotted {
+        border-top: 2px dotted #f59e0b;
+    }
+
+    &--ref {
+        border-top: 2px dotted #8b5cf6;
+    }
 }
 
 .lvct-text-danger {

@@ -275,3 +275,28 @@ export function buildOrgAugmentation(
     }
     return { nodes, edges };
 }
+
+export type GraphEdgeKind = "related" | "member" | "ref" | "co_occurrence";
+
+/**
+ * 交互式图例：按边类型过滤图谱边。
+ * 纯函数，零外部依赖。
+ */
+export function filterGraphEdges(
+    graph: PersonGraph,
+    hiddenKinds?: ReadonlySet<string> | readonly string[],
+): PersonGraph {
+    if (!hiddenKinds) return graph;
+    const hidden = hiddenKinds instanceof Set ? hiddenKinds : new Set(hiddenKinds);
+    if (hidden.size === 0) return graph;
+
+    const edges = graph.edges.filter((edge) => {
+        const kind = edge.kind ?? "related";
+        return !hidden.has(kind);
+    });
+
+    return {
+        nodes: graph.nodes,
+        edges,
+    };
+}

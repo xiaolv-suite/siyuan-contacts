@@ -134,16 +134,23 @@ test("全 src 禁运行期动态 import（v0.4.0 事故防线：CJS 产物会拆
     }
 });
 
-test("测试套件完整性守门：tests/ 目录下的全部测试文件必须在 package.json 的 test 脚本中登记（防静默遗漏）", () => {
+test("测试套件完整性守门：tests/ 目录下的全部测试文件必须在 package.json 的 test 脚本中覆盖（防静默遗漏）", () => {
     const pkgPath = path.resolve(import.meta.dirname, "..", "package.json");
     const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
     const testScript = pkg.scripts?.test ?? "";
-    const registered = new Set(testScript.split(/\s+/).filter((item: string) => item.startsWith("tests/")));
 
     const testsDir = path.resolve(import.meta.dirname, "..", "tests");
     const actualTestFiles = fs.readdirSync(testsDir)
         .filter((file) => /\.test\.(ts|mjs)$/.test(file))
         .map((file) => `tests/${file}`);
+
+    const hasGlobCoverage = testScript.includes("tests/**/*.test.ts") && testScript.includes("tests/**/*.test.mjs");
+    if (hasGlobCoverage) {
+        assert.ok(actualTestFiles.length > 0, "tests 目录下应存在测试文件");
+        return;
+    }
+
+    const registered = new Set(testScript.split(/\s+/).filter((item: string) => item.startsWith("tests/")));
 
     for (const testFile of actualTestFiles) {
         assert.ok(
