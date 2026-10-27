@@ -2,7 +2,10 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase } from "@lucide/svelte";
+    import { copyPlainText } from "../../shared/clipboard";
+    import { profileText } from "../../domain/people-profiles";
+    import { extractNormalizedRegion } from "../../domain/region";
     import ViewState from "../ViewState.svelte";
     import StatusNotice from "../StatusNotice.svelte";
     import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
@@ -163,6 +166,24 @@
             && leftEntries.every(([key, value]) => right[key as keyof GraphPreferencePatch] === value);
     }
     let hoverInsightsVersion = 0;
+    let drawerPerson: ContactSummary | null = $state(null);
+    let copyToast: string = $state("");
+    let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function copyField(textToCopy: string | undefined, fieldName: string) {
+        if (!textToCopy) return;
+        void copyPlainText(textToCopy);
+        copyToast = fieldName;
+        if (copyToastTimer) clearTimeout(copyToastTimer);
+        copyToastTimer = setTimeout(() => {
+            copyToast = "";
+        }, 1800);
+    }
+
+    function closeDrawer() {
+        drawerPerson = null;
+    }
+
     let hiddenEdgeKinds: Set<string> = $state(new Set());
     const edgeLegends = $derived.by(() => {
         const list = [
@@ -288,7 +309,14 @@
         resultExportMessage = "结果说明已导出为 Markdown";
     }
 
-    onDestroy(() => { alive = false; refreshVersion += 1; nativeVersion += 1; returnObserver?.disconnect(); clearHover(); });
+    onDestroy(() => {
+        alive = false;
+        refreshVersion += 1;
+        nativeVersion += 1;
+        returnObserver?.disconnect();
+        clearHover();
+        if (copyToastTimer) clearTimeout(copyToastTimer);
+    });
 
     function openSnapshotPerson(person: ContactSummary) {
         const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -872,10 +900,10 @@
             if (person) {
                 selectedOrgId = "";
                 clearHover();
-                openSnapshotPerson(person);
+                drawerPerson = person;
                 return;
             }
-            /* B14 组织入口：组织节点点击跳组织视图 */
+            /* B14 组织入口：组织节点点击跳组织视图并聚焦 */
             const orgNode = orgOverlay?.nodes.find((node) => node.id === docId);
             if (orgNode) {
                 clearHover();
@@ -950,7 +978,12 @@
             hoverPosition = { x: Math.max(12, Math.round(pos.x)), y: Math.max(12, Math.round(pos.y)) };
         });
         instance.on("tap", (event: cytoscape.EventObject) => {
-            if (event.target === instance) { selectedOrgId = ""; clearHover(); activeEvidence = null; }
+            if (event.target === instance) {
+                selectedOrgId = "";
+                clearHover();
+                activeEvidence = null;
+                closeDrawer();
+            }
         });
         instance.on("mouseover", "node", scheduleHover);
         instance.on("mouseout", "node", scheduleClearHover);
@@ -1786,6 +1819,137 @@
                     <button class="b3-button b3-button--text" onclick={() => { if (hoveredPerson) onOpenPeople({ itemIds: [hoveredPerson.itemId], label: `图谱定位 · ${hoveredPerson.name}` }); }}>{text("graphFocusInPeople", "在名册中定位")}</button>
                     {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === hoveredPerson.docId} onclick={() => { if (hoveredPerson) void openSourceDocument(hoveredPerson.docId); }}>{sourceOpeningDocId === hoveredPerson.docId ? "正在打开…" : "打开来源文档"}</button>{/if}
                 </div>
+            {/if}
+            {#if drawerPerson}
+                {@const workText = profileText(drawerPerson.profile, "work")}
+                <aside
+                    class="lvct-graph-drawer"
+                    aria-label="图谱节点速查抽屉"
+                    tabindex="-1"
+                >
+                    <div class="lvct-graph-drawer__header">
+                        <div class="lvct-graph-drawer__title-wrap">
+                            <div class="lvct-graph-drawer__avatar">
+                                {drawerPerson.name.slice(0, 1)}
+                            </div>
+                            <div class="lvct-graph-drawer__title-meta">
+                                <div class="lvct-graph-drawer__name">{drawerPerson.name}</div>
+                                <div class="lvct-graph-drawer__chips">
+                                    {#if drawerPerson.group}
+                                        <span class="lvct-chip lvct-chip--group">{drawerPerson.group}</span>
+                                    {/if}
+                                    {#if extractNormalizedRegion(drawerPerson).city !== "未知"}
+                                        <span class="lvct-chip lvct-chip--tag"><MapPin size={11} class="lvct-icon-inline" /> {extractNormalizedRegion(drawerPerson).city}</span>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text lvct-graph-drawer__close"
+                            onclick={closeDrawer}
+                            aria-label="关闭速查抽屉"
+                            title="关闭速查抽屉"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+
+                    <div class="lvct-graph-drawer__body">
+                        <!-- 快捷通讯资料 -->
+                        <div class="lvct-graph-drawer__section">
+                            <div class="lvct-graph-drawer__section-title">通讯资料</div>
+                            {#if drawerPerson.phone}
+                                <div class="lvct-graph-drawer__field">
+                                    <Phone size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{drawerPerson.phone}</span>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-graph-drawer__field-action"
+                                        onclick={() => copyField(drawerPerson?.phone, "电话")}
+                                        title="复制电话"
+                                    >
+                                        {#if copyToast === "电话"}<Check size={13} />{:else}<Copy size={13} />{/if}
+                                    </button>
+                                </div>
+                            {/if}
+                            {#if drawerPerson.wechat}
+                                <div class="lvct-graph-drawer__field">
+                                    <MessageSquare size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{drawerPerson.wechat}</span>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-graph-drawer__field-action"
+                                        onclick={() => copyField(drawerPerson?.wechat, "微信")}
+                                        title="复制微信"
+                                    >
+                                        {#if copyToast === "微信"}<Check size={13} />{:else}<Copy size={13} />{/if}
+                                    </button>
+                                </div>
+                            {/if}
+                            {#if drawerPerson.email}
+                                <div class="lvct-graph-drawer__field">
+                                    <Mail size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{drawerPerson.email}</span>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-graph-drawer__field-action"
+                                        onclick={() => copyField(drawerPerson?.email, "邮箱")}
+                                        title="复制邮箱"
+                                    >
+                                        {#if copyToast === "邮箱"}<Check size={13} />{:else}<Copy size={13} />{/if}
+                                    </button>
+                                </div>
+                            {/if}
+                            {#if !drawerPerson.phone && !drawerPerson.wechat && !drawerPerson.email}
+                                <div class="lvct-graph-drawer__field-empty">未登记通讯资料</div>
+                            {/if}
+                        </div>
+
+                        <!-- 组织归属 -->
+                        {#if workText && workText !== "未填写" && workText !== "尚未核实" && workText !== "—"}
+                            <div class="lvct-graph-drawer__section">
+                                <div class="lvct-graph-drawer__section-title">组织归属</div>
+                                <div class="lvct-graph-drawer__field">
+                                    <Briefcase size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{workText}</span>
+                                </div>
+                            </div>
+                        {/if}
+
+                        <!-- 拓扑连接 -->
+                        <div class="lvct-graph-drawer__section">
+                            <div class="lvct-graph-drawer__section-title">拓扑连接</div>
+                            <div class="ft__smaller ft__on-surface">
+                                图内连接度数：<b>{snapshot.relationGraph.nodes.find((n) => n.id === drawerPerson?.docId)?.degree ?? 0}</b>
+                                {#if drawerPerson.tags && drawerPerson.tags.length > 0}
+                                    <br />标签：{drawerPerson.tags.join(" · ")}
+                                {/if}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lvct-graph-drawer__footer">
+                        <button
+                            type="button"
+                            class="b3-button b3-button--primary lvct-graph-drawer__btn"
+                            onclick={() => openSnapshotPerson(drawerPerson!)}
+                            title="在完整弹窗中查看与编辑该联系人"
+                        >
+                            <ExternalLink size={13} class="lvct-icon-inline" /> 完整档案
+                        </button>
+                        {#if facade?.openDoc}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--outline lvct-graph-drawer__btn"
+                                onclick={() => void openSourceDocument(drawerPerson!.docId)}
+                                title="在思源主编辑器中打开该文档"
+                            >
+                                打开文档 ↗
+                            </button>
+                        {/if}
+                    </div>
+                </aside>
             {/if}
         </div>
     {/if}
