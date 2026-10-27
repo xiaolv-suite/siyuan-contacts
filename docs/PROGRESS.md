@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.12 发布：Task Horizon（任务视界）去中心化点对点直连协同与名片反链穿透
+
+- 本轮落地与 Task Horizon 任务视界去中心化直连协同：
+  1. 任务块标准属性注入：创建拜访待办时向日记注入带 `custom-status`、`custom-priority`、`custom-completion-time` 的标准任务块；
+  2. 任务名片反链穿透：任务块挂载 `custom-remark="(( personDocId '姓名名片' ))"`，在任务视界中点击直达人脉画像；
+- 门禁验证：`pnpm check`（0/0）、单测 932/932 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.11 发布：属性视图数据库字段全量“一键自动智能嗅探”（Smart Field Mapping）与建库自愈
 
 - 本轮落地字段全量智能嗅探引擎与建库对账自愈：

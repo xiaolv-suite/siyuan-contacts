@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.11** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.11) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.12** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.12) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,17 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.11 · 2026-10-28）
+## 本次发布（v0.6.12 · 2026-10-28）
+
+本版本深入贯彻落实小驴快门中枢 Issue #146 关于配合思源社区优秀插件 **Task Horizon (任务视界, by 5kyfkr)** 达成点对点去中心化直连（零快门依赖）的指导建议，全面打通客户拜访待办与任务视界联动：
+
+- **Task Horizon 标准任务块自动注入日记（Daily Note Task Sync）**：在人脉中创建客户拜访计划或跟进待办时，自动在思源对应日期的日记文档（Daily Note）中生成标准任务块：
+  `- [ ] 📅YYYY-MM-DD 拜访【联系人】：说明 {: custom-status="todo" custom-priority="medium" custom-completion-time="YYYY-MM-DD" custom-remark="(( personDocId '联系人名片' ))" }`
+- **名片反链一秒直接弹窗穿透（custom-remark）**：用户在 Task Horizon 任务视界中查看拜访待办时，点击备注超链接即可一键直接弹窗打开对应人物的名片画像与交往脉络，实现真正的去中心化点对点生态协同。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 932/932 100% 通过；浏览器 UI 回归全绿；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.11 · 2026-10-28）
 
 本版本深入贯彻落实《小驴人脉后续开发总计划与演进路线图 (2026 - 2027)》第二阶段 2.3 节关于新手数据库绑定与字段智能对齐的规划，全面上线全量字段语义智能嗅探引擎：
 

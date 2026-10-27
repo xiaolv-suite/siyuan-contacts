@@ -81,7 +81,7 @@ import { listPendingOrganizationOperations, inspectOrganizationOperation, resume
 import { saveOrganizationMember, editOrganizationMember, deleteOrganizationMember, replaceOrganizationMemberWithProjection, moveOrganizationMemberWithProjection } from "./services/org-member-writes";
 import { loadViewPreferences, saveViewPreferences, createPreferenceRequests } from "./services/preferences";
 import { exportInteractionJson } from "./services/interaction-export";
-import { appendInteractionToDailyNote } from "./services/diary";
+import { appendInteractionToDailyNote, appendFollowUpToDailyNote } from "./services/diary";
 import { loadExportSummary } from "./services/export-center";
 import { exportVcfText } from "./services/vcard";
 import {
@@ -1493,6 +1493,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const token = this.lifecycleToken;
         const item = await createFollowUp(this, { requestId, personDocId, title, dueDate });
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        if (this.settings?.notebookId) {
+            const notebookId = this.settings.notebookId;
+            void this.listContacts().then((roster) => {
+                const person = roster.find((p) => p.docId === personDocId);
+                return appendFollowUpToDailyNote(notebookId, {
+                    personDocId,
+                    personName: person?.name || "联系人",
+                    title,
+                    dueDate,
+                });
+            }).catch(() => {});
+        }
         return item;
     }
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown } from "../src/domain/diary-sync.ts";
+import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown, buildDailyNoteFollowUpTaskMarkdown } from "../src/domain/diary-sync.ts";
 import {
     buildCityTopicSectionMarkdown,
     buildCityInitialDocumentMarkdown,
@@ -57,6 +57,22 @@ test("buildDailyNoteOccasionMarkdown: 生成带全部参与人块引的多人活
     assert.ok(md.includes("@ 深圳湾万象城"));
     assert.ok(md.includes("[张三](siyuan://blocks/20261026000000-doc001)"));
     assert.ok(md.includes("[李四](siyuan://blocks/20261026000000-doc002)"));
+});
+
+test("buildDailyNoteFollowUpTaskMarkdown: 生成兼容 Task Horizon (任务视界) 的标准任务块", () => {
+    const md = buildDailyNoteFollowUpTaskMarkdown({
+        personDocId: "20261028000000-doc001",
+        personName: "张三",
+        title: "探讨深度合作协议",
+        dueDate: "2026-10-30",
+        priority: "high",
+    });
+
+    assert.ok(md.startsWith("- [ ] 📅2026-10-30 拜访【张三】：探讨深度合作协议"));
+    assert.ok(md.includes('custom-status="todo"'));
+    assert.ok(md.includes('custom-priority="high"'));
+    assert.ok(md.includes('custom-completion-time="2026-10-30"'));
+    assert.ok(md.includes(`custom-remark="(( 20261028000000-doc001 '张三名片' ))"`));
 });
 
 test("buildCityTopicSectionMarkdown & buildCityInitialDocumentMarkdown: 正式市级名称与受控人脉区块生成", () => {

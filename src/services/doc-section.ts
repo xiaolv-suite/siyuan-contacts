@@ -87,13 +87,13 @@ export async function syncInteractionDocSection(plugin: Plugin, personDocId: str
     }
 }
 
-export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string): Promise<void> {
+export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string, personName?: string): Promise<void> {
     if (!personDocId) return;
     try {
         const store = await loadFollowUpStore(plugin);
         const items = store.items.filter((item) => item.personDocId === personDocId);
         const existing = await readMarkedBlocks(personDocId, FOLLOWUPS_SECTION_ATTR);
-        const markdown = followupsSectionMarkdown(items);
+        const markdown = followupsSectionMarkdown(items, personDocId, personName);
         if (existing.length === 0 && !markdown) return;
         if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
         await upsertMarkedBlock(personDocId, FOLLOWUPS_SECTION_ATTR, markdown, existing[0]?.id);

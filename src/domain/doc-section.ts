@@ -96,14 +96,17 @@ export function interactionSectionMarkdown(events: readonly InteractionEvent[]):
     return lines.join("\n");
 }
 
-export function followupsSectionMarkdown(items: readonly FollowUpItem[]): string {
+export function followupsSectionMarkdown(items: readonly FollowUpItem[], personDocId?: string, personName?: string): string {
     const valid = items.filter((item) => item.status !== "cancelled");
     if (valid.length === 0) return "";
     const lines = ["## 待办跟进", ""];
     for (const item of valid) {
         const checked = item.status === "done" ? "[x]" : "[ ]";
         const title = cleanMarkdownLine(item.title) || "保持联系";
-        lines.push(`- ${checked} 📅${item.dueDate} ${title}`);
+        const status = item.status === "done" ? "done" : "todo";
+        const cleanName = personName ? escapeLinkLabel(personName) : "";
+        const remarkAttr = personDocId ? ` custom-remark="(( ${personDocId} '${cleanName}名片' ))"` : "";
+        lines.push(`- ${checked} 📅${item.dueDate} ${title} {: custom-status="${status}" custom-priority="medium" custom-completion-time="${item.dueDate}"${remarkAttr} }`);
     }
     return lines.join("\n");
 }
