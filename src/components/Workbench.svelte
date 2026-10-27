@@ -880,6 +880,8 @@
             onSyncDocProfile={facade.syncPersonDocument ? (person) => facade.syncPersonDocument!(person) : undefined}
             onLoadPersonFields={facade.loadPersonFields ? (docId) => facade.loadPersonFields(docId) : undefined}
             onSavePersonFields={facade.savePersonFields ? (docId, snapshot, expected) => facade.savePersonFields(docId, snapshot, expected) : undefined}
+            onLoadPersonFacts={facade.loadPersonFacts ? (docId) => facade.loadPersonFacts!(docId) : undefined}
+            onSavePersonFacts={facade.savePersonFacts ? (docId, items) => facade.savePersonFacts!(docId, items) : undefined}
             onLoadExchanges={(docId) => facade.listPersonExchanges(docId)}
             onCreateExchange={(input) => facade.createPersonExchange(input)}
             onChangeExchangeStatus={(id, status, settledOn, expected) => facade.changePersonExchangeStatus(id, status, settledOn, expected)}

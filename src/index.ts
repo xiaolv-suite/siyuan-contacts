@@ -36,7 +36,7 @@ import type { AiExtractionConfirmation } from "./services/ai-extract";
 import { AiExtractionError } from "./domain/ai-preflight";
 import type { AiPreflightOptions } from "./domain/ai-preflight";
 import { loadPersonInsights } from "./services/insights";
-import { syncInteractionDocSection, syncFullPersonDocument } from "./services/doc-section";
+import { syncInteractionDocSection, syncFullPersonDocument, loadPersonFactsFromDoc, savePersonFactsToDoc } from "./services/doc-section";
 import { detachLegacyPersonNote, inspectLegacyPersonNote, loadPersonNote, savePersonNote } from "./services/person-note";
 import type { LegacyPersonNoteSnapshot } from "./domain/person-note";
 import { loadPersonFields, savePersonFields } from "./services/person-fields";
@@ -1712,6 +1712,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async findCollaboratorsByProject(matcher: { title?: string; docId?: string }) {
         return findCollaboratorsByProject(this, matcher);
+    }
+
+    /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
+    async loadPersonFacts(personDocId: string) {
+        return loadPersonFactsFromDoc(personDocId);
+    }
+
+    async savePersonFacts(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]) {
+        const token = this.lifecycleToken;
+        await savePersonFactsToDoc(personDocId, items);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
     }
 
     async buildReviewReport(from: string, to: string) {

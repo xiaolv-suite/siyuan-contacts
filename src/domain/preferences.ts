@@ -30,7 +30,8 @@ export type DetailSectionKey =
     | "commonOrgs"
     | "notes"
     | "followUps"
-    | "exchanges";
+    | "exchanges"
+    | "facts";
 
 export const DETAIL_SECTION_KEYS: readonly DetailSectionKey[] = [
     "topics",
@@ -41,6 +42,7 @@ export const DETAIL_SECTION_KEYS: readonly DetailSectionKey[] = [
     "notes",
     "followUps",
     "exchanges",
+    "facts",
 ] as const;
 
 export type DetailCollapsedSections = Partial<Record<DetailSectionKey, boolean>>;

@@ -17,12 +17,16 @@ import {
     FOLLOWUPS_SECTION_ATTR,
     EXCHANGES_SECTION_ATTR,
     ANNIVERSARIES_SECTION_ATTR,
+    FACTS_SECTION_ATTR,
     profileSectionMarkdown,
     interactionSectionMarkdown,
     followupsSectionMarkdown,
     exchangesSectionMarkdown,
     anniversariesSectionMarkdown,
     relatedSectionMarkdown,
+    buildFactsSectionMarkdown,
+    parseFactsSectionMarkdown,
+    type PersonFactItem,
 } from "../domain/doc-section.ts";
 
 export {
@@ -32,12 +36,16 @@ export {
     FOLLOWUPS_SECTION_ATTR,
     EXCHANGES_SECTION_ATTR,
     ANNIVERSARIES_SECTION_ATTR,
+    FACTS_SECTION_ATTR,
     profileSectionMarkdown,
     interactionSectionMarkdown,
     followupsSectionMarkdown,
     exchangesSectionMarkdown,
     anniversariesSectionMarkdown,
     relatedSectionMarkdown,
+    buildFactsSectionMarkdown,
+    parseFactsSectionMarkdown,
+    type PersonFactItem,
 };
 
 export class RelatedProjectionUnknownError extends Error {}
@@ -121,6 +129,33 @@ export async function syncAnniversariesDocSection(plugin: Plugin, personDocId: s
         await upsertMarkedBlock(personDocId, ANNIVERSARIES_SECTION_ATTR, markdown, existing[0]?.id);
     } catch (err) {
         console.warn("[LvContacts] 重要纪念日同步到正文未完成", err);
+    }
+}
+
+/** 读取人物文档中的谈资与关键事实 */
+export async function loadPersonFactsFromDoc(personDocId: string): Promise<PersonFactItem[]> {
+    if (!personDocId) return [];
+    try {
+        const blocks = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
+        if (blocks.length === 0) return [];
+        return parseFactsSectionMarkdown(blocks[0].markdown);
+    } catch (err) {
+        console.warn("[LvContacts] 读取人物谈资与事实区块失败：", err);
+        return [];
+    }
+}
+
+/** 保存/更新人物文档中的谈资与关键事实区块 */
+export async function savePersonFactsToDoc(personDocId: string, items: readonly PersonFactItem[]): Promise<void> {
+    if (!personDocId) return;
+    const existing = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
+    const markdown = buildFactsSectionMarkdown(items);
+    if (existing.length === 0 && !markdown) return;
+    if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+    try {
+        await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
+    } catch (err) {
+        console.warn("[LvContacts] 保存人物谈资与事实区块失败：", err);
     }
 }
 
