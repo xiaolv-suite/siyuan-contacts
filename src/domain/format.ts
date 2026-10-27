@@ -43,10 +43,9 @@ export function sanitizeHPathSegment(segment: string): string {
 export function documentHPath(...segments: readonly string[]): string {
     if (!segments.length) throw new Error("文档路径不能为空");
     return "/" + segments.map((segment) => {
-        const sanitized = sanitizeHPathSegment(segment);
-        const error = validateDocumentTitle(sanitized);
+        const error = validateDocumentTitle(segment);
         if (error) throw new Error(error);
-        return sanitized;
+        return segment.trim();
     }).join("/");
 }
 

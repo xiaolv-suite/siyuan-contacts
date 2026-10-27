@@ -4,7 +4,7 @@
  */
 import type { AvRow, AvValue } from "../api/av";
 import type { FieldKey } from "./fields";
-import { validatePersonName } from "./format.ts";
+import { validateDocumentTitle } from "./format.ts";
 import type { PersonProfile } from "./people-profiles.ts";
 import { lunarToSolar } from "./lunar.ts";
 import { isValidDateKey } from "./date-key.ts";
@@ -32,7 +32,7 @@ export function emptyDraft(): ContactDraft {
 
 export function validateDraft(draft: ContactDraft): string[] {
     const errors: string[] = [];
-    const nameError = validatePersonName(draft.name);
+    const nameError = validateDocumentTitle(draft.name);
     if (nameError) errors.push(draft.name.trim() ? nameError : "姓名不能为空");
     const email = draft.email.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("邮箱格式不正确");

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { documentHPath, markdownHeading, validateDocumentTitle, validatePersonName } from "../src/domain/format.ts";
+import { documentHPath, markdownHeading, sanitizeHPathSegment, validateDocumentTitle, validatePersonName } from "../src/domain/format.ts";
 import { emptyDraft, validateDraft } from "../src/domain/person.ts";
 import { occasionDiaryPath, occasionPlacePath } from "../src/domain/occasion-links.ts";
 import { buildTaskMarkdown, parseTaskMarkdown } from "../src/domain/followup-doc.ts";
@@ -12,19 +12,21 @@ test("文档路径保留支持的原文标点，不做会改变标题的 URL 编
     assert.equal(markdownHeading(title), "# 中文 空格 \\[甲\\](乙)\\#%\\\\名字\n\n");
 });
 
-test("通用文档标题：不能包含斜杠或控制字符", () => {
+test("无法原文保存的名称在路径或草稿阶段拒绝，不静默增加层级或删除换行", () => {
     for (const title of ["甲/乙", "甲\n乙", "甲\r乙", "甲\t乙", "甲\0乙"]) {
         assert.ok(validateDocumentTitle(title));
+        assert.throws(() => documentHPath("人脉", title), /无法原文保留/);
+        assert.ok(validateDraft({ ...emptyDraft(), name: title }).length);
     }
+    assert.throws(() => occasionDiaryPath("人/脉", "2026-10-04"));
     assert.throws(() => occasionPlacePath("人\n脉", "会议室"));
     assert.throws(() => documentHPath(""));
 });
 
-test("思源 3.8.8+ 复合命名：联系人姓名允许包含斜杠，路径段安全转义为全角斜杠防止层级分裂", () => {
+test("sanitizeHPathSegment：半角斜杠安全转义为全角斜杠防止层级分裂", () => {
     const complexTitle = "张三 / 某某科技CTO";
-    assert.equal(validatePersonName(complexTitle), null, "允许复合斜杠命名");
-    assert.equal(validateDraft({ ...emptyDraft(), name: complexTitle }).length, 0, "草稿校验通过");
-    assert.equal(documentHPath("人脉", complexTitle), "/人脉/张三 ／ 某某科技CTO", "路径段自动转为安全全角斜杠");
+    assert.equal(validatePersonName(complexTitle), null, "复合斜杠无控制字符");
+    assert.equal(sanitizeHPathSegment(complexTitle), "张三 ／ 某某科技CTO", "半角斜杠转为全角斜杠");
 });
 
 test("受控日期只解析任务行末尾标记，不从标题与普通文本猜测", () => {
