@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.9** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.9) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.10** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.10) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.9 (2026-10-27)
+## This release: v0.6.10 (2026-10-27)
+
+This release implements desktop-class keyboard shortcuts and degree jumping for the relationship graph:
+
+- **Desktop Graph Keyboard Shortcuts**: `+` / `-` to zoom, `0` to fit canvas, `F` to toggle full-screen expansion, `R` to relayout, `1` / `2` to jump between 1st and 2nd degree scope, and `Esc` to dismiss quick drawer.
+- **Enhanced Tooltips & Search Shield**: Floating FAB action buttons display shortcut indicators while inputs safely bypass keyboard shortcuts.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.9 (2026-10-27)
 
 This release upgrades Dashboard Action cards and Potential Connections Discovery navigation:
 

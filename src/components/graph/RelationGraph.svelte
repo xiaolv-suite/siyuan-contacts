@@ -660,6 +660,50 @@
         if (alive) container?.scrollIntoView({ block: "nearest" });
     }
 
+    function handleCanvasKeydown(event: KeyboardEvent): void {
+        if (!graphInstance) return;
+        const target = event.target as HTMLElement | null;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
+
+        if (event.key === "+" || event.key === "=") {
+            event.preventDefault();
+            zoomBy(1.2);
+        } else if (event.key === "-" || event.key === "_") {
+            event.preventDefault();
+            zoomBy(1 / 1.2);
+        } else if (event.key === "0") {
+            event.preventDefault();
+            graphInstance.fit();
+        } else if (event.key === "f" || event.key === "F") {
+            event.preventDefault();
+            void toggleGraphExpanded();
+        } else if (event.key === "r" || event.key === "R") {
+            event.preventDefault();
+            relayout();
+        } else if (event.key === "1") {
+            if (relationScope === "person" || relationScope === "self") {
+                event.preventDefault();
+                relationDepth = "direct";
+            }
+        } else if (event.key === "2") {
+            if (relationScope === "person" || relationScope === "self") {
+                event.preventDefault();
+                relationDepth = "second";
+            }
+        } else if (event.key === "Escape") {
+            if (drawerPerson) {
+                event.preventDefault();
+                closeDrawer();
+            } else if (activeEvidence) {
+                event.preventDefault();
+                activeEvidence = null;
+            } else if (hoveredPerson) {
+                event.preventDefault();
+                clearHover();
+            }
+        }
+    }
+
     type GraphLayoutType = "cose" | "concentric" | "breadthfirst" | "circle";
     let activeLayout = $state<GraphLayoutType>("cose");
     let layoutMenuOpen = $state(false);
@@ -1454,7 +1498,8 @@
     }
 </style>
 
-<div class="lvct-graph-view" id="lvct-graph-results">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="lvct-graph-view" id="lvct-graph-results" onkeydown={handleCanvasKeydown}>
     <div class="lvct-people__toolbar lvct-people__control-surface lvct-graph-toolbar">
         <!-- B14.5 数据源模式：关系图（related 边）/ 文档引用图（内核原生图数据） -->
         <div class="lvct-graph-toolbar__primary">
@@ -1655,7 +1700,14 @@
         </section>
     {:else}
         <div class="lvct-graph-view__canvas-wrap" class:lvct-graph-view__canvas-wrap--expanded={graphExpanded}>
-            <div class="lvct-graph-view__canvas" bind:this={container} tabindex="-1" role="img" aria-label={`图谱画布，${snapshot.graph.nodes.length} 节点、${snapshot.graph.edges.length} 边。请切换文本视图用键盘阅读。${canvasFocusId ? `已定位 ${nodeName(canvasFocusId)}` : ""}`}></div>
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <div
+                class="lvct-graph-view__canvas"
+                bind:this={container}
+                tabindex="0"
+                role="img"
+                aria-label={`图谱画布，${snapshot.graph.nodes.length} 节点、${snapshot.graph.edges.length} 边。支持键盘快捷键：+ / - 缩放，0 适应居中，F 全屏，R 重新布局，1/2 切换一度/二度，Esc 退出抽屉浮层。${canvasFocusId ? `已定位 ${nodeName(canvasFocusId)}` : ""}`}
+            ></div>
             <!-- UX-02.13 视图操作收进画布右下角浮动簇（地图应用范式），工具栏只留筛选 -->
             <div class="lvct-graph__fab" role="toolbar" aria-label={text("graphViewTools", "图谱视图操作")}>
                 <div style="position: relative; display: inline-flex;">
@@ -1689,11 +1741,11 @@
                         </div>
                     {/if}
                 </div>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? text("graphFit", "适应") : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphFit", "适应")} disabled={!graphInstance} onclick={() => graphInstance?.fit()}><Scan size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? text("graphZoomIn", "放大") : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomIn", "放大")} disabled={!graphInstance} onclick={() => zoomBy(1.2)}><ZoomIn size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? text("graphZoomOut", "缩小") : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomOut", "缩小")} disabled={!graphInstance} onclick={() => zoomBy(1 / 1.2)}><ZoomOut size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? text("graphRelayout", "重新布局") : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphRelayout", "重新布局")} disabled={!graphInstance} onclick={relayout}><Network size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphExpanded ? "收起大图" : "展开大图"} aria-label={graphExpanded ? "收起大图" : "展开大图"} aria-pressed={graphExpanded} onclick={() => void toggleGraphExpanded()}>{#if graphExpanded}<Minimize2 size={16} />{:else}<Maximize2 size={16} />{/if}</button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphFit", "适应")} (0)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphFit", "适应")} disabled={!graphInstance} onclick={() => graphInstance?.fit()}><Scan size={15} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomIn", "放大")} (+)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomIn", "放大")} disabled={!graphInstance} onclick={() => zoomBy(1.2)}><ZoomIn size={15} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomOut", "缩小")} (-)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomOut", "缩小")} disabled={!graphInstance} onclick={() => zoomBy(1 / 1.2)}><ZoomOut size={15} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphRelayout", "重新布局")} (R)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphRelayout", "重新布局")} disabled={!graphInstance} onclick={relayout}><Network size={15} /></button>
+                <button class="lvct-graph__fab-btn" title={graphExpanded ? "收起大图 (F)" : "展开大图 (F)"} aria-label={graphExpanded ? "收起大图" : "展开大图"} aria-pressed={graphExpanded} onclick={() => void toggleGraphExpanded()}>{#if graphExpanded}<Minimize2 size={16} />{:else}<Maximize2 size={16} />{/if}</button>
                 <button class="lvct-graph__fab-btn" title={text("graphRefresh", "刷新")} aria-label={text("graphRefresh", "刷新")} disabled={loading || refreshInFlight} aria-busy={refreshInFlight} onclick={() => void refresh()}><RefreshCw size={15} /></button>
             </div>
             {#if activeEvidence}
