@@ -4215,6 +4215,75 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
 }
 
 /* ---------- 主题方案调色盘 (Theme Scheme Picker) ---------- */
+.lvct-discovery-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lvct-discovery-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.lvct-discovery-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--lvct-r-md);
+    background: var(--lvct-bg-elevated);
+    border: 1px solid var(--lvct-border-subtle);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    flex-wrap: wrap;
+}
+
+.lvct-discovery-pair {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lvct-discovery-person {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lvct-discovery-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--lvct-r-sm);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--lvct-color-white, #ffffff);
+    background: linear-gradient(135deg, var(--lv-brand, #ea580c), var(--lv-brand-hover, #c2410c));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.lvct-discovery-arrow {
+    color: var(--lvct-text-3);
+    font-weight: 700;
+}
+
+.lvct-discovery-reasons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+}
+
+.lvct-discovery-actions {
+    flex-shrink: 0;
+}
+
 .lvct-theme-picker {
     display: flex;
     flex-wrap: wrap;

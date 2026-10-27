@@ -536,7 +536,10 @@ import { toLocalDateKey } from "../../domain/interactions";
                 staleThresholdDays: preferences?.staleThresholdDays,
                 reminderGraceDays: preferences?.reminderGraceDays,
             });
-            if (alive && version === refreshVersion) data = result;
+            if (alive && version === refreshVersion) {
+                data = result;
+                void loadPotentialConnections();
+            }
         } catch (error) {
             if (alive && version === refreshVersion) errorText = requestErrorMessage(error);
         } finally {
@@ -831,6 +834,37 @@ import { toLocalDateKey } from "../../domain/interactions";
 
     // ---- 打开工作台时的关注摘要（F08） ----
     let reviewOpen = $state(false);
+
+    // ---- 潜在人脉关联发现（RF-10 / 3.2） ----
+    let discoveryOpen = $state(false);
+    let discoveryLoading = $state(false);
+    let potentialConnections: import("../../domain/connections-discovery").PotentialConnection[] = $state([]);
+    let establishingKey = $state("");
+
+    async function loadPotentialConnections() {
+        if (!facade.discoverPotentialConnections) return;
+        discoveryLoading = true;
+        try {
+            potentialConnections = await facade.discoverPotentialConnections({ minScore: 2, maxResults: 20 });
+        } catch {
+            potentialConnections = [];
+        } finally {
+            discoveryLoading = false;
+        }
+    }
+
+    async function handleEstablishConnection(pair: import("../../domain/connections-discovery").PotentialConnection) {
+        if (!facade.establishPotentialConnection || establishingKey) return;
+        establishingKey = pair.id;
+        try {
+            await facade.establishPotentialConnection(pair.personA.docId, pair.personB.docId);
+            potentialConnections = potentialConnections.filter((p) => p.id !== pair.id);
+        } catch (err) {
+            console.warn("[LvContacts] 建立潜在关联失败：", err);
+        } finally {
+            establishingKey = "";
+        }
+    }
     let summaryHiddenThisSession = $state(false);
     let summaryBusy = $state(false);
     let summaryError = $state("");
@@ -1225,6 +1259,18 @@ import { toLocalDateKey } from "../../domain/interactions";
                     <p>{text("dashActionsSub", "生日 · 联系节奏 · 跟进事项")}</p>
                 </div>
                 <div class="lvct-dash__actions-tools">
+                    {#if facade.discoverPotentialConnections}
+                        <button
+                            class="b3-button b3-button--outline lvct-dash__head-action lvct-dash__discover-btn"
+                            onclick={() => { discoveryOpen = true; void loadPotentialConnections(); }}
+                            title="智能发现同场活动或同属组织但未建链的潜在人脉"
+                        >
+                            <Sparkles size={13} class="lvct-icon-inline" /> 潜在关联
+                            {#if potentialConnections.length > 0}
+                                <span class="lvct-chip lvct-chip--tag" style="margin-left: 3px; padding: 0 4px; font-size: 10px;">{potentialConnections.length}</span>
+                            {/if}
+                        </button>
+                    {/if}
                     <button class="b3-button b3-button--outline lvct-dash__head-action" onclick={() => (reviewOpen = true)}>{text("dashReview", "交往回顾")}</button>
                     {#if overdueCount > 0 && !overdueRetry}
                         <button class="b3-button b3-button--outline lvct-dash__head-action" onclick={postponeOverdueToToday} disabled={alBusy}
@@ -1715,5 +1761,59 @@ import { toLocalDateKey } from "../../domain/interactions";
             onOpenDoc={(docId) => facade.openDoc?.(docId)}
             onClose={() => (regionExplorerOpen = false)}
         />
+    </LvctDialog>
+{/if}
+
+{#if discoveryOpen}
+    <LvctDialog title="✨ 潜在人脉关联发现与智能建链" wide onClose={() => (discoveryOpen = false)}>
+        <div class="lvct-discovery-panel">
+            <p class="ft__smaller ft__on-surface" style="margin-top: 0;">
+                基于同场活动与共同从属机构的图算法智能挖掘。发现未登记为正式双向关系的好友，支持一键在双方文档追加双链并建立正式关联。
+            </p>
+
+            {#if discoveryLoading}
+                <div style="padding: 24px; text-align: center;" class="ft__smaller ft__on-surface">
+                    正在智能挖掘知识库共现事实…
+                </div>
+            {:else if potentialConnections.length === 0}
+                <div style="padding: 24px; text-align: center;" class="ft__smaller ft__on-surface">
+                    🎉 太棒了！当前没有发现频繁同场却未建链的潜在人物，人脉网络连接紧密。
+                </div>
+            {:else}
+                <div class="lvct-discovery-list">
+                    {#each potentialConnections as pair (pair.id)}
+                        <div class="lvct-discovery-item">
+                            <div class="lvct-discovery-pair">
+                                <div class="lvct-discovery-person">
+                                    <div class="lvct-discovery-avatar">{pair.personA.name.slice(0, 1)}</div>
+                                    <b>{pair.personA.name}</b>
+                                </div>
+                                <span class="lvct-discovery-arrow">↔</span>
+                                <div class="lvct-discovery-person">
+                                    <div class="lvct-discovery-avatar">{pair.personB.name.slice(0, 1)}</div>
+                                    <b>{pair.personB.name}</b>
+                                </div>
+                            </div>
+                            <div class="lvct-discovery-reasons">
+                                {#each pair.reasons as reason}
+                                    <span class="lvct-chip lvct-chip--tag">{reason}</span>
+                                {/each}
+                            </div>
+                            <div class="lvct-discovery-actions">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--primary"
+                                    style="font-size: 12px; padding: 4px 10px;"
+                                    disabled={Boolean(establishingKey)}
+                                    onclick={() => handleEstablishConnection(pair)}
+                                >
+                                    {#if establishingKey === pair.id}建链中…{:else}一键正式建链{/if}
+                                </button>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
     </LvctDialog>
 {/if}

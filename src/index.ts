@@ -46,6 +46,7 @@ import type { FieldRebuildPreview, SettingsRebindPreview } from "./services/sett
 import { auditWorkspaceData, auditWorkspaceDataReport, retryFailedHealthAuditModules } from "./services/health-audit";
 import { reconcileFollowUpTasksFromDoc } from "./services/followup-sync";
 import { updateContactFields, applyContactCandidateFields, listContacts as listContactsService } from "./services/contacts";
+import { addRelation, discoverConnections } from "./services/relations";
 import { detectChangedCities } from "./domain/city-topic";
 import { autoRebaseCityTopics } from "./services/city-topic";
 import { ensureSelfIdentity, designateSelfIdentity, previewSelfIdentityChange, applySelfIdentityChange } from "./services/self-identity";
@@ -1723,6 +1724,24 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const token = this.lifecycleToken;
         await savePersonFactsToDoc(personDocId, items);
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+    }
+
+    /** RF-10 / 3.2：潜在人脉关联智能挖掘与建立 */
+    async discoverPotentialConnections(options?: import("./domain/connections-discovery").DiscoverConnectionsOptions) {
+        if (!this.settings) return [];
+        return discoverConnections(this, this.settings, options);
+    }
+
+    async establishPotentialConnection(firstPersonDocId: string, secondPersonDocId: string) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        const token = this.lifecycleToken;
+        const people = await this.listContacts();
+        const p1 = people.find((p) => p.docId === firstPersonDocId);
+        const p2 = people.find((p) => p.docId === secondPersonDocId);
+        if (!p1 || !p2) throw new Error("未找到关联人物");
+        const report = await addRelation(this.settings, p1, p2);
+        emitDataChanged({ topics: ["people"], docIds: [firstPersonDocId, secondPersonDocId] }, token);
+        return report;
     }
 
     async buildReviewReport(from: string, to: string) {

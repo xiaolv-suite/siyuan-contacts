@@ -151,6 +151,9 @@ export interface ContactsPluginFacade {
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;
+    /** RF-10 / 3.2：潜在人脉关联智能挖掘（Potential Connection Discovery） */
+    discoverPotentialConnections?(options?: import("./domain/connections-discovery").DiscoverConnectionsOptions): Promise<import("./domain/connections-discovery").PotentialConnection[]>;
+    establishPotentialConnection?(firstPersonDocId: string, secondPersonDocId: string): Promise<import("./domain/relations").RelationMutationReport>;
     /** 交往回顾报表（F12）：区间互动统计（只读投影，人物条数与同场活动分口径） */
     buildReviewReport(from: string, to: string): Promise<ReviewReport>;
     /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */
