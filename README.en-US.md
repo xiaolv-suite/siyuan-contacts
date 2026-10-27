@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.0** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.0) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.1** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.1) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.0 Milestone (2026-10-27)
+## This release: v0.6.1 (2026-10-27)
+
+This release upgrades "Capture From Note" with inline fact and quote archival:
+
+- **Capture with Facts**: Added inline fact recording and 4 category chips in the capture dialog, automatically appending quotes, diet preferences, backgrounds, or facts with source block links directly into participant documents.
+- **Self-Verifying Completion Wizard**: Displays participant fact archival counts directly in the wizard's final step.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
+
+## Previous release: v0.6.0 Milestone (2026-10-27)
 
 Lv Contacts officially steps into the 6.0 milestone era, delivering ecosystem federation v2, bilateral flashcard integration, and rich personal relationship insights:
 
