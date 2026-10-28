@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.50 发布：联系人详情页「周年纪念里程碑提醒挂件与温情祝贺流」（Anniversary Milestones Banner & Congratulatory Flow）
+
+- 本轮落地周年里程碑纯函数模型与详情页提醒横幅：
+  1. 周年里程碑域模型：`anniversary-milestones.ts` 纯函数提取 14 天内与当天纪念日，计算相识/合作/结婚等满 N 周年整年数，并生成个性化祝贺文案；
+  2. 详情页里程碑挂件：`AnniversaryMilestoneBanner.svelte` 呈现庆祝横幅、周年勋章与倒计时；支持一键将祝贺文案填入互动备注草稿；
+- 门禁验证：`pnpm check`（0/0）、单测 1019/1019 全部通过、三套 UI 回归 520/520 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.49 发布：联系人详情页「交往互惠与双向平衡透视」（Mutual Reciprocity & Exchange Balance Audit）
 
 - 本轮落地双向互惠平衡评估模型与详情页天平卡片：

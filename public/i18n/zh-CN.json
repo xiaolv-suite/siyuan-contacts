@@ -1366,5 +1366,13 @@
   "exchangesCountLabel": "往来流水：",
   "exchangesSettledRatio": "{s} 结清 / {o} 待结",
   "netBalanceLabel": "净往来差额：",
-  "reciprocityAdviceTitle": "关系互惠建议"
+  "reciprocityAdviceTitle": "关系互惠建议",
+  "annivBannerAria": "周年纪念日里程碑提醒",
+  "yearsAnnivPill": "满 {n} 周年",
+  "todayAnnivBadge": "🎉 今天纪念日！",
+  "futureAnnivBadge": "距今还有 {n} 天 ({date})",
+  "congratulatoryPreview": "祝贺问候：",
+  "applyGreetingTip": "将周年问候语预填入下方互动备注草稿",
+  "applyGreetingBtn": "填入问候",
+  "copyGreetingTip": "复制问候语文本至剪贴板"
 }

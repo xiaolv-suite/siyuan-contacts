@@ -10595,6 +10595,60 @@ await test("D-19 联系人详情页：交往互惠与双向平衡透视（Person
     fixture.remove();
 });
 
+await test("D-20 联系人详情页：相识相聚周年纪念里程碑提醒挂件（AnniversaryMilestoneBanner）与祝贺草稿填入闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const todayStr = `${now.getFullYear() - 3}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    const mockAnniv = {
+        id: "ann-smoke-1",
+        personDocId: person.docId,
+        title: "初次相识结交",
+        category: "acquaintance",
+        date: todayStr,
+        isLunar: false,
+        remindDisabled: false,
+        createdAt: 1000,
+        updatedAt: 1000,
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadAnniversaries: async () => [mockAnniv],
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-anniversary-milestone-banner"), "未渲染周年纪念里程碑提醒挂件");
+    assert(fixture.textContent.includes("初次相识结交"), "未渲染纪念日标题");
+    assert(fixture.textContent.includes("满 3 周年"), "未渲染满3周年徽章");
+    assert(fixture.textContent.includes("今天纪念日！"), "未渲染今天纪念日高亮标签");
+    assert(fixture.textContent.includes("一路相伴互信"), "未渲染祝贺预览文案");
+
+    // 点击「填入问候」
+    const applyBtn = fixture.querySelector(".btn-apply-greeting");
+    assert(applyBtn, "未找到填入问候按钮");
+    applyBtn.click();
+
+    await until(() => {
+        const recordInput = fixture.querySelector('input[aria-label="互动备注"]');
+        return recordInput?.value.includes("相识3载");
+    }, "点击填入问候未将祝贺文案写入互动备注草稿输入框");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

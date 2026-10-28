@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.50] — 2026-10-29
+
+重塑：联系人详情页「周年纪念里程碑提醒挂件与温情祝贺流」（Anniversary Milestones Banner & Congratulatory Flow）
+
+- **重要纪念日里程碑提取与祝贺文案生成**：`domain/anniversary-milestones.ts` 纯函数计算联系人 14 天内及当天的相识相伴、合作结盟、结婚与特别纪念日；精准计算满 N 周年整年里程碑；根据纪念日分类与年限智能生成温润得体的个性化周年祝贺文案。
+- **详情页里程碑挂件与一键填入草稿**：`AnniversaryMilestoneBanner.svelte` 与 `PersonDetail.svelte` 在人物概览顶部以醒目庆祝横幅呈现里程碑标题、整周年勋章与倒计时胶囊（“🎉 今天纪念日！” / “还有 N 天”）；提供一键「填入问候」直接写入互动备注草稿，以及一键复制问候语文本至剪贴板。
+
+验证：`pnpm check` 0/0、单测 1019/1019 绿灯、三套 E2E UI 回归各 520/520 全部通过、Release 门禁通过。
+
 ## [0.6.49] — 2026-10-29
 
 重塑：联系人详情页「交往互惠与双向平衡透视」（Mutual Reciprocity & Exchange Balance Audit）

@@ -1366,5 +1366,13 @@
   "exchangesCountLabel": "Ledger Transactions: ",
   "exchangesSettledRatio": "{s} Settled / {o} Open",
   "netBalanceLabel": "Net Exchange Balance: ",
-  "reciprocityAdviceTitle": "Reciprocity Advice"
+  "reciprocityAdviceTitle": "Reciprocity Advice",
+  "annivBannerAria": "Anniversary Milestones Reminder",
+  "yearsAnnivPill": "{n}th Year",
+  "todayAnnivBadge": "🎉 Today is the Anniversary!",
+  "futureAnnivBadge": "in {n} days ({date})",
+  "congratulatoryPreview": "Greeting: ",
+  "applyGreetingTip": "Pre-fill congratulatory greeting into interaction note",
+  "applyGreetingBtn": "Use Greeting",
+  "copyGreetingTip": "Copy greeting to clipboard"
 }

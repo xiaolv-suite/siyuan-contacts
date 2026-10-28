@@ -117,6 +117,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         type AnniversaryItem,
     } from "../../domain/anniversaries";
     import type { IcsExportResult } from "../../services/ical.ts";
+    import AnniversaryMilestoneBanner from "./AnniversaryMilestoneBanner.svelte";
+    import { extractUpcomingMilestones } from "../../domain/anniversary-milestones.ts";
     import {
         newProjectId,
         type PersonProjectItem,
@@ -851,6 +853,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             exchanges: personExchanges,
             timelineCount: insights?.timeline?.length ?? 0,
         });
+    });
+
+    const upcomingAnniversaryMilestones = $derived.by(() => {
+        return extractUpcomingMilestones(anniversaries, current.name, new Date(), 14);
     });
 
     // ---- 谈资与事实画像（RF-09 / Issue #135） ----
@@ -2981,6 +2987,17 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 </div>
             </div>
         {/if}
+
+        {#if !current.isSelf && upcomingAnniversaryMilestones.length > 0}
+            <AnniversaryMilestoneBanner
+                milestones={upcomingAnniversaryMilestones}
+                onApplyGreeting={(greeting) => {
+                    noteText = greeting;
+                }}
+                {i18n}
+            />
+        {/if}
+
         <div class="lvct-detail__section-head">
             <div>
                 <h4 id="lvct-relationship-snapshot-title">关系摘要</h4>
