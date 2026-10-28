@@ -1230,5 +1230,17 @@
   "cardCopySvgTip": "复制标准 SVG 矢量代码",
   "cardSvgCopied": "已复制 SVG 代码 ✓",
   "cardDownloadBtn": "下载 SVG 名片",
-  "cardDownloadTip": "下载高保真 SVG 矢量图文件"
+  "cardDownloadTip": "下载高保真 SVG 矢量图文件",
+  "socialPrefsTitle": "社交偏好与交往忌口档案",
+  "socialPrefsAddBtn": "添加偏好/忌口",
+  "socialPrefsCategoryLabel": "档案分类",
+  "socialPrefsContentLabel": "偏好细节",
+  "socialPrefsIsTabooLabel": "设为重要红线/严重忌口（会前重点警示）",
+  "socialPrefsEmpty": "暂未记录该联系人的社交偏好与饮食忌口。登记海鲜过敏、咖啡偏好或谈话禁忌，会面招待更体贴周到。",
+  "socialPrefsTabooBadge": "红线禁忌",
+  "socialPrefsCancelTabooTip": "取消红线标记",
+  "socialPrefsMarkTabooTip": "标记为红线禁忌",
+  "socialPrefsUnmarkTaboo": "降为偏好",
+  "socialPrefsMarkTaboo": "设为禁忌",
+  "socialPrefsContentRequired": "偏好或忌口内容不能为空"
 }

@@ -9771,6 +9771,100 @@ await test("D-14 联系人详情页：视觉名片海报与社交微卡片（Bus
     }
 });
 
+await test("D-15 联系人详情页：自管社交偏好与交往忌口档案（PersonSocialPreferences）卡片渲染、红线标记与增删联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let toggleTabooCalled = false;
+    let removePrefCalled = false;
+
+    const person = {
+        docId: "doc-pref-ui-1",
+        itemId: "item-pref-ui-1",
+        name: "偏好测试人物",
+        phone: "13500135888",
+        email: "pref@example.com",
+        wechat: "wx_pref",
+        website: "",
+        birthday: "1989-09-09",
+        isLunar: false,
+        group: "战略客户",
+        tags: ["餐饮"],
+        relatedItemIds: [],
+        company: "某集团",
+        profile: {
+            readAt: Date.now(),
+            affiliations: { state: "known", value: { work: [{ orgName: "某集团", title: "董事长" }], education: [], family: [], unspecified: [] } },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockPrefs = [
+        {
+            id: "spf-101",
+            personDocId: "doc-pref-ui-1",
+            category: "dietary",
+            content: "海鲜严重过敏",
+            isTaboo: true,
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+        {
+            id: "spf-102",
+            personDocId: "doc-pref-ui-1",
+            category: "beverage",
+            content: "喜冰美式不加糖",
+            isTaboo: false,
+            createdAt: 2000,
+            updatedAt: 2000,
+        },
+    ];
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadSocialPreferences: async () => mockPrefs,
+            onAddSocialPreference: async (item) => [...mockPrefs, item],
+            onUpdateSocialPreference: async (_docId, id, patch) => {
+                toggleTabooCalled = true;
+                return mockPrefs.map((p) => p.id === id ? { ...p, ...patch } : p);
+            },
+            onRemoveSocialPreference: async (_docId, id) => {
+                removePrefCalled = true;
+                return mockPrefs.filter((p) => p.id !== id);
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-social-prefs"), "未渲染社交偏好与忌口组件");
+    assert(fixture.textContent.includes("社交偏好与交往忌口档案"), "未渲染社交偏好档案标题");
+    assert(fixture.textContent.includes("海鲜严重过敏"), "未渲染海鲜过敏忌口");
+    assert(fixture.textContent.includes("喜冰美式不加糖"), "未渲染冰美式偏好");
+    assert(fixture.textContent.includes("红线禁忌"), "未渲染红线禁忌徽章");
+
+    // 点击切换红线按钮
+    const toggleBtn = fixture.querySelector(".pref-card .pref-action-btn");
+    assert(toggleBtn, "未找到切换禁忌按钮");
+    toggleBtn.click();
+    await until(() => toggleTabooCalled, "点击切换禁忌未触发 onUpdateSocialPreference");
+
+    // 点击删除按钮
+    const removeBtn = fixture.querySelector(".pref-card .pref-action-btn.ft__error");
+    assert(removeBtn, "未找到删除偏好按钮");
+    removeBtn.click();
+    await until(() => removePrefCalled, "点击删除未触发 onRemoveSocialPreference");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

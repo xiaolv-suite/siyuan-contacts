@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.41] — 2026-10-29
+
+重塑：联系人自管社交偏好与交往忌口档案系统（Personal Social Preferences & Taboo Notes）
+
+- **社交偏好与忌口域模型及存储层**：`domain/social-preferences.ts` 与 `data/social-preferences.ts` 结构化管理饮食偏好（`dietary`）、茶酒咖啡（`beverage`）、交往习惯（`habits`）以及敏感雷区（`taboos`）四大维度，支持高亮红线禁忌（`isTaboo`），数据由 Web Lock 锁保护存储。
+- **详情页偏好卡片与简报智能联动**：`PersonSocialPreferences.svelte` 与 `PersonDetail.svelte` 支持即时增删与红线切换，并在生成会面准备简报时自动置顶汇编「社交偏好与交往忌口」小节。
+
+验证：`pnpm check` 0/0、单测 994/994 绿灯、E2E UI 回归 511/511 全部通过、Release 门禁通过。
+
 ## [0.6.40] — 2026-10-29
 
 重塑：人物视觉名片海报纯 SVG 渲染与多版式导出系统（Persona Visual Business Card & Social Poster Generator）

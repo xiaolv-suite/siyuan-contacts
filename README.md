@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.40** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.40) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.41** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.41) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.40 · 2026-10-29）
+## 本次发布（v0.6.41 · 2026-10-29）
+
+本版本将交往招待与细微关怀深入产品核心，推出了联系人自管社交偏好与交往忌口档案系统（Personal Social Preferences & Taboo Notes）：
+
+- **社交偏好与忌口域模型及存储层（`domain/social-preferences.ts` & `data/social-preferences.ts`）**：结构化管理饮食偏好与忌口（`dietary`）、茶酒咖啡饮品（`beverage`）、会面交往习惯（`habits`）以及敏感话题与雷区（`taboos`）四大维度，支持高亮红线禁忌（`isTaboo`），数据由 Web Lock 锁保护存储（`person-social-preferences.json`）。
+- **详情页偏好卡片与简报智能联动（`PersonSocialPreferences.svelte` & `PersonDetail.svelte`）**：在详情页呈现分门别类的偏好忌口卡片，红线禁忌以醒目盾牌徽标警示，支持即时添加、红线标记切换与删除；在生成会面准备简报时自动置顶汇编「社交偏好与交往忌口」小节，会前沟通招待更贴心周全。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 994/994 100% 通过；浏览器 UI 回归全绿（511/511）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.40 · 2026-10-29）
 
 本版本将静态文本资料与人脉分享体验提升为高保真视觉名片与社交海报，推出了人物视觉名片海报纯 SVG 渲染与导出系统（Persona Visual Business Card & Social Poster Generator）：
 

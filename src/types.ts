@@ -171,6 +171,11 @@ export interface ContactsPluginFacade {
     savePersonScratchpad?(item: import("./domain/person-scratchpad").PersonScratchpadItem): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
     updatePersonScratchpad?(personDocId: string, noteId: string, patch: Partial<import("./domain/person-scratchpad").PersonScratchpadItem>): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
     removePersonScratchpad?(personDocId: string, noteId: string): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    /** E-49：联系人自管社交偏好与交往忌口档案 */
+    loadPersonSocialPreferences?(personDocId: string): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    addPersonSocialPreference?(item: import("./domain/social-preferences").PersonSocialPreferenceItem): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    updatePersonSocialPreference?(personDocId: string, prefId: string, patch: Partial<import("./domain/social-preferences").PersonSocialPreferenceItem>): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    removePersonSocialPreference?(personDocId: string, prefId: string): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;

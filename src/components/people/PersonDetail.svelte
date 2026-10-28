@@ -86,6 +86,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import PersonMilestonesTimeline from "./PersonMilestonesTimeline.svelte";
     import { extractMilestoneEvents } from "../../domain/timeline-milestones.ts";
     import BusinessCardModal from "./BusinessCardModal.svelte";
+    import PersonSocialPreferences from "./PersonSocialPreferences.svelte";
+    import type { PersonSocialPreferenceItem } from "../../domain/social-preferences.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -210,6 +212,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onSaveScratchpad,
         onUpdateScratchpad,
         onRemoveScratchpad,
+        onLoadSocialPreferences,
+        onAddSocialPreference,
+        onUpdateSocialPreference,
+        onRemoveSocialPreference,
         collapsedSections,
         onToggleSection,
     }: {
@@ -331,6 +337,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onSaveScratchpad?: (item: import("../../domain/person-scratchpad").PersonScratchpadItem) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
         onUpdateScratchpad?: (personDocId: string, noteId: string, patch: Partial<import("../../domain/person-scratchpad").PersonScratchpadItem>) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
         onRemoveScratchpad?: (personDocId: string, noteId: string) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
+        /** E-49 社交偏好与交往忌口档案（可选） */
+        onLoadSocialPreferences?: (personDocId: string) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
+        onAddSocialPreference?: (item: import("../../domain/social-preferences").PersonSocialPreferenceItem) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
+        onUpdateSocialPreference?: (personDocId: string, prefId: string, patch: Partial<import("../../domain/social-preferences").PersonSocialPreferenceItem>) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
+        onRemoveSocialPreference?: (personDocId: string, prefId: string) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -732,6 +743,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadPromises();
     loadLifecycleStage();
     loadScratchpads();
+    loadSocialPreferences();
 
     let kinships = $state<KinshipMemberItem[]>([]);
 
@@ -778,6 +790,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             if (detailAlive) scratchpads = list;
         } catch {
             scratchpads = [];
+        }
+    }
+
+    let socialPreferences = $state<PersonSocialPreferenceItem[]>([]);
+
+    async function loadSocialPreferences() {
+        if (!onLoadSocialPreferences || !current?.docId) return;
+        try {
+            const list = await onLoadSocialPreferences(current.docId);
+            if (detailAlive) socialPreferences = list;
+        } catch {
+            socialPreferences = [];
         }
     }
 
@@ -1935,6 +1959,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 tierName: socialRadarAssessment.tierLabel,
                 strongestDimLabel: socialRadarAssessment.highlights[0],
             },
+            socialPreferences: socialPreferences.map((p) => ({
+                category: p.category,
+                content: p.content,
+                isTaboo: p.isTaboo,
+            })),
         };
     });
     const briefingPreview = $derived.by(() => {
@@ -3148,6 +3177,26 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             onConvertPromiseToInteraction={async (prm) => {
                 const prefix = prm.direction === "i_promised" ? "【履约兑现-我承诺】" : "【履约兑现-对方承诺】";
                 noteText = `${prefix}${prm.title}${prm.detail ? `：${prm.detail}` : ""}`;
+            }}
+            {i18n}
+        />
+    {/if}
+
+    {#if onLoadSocialPreferences && onAddSocialPreference && onUpdateSocialPreference && onRemoveSocialPreference && !current.isSelf}
+        <PersonSocialPreferences
+            personDocId={current.docId}
+            items={socialPreferences}
+            onAdd={async (item) => {
+                const res = await onAddSocialPreference!(item);
+                socialPreferences = res;
+            }}
+            onUpdate={async (prefId, patch) => {
+                const res = await onUpdateSocialPreference!(current.docId, prefId, patch);
+                socialPreferences = res;
+            }}
+            onRemove={async (prefId) => {
+                const res = await onRemoveSocialPreference!(current.docId, prefId);
+                socialPreferences = res;
             }}
             {i18n}
         />

@@ -112,6 +112,8 @@ export interface BriefingExportInput {
     promises?: readonly BriefingPromise[];
     /** 社交资本全景评估 */
     socialRadar?: BriefingSocialRadar;
+    /** E-49：社交偏好与交往忌口 */
+    socialPreferences?: readonly { category: string; content: string; isTaboo: boolean }[];
     /** 可选排除的章节 ID 集合 */
     excludedSections?: readonly string[];
 }
@@ -167,6 +169,17 @@ export function buildBriefingMarkdown(input: BriefingExportInput): string {
         lines.push(`## 会面谈资与备忘（${validTopics.length} 条）`);
         for (const topic of validTopics) {
             lines.push(`- 📌 ${escapeMarkdown(topic.trim())}`);
+        }
+    }
+
+    // E-49 社交偏好与交往忌口（会前重点提醒）
+    const validPrefs = (input.socialPreferences ?? []).filter((p) => Boolean(p.content?.trim()));
+    if (!isExcluded("socialPreferences") && validPrefs.length > 0) {
+        lines.push("");
+        lines.push(`## 社交偏好与交往忌口（${validPrefs.length} 条）`);
+        for (const p of validPrefs) {
+            const tabooTag = p.isTaboo ? " [⚠️ 禁忌雷区]" : "";
+            lines.push(`- 💡 ${escapeMarkdown(p.content.trim())}${tabooTag}`);
         }
     }
 

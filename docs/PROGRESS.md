@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.41 发布：联系人自管社交偏好与交往忌口档案系统（Personal Social Preferences & Taboo Notes）
+
+- 本轮落地社交偏好与交往忌口档案模型与详情页偏好卡片：
+  1. 社交偏好域与存储层：`social-preferences.ts` 纯函数结构化饮食、茶酒、交往习惯与敏感雷区四大维度，标记红线禁忌（`isTaboo`），`person-social-preferences.json` 经 Web Lock 锁保护存储；
+  2. 详情页偏好卡片与简报联动：`PersonSocialPreferences.svelte` 支持即时增删与红线切换；生成会面准备简报时自动置顶汇编「社交偏好与交往忌口」小节；
+- 门禁验证：`pnpm check`（0/0）、单测 994/994 全部通过、三套 UI 回归 511/511 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.40 发布：人物视觉名片海报纯 SVG 渲染与多版式导出系统（Persona Visual Business Card & Social Poster Generator）
 
 - 本轮落地纯 SVG 矢量名片排版模型与详情页名片海报弹窗：

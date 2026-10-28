@@ -1230,5 +1230,17 @@
   "cardCopySvgTip": "Copy standard SVG vector code",
   "cardSvgCopied": "Copied SVG ✓",
   "cardDownloadBtn": "Download SVG",
-  "cardDownloadTip": "Download high-resolution SVG file"
+  "cardDownloadTip": "Download high-resolution SVG file",
+  "socialPrefsTitle": "Social Preferences & Taboos",
+  "socialPrefsAddBtn": "Add Preference/Taboo",
+  "socialPrefsCategoryLabel": "Category",
+  "socialPrefsContentLabel": "Detail",
+  "socialPrefsIsTabooLabel": "Mark as critical taboo / strict allergy (high-priority alert)",
+  "socialPrefsEmpty": "No preferences or taboos recorded yet. Keep track of allergies, coffee preferences, or conversational taboos for thoughtful meetings.",
+  "socialPrefsTabooBadge": "Taboo / Allergy",
+  "socialPrefsCancelTabooTip": "Unmark taboo",
+  "socialPrefsMarkTabooTip": "Mark as taboo",
+  "socialPrefsUnmarkTaboo": "Demote",
+  "socialPrefsMarkTaboo": "Set Taboo",
+  "socialPrefsContentRequired": "Content cannot be empty"
 }

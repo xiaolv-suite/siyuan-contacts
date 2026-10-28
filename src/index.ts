@@ -115,6 +115,7 @@ import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./dat
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
 import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages } from "./data/lifecycle-stage.ts";
 import { loadPersonScratchpads, savePersonScratchpad, updatePersonScratchpad, removePersonScratchpad } from "./data/person-scratchpad.ts";
+import { loadPersonSocialPreferences, addPersonSocialPreference, updatePersonSocialPreference, removePersonSocialPreference } from "./data/social-preferences.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1830,6 +1831,32 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async removePersonScratchpad(personDocId: string, noteId: string) {
         const token = this.lifecycleToken;
         const res = await removePersonScratchpad(this, personDocId, noteId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    /** E-49：联系人自管社交偏好与交往忌口档案 */
+    async loadPersonSocialPreferences(personDocId: string) {
+        return loadPersonSocialPreferences(this, personDocId);
+    }
+
+    async addPersonSocialPreference(item: import("./domain/social-preferences").PersonSocialPreferenceItem) {
+        const token = this.lifecycleToken;
+        const res = await addPersonSocialPreference(this, item);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
+        return res;
+    }
+
+    async updatePersonSocialPreference(personDocId: string, prefId: string, patch: Partial<import("./domain/social-preferences").PersonSocialPreferenceItem>) {
+        const token = this.lifecycleToken;
+        const res = await updatePersonSocialPreference(this, personDocId, prefId, patch);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    async removePersonSocialPreference(personDocId: string, prefId: string) {
+        const token = this.lifecycleToken;
+        const res = await removePersonSocialPreference(this, personDocId, prefId);
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }

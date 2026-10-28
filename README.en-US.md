@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.40** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.40) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.41** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.41) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.40 (2026-10-29)
+## This release: v0.6.41 (2026-10-29)
+
+This release implements Personal Social Preferences & Taboo Notes in the person detail view:
+
+- **Social Preferences & Taboos Domain Model & Storage Layer (`domain/social-preferences.ts` & `data/social-preferences.ts`)**: Structured management across four dimensions: dietary preferences & allergies (`dietary`), beverages & coffee/tea/alcohol (`beverage`), meeting and communication style (`habits`), and sensitive topics & taboos (`taboos`), with critical red-line alerts (`isTaboo`); protected by Web Lock critical sections and read-after-write verification (`person-social-preferences.json`).
+- **Detail View Preferences Board & Briefing Integration (`PersonSocialPreferences.svelte` & `PersonDetail.svelte`)**: Renders warm category cards with shield badges highlighting taboo topics, supporting instant additions, taboo toggling, and removal; automatically synthesizes a dedicated "Social Preferences & Taboos" section into generated meeting preparation documents.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (994/994 PASS); browser UI regression passing (511/511); production build and release checks passed.
+
+## Previous release: v0.6.40 (2026-10-29)
 
 This release implements Persona Visual Business Card & Social Poster Generator in pure SVG:
 

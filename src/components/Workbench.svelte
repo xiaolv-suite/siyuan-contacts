@@ -940,8 +940,12 @@
 					            onUpdateLifecycleStage={facade.updatePersonLifecycleStage ? (docId, stage, date, note) => facade.updatePersonLifecycleStage!(docId, stage, date, note) : undefined}
 					            onLoadScratchpads={facade.loadPersonScratchpads ? (docId) => facade.loadPersonScratchpads!(docId) : undefined}
 					            onSaveScratchpad={facade.savePersonScratchpad ? (item) => facade.savePersonScratchpad!(item) : undefined}
-					            onUpdateScratchpad={facade.updatePersonScratchpad ? (docId, noteId, patch) => facade.updatePersonScratchpad!(docId, noteId, patch) : undefined}
-					            onRemoveScratchpad={facade.removePersonScratchpad ? (docId, noteId) => facade.removePersonScratchpad!(docId, noteId) : undefined}
+						            onUpdateScratchpad={facade.updatePersonScratchpad ? (docId, noteId, patch) => facade.updatePersonScratchpad!(docId, noteId, patch) : undefined}
+						            onRemoveScratchpad={facade.removePersonScratchpad ? (docId, noteId) => facade.removePersonScratchpad!(docId, noteId) : undefined}
+						            onLoadSocialPreferences={facade.loadPersonSocialPreferences ? (docId) => facade.loadPersonSocialPreferences!(docId) : undefined}
+						            onAddSocialPreference={facade.addPersonSocialPreference ? (item) => facade.addPersonSocialPreference!(item) : undefined}
+						            onUpdateSocialPreference={facade.updatePersonSocialPreference ? (docId, prefId, patch) => facade.updatePersonSocialPreference!(docId, prefId, patch) : undefined}
+						            onRemoveSocialPreference={facade.removePersonSocialPreference ? (docId, prefId) => facade.removePersonSocialPreference!(docId, prefId) : undefined}
 		            {onOpenPersonDoc}
             onOpenGraphPerson={openGraphPerson}
             onOpenPeople={openPeople}
