@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.24] — 2026-10-28
+
+重塑：人脉常识问答闪卡包生成与思源复习沉淀（Spaced Repetition Flashcard Deck Generator）
+
+- **人脉闪卡提取引擎**：`domain/flashcards.ts` 纯函数 `buildPersonFlashcards` 提取资料、生日、偏好忌口、履历背景、观点与谈资，组装思源标准 Riff 语法。
+- **详情页顶栏一键生成与直达**：`PersonDetail.svelte` 顶栏提供「复习闪卡 ↗」，自动创建 `/人脉闪卡/🎴 人脉记忆闪卡 · 某某某` 并支持主编辑器打开。
+
+验证：`pnpm check` 0/0、单测 955/955 绿灯、E2E UI 回归 494/494 全部通过、Release 门禁通过。
+
+
 ## [0.6.23] — 2026-10-28
 
 重塑：相关人面板「潜在交集伙伴与一度破冰引荐」（Co-occurrence & Mutual Ties Recommender）

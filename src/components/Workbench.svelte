@@ -921,9 +921,10 @@
             onUpdateAnniversary={facade.updatePersonAnniversary ? (docId, annivId, patch) => facade.updatePersonAnniversary!(docId, annivId, patch) : undefined}
             onRemoveAnniversary={facade.removePersonAnniversary ? (docId, annivId) => facade.removePersonAnniversary!(docId, annivId) : undefined}
             onLoadProjects={facade.loadPersonProjects ? (docId) => facade.loadPersonProjects!(docId) : undefined}
-            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
-            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
-            {onOpenPersonDoc}
+	            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
+	            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
+	            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
+	            {onOpenPersonDoc}
             onOpenGraphPerson={openGraphPerson}
             onOpenPeople={openPeople}
             onNavigate={showDetail}

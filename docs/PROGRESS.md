@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.24 发布：人脉常识问答闪卡包生成与思源复习沉淀（Spaced Repetition Flashcard Deck Generator）
+
+- 本轮落地人脉画像全要素闪卡生成引擎与思源 Riff 闪卡系统深度打通：
+  1. 闪卡生成纯函数：`flashcards.ts` 纯函数 `buildPersonFlashcards` 提取资料、生日、偏好忌口、履历背景、观点与谈资等 6 大维度闪卡，`buildFlashcardDocumentMarkdown` 组装符合思源笔记标准的问答题语法；
+  2. 详情页顶栏一键生成与复习直达：`PersonDetail.svelte` 顶栏增设「复习闪卡 ↗」，自动创建 `/人脉闪卡/🎴 人脉记忆闪卡 · 某某某` 并支持主编辑器打开；
+- 门禁验证：`pnpm check`（0/0）、单测 955/955 全部通过、三套 UI 回归 494/494 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.23 发布：相关人面板「潜在交集伙伴与一度破冰引荐」（Co-occurrence & Mutual Ties Recommender）
 
 - 本轮落地单人潜在交集伙伴发现算法与相关人视窗一键建链：

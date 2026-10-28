@@ -8337,6 +8337,87 @@ await test("E-34 相关人面板：潜在交集伙伴推荐与一键建立双向
     fixture.remove();
 });
 
+await test("D-03 联系人详情页：思源标准复习闪卡（Flashcards）实体文档生成与一键直达", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let createFlashcardsCalled = false;
+    let openedDocId = null;
+
+    const person = {
+        docId: "doc-flash-1",
+        itemId: "item-flash-1",
+        name: "孙总",
+        phone: "13500001111",
+        email: "sun@example.com",
+        wechat: "sun_wx",
+        website: "",
+        birthday: "1990-09-09",
+        isLunar: false,
+        group: "VIP",
+        tags: ["消费科技"],
+        relatedItemIds: [],
+        company: "未来智能",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "未来智能", title: "创始人" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    mounted = mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc: (docId) => {
+                openedDocId = docId;
+            },
+            onCreateFlashcardsDoc: async () => {
+                createFlashcardsCalled = true;
+                return {
+                    docId: "doc-riff-deck-01",
+                    hpath: "/人脉闪卡/🎴 人脉记忆闪卡 · 孙总",
+                    count: 4,
+                };
+            },
+            onNavigate() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-detail__flashcard-btn"), "未找到复习闪卡按钮");
+    const flashBtn = fixture.querySelector(".lvct-detail__flashcard-btn");
+    assert(flashBtn.textContent.includes("复习闪卡"), "按钮文案未包含复习闪卡");
+
+    // 点击生成闪卡文档
+    flashBtn.click();
+    await until(() => createFlashcardsCalled, "点击未触发 onCreateFlashcardsDoc 回调");
+
+    await until(() => fixture.querySelector(".lvct-detail__flashcards-notice"), "未渲染闪卡生成提示横幅");
+    assert(fixture.textContent.includes("4"), "横幅未包含卡片数量 4");
+    assert(fixture.textContent.includes("/人脉闪卡/🎴 人脉记忆闪卡 · 孙总"), "横幅未包含生成路径");
+
+    // 点击在主编辑器打开
+    const openDocBtn = fixture.querySelector(".lvct-detail__flashcards-notice button");
+    assert(openDocBtn, "未找到在主编辑器打开按钮");
+    openDocBtn.click();
+    await until(() => openedDocId === "doc-riff-deck-01", "点击在主编辑器打开未调用 onOpenPersonDoc");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

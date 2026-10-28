@@ -112,6 +112,7 @@ import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary,
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
+import { createPersonFlashcardsDoc } from "./services/flashcards";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1772,6 +1773,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async createWeeklyDigestDoc(options?: import("./services/weekly-digest").CreateWeeklyDigestDocOptions) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return createWeeklyDigestDoc(this, this.settings, options);
+    }
+
+    /** 人脉记忆复习闪卡（Spaced Repetition Flashcards）：沉淀为思源实体文档 */
+    async createPersonFlashcardsDoc(
+        person: import("./domain/person").ContactSummary,
+        facts?: readonly import("./domain/doc-section").PersonFactItem[],
+        topics?: readonly import("./domain/topics").PersonTopicItem[],
+        options?: import("./services/flashcards").CreateFlashcardsDocOptions,
+    ) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return createPersonFlashcardsDoc(this, this.settings, person, facts, topics, options);
     }
 
     async loadExportSummary() {

@@ -10800,3 +10800,11 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     }
 }
 
+.lvct-detail__flashcard-btn {
+    color: var(--b3-theme-primary);
+}
+
+.lvct-detail__flashcards-notice {
+    animation: lvct-fade-in 0.2s ease;
+}
+

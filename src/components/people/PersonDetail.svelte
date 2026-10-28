@@ -32,6 +32,7 @@
         Shield,
         ContactRound,
         User,
+        Layers,
     } from "@lucide/svelte";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
@@ -175,6 +176,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onLoadProjects,
         onAddProject,
         onRemoveProject,
+        onCreateFlashcardsDoc,
         collapsedSections,
         onToggleSection,
     }: {
@@ -271,6 +273,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onLoadProjects?: (personDocId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         onAddProject?: (item: import("../../domain/projects").PersonProjectItem) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         onRemoveProject?: (personDocId: string, projectId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
+        /** 制作思源记忆复习闪卡（Riff Cards）实体文档（可选） */
+        onCreateFlashcardsDoc?: (person: ContactSummary, facts: readonly PersonFactItem[], topics: readonly import("../../domain/topics").PersonTopicItem[]) => Promise<{ docId: string; hpath: string; count: number } | null>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -1037,6 +1041,29 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     let vcardCopied = $state(false);
     let vcardCopiedTimer: ReturnType<typeof setTimeout> | null = null;
+    let generatingFlashcards = $state(false);
+    let flashcardsDocInfo = $state<{ docId: string; hpath: string; count: number } | null>(null);
+    let flashcardsError = $state("");
+
+    async function handleGenerateFlashcards(): Promise<void> {
+        if (!onCreateFlashcardsDoc || generatingFlashcards) return;
+        generatingFlashcards = true;
+        flashcardsError = "";
+        try {
+            const res = await onCreateFlashcardsDoc(current, facts, topics);
+            if (detailAlive) {
+                if (res) {
+                    flashcardsDocInfo = res;
+                } else {
+                    flashcardsError = text("detailFlashcardsFailed", "生成闪卡文档失败，请检查笔记本设置");
+                }
+            }
+        } catch (err) {
+            if (detailAlive) flashcardsError = requestErrorMessage(err);
+        } finally {
+            if (detailAlive) generatingFlashcards = false;
+        }
+    }
 
     function handleExportVcf(): void {
         const vcfText = exportSinglePersonVcf(current);
@@ -2566,7 +2593,46 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <Copy size={13} /> 复制名片
             {/if}
         </button>
+        {#if onCreateFlashcardsDoc}
+            <button
+                type="button"
+                class="b3-button b3-button--outline b3-button--small lvct-detail__flashcard-btn"
+                onclick={handleGenerateFlashcards}
+                disabled={generatingFlashcards}
+                title={text("detailFlashcardsBtnTitle", "将该联系人的基本资料、画像事实与谈资一键生成为思源复习闪卡（Riff Cards）")}
+            >
+                <Layers size={13} /> {generatingFlashcards ? text("detailFlashcardsGenerating", "闪卡生成中…") : text("detailFlashcardsBtn", "复习闪卡 ↗")}
+            </button>
+        {/if}
     </div>
+
+    {#if flashcardsDocInfo}
+        <div class="lvct-detail__flashcards-notice fn__flex" role="status" style="align-items: center; justify-content: space-between; margin: 4px 0 10px; padding: 6px 12px; background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)); border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent); border-radius: 6px; font-size: 12px;">
+            <span>🎴 已生成 <b>{flashcardsDocInfo.count}</b> 张人脉记忆闪卡至 <code>{flashcardsDocInfo.hpath}</code></span>
+            <div class="fn__flex" style="gap: 6px;">
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small"
+                    style="padding: 0 4px; font-size: 11.5px; color: var(--b3-theme-primary);"
+                    onclick={() => onOpenPersonDoc(flashcardsDocInfo!.docId)}
+                >
+                    在主编辑器打开 ↗
+                </button>
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small"
+                    style="padding: 0 4px; font-size: 11px;"
+                    onclick={() => (flashcardsDocInfo = null)}
+                    title="关闭提示"
+                >
+                    ✕
+                </button>
+            </div>
+        </div>
+    {/if}
+    {#if flashcardsError}
+        <div class="ft__smaller lvct-text-danger" style="margin-bottom: 8px;">{flashcardsError}</div>
+    {/if}
 
     <div class="lvct-detail__tabs" role="tablist" tabindex="-1" aria-label="人物详情内容" onkeydown={handleTabKeydown}>
         <button id="lvct-detail-tab-overview" type="button" role="tab" aria-controls="lvct-detail-panel-overview" aria-selected={activeTab === "overview"} tabindex={activeTab === "overview" ? 0 : -1} class:lvct-detail__tab--active={activeTab === "overview"} onclick={() => void selectTab("overview")}>{text("detailOverview", "概览")}</button>

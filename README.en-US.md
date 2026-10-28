@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.23** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.23) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.24** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.24) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.23 (2026-10-28)
+## This release: v0.6.24 (2026-10-28)
+
+This release implements Spaced Repetition Flashcards Deck Generator in the detail view:
+
+- **Persona Flashcards Extraction Engine (`flashcards.ts`)**: Pure function extracting Q&A flashcards across 6 dimensions: basic profile, birthday & calendar, leisure/dietary preferences (`preference`), background experiences (`background`), core quotes (`quote`), and upcoming meeting topics (`topics`); strictly formatted with SiYuan's native `{: custom-riff-decks="人脉记忆" }\n?` syntax.
+- **One-Click Flashcard Deck in Person Detail (`PersonDetail.svelte`)**: Adds "Flashcards ↗" in the top actions bar to generate a structured SiYuan document under `/人脉闪卡/🎴 人脉记忆闪卡 · Name` with status banner and direct navigation to main editor for spaced repetition reviews.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (955/955 PASS); browser UI regression passing (494/494); production build and release checks passed.
+
+## Previous release: v0.6.23 (2026-10-28)
 
 This release implements Potential Mutual Connections & Icebreaker Referrals in the Related tab:
 
