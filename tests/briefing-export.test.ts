@@ -164,3 +164,66 @@ test("简报导出：支持整合笔记与日志提及反链（backlinks）分�
     const excluded = buildBriefingMarkdown({ ...input, excludedSections: ["backlinks"] });
     assert.ok(!excluded.includes("## 笔记与日志提及"));
 });
+
+test("简报导出：支持家庭亲属网络、双向承诺履约与社交雷达全景评估输出", () => {
+    const input: BriefingExportInput = {
+        ...base,
+        socialRadar: {
+            overallScore: 92,
+            tierName: "核心伙伴",
+            strongestDimLabel: "交往频度与互信深度极高",
+        },
+        kinships: [
+            { role: "spouse", name: "王敏", relationLabel: "妻子", birthYearOrDate: "1988", note: "建筑设计师" },
+            { role: "child", name: "王乐乐", relationLabel: "儿子", birthYearOrDate: "2019" },
+        ],
+        promises: [
+            {
+                direction: "i_promised",
+                title: "邮寄智能硬件样品",
+                detail: "附送调试说明书",
+                promisedOn: "2026-10-20",
+                dueOn: "2026-10-31",
+                status: "pending",
+            },
+            {
+                direction: "they_promised",
+                title: "引荐海外渠道商",
+                promisedOn: "2026-10-15",
+                status: "fulfilled",
+                fulfilledOn: "2026-10-22",
+            },
+        ],
+    };
+
+    const md = buildBriefingMarkdown(input);
+    assert.ok(md.includes("## 社交资产全景评估"));
+    assert.ok(md.includes("综合得分：**92 分** · 评级：**核心伙伴**"));
+    assert.ok(md.includes("资产亮点：交往频度与互信深度极高"));
+
+    assert.ok(md.includes("## 家庭与亲属网络（2 人）"));
+    assert.ok(md.includes("伴侣：**王敏**（妻子） · 1988 · 备忘：建筑设计师"));
+    assert.ok(md.includes("子女：**王乐乐**（儿子） · 2019"));
+
+    assert.ok(md.includes("## 双向承诺与信诺约定（2 条）"));
+    assert.ok(md.includes("[我承·待履约] **邮寄智能硬件样品**（许诺日：2026-10-20 · 目标日：2026-10-31） — 附送调试说明书"));
+    assert.ok(md.includes("[彼承·已兑现] **引荐海外渠道商**（许诺日：2026-10-15 · 兑现日：2026-10-22）"));
+
+    // 排除验证
+    const excluded = buildBriefingMarkdown({
+        ...input,
+        excludedSections: ["socialRadar", "kinships", "promises"],
+    });
+    assert.ok(!excluded.includes("## 社交资产全景评估"));
+    assert.ok(!excluded.includes("## 家庭与亲属网络"));
+    assert.ok(!excluded.includes("## 双向承诺与信诺约定"));
+});
+
+test("简报导出：buildBriefingDocumentHpath 生成标准思源文档路径", async () => {
+    const { buildBriefingDocumentHpath } = await import("../src/domain/briefing-export.ts");
+    const hpath1 = buildBriefingDocumentHpath("张三/经理", "2026-10-29");
+    assert.equal(hpath1, "/会面简报/📝 会面准备简报 · 张三_经理（2026-10-29）");
+
+    const hpath2 = buildBriefingDocumentHpath("   ", "2026-10-29");
+    assert.equal(hpath2, "/会面简报/📝 会面准备简报 · 联系人（2026-10-29）");
+});

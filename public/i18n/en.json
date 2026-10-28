@@ -1170,5 +1170,10 @@
   "promisesMarkBrokenTip": "Mark broken or cancelled",
   "promisesReopen": "Reopen",
   "promisesReopenTip": "Reopen commitment",
-  "promisesTitleRequired": "Commitment title cannot be empty"
+  "promisesTitleRequired": "Commitment title cannot be empty",
+  "briefingDocFail": "Failed to create briefing document, please check notebook settings",
+  "briefingDocSuccess": "Briefing document created: ",
+  "briefingDocOpen": "Open in Main Editor ↗",
+  "briefingDocCreating": "Creating briefing document…",
+  "briefingDocCreateBtn": "Save as SiYuan Doc"
 }

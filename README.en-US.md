@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.30** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.30) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.31** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.31) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.30 (2026-10-28)
+## This release: v0.6.31 (2026-10-29)
+
+This release implements Comprehensive Meeting Briefing & Dossier Document Generator in SiYuan:
+
+- **Comprehensive Meeting Briefing Synthesis (`domain/briefing-export.ts` & `services/briefing-doc.ts`)**: Synthesizes 6-dimensional social capital radar assessment (`socialRadar`), family & kinship network tree (`kinships`), and mutual promises & commitments (`promises`) alongside profile, timeline, follow-ups, and backlinks into a standardized SiYuan document at `/会面简报/📝 会面准备简报 · Name (Date)`.
+- **Detail View Briefing Modal Document Creation & Direct Navigation (`PersonDetail.svelte`)**: Features a dedicated "Save as SiYuan Doc" button with custom block attributes (`custom-lvct-briefing-person`, `custom-lvct-briefing-date`), and one-click "Open in Main Editor ↗" to jump directly into the created document for notes and annotations.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (972/972 PASS); browser UI regression passing (501/501); production build and release checks passed.
+
+## Previous release: v0.6.30 (2026-10-28)
 
 This release implements the Mutual Promises & Commitments Tracker in the person detail view:
 

@@ -181,6 +181,8 @@ export interface ContactsPluginFacade {
         people: readonly import("./domain/person").ContactSummary[],
         options?: import("./services/flashcards").CreateBatchFlashcardsDocOptions,
     ): Promise<{ docId: string; hpath: string; count: number } | null>;
+    /** 会面准备简报：沉淀为思源实体文档 */
+    createBriefingDoc?(input: import("./domain/briefing-export").BriefingExportInput, dateStr?: string): Promise<{ docId: string; hpath: string } | null>;
     /** 全库人情往来汇总与大账本（Exchanges Hub） */
     loadExchangesSummary?(): Promise<import("./domain/exchanges-summary").ExchangesSummary>;
     createExchangesLedgerDoc?(options?: { title?: string }): Promise<{ docId: string; hpath: string; count: number } | null>;

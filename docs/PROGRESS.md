@@ -1,3 +1,11 @@
+## 2026-10-29 v0.6.31 发布：联系人会面全景准备简报实体文档沉淀与多维社交资产汇编（Comprehensive Meeting Briefing & Dossier Document Generator）
+
+- 本轮落地全要素会面准备简报模型与思源实体文档生成：
+  1. 简报全景汇编算法：`briefing-export.ts` 纯函数扩充六维社交雷达评级（`socialRadar`）、家庭亲属树谱（`kinships`）与双向约定（`promises`），并统一路径生成 `buildBriefingDocumentHpath`；
+  2. 实体简报文档生成服务：`briefing-doc.ts` 沉淀 `/会面简报/📝 会面准备简报 · 姓名（日期）` 实体文档并附带原生块属性；
+  3. 详情页简报弹窗沉淀联动：`PersonDetail.svelte` 支持一键「沉淀为思源文档」并在生成后支持「在主编辑器中打开 ↗」直达；
+- 门禁验证：`pnpm check`（0/0）、单测 972/972 全部通过、三套 UI 回归 501/501 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.30 发布：联系人详情页「双向承诺与信诺履约本」（Mutual Promises & Commitments Tracker）
 
 - 本轮落地双向承诺全生命周期模型与详情页信诺本组件：

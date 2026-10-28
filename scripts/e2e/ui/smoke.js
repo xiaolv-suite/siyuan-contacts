@@ -8920,6 +8920,90 @@ await test("D-06 联系人详情页双向承诺与信诺履约本（PersonPromis
     fixture.remove();
 });
 
+await test("D-07 联系人详情页：会面全景简报沉淀为思源实体文档（createBriefingDoc）与在主编辑器打开联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let createBriefingCalled = false;
+    let openedDocId = "";
+
+    const person = {
+        docId: "doc-brief-ui-1",
+        itemId: "item-brief-ui-1",
+        name: "简报测试人物",
+        phone: "13800138000",
+        email: "test@example.com",
+        wechat: "wx_test",
+        website: "",
+        birthday: "1988-08-08",
+        isLunar: false,
+        group: "核心伙伴",
+        tags: ["架构"],
+        relatedItemIds: [],
+        company: "前沿科技",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "前沿科技", title: "首席架构师" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => ({
+                timeline: [{ id: "e1", occurredAt: Date.now(), localDate: "2026-10-28", source: "manual", note: "会面沟通", groupSize: 1 }],
+                coAttendance: [],
+                totalEvents: 1,
+                backlinks: [],
+            }),
+            onOpenPersonDoc(docId) {
+                openedDocId = docId;
+            },
+            onNavigate() {},
+            onCreateBriefingDoc: async (_input) => {
+                createBriefingCalled = true;
+                return { docId: "doc-briefing-created-01", hpath: "/会面简报/📝 会面准备简报 · 简报测试人物（2026-10-29）" };
+            },
+        },
+    });
+
+    await until(() => fixture.textContent.includes("导出会面简报"), "未找到导出会面简报按钮");
+    const briefingBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("导出会面简报"));
+    assert(briefingBtn, "未找到导出会面简报按钮元素");
+    briefingBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-briefing-preview"), "未打开简报预览弹窗");
+
+    // 点击「沉淀为思源文档」按钮
+    const createDocBtn = Array.from(fixture.querySelectorAll(".lvct-form__actions button")).find((b) => b.textContent.includes("沉淀为思源文档"));
+    assert(createDocBtn, "未找到沉淀为思源文档按钮");
+    createDocBtn.click();
+
+    await until(() => createBriefingCalled, "点击沉淀未调用 onCreateBriefingDoc");
+    await until(() => fixture.textContent.includes("在主编辑器中打开 ↗"), "创建成功后未显示打开按钮");
+
+    const openDocBtn = Array.from(fixture.querySelectorAll(".lvct-form__actions button")).find((b) => b.textContent.includes("在主编辑器中打开 ↗"));
+    assert(openDocBtn, "未找到在主编辑器打开按钮");
+    openDocBtn.click();
+    assert(openedDocId === "doc-briefing-created-01", "点击打开文档未传递正确 docId");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

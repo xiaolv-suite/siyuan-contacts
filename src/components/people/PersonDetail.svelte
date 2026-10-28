@@ -183,6 +183,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddProject,
         onRemoveProject,
         onCreateFlashcardsDoc,
+        onCreateBriefingDoc,
         onLoadKinships,
         onAddKinship,
         onRemoveKinship,
@@ -288,6 +289,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onRemoveProject?: (personDocId: string, projectId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         /** 制作思源记忆复习闪卡（Riff Cards）实体文档（可选） */
         onCreateFlashcardsDoc?: (person: ContactSummary, facts: readonly PersonFactItem[], topics: readonly import("../../domain/topics").PersonTopicItem[]) => Promise<{ docId: string; hpath: string; count: number } | null>;
+        /** 制作会面准备简报实体文档（可选） */
+        onCreateBriefingDoc?: (input: import("../../domain/briefing-export").BriefingExportInput, dateStr?: string) => Promise<{ docId: string; hpath: string } | null>;
         /** E-38 家庭与亲属关系（可选） */
         onLoadKinships?: (personDocId: string) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
         onAddKinship?: (item: import("../../domain/kinship").KinshipMemberItem) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
@@ -1463,6 +1466,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let briefingGeneratedAt = $state("");
     let briefingCopied = $state(false);
     let briefingCopyTimer: ReturnType<typeof setTimeout> | null = null;
+    let briefingDocBusy = $state(false);
+    let briefingDocCreated = $state<{ docId: string; hpath: string } | null>(null);
+    let briefingDocError = $state("");
     let siyuanRefCopied = $state(false);
     let siyuanRefTimer: ReturnType<typeof setTimeout> | null = null;
     let siyuanUriCopied = $state(false);
@@ -1785,11 +1791,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         const now = new Date();
         const pad = (value: number) => String(value).padStart(2, "0");
         briefingGeneratedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        briefingDocCreated = null;
+        briefingDocError = "";
         briefingExportOpen = true;
     }
-    const briefingPreview = $derived.by(() => {
-        if (!briefingExportOpen) return "";
-        return buildBriefingMarkdown({
+    const briefingInput = $derived.by((): import("../../domain/briefing-export").BriefingExportInput | null => {
+        if (!briefingExportOpen) return null;
+        return {
             person: current,
             timeline: insights?.timeline ?? [],
             followUps: openFollowUps.map((item) => ({ title: item.title, dueDate: item.dueDate })),
@@ -1825,8 +1833,50 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 kind: b.kind,
                 blockId: b.blockId,
             })),
-        });
+            kinships: kinships.map((k) => ({
+                role: k.role,
+                name: k.name,
+                relationLabel: k.relationLabel,
+                birthYearOrDate: k.birthYearOrDate,
+                note: k.note,
+            })),
+            promises: promises.map((p) => ({
+                direction: p.direction,
+                title: p.title,
+                detail: p.detail,
+                promisedOn: p.promisedOn,
+                dueOn: p.dueOn,
+                status: p.status,
+                fulfilledOn: p.fulfilledOn,
+            })),
+            socialRadar: current.isSelf ? undefined : {
+                overallScore: socialRadarAssessment.overallScore,
+                tierName: socialRadarAssessment.tierLabel,
+                strongestDimLabel: socialRadarAssessment.highlights[0],
+            },
+        };
     });
+    const briefingPreview = $derived.by(() => {
+        if (!briefingInput) return "";
+        return buildBriefingMarkdown(briefingInput);
+    });
+    async function handleCreateBriefingDoc() {
+        if (!onCreateBriefingDoc || !briefingInput || briefingDocBusy) return;
+        briefingDocBusy = true;
+        briefingDocError = "";
+        try {
+            const res = await onCreateBriefingDoc(briefingInput);
+            if (res) {
+                briefingDocCreated = res;
+            } else {
+                briefingDocError = text("briefingDocFail", "未能创建简报文档，请检查笔记本配置");
+            }
+        } catch (err: unknown) {
+            briefingDocError = err instanceof Error ? err.message : String(err);
+        } finally {
+            briefingDocBusy = false;
+        }
+    }
     function downloadBriefing() {
         const blob = new Blob([briefingPreview], { type: "text/markdown;charset=utf-8" });
         const url = URL.createObjectURL(blob);
@@ -4658,8 +4708,45 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 </select>
             </label>
             <pre class="lvct-briefing-preview" class:lvct-briefing-preview--copied={briefingCopied}>{briefingPreview}</pre>
+            {#if briefingDocError}
+                <div class="b3-label b3-label--error ft__smaller" style="margin-bottom: 6px;">
+                    {briefingDocError}
+                </div>
+            {/if}
+            {#if briefingDocCreated}
+                <div class="b3-label b3-label--success ft__smaller" style="margin-bottom: 6px;">
+                    {text("briefingDocSuccess", "已生成简报实体文档：")}{briefingDocCreated.hpath}
+                </div>
+            {/if}
             <div class="lvct-form__actions">
                 <button class="b3-button b3-button--cancel" onclick={() => (briefingExportOpen = false)}>关闭</button>
+                {#if onCreateBriefingDoc}
+                    {#if briefingDocCreated}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline ft__primary"
+                            onclick={() => {
+                                onOpenPersonDoc?.(briefingDocCreated!.docId);
+                                briefingExportOpen = false;
+                            }}
+                        >
+                            <ExternalLink size={14} style="margin-right: 4px;" />
+                            {text("briefingDocOpen", "在主编辑器中打开 ↗")}
+                        </button>
+                    {:else}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline"
+                            onclick={handleCreateBriefingDoc}
+                            disabled={briefingDocBusy}
+                        >
+                            <span class="fn__flex" style="align-items: center; gap: 4px;">
+                                <FileText size={14} />
+                                {briefingDocBusy ? text("briefingDocCreating", "正在生成简报文档…") : text("briefingDocCreateBtn", "沉淀为思源文档")}
+                            </span>
+                        </button>
+                    {/if}
+                {/if}
                 <button class="b3-button b3-button--primary" onclick={copyBriefing}>
                     {#if briefingCopied}
                         <Check size={14} /> 已复制简报全文 ✓

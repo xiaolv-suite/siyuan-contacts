@@ -62,6 +62,30 @@ export interface BriefingBacklink {
     blockId?: string;
 }
 
+export interface BriefingKinshipMember {
+    role: "parent" | "spouse" | "sibling" | "child" | "relative";
+    name: string;
+    relationLabel?: string;
+    birthYearOrDate?: string;
+    note?: string;
+}
+
+export interface BriefingPromise {
+    direction: "i_promised" | "they_promised";
+    title: string;
+    detail?: string;
+    promisedOn: string;
+    dueOn?: string;
+    status: "pending" | "fulfilled" | "broken";
+    fulfilledOn?: string;
+}
+
+export interface BriefingSocialRadar {
+    overallScore: number;
+    tierName: string;
+    strongestDimLabel?: string;
+}
+
 export interface BriefingExportInput {
     person: ContactSummary;
     timeline: readonly BriefingTimelineEntry[];
@@ -82,6 +106,12 @@ export interface BriefingExportInput {
     commonOrgs?: readonly BriefingCommonOrg[];
     /** 笔记与日志提及（反链） */
     backlinks?: readonly BriefingBacklink[];
+    /** E-38：家庭与亲属成员 */
+    kinships?: readonly BriefingKinshipMember[];
+    /** E-39：双向承诺与约定履约 */
+    promises?: readonly BriefingPromise[];
+    /** 社交资本全景评估 */
+    socialRadar?: BriefingSocialRadar;
     /** 可选排除的章节 ID 集合 */
     excludedSections?: readonly string[];
 }
@@ -91,6 +121,20 @@ const SOURCE_LABELS: Record<string, string> = {
     diary: "笔记捕获",
     api: "外部联动",
 };
+
+const KINSHIP_ROLE_LABELS: Record<string, string> = {
+    parent: "长辈",
+    spouse: "伴侣",
+    sibling: "手足",
+    child: "子女",
+    relative: "亲属",
+};
+
+export function buildBriefingDocumentHpath(personName: string, dateStr?: string): string {
+    const safeName = sanitizeFileName(personName, "联系人");
+    const safeDate = (dateStr || new Date().toISOString().slice(0, 10)).trim();
+    return `/会面简报/📝 会面准备简报 · ${safeName}（${safeDate}）`;
+}
 
 /** Markdown 行内转义：防止用户文本（姓名/备注）破坏文档结构 */
 
@@ -144,6 +188,45 @@ export function buildBriefingMarkdown(input: BriefingExportInput): string {
             lines.push("");
             lines.push("## 基本资料");
             lines.push(...profile);
+        }
+    }
+
+    // 社交资产全景评估
+    if (!isExcluded("socialRadar") && input.socialRadar) {
+        lines.push("");
+        lines.push("## 社交资产全景评估");
+        lines.push(`- 综合得分：**${input.socialRadar.overallScore} 分** · 评级：**${escapeMarkdown(input.socialRadar.tierName)}**`);
+        if (input.socialRadar.strongestDimLabel) {
+            lines.push(`- 资产亮点：${escapeMarkdown(input.socialRadar.strongestDimLabel)}`);
+        }
+    }
+
+    // E-38 家庭与亲属网络
+    const validKinships = (input.kinships ?? []).filter((k) => Boolean(k.name?.trim()));
+    if (!isExcluded("kinships") && validKinships.length > 0) {
+        lines.push("");
+        lines.push(`## 家庭与亲属网络（${validKinships.length} 人）`);
+        for (const k of validKinships) {
+            const role = KINSHIP_ROLE_LABELS[k.role] || k.role;
+            const label = k.relationLabel ? `（${k.relationLabel}）` : "";
+            const birth = k.birthYearOrDate ? ` · ${k.birthYearOrDate}` : "";
+            const note = k.note ? ` · 备忘：${k.note}` : "";
+            lines.push(`- ${role}：**${escapeMarkdown(k.name)}**${escapeMarkdown(label)}${escapeMarkdown(birth)}${escapeMarkdown(note)}`);
+        }
+    }
+
+    // E-39 双向承诺与信诺约定
+    const validPromises = (input.promises ?? []).filter((p) => Boolean(p.title?.trim()));
+    if (!isExcluded("promises") && validPromises.length > 0) {
+        lines.push("");
+        lines.push(`## 双向承诺与信诺约定（${validPromises.length} 条）`);
+        for (const p of validPromises) {
+            const dirTag = p.direction === "i_promised" ? "我承" : "彼承";
+            const statusTag = p.status === "fulfilled" ? "已兑现" : p.status === "broken" ? "已失效" : "待履约";
+            const due = p.dueOn ? ` · 目标日：${p.dueOn}` : "";
+            const ful = p.fulfilledOn ? ` · 兑现日：${p.fulfilledOn}` : "";
+            const detail = p.detail ? ` — ${p.detail}` : "";
+            lines.push(`- [${dirTag}·${statusTag}] **${escapeMarkdown(p.title)}**（许诺日：${p.promisedOn}${due}${ful}）${escapeMarkdown(detail)}`);
         }
     }
 

@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.30** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.30) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.31** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.31) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.30 · 2026-10-28）
+## 本次发布（v0.6.31 · 2026-10-29）
+
+本版本将人物会面简报与思源实体笔记知识库深度贯通，推出了会面全景准备简报实体文档生成与多维资产汇编系统（Comprehensive Meeting Briefing & Dossier Document Generator）：
+
+- **会面简报全要素汇编（`domain/briefing-export.ts` & `services/briefing-doc.ts`）**：在原有基本资料、时间线与跟进基础上，全量整合社交资产六维雷达评级（`socialRadar`）、家庭与亲属网络谱系（`kinships`）以及双向承诺与约定事项（`promises`），支持一键生成规范实体 Markdown 文档，归档至 `/会面简报/📝 会面准备简报 · 姓名（日期）`。
+- **详情页简报弹窗沉淀与一键直达联动（`PersonDetail.svelte`）**：在简报弹窗操作栏新增「沉淀为思源文档」按钮，自动附带 `custom-lvct-briefing-person` 与 `custom-lvct-briefing-date` 原生块属性；创建完成后直接提供「在主编辑器中打开 ↗」快捷入口，可在会前一键直达新文档开展会面记录与批注。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 972/972 100% 通过；浏览器 UI 回归全绿（501/501）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.30 · 2026-10-28）
 
 本版本将人际交往中关键的“言出必行、互信守约”机制产品化，推出了联系人双向承诺与信诺履约追踪系统（Mutual Promises & Commitments Tracker）：
 

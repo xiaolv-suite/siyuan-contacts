@@ -115,6 +115,7 @@ import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePerson
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
+import { createBriefingDoc } from "./services/briefing-doc.ts";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1840,6 +1841,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     ) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return createBatchFlashcardsDoc(this, this.settings, people, options);
+    }
+
+    /** 会面准备简报：沉淀为思源实体文档 */
+    async createBriefingDoc(input: import("./domain/briefing-export").BriefingExportInput, dateStr?: string) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return createBriefingDoc(this, this.settings, input, dateStr);
     }
 
     async loadExchangesSummary() {

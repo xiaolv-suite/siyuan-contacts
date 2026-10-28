@@ -1170,5 +1170,10 @@
   "promisesMarkBrokenTip": "取消/落空",
   "promisesReopen": "重开",
   "promisesReopenTip": "重开履约",
-  "promisesTitleRequired": "承诺事项标题不能为空"
+  "promisesTitleRequired": "承诺事项标题不能为空",
+  "briefingDocFail": "未能创建简报文档，请检查笔记本配置",
+  "briefingDocSuccess": "已生成简报实体文档：",
+  "briefingDocOpen": "在主编辑器中打开 ↗",
+  "briefingDocCreating": "正在生成简报文档…",
+  "briefingDocCreateBtn": "沉淀为思源文档"
 }

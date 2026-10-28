@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.31] — 2026-10-29
+
+重塑：联系人会面全景准备简报实体文档沉淀与多维社交资产汇编（Comprehensive Meeting Briefing & Dossier Document Generator）
+
+- **全维度会面简报模型扩充**：`domain/briefing-export.ts` 全量汇编六维社交资产评估（`socialRadar`）、家庭与亲属网络谱系（`kinships`）以及双向承诺约定（`promises`），并提供统一实体文档路径规则（`buildBriefingDocumentHpath`）。
+- **实体简报文档生成与直达联动**：`services/briefing-doc.ts` 沉淀 `/会面简报/📝 会面准备简报 · 姓名（日期）` 实体文档；`PersonDetail.svelte` 导出会面简报窗口支持一键「沉淀为思源文档」与「在主编辑器中打开 ↗」。
+
+验证：`pnpm check` 0/0、单测 972/972 绿灯、E2E UI 回归 501/501 全部通过、Release 门禁通过。
+
 ## [0.6.30] — 2026-10-28
 
 重塑：联系人详情页「双向承诺与信诺履约本」（Mutual Promises & Commitments Tracker）
