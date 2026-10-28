@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildPersonFlashcards, buildFlashcardDocumentMarkdown } from "../src/domain/flashcards.ts";
+import {
+    buildPersonFlashcards,
+    buildFlashcardDocumentMarkdown,
+    buildBatchFlashcardsDocumentMarkdown,
+} from "../src/domain/flashcards.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 import type { PersonFactItem } from "../src/domain/doc-section.ts";
 import type { PersonTopicItem } from "../src/domain/topics.ts";
@@ -110,3 +114,52 @@ test("buildPersonFlashcards：精简空卡回退测试", () => {
     const md = buildFlashcardDocumentMarkdown(minimalPerson, cards);
     assert(md.includes("暂无可用闪卡"));
 });
+
+test("buildBatchFlashcardsDocumentMarkdown：多联系人批量闪卡文档组装", () => {
+    const p1: ContactSummary = {
+        docId: "doc-p1",
+        itemId: "item-p1",
+        name: "客户甲",
+        phone: "13800001111",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "1992-05-01",
+        isLunar: false,
+        group: "VIP",
+        tags: [],
+        relatedItemIds: [],
+    };
+
+    const p2: ContactSummary = {
+        docId: "doc-p2",
+        itemId: "item-p2",
+        name: "客户乙",
+        phone: "13900002222",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "",
+        isLunar: false,
+        group: "VIP",
+        tags: [],
+        relatedItemIds: [],
+    };
+
+    const md = buildBatchFlashcardsDocumentMarkdown(
+        [
+            { person: p1, facts: [{ id: "f1", text: "喜好高尔夫", category: "preference", createdAt: 1000 }] },
+            { person: p2 },
+        ],
+        "重点客户",
+        "战略合作伙伴"
+    );
+
+    assert(md.includes("# 🎴 人脉记忆闪卡 · 战略合作伙伴"));
+    assert(md.includes("共 **2** 位（其中 **2** 位包含记忆细节）"));
+    assert(md.includes("## 👤 [客户甲](siyuan://blocks/doc-p1)"));
+    assert(md.includes("## 👤 [客户乙](siyuan://blocks/doc-p2)"));
+    assert(md.includes('{: custom-riff-decks="重点客户" }'));
+    assert(md.includes("喜好高尔夫"));
+});
+

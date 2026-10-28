@@ -33,7 +33,7 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
-    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap } from "@lucide/svelte";
+    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers } from "@lucide/svelte";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
@@ -75,6 +75,7 @@
         onLoadSelfCandidates,
         onCreateOccasion,
         onExecuteMerge,
+        onCreateBatchFlashcardsDoc,
         onPreviewSelfIdentityChange,
         onApplySelfIdentityChange,
         onValidateExtended,
@@ -121,6 +122,8 @@
         onPreferencesChange: (preferences: ViewPreferences, baseline?: ViewPreferences) => Promise<ViewPreferences>;
         onCreateOccasion?: (input: import("../../services/occasions").CreateOccasionInput) => Promise<void>;
         onExecuteMerge?: (plan: import("../../domain/duplicate-merge").ContactMergePlan) => Promise<unknown>;
+        /** 批量联系人常识复习闪卡制作回调（可选） */
+        onCreateBatchFlashcardsDoc?: (people: readonly ContactSummary[], options?: { deckName?: string; batchTitle?: string }) => Promise<{ docId: string; hpath: string; count: number } | null>;
         /** B09-1：移动端工具栏收纳（常驻搜索/视图切换/新建，其余收进底部弹层） */
         isMobile?: boolean;
     } = $props();
@@ -1604,6 +1607,38 @@
         }
     }
 
+    let batchFlashcardsBusy: boolean = $state(false);
+    let batchFlashcardsDocInfo = $state<{ docId: string; hpath: string; count: number } | null>(null);
+
+    async function handleBatchFlashcards(): Promise<void> {
+        if (!onCreateBatchFlashcardsDoc || batchBusy || batchOrgBusy || batchFlashcardsBusy || selectedIds.length === 0) return;
+        if (selectionScopePending) { batchError = pendingScopeMessage; return; }
+        if (hiddenSelectionCount > 0 && !window.confirm(`为选中的 ${selectedPeople.length} 人制作闪卡（含筛选外 ${hiddenSelectionCount} 人），继续吗？`)) return;
+
+        batchFlashcardsBusy = true;
+        batchError = "";
+        try {
+            const groupName = groupFilter ? `${groupFilter}组` : "";
+            const title = groupName ? `${groupName}（${selectedPeople.length} 人）` : `选中（${selectedPeople.length} 人）`;
+            const res = await onCreateBatchFlashcardsDoc(selectedPeople, {
+                batchTitle: title,
+                deckName: "人脉记忆",
+            });
+            if (peopleAlive) {
+                if (res) {
+                    batchFlashcardsDocInfo = res;
+                    batchResult = `已成功为 ${selectedPeople.length} 位联系人生成 ${res.count} 张复习闪卡`;
+                } else {
+                    batchError = text("peopleBatchFlashcardsFailed", "生成批量复习闪卡失败，请检查笔记本设置");
+                }
+            }
+        } catch (error) {
+            if (peopleAlive) batchError = requestErrorMessage(error);
+        } finally {
+            if (peopleAlive) batchFlashcardsBusy = false;
+        }
+    }
+
     async function exportSelected() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
@@ -2142,8 +2177,30 @@
                     title="在关系图谱中聚焦已选联系人"
                 ><Network size={14}/> {text("peopleBatchViewInGraph", "在图谱中查看")}</button>
             {/if}
-            <button class="b3-button b3-button--outline" onclick={exportSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>导出 vCard</button>
-            <button class="b3-button b3-button--cancel lvct-people__remove" onclick={removeSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>从人脉移除</button>
+            <button class="b3-button b3-button--outline" onclick={exportSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>导出 vCard</button>
+            {#if onCreateBatchFlashcardsDoc}
+                <button
+                    class="b3-button b3-button--outline lvct-people__batch-flashcards-btn"
+                    onclick={handleBatchFlashcards}
+                    disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending}
+                    title={text("peopleBatchFlashcardsTitle", "将选中联系人一键批量汇编为思源复习闪卡（Riff Cards）")}
+                >
+                    <Layers size={14} class="lvct-icon-inline" /> {batchFlashcardsBusy ? text("peopleBatchFlashcardsBusy", "闪卡生成中…") : text("peopleBatchFlashcards", "制作复习闪卡")}
+                </button>
+            {/if}
+            {#if batchFlashcardsDocInfo}
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small"
+                    style="color: var(--b3-theme-primary); text-decoration: underline; padding: 0 4px;"
+                    onclick={() => {
+                        onOpenPersonDoc?.(batchFlashcardsDocInfo!.docId);
+                    }}
+                >
+                    打开闪卡文档 ↗
+                </button>
+            {/if}
+            <button class="b3-button b3-button--cancel lvct-people__remove" onclick={removeSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>从人脉移除</button>
             <button class="b3-button b3-button--text" onclick={() => (selectedIds = [])} disabled={batchBusy || batchOrgBusy || exportingSelected} title={batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>取消选择</button>
             {#if selectionScopePending}<span role="status">{pendingScopeMessage}</span>{/if}
         </div>

@@ -8474,6 +8474,84 @@ await test("G-16 关系图谱：时间轴演化回放滑块（Timeline Evolution
     fixture.remove();
 });
 
+await test("B-09 联系人名册：批量制作思源复习闪卡（Batch Flashcards Deck）与一键直达", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let createBatchFlashcardsCalled = false;
+    let openedDocId = null;
+
+    const testPeople = [
+        { id: "item-b1", docId: "doc-b1", name: "张合伙人", phone: "13800001111", wechat: "", group: "VIP客户", tags: [], relatedItemIds: [] },
+        { id: "item-b2", docId: "doc-b2", name: "李总监", phone: "13900002222", wechat: "", group: "VIP客户", tags: [], relatedItemIds: [] },
+    ];
+
+    kernel.handler = reflectContactWrites(async (route) => {
+        if (route === "/api/av/renderAttributeView") return { view: {
+            columns: FIELD_SPECS.map((field) => ({ id: field.key, name: field.nameZh, type: field.type })),
+            rows: testPeople.map((row) => ({ id: row.id, cells: [
+                { valueType: "block", value: { type: "block", keyID: "name", block: { id: row.docId, content: row.name } } },
+                { valueType: "phone", value: { type: "phone", keyID: "phone", phone: { content: row.phone } } },
+                { valueType: "text", value: { type: "text", keyID: "wechat", text: { content: row.wechat } } },
+                { valueType: "mSelect", value: { type: "mSelect", keyID: "group", mSelect: row.group ? [{ content: row.group }] : [] } },
+                { valueType: "mSelect", value: { type: "mSelect", keyID: "tags", mSelect: row.tags.map((tag) => ({ content: tag })) } },
+                { valueType: "relation", value: { type: "relation", keyID: "related", relation: { blockIDs: [] } } },
+            ] })),
+        } };
+        return null;
+    });
+
+    mounted = mount(PeopleView, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            loadRecentInteractions: async () => ({}),
+            revision: 0,
+            initialSort: "name",
+            onOpenDetail() {},
+            onPreferencesChange: async (p) => p,
+            onOpenPersonDoc: (docId) => {
+                openedDocId = docId;
+            },
+            onCreateBatchFlashcardsDoc: async () => {
+                createBatchFlashcardsCalled = true;
+                return {
+                    docId: "doc-batch-deck-01",
+                    hpath: "/人脉闪卡/🎴 人脉记忆闪卡 · 批量汇编",
+                    count: 6,
+                };
+            },
+        },
+    });
+
+    await until(() => fixture.querySelectorAll(".lvct-person-card").length >= 2, "联系人卡片未渲染");
+
+    // 选中第一位和第二位联系人复选框
+    const checkboxes = fixture.querySelectorAll(".lvct-person-card input[type='checkbox']");
+    assert(checkboxes.length >= 2, "未找到联系人多选框");
+    checkboxes[0].click();
+    checkboxes[1].click();
+
+    await until(() => fixture.querySelector(".lvct-people__batch-flashcards-btn"), "未渲染批量闪卡按钮");
+    const batchFlashBtn = fixture.querySelector(".lvct-people__batch-flashcards-btn");
+    assert(batchFlashBtn.textContent.includes("制作复习闪卡"), "按钮文案未包含制作复习闪卡");
+
+    // 点击批量制作复习闪卡
+    batchFlashBtn.click();
+    await until(() => createBatchFlashcardsCalled, "点击未触发 onCreateBatchFlashcardsDoc 回调");
+
+    await until(() => fixture.textContent.includes("已成功为 2 位联系人生成 6 张复习闪卡"), "未渲染批量生成反馈结果");
+
+    // 点击打开闪卡文档
+    const openDocBtn = [...fixture.querySelectorAll("button")].find((b) => b.textContent.includes("打开闪卡文档"));
+    assert(openDocBtn, "未找到打开闪卡文档按钮");
+    openDocBtn.click();
+    await until(() => openedDocId === "doc-batch-deck-01", "点击打开闪卡文档未调用 onOpenPersonDoc");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

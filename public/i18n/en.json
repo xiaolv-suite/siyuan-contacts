@@ -1117,6 +1117,10 @@
   "orgsViewMembers": "Members",
   "orgsViewGraph": "Graph",
   "peopleBatchViewInGraph": "View in Graph",
+  "peopleBatchFlashcards": "Make Flashcards",
+  "peopleBatchFlashcardsTitle": "Compile selected contacts into a spaced repetition flashcard deck",
+  "peopleBatchFlashcardsBusy": "Generating...",
+  "peopleBatchFlashcardsFailed": "Failed to generate batch flashcards document, please check notebook settings",
   "detailCopySiyuanRef": "Copy Siyuan Ref",
   "detailSiyuanRefCopied": "Ref Copied ✓",
   "detailOpenNoteDoc": "Open Document"

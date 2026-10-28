@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.26 发布：名册多选批量制作思源复习闪卡包（Batch Flashcards Deck Generator）
+
+- 本轮落地多联系人批量闪卡汇编算法与名册批量栏一键生成：
+  1. 批量闪卡生成纯函数：`flashcards.ts` 纯函数 `buildBatchFlashcardsDocumentMarkdown` 批量聚合多位联系人全要素问答闪卡，按人物分章节组装标准思源 Riff 卡包 Markdown；
+  2. 名册批量操作栏一键制作闪卡：`PeopleView.svelte` 批量操作栏集成「制作复习闪卡」，在当前笔记本生成 `/人脉闪卡/🎴 人脉记忆闪卡 · 某某组` 并支持「打开闪卡文档 ↗」；
+- 门禁验证：`pnpm check`（0/0）、单测 958/958 全部通过、三套 UI 回归 496/496 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.25 发布：关系图谱时间轴演化回放滑块与网络生长动画（Social Graph Timeline Slider & Growth Evolution）
 
 - 本轮落地时间切片演化算法与悬浮播放控制条：

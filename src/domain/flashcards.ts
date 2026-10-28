@@ -176,3 +176,67 @@ export function buildFlashcardDocumentMarkdown(
 
     return lines.join("\n");
 }
+
+export interface BatchPersonFlashcardInput {
+    person: ContactSummary;
+    facts?: readonly PersonFactItem[];
+    topics?: readonly PersonTopicItem[];
+}
+
+/**
+ * 组装针对多个联系人的批量复习闪卡 Markdown 实体文档。
+ * 纯函数：零外部依赖。
+ */
+export function buildBatchFlashcardsDocumentMarkdown(
+    batch: readonly BatchPersonFlashcardInput[],
+    deckName: string = "人脉记忆",
+    batchTitle?: string,
+): string {
+    const title = batchTitle?.trim() || `批量汇编（${batch.length} 人）`;
+    const cleanTitle = escapeLinkLabel(title);
+
+    // 统计总卡片数
+    const entries: Array<{ person: ContactSummary; cards: PersonFlashcard[] }> = [];
+    let totalCards = 0;
+
+    for (const item of batch) {
+        const cards = buildPersonFlashcards(item.person, item.facts ?? [], item.topics ?? []);
+        if (cards.length > 0) {
+            entries.push({ person: item.person, cards });
+            totalCards += cards.length;
+        }
+    }
+
+    const lines: string[] = [];
+    lines.push(`# 🎴 人脉记忆闪卡 · ${cleanTitle}`);
+    lines.push("");
+    lines.push(`> 👥 涵盖联系人：共 **${batch.length}** 位（其中 **${entries.length}** 位包含记忆细节）`);
+    lines.push(`> 💡 本合辑共汇编 **${totalCards}** 张复习闪卡，已标记入「${deckName}」卡包。`);
+    lines.push(`> 📖 可在思源笔记【闪卡】面板中选择「${deckName}」进行集中间隔重复复习。`);
+    lines.push("");
+
+    if (entries.length === 0) {
+        lines.push("*所选联系人暂无可提取的有效闪卡细节。*");
+        lines.push("");
+        return lines.join("\n");
+    }
+
+    for (const entry of entries) {
+        const name = entry.person.name.trim() || "未命名联系人";
+        const cleanName = escapeLinkLabel(name);
+        lines.push(`## 👤 [${cleanName}](siyuan://blocks/${entry.person.docId})`);
+        lines.push("");
+
+        for (const card of entry.cards) {
+            lines.push(`### 🎴 ${card.title}（${cleanName}）`);
+            lines.push("");
+            lines.push(card.prompt);
+            lines.push(`{: custom-riff-decks="${deckName}" }`);
+            lines.push("?");
+            lines.push(card.answer);
+            lines.push("");
+        }
+    }
+
+    return lines.join("\n");
+}

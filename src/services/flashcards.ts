@@ -8,12 +8,24 @@ import type { ContactsSettings } from "../domain/model.ts";
 import type { ContactSummary } from "../domain/person.ts";
 import type { PersonFactItem } from "../domain/doc-section.ts";
 import type { PersonTopicItem } from "../domain/topics.ts";
-import { buildPersonFlashcards, buildFlashcardDocumentMarkdown } from "../domain/flashcards.ts";
+import {
+    buildPersonFlashcards,
+    buildFlashcardDocumentMarkdown,
+    buildBatchFlashcardsDocumentMarkdown,
+    type BatchPersonFlashcardInput,
+} from "../domain/flashcards.ts";
+import { loadPersonFactsFromDoc } from "./doc-section.ts";
+import { loadPersonTopics } from "../data/topics.ts";
 import { createDocWithMd } from "../api/client.ts";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks.ts";
 
 export interface CreateFlashcardsDocOptions {
     deckName?: string;
+}
+
+export interface CreateBatchFlashcardsDocOptions {
+    deckName?: string;
+    batchTitle?: string;
 }
 
 export async function createPersonFlashcardsDoc(
@@ -46,4 +58,56 @@ export async function createPersonFlashcardsDoc(
     } catch {}
 
     return { docId, hpath, count: cards.length };
+}
+
+/**
+ * 批量将一组联系人汇编沉淀为思源实体闪卡文档。
+ */
+export async function createBatchFlashcardsDoc(
+    plugin: Plugin,
+    settings: ContactsSettings,
+    people: readonly ContactSummary[],
+    options: CreateBatchFlashcardsDocOptions = {},
+): Promise<{ docId: string; hpath: string; count: number } | null> {
+    if (!settings.notebookId || people.length === 0) return null;
+
+    const deckName = options.deckName || "人脉记忆";
+    const batchTitle = options.batchTitle || `批量汇编（${people.length} 人）`;
+
+    // 并行收集每位人物的画像事实与会面谈资
+    const batchInputs: BatchPersonFlashcardInput[] = await Promise.all(
+        people.map(async (p) => {
+            const facts = await loadPersonFactsFromDoc(p.docId).catch(() => []);
+            const topics = await loadPersonTopics(plugin, p.docId).catch(() => []);
+            return {
+                person: p,
+                facts,
+                topics,
+            };
+        })
+    );
+
+    const md = buildBatchFlashcardsDocumentMarkdown(batchInputs, deckName, batchTitle);
+    const hpath = `/人脉闪卡/🎴 人脉记忆闪卡 · ${batchTitle}`;
+
+    const docId = await createDocWithMd(settings.notebookId, hpath, md);
+    if (!docId) return null;
+
+    // 统计总卡片数
+    let totalCards = 0;
+    for (const item of batchInputs) {
+        const cards = buildPersonFlashcards(item.person, item.facts ?? [], item.topics ?? []);
+        totalCards += cards.length;
+    }
+
+    try {
+        await setBlockAttrs(docId, {
+            "custom-riff-decks": deckName,
+            "custom-lvct-flashcard-batch": String(people.length),
+            "custom-lvct-created": String(Date.now()),
+        });
+        await flushBlockIndex();
+    } catch {}
+
+    return { docId, hpath, count: totalCards };
 }

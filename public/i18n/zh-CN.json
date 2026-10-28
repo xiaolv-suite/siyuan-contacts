@@ -1117,6 +1117,10 @@
   "orgsViewMembers": "成员",
   "orgsViewGraph": "图谱",
   "peopleBatchViewInGraph": "在图谱中查看",
+  "peopleBatchFlashcards": "制作复习闪卡",
+  "peopleBatchFlashcardsTitle": "将选中联系人一键批量汇编为思源复习闪卡（Riff Cards）",
+  "peopleBatchFlashcardsBusy": "闪卡生成中…",
+  "peopleBatchFlashcardsFailed": "生成批量复习闪卡失败，请检查笔记本设置",
   "detailCopySiyuanRef": "复制双链引用",
   "detailSiyuanRefCopied": "已复制双链引用 ✓",
   "detailOpenNoteDoc": "打开笔记文档"

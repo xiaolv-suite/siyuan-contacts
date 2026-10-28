@@ -112,7 +112,7 @@ import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary,
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
-import { createPersonFlashcardsDoc } from "./services/flashcards";
+import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1784,6 +1784,15 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     ) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return createPersonFlashcardsDoc(this, this.settings, person, facts, topics, options);
+    }
+
+    /** 批量联系人常识复习闪卡（Batch Flashcards Deck）：沉淀为思源实体文档 */
+    async createBatchFlashcardsDoc(
+        people: readonly import("./domain/person").ContactSummary[],
+        options?: import("./services/flashcards").CreateBatchFlashcardsDocOptions,
+    ) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return createBatchFlashcardsDoc(this, this.settings, people, options);
     }
 
     async loadExportSummary() {

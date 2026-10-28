@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.25** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.25) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.26** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.26) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.25 (2026-10-28)
+## This release: v0.6.26 (2026-10-28)
+
+This release implements Batch Spaced Repetition Flashcards Deck Generation in the roster view:
+
+- **Batch Flashcard Compilation Engine (`domain/flashcards.ts`)**: Pure function extracting comprehensive cards across all selected people, organizing by person chapters (`## 👤 [Name](siyuan://blocks/docId)`), and formatting with native SiYuan `{: custom-riff-decks="人脉记忆" }\n?` syntax.
+- **One-Click Flashcard Deck in Batch Toolbar (`PeopleView.svelte`)**: Adds "Make Flashcards" in the multi-selection batch bar to generate `/人脉闪卡/🎴 人脉记忆闪卡 · Group (N people)` with status feedback and direct opening in the main editor.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (958/958 PASS); browser UI regression passing (496/496); production build and release checks passed.
+
+## Previous release: v0.6.25 (2026-10-28)
 
 This release implements the Social Graph Timeline Slider & Growth Evolution:
 
