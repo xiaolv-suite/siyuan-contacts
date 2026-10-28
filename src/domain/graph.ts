@@ -300,3 +300,99 @@ export function filterGraphEdges(
         edges,
     };
 }
+
+export interface GraphTimeSpan {
+    minYear: number;
+    maxYear: number;
+    years: number[];
+}
+
+export function parseYearFromId(id: string): number {
+    if (!id || typeof id !== "string") return new Date().getFullYear();
+    const prefix = id.slice(0, 4);
+    const parsed = parseInt(prefix, 10);
+    if (!Number.isNaN(parsed) && parsed >= 1990 && parsed <= 2100) {
+        return parsed;
+    }
+    return new Date().getFullYear();
+}
+
+/**
+ * 提取图谱节点涵盖的年份区间。
+ * 纯函数：零外部依赖。
+ */
+export function extractGraphTimeSpan(
+    graph: PersonGraph,
+    nodeYearsOverride?: ReadonlyMap<string, number>,
+): GraphTimeSpan {
+    const currentYear = new Date().getFullYear();
+    if (graph.nodes.length === 0) {
+        return { minYear: currentYear, maxYear: currentYear, years: [currentYear] };
+    }
+
+    let min = currentYear;
+    let max = currentYear;
+
+    for (const node of graph.nodes) {
+        const y = nodeYearsOverride?.get(node.id) ?? parseYearFromId(node.id);
+        if (y < min) min = y;
+        if (y > max) max = y;
+    }
+
+    const years: number[] = [];
+    for (let y = min; y <= max; y++) {
+        years.push(y);
+    }
+
+    return {
+        minYear: min,
+        maxYear: max,
+        years,
+    };
+}
+
+/**
+ * 核心时间切片演化过滤：只保留指定年份及之前的节点与关系边。
+ * 纯函数：零外部依赖。
+ */
+export function filterGraphByMaxYear(
+    graph: PersonGraph,
+    maxYear: number,
+    nodeYearsOverride?: ReadonlyMap<string, number>,
+): PersonGraph {
+    if (graph.nodes.length === 0) return graph;
+
+    // 1. 过滤节点
+    const validNodes = graph.nodes.filter((node) => {
+        const y = nodeYearsOverride?.get(node.id) ?? parseYearFromId(node.id);
+        return y <= maxYear;
+    });
+
+    const validNodeIdSet = new Set(validNodes.map((n) => n.id));
+
+    // 2. 过滤边（两端节点必须都在 validNodeIdSet 中，且边的产生年份也 <= maxYear）
+    const validEdges = graph.edges.filter((edge) => {
+        if (!validNodeIdSet.has(edge.source) || !validNodeIdSet.has(edge.target)) return false;
+        const sourceYear = nodeYearsOverride?.get(edge.source) ?? parseYearFromId(edge.source);
+        const targetYear = nodeYearsOverride?.get(edge.target) ?? parseYearFromId(edge.target);
+        const edgeYear = Math.max(sourceYear, targetYear);
+        return edgeYear <= maxYear;
+    });
+
+    // 3. 重新计算留在图内的节点度数
+    const degreeMap = new Map<string, number>();
+    for (const edge of validEdges) {
+        degreeMap.set(edge.source, (degreeMap.get(edge.source) ?? 0) + 1);
+        degreeMap.set(edge.target, (degreeMap.get(edge.target) ?? 0) + 1);
+    }
+
+    const recalculatedNodes = validNodes.map((node) => ({
+        ...node,
+        degree: degreeMap.get(node.id) ?? 0,
+    }));
+
+    return {
+        nodes: recalculatedNodes,
+        edges: validEdges,
+    };
+}

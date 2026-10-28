@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.25] — 2026-10-28
+
+重塑：关系图谱时间轴演化回放滑块与网络生长动画（Social Graph Timeline Slider & Growth Evolution）
+
+- **图谱演化算法引擎**：`domain/graph.ts` 纯函数 `extractGraphTimeSpan` 与 `filterGraphByMaxYear` 按年份切片过滤节点与关联边并重算度数。
+- **悬浮动态播放控制条**：`RelationGraph.svelte` 画布底端集成悬浮播放条，支持自动按年演化播放、年份滑块交互与全图重置。
+
+验证：`pnpm check` 0/0、单测 957/957 绿灯、E2E UI 回归 495/495 全部通过、Release 门禁通过。
+
+
 ## [0.6.24] — 2026-10-28
 
 重塑：人脉常识问答闪卡包生成与思源复习沉淀（Spaced Repetition Flashcard Deck Generator）

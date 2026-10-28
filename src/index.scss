@@ -10808,3 +10808,65 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     animation: lvct-fade-in 0.2s ease;
 }
 
+/* 图谱时间轴演化回放悬浮控制栏 */
+.lvct-graph-timeline-player {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 14px;
+    background: var(--b3-theme-surface);
+    border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+    border-radius: 9999px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    max-width: calc(100% - 32px);
+    overflow-x: auto;
+
+    .lvct-graph-timeline-play-btn {
+        padding: 4px 10px;
+        color: var(--b3-theme-primary);
+        font-weight: 600;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .lvct-graph-timeline-slider-wrap {
+        align-items: center;
+        gap: 8px;
+
+        span {
+            font-size: 10.5px;
+            color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+            opacity: 0.8;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .lvct-graph-timeline-slider {
+        width: 140px;
+        cursor: pointer;
+    }
+
+    .lvct-graph-timeline-info {
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+
+        .b3-chip {
+            padding: 2px 7px;
+        }
+    }
+
+    .lvct-graph-timeline-reset {
+        padding: 2px 6px;
+        font-size: 11px;
+    }
+}
+

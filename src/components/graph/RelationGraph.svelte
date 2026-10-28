@@ -2,7 +2,7 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw } from "@lucide/svelte";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { copyPlainText } from "../../shared/clipboard";
     import { profileText } from "../../domain/people-profiles";
@@ -10,11 +10,11 @@
     import ViewState from "../ViewState.svelte";
     import StatusNotice from "../StatusNotice.svelte";
     import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
-    import { GRAPH_MAX_NODES, filterGraphEdges } from "../../domain/graph";
+    import { GRAPH_MAX_NODES, filterGraphEdges, extractGraphTimeSpan, filterGraphByMaxYear, type GraphTimeSpan } from "../../domain/graph";
     import { buildGraphQuerySnapshot, graphEdgeLabel } from "../../domain/graph-query";
     import type { GraphSources, GraphQuery, GraphReferenceSource, GraphScope } from "../../domain/graph-query";
     import type { GraphNode } from "../../domain/graph";
-    import type { GraphViewMode, ViewPreferences } from "../../domain/preferences";
+    import { DEFAULT_VIEW_PREFERENCES, type GraphViewMode, type ViewPreferences } from "../../domain/preferences";
     import { renderGraphSnapshotMarkdown } from "../../domain/graph-export";
     import { translateText } from "../../domain/translation";
     import type { ContactsSettings } from "../../domain/model";
@@ -32,7 +32,7 @@
         revision = 0,
         facade,
         i18n,
-        preferences,
+        preferences = DEFAULT_VIEW_PREFERENCES,
         onPreferencesChange,
         onOpenDetail,
         onOpenPeople,
@@ -46,8 +46,8 @@
         facade?: ContactsPluginFacade;
         i18n?: Readonly<Record<string, string>>;
         /** B14.5：图谱数据源模式保存在视图偏好中，重开仍用用户选定模式 */
-        preferences: ViewPreferences;
-        onPreferencesChange: (next: ViewPreferences) => Promise<ViewPreferences>;
+        preferences?: ViewPreferences;
+        onPreferencesChange?: (next: ViewPreferences) => Promise<ViewPreferences>;
         onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
         onOpenPeople: (focus?: { itemIds: readonly string[]; label: string; sort?: "name" | "group" | "birthday" | "recent" }) => void;
         /** 空图谱时直接进入新建联系人流程；未接线时回退到联系人列表。 */
@@ -306,7 +306,58 @@
     const allPeopleByDocId = $derived(new Map(people.map((person) => [person.docId, person])));
 
     const displayedOrg = $derived(hoveredPerson ? undefined : hoveredOrg ?? (selectedOrgId && nodeById.get(selectedOrgId)?.kind === "org" ? nodeById.get(selectedOrgId) : undefined));
-    const displayGraph = $derived(filterGraphEdges(snapshot.graph, hiddenEdgeKinds));
+
+    let timelineEnabled = $state(false);
+    let selectedYear = $state<number | null>(null);
+    let isPlayingTimeline = $state(false);
+    let timelinePlayTimer: ReturnType<typeof setInterval> | null = null;
+
+    const timeSpan = $derived.by<GraphTimeSpan>(() => extractGraphTimeSpan(snapshot.graph));
+    const activeYear = $derived(selectedYear ?? timeSpan.maxYear);
+
+    const timeFilteredGraph = $derived.by(() => {
+        const base = filterGraphEdges(snapshot.graph, hiddenEdgeKinds);
+        if (!timelineEnabled || selectedYear === null) return base;
+        return filterGraphByMaxYear(base, selectedYear);
+    });
+    const displayGraph = $derived(timeFilteredGraph);
+
+    function togglePlayTimeline() {
+        if (isPlayingTimeline) {
+            pauseTimeline();
+        } else {
+            playTimeline();
+        }
+    }
+
+    function playTimeline() {
+        if (isPlayingTimeline) return;
+        isPlayingTimeline = true;
+        if (activeYear >= timeSpan.maxYear) {
+            selectedYear = timeSpan.minYear;
+        }
+        timelinePlayTimer = setInterval(() => {
+            const next = (selectedYear ?? timeSpan.minYear) + 1;
+            if (next > timeSpan.maxYear) {
+                pauseTimeline();
+            } else {
+                selectedYear = next;
+            }
+        }, 1100);
+    }
+
+    function pauseTimeline() {
+        isPlayingTimeline = false;
+        if (timelinePlayTimer) {
+            clearInterval(timelinePlayTimer);
+            timelinePlayTimer = null;
+        }
+    }
+
+    function resetTimeline() {
+        pauseTimeline();
+        selectedYear = timeSpan.maxYear;
+    }
     const canvasData = $derived(JSON.stringify(displayGraph));
     const snapshotStatusText = $derived.by(() => loading || nativeLoading
         ? text("graphSnapshotLoading", "正在核实图查询…")
@@ -377,6 +428,7 @@
         alive = false;
         refreshVersion += 1;
         nativeVersion += 1;
+        pauseTimeline();
         returnObserver?.disconnect();
         clearHover();
         if (copyToastTimer) clearTimeout(copyToastTimer);
@@ -582,7 +634,7 @@
         pendingPreferencePatch = patch;
         preferenceError = "";
         try {
-            await onPreferencesChange({ ...preferences, ...patch });
+            await onPreferencesChange?.({ ...preferences, ...patch });
             // 旧保存可能晚于新保存返回；只有当前操作仍对应同一草稿时才能清理状态。
             if (alive && operation === preferenceSaveVersion && preferencePatchesEqual(pendingPreferencePatch, patch)) {
                 pendingPreferencePatch = null;
@@ -1557,6 +1609,18 @@
             {#if searchNeedle}<span class="ft__smaller ft__on-surface">{text("graphSnapshotHits", "筛选后 {n} 个节点（含保留中心）", { n: snapshot.counts.filteredNodes })}</span>{/if}
         </div>
         <div class="lvct-graph-toolbar__actions">
+            <button
+                type="button"
+                class="b3-button b3-button--outline lvct-graph-timeline-toggle"
+                class:b3-button--text={!timelineEnabled}
+                onclick={() => {
+                    timelineEnabled = !timelineEnabled;
+                    if (!timelineEnabled) resetTimeline();
+                }}
+                title={text("graphTimelineToggleTitle", "按年份切片观察人脉关系网络随时间的生长演化")}
+            >
+                ⏳ {text("graphTimelineBtn", "时间演化")}
+            </button>
             <div role="group" aria-label={text("graphPresentation", "图谱阅读方式")}>
                 <button class="b3-button b3-button--text" aria-pressed={presentation === "text"} onclick={() => (presentation = "text")}>{text("graphTextView", "文本视图")}</button>
                 <button class="b3-button b3-button--text" aria-pressed={presentation === "canvas"} onclick={() => (presentation = "canvas")}>{text("graphCanvasView", "画布视图")}</button>
@@ -1742,6 +1806,61 @@
                 role="img"
                 aria-label={`图谱画布，${snapshot.graph.nodes.length} 节点、${snapshot.graph.edges.length} 边。支持键盘快捷键：+ / - 缩放，0 适应居中，F 全屏，R 重新布局，1/2 切换一度/二度，Esc 退出抽屉浮层。${canvasFocusId ? `已定位 ${nodeName(canvasFocusId)}` : ""}`}
             ></div>
+
+            <!-- 时间轴演化回放浮动条 -->
+            {#if timelineEnabled && timeSpan.years.length > 0}
+                <div class="lvct-graph-timeline-player" role="toolbar" aria-label="人脉时间演化回放">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--small b3-button--text lvct-graph-timeline-play-btn"
+                        onclick={togglePlayTimeline}
+                        title={isPlayingTimeline ? text("graphTimelinePause", "暂停回放") : text("graphTimelinePlay", "播放网络生长动画")}
+                    >
+                        {#if isPlayingTimeline}
+                            <Pause size={14} /> {text("graphTimelinePause", "暂停")}
+                        {:else}
+                            <Play size={14} /> {text("graphTimelinePlay", "播放")}
+                        {/if}
+                    </button>
+
+                    <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                        <span class="ft__smaller ft__on-surface">{timeSpan.minYear}</span>
+                        <input
+                            type="range"
+                            class="b3-slider lvct-graph-timeline-slider"
+                            min={timeSpan.minYear}
+                            max={timeSpan.maxYear}
+                            step="1"
+                            value={activeYear}
+                            oninput={(e) => {
+                                pauseTimeline();
+                                selectedYear = Number((e.currentTarget as HTMLInputElement).value);
+                            }}
+                        />
+                        <span class="ft__smaller ft__on-surface">{timeSpan.maxYear}</span>
+                    </div>
+
+                    <div class="lvct-graph-timeline-info fn__flex">
+                        <span class="b3-chip b3-chip--primary font-size-11">
+                            <b>{activeYear} 年</b>
+                        </span>
+                        <span class="ft__smaller ft__on-surface">
+                            {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                        </span>
+                    </div>
+
+                    {#if activeYear < timeSpan.maxYear}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--small b3-button--text lvct-graph-timeline-reset"
+                            onclick={resetTimeline}
+                            title={text("graphTimelineReset", "查看全部年份完整图谱")}
+                        >
+                            <RotateCcw size={12} class="lvct-icon-inline" /> {text("graphTimelineAll", "全部")}
+                        </button>
+                    {/if}
+                </div>
+            {/if}
             <!-- UX-02.13 视图操作收进画布右下角浮动簇（地图应用范式），工具栏只留筛选 -->
             <div class="lvct-graph__fab" role="toolbar" aria-label={text("graphViewTools", "图谱视图操作")}>
                 <div style="position: relative; display: inline-flex;">

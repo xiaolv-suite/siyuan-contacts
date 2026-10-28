@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.25 发布：关系图谱时间轴演化回放滑块与网络生长动画（Social Graph Timeline Slider & Growth Evolution）
+
+- 本轮落地时间切片演化算法与悬浮播放控制条：
+  1. 图谱时间演化纯函数：`graph.ts` 纯函数 `extractGraphTimeSpan` 与 `filterGraphByMaxYear` 按年份切片过滤节点与关联边，实时重算切片网络度数；
+  2. 图谱交互式播放器：`RelationGraph.svelte` 画布底端集成悬浮时间演化播放条，支持自动按年播放生长动画、滑块交互与全图重置；
+- 门禁验证：`pnpm check`（0/0）、单测 957/957 全部通过、三套 UI 回归 495/495 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.24 发布：人脉常识问答闪卡包生成与思源复习沉淀（Spaced Repetition Flashcard Deck Generator）
 
 - 本轮落地人脉画像全要素闪卡生成引擎与思源 Riff 闪卡系统深度打通：

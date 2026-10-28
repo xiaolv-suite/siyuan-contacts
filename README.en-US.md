@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.24** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.24) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.25** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.25) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.24 (2026-10-28)
+## This release: v0.6.25 (2026-10-28)
+
+This release implements the Social Graph Timeline Slider & Growth Evolution:
+
+- **Graph Time Slice & Evolution Engine (`domain/graph.ts`)**: Pure function extracting doc creation years from 14-digit IDs (`extractGraphTimeSpan`), slicing nodes and edges by maxYear (`filterGraphByMaxYear`), and dynamically recalculating subgraph degree connectivity.
+- **Interactive Floating Timeline Player Bar (`RelationGraph.svelte`)**: Adds "Evolution" toggle in toolbar and floating player bar at bottom of canvas with Play/Pause animation button, year range slider, active year badge with node/edge stats, and reset button.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (957/957 PASS); browser UI regression passing (495/495); production build and release checks passed.
+
+## Previous release: v0.6.24 (2026-10-28)
 
 This release implements Spaced Repetition Flashcards Deck Generator in the detail view:
 

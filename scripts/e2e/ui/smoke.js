@@ -8418,6 +8418,62 @@ await test("D-03 联系人详情页：思源标准复习闪卡（Flashcards）�
     fixture.remove();
 });
 
+await test("G-16 关系图谱：时间轴演化回放滑块（Timeline Evolution Slider）与网络生长切片", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const testPeople = [
+        { docId: "20220101000000-doc01", itemId: "item-01", name: "张三", phone: "", wechat: "", group: "校友", tags: [], relatedItemIds: ["item-02"] },
+        { docId: "20240101000000-doc02", itemId: "item-02", name: "李四", phone: "", wechat: "", group: "同事", tags: [], relatedItemIds: ["item-01"] },
+        { docId: "20260101000000-doc03", itemId: "item-03", name: "王五", phone: "", wechat: "", group: "行业", tags: [], relatedItemIds: [] },
+    ];
+
+    kernel.handler = reflectContactWrites(async (route) => {
+        if (route === "/api/av/renderAttributeView") return { view: {
+            columns: FIELD_SPECS.map((field) => ({ id: field.key, name: field.nameZh, type: field.type })),
+            rows: testPeople.map((row) => ({ id: row.itemId, cells: [
+                { valueType: "block", value: { type: "block", keyID: "name", block: { id: row.docId, content: row.name } } },
+                { valueType: "phone", value: { type: "phone", keyID: "phone", phone: { content: row.phone } } },
+                { valueType: "text", value: { type: "text", keyID: "wechat", text: { content: row.wechat } } },
+                { valueType: "mSelect", value: { type: "mSelect", keyID: "group", mSelect: row.group ? [{ content: row.group }] : [] } },
+                { valueType: "mSelect", value: { type: "mSelect", keyID: "tags", mSelect: row.tags.map((tag) => ({ content: tag })) } },
+                { valueType: "relation", value: { type: "relation", keyID: "related", relation: { blockIDs: row.relatedItemIds } } },
+            ] })),
+        } };
+        return null;
+    });
+
+    mounted = mount(RelationGraph, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            facade: {
+                listContacts: async () => testPeople,
+                listOrganizations: async () => [],
+            },
+            onOpenPersonDoc() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-graph-timeline-toggle"), "未找到时间演化切换按钮");
+    const toggleBtn = fixture.querySelector(".lvct-graph-timeline-toggle");
+    assert(toggleBtn.textContent.includes("时间演化"), "按钮未包含时间演化文字");
+
+    // 点击开启时间演化
+    toggleBtn.click();
+    await until(() => fixture.querySelector(".lvct-graph-timeline-player"), "未渲染时间轴播放浮条");
+
+    assert(fixture.textContent.includes("2022"), "滑轨未包含起始年份 2022");
+    assert(fixture.textContent.includes("2026"), "滑轨未包含结束年份 2026");
+
+    const playBtn = fixture.querySelector(".lvct-graph-timeline-play-btn");
+    assert(playBtn, "未找到播放按钮");
+    assert(playBtn.textContent.includes("播放"), "初始应显示播放");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
