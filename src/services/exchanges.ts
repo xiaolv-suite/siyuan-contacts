@@ -3,9 +3,19 @@ import { newNodeId } from "../api/client";
 import {
     createExchangeRecord,
     listPersonExchangeRecords,
+    loadExchangeStore,
     setExchangeStatus,
     updateExchangeRecord,
 } from "../data/exchanges";
+import {
+    computeExchangesSummary,
+    buildExchangesLedgerMarkdown,
+    type ExchangesSummary,
+} from "../domain/exchanges-summary";
+import { getRoster } from "./roster";
+import { createDocWithMd } from "../api/client";
+import { flushBlockIndex, setBlockAttrs } from "../api/blocks";
+import type { ContactsSettings } from "../domain/model";
 import type {
     ExchangeDirection,
     ExchangeKind,
@@ -61,4 +71,43 @@ export async function changePersonExchangeStatus(
     expected?: Pick<ExchangeRecord, "updatedAt">,
 ): Promise<ExchangeRecord> {
     return setExchangeStatus(plugin, id, status, settledOn ?? "", expected);
+}
+
+export async function listAllExchanges(plugin: Plugin): Promise<ExchangeRecord[]> {
+    const store = await loadExchangeStore(plugin).catch(() => ({ schemaVersion: 1 as const, records: [] }));
+    return store.records;
+}
+
+export async function loadExchangesSummary(plugin: Plugin, settings: ContactsSettings): Promise<ExchangesSummary> {
+    const [records, people] = await Promise.all([
+        listAllExchanges(plugin),
+        getRoster(settings),
+    ]);
+    return computeExchangesSummary(records, people);
+}
+
+export async function createExchangesLedgerDoc(
+    plugin: Plugin,
+    settings: ContactsSettings,
+    options: { title?: string } = {},
+): Promise<{ docId: string; hpath: string; count: number } | null> {
+    if (!settings.notebookId) return null;
+
+    const summary = await loadExchangesSummary(plugin, settings);
+    const title = options.title?.trim() || `人情礼尚往来大账簿 · ${new Date().toISOString().slice(0, 10)}`;
+    const md = buildExchangesLedgerMarkdown(summary, title);
+    const hpath = `/人情账本/🧧 ${title}`;
+
+    const docId = await createDocWithMd(settings.notebookId, hpath, md);
+    if (!docId) return null;
+
+    try {
+        await setBlockAttrs(docId, {
+            "custom-lvct-ledger": title,
+            "custom-lvct-created": String(Date.now()),
+        });
+        await flushBlockIndex();
+    } catch {}
+
+    return { docId, hpath, count: summary.totalRecords };
 }

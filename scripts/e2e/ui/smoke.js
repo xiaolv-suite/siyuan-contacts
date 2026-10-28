@@ -8552,6 +8552,109 @@ await test("B-09 联系人名册：批量制作思源复习闪卡（Batch Flashc
     fixture.remove();
 });
 
+await test("F-16 首页仪表盘：全库人情礼尚往来大账本（Exchanges Hub）与账簿实体沉淀", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let createLedgerDocCalled = false;
+    let openedDocId = null;
+
+    const mockSummary = {
+        totalRecords: 2,
+        openCount: 1,
+        settledCount: 1,
+        cancelledCount: 0,
+        receivableCount: 1,
+        payableCount: 1,
+        byKind: { money: 1, item: 1, favor: 0 },
+        moneySummary: { receivableTotal: 0, payableTotal: 1000 },
+        records: [
+            {
+                id: "ex-hub-1",
+                personDocId: "doc-h1",
+                personName: "钱老板",
+                kind: "item",
+                direction: "receivable",
+                description: "精美茶具套装",
+                currency: "CNY",
+                occurredOn: "2026-10-20",
+                dueOn: "",
+                status: "open",
+                settledOn: "",
+                note: "展会伴手礼",
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+        ],
+        openItems: [],
+    };
+
+    const testDashboardData = {
+        people: 1,
+        relations: 0,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+    };
+
+    mounted = mount(DashboardView, {
+        target: fixture,
+        props: {
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            facade: {
+                loadDashboard: async () => testDashboardData,
+                loadReminderDismissals: async () => [],
+                loadExchangesSummary: async () => mockSummary,
+                createExchangesLedgerDoc: async () => {
+                    createLedgerDocCalled = true;
+                    return {
+                        docId: "doc-ledger-01",
+                        hpath: "/人情账本/🧧 人情礼尚往来大账簿",
+                        count: 2,
+                    };
+                },
+                openPersonDoc: (docId) => {
+                    openedDocId = docId;
+                },
+            },
+            onOpenDetail() {},
+            onOpenPeople() {},
+            onOpenGraph() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-dash__exchanges-btn"), "未找到人情账本按钮");
+    const hubBtn = fixture.querySelector(".lvct-dash__exchanges-btn");
+    assert(hubBtn.textContent.includes("人情账本"), "按钮文案未包含人情账本");
+
+    // 点击打开人情账本弹窗
+    hubBtn.click();
+    await until(() => fixture.querySelector(".lvct-exchanges-hub"), "未渲染人情大账本抽屉窗口");
+    assert(fixture.textContent.includes("钱老板"), "未渲染往来人物名称");
+    assert(fixture.textContent.includes("精美茶具套装"), "未渲染往来物品描述");
+    assert(fixture.textContent.includes("待处理/待答谢"), "未渲染大盘指标");
+
+    // 点击沉淀为思源账簿文档
+    const createDocBtn = [...fixture.querySelectorAll(".lvct-exchanges-hub button")].find((b) => b.textContent.includes("沉淀为思源账簿文档"));
+    assert(createDocBtn, "未找到沉淀为思源账簿文档按钮");
+    createDocBtn.click();
+    await until(() => createLedgerDocCalled, "点击未触发 createExchangesLedgerDoc 回调");
+
+    await until(() => fixture.querySelector(".lvct-exchanges-hub__notice"), "未渲染账簿生成通知横幅");
+    const openDocBtn = fixture.querySelector(".lvct-exchanges-hub__notice button");
+    assert(openDocBtn, "未找到在主编辑器打开按钮");
+    openDocBtn.click();
+    await until(() => openedDocId === "doc-ledger-01", "点击在主编辑器打开未调用 openPersonDoc");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

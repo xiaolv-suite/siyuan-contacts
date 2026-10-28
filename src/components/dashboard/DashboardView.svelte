@@ -41,6 +41,7 @@
     import ReviewReportDialog from "./ReviewReportDialog.svelte";
     import QuickStartPanel from "./QuickStartPanel.svelte";
     import ActivityHeatmap from "./ActivityHeatmap.svelte";
+    import ExchangesHubDialog from "./ExchangesHubDialog.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
     import { onDestroy } from "svelte";
@@ -160,6 +161,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let generatingDigest = $state(false);
     let digestDocInfo: { docId: string; hpath: string; weekLabel: string } | null = $state(null);
     let digestError = $state("");
+    let exchangesHubOpen = $state(false);
 
     async function handleGenerateWeeklyDigest() {
         if (!facade.createWeeklyDigestDoc || generatingDigest) return;
@@ -1407,6 +1409,15 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                         </button>
                     {/if}
                     <button class="b3-button b3-button--outline lvct-dash__head-action" onclick={() => (reviewOpen = true)}>{text("dashReview", "交往回顾")}</button>
+                    {#if facade.loadExchangesSummary}
+                        <button
+                            class="b3-button b3-button--outline lvct-dash__head-action lvct-dash__exchanges-btn"
+                            onclick={() => (exchangesHubOpen = true)}
+                            title={text("dashExchangesHubTitle", "全库礼尚往来与人情收支大账本")}
+                        >
+                            🧧 {text("dashExchangesHub", "人情账本")}
+                        </button>
+                    {/if}
                     {#if overdueCount > 0 && !overdueRetry}
                         <button class="b3-button b3-button--outline lvct-dash__head-action" onclick={postponeOverdueToToday} disabled={alBusy}
                             aria-label={text("dashPostponeOverdue", "把 {n} 条逾期跟进顺延到今天", { n: overdueCount })}>
@@ -2015,5 +2026,19 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 </div>
             {/if}
         </div>
+    </LvctDialog>
+{/if}
+
+{#if exchangesHubOpen}
+    <LvctDialog title={text("dashExchangesHubDialogTitle", "🧧 人情礼尚往来大账本")} wide onClose={() => (exchangesHubOpen = false)}>
+        <ExchangesHubDialog
+            {facade}
+            {i18n}
+            onClose={() => (exchangesHubOpen = false)}
+            onOpenPerson={(docId) => {
+                exchangesHubOpen = false;
+                onOpenPeople({ memberDocIds: [docId] });
+            }}
+        />
     </LvctDialog>
 {/if}

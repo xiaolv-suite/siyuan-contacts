@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.26** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.26) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.27** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.27) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.26 (2026-10-28)
+## This release: v0.6.27 (2026-10-28)
+
+This release implements the Central Exchanges & Gifts Ledger Hub on the dashboard:
+
+- **Central Exchanges & Ledger Engine (`domain/exchanges-summary.ts`)**: Pure function aggregating all interaction exchanges across contacts, calculating totals for open/settled items, gifts (`item`), money (`money`) and favors (`favor`), mapping persons, and generating structured SiYuan ledger markdown with action item checkboxes `- [ ]` and block refs.
+- **Interactive Exchanges Hub Dialog (`ExchangesHubDialog.svelte`)**: Adds "Gifts & Ledger" button in dashboard header, supports status/category filtering, one-click status toggling, and generating a formal document under `/人情账本/🧧 人情礼尚往来大账簿` with direct navigation.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (959/959 PASS); browser UI regression passing (497/497); production build and release checks passed.
+
+## Previous release: v0.6.26 (2026-10-28)
 
 This release implements Batch Spaced Repetition Flashcards Deck Generation in the roster view:
 

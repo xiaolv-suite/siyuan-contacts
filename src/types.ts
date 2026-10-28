@@ -172,6 +172,9 @@ export interface ContactsPluginFacade {
         people: readonly import("./domain/person").ContactSummary[],
         options?: import("./services/flashcards").CreateBatchFlashcardsDocOptions,
     ): Promise<{ docId: string; hpath: string; count: number } | null>;
+    /** 全库人情往来汇总与大账本（Exchanges Hub） */
+    loadExchangesSummary?(): Promise<import("./domain/exchanges-summary").ExchangesSummary>;
+    createExchangesLedgerDoc?(options?: { title?: string }): Promise<{ docId: string; hpath: string; count: number } | null>;
     /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */
     loadExportSummary(): Promise<ExportSummary>;
     /** 导出全量名册为 vCard 3.0 文本（联系人页选中导出外的设置页统一入口） */

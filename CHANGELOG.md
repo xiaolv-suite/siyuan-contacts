@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.27] — 2026-10-28
+
+重塑：全库人情礼尚往来大账本与实体账簿沉淀（Central Exchanges & Gifts Ledger Hub）
+
+- **全库人情往来汇算**：`domain/exchanges-summary.ts` 纯函数 `computeExchangesSummary` 统计收支指标、待还礼/待答谢事项与全量记录明细。
+- **人情账本抽屉与实体沉淀**：`ExchangesHubDialog.svelte` 呈现往来指标大盘，支持一键切换结清状态与一键沉淀 `/人情账本/🧧 人情礼尚往来大账簿` 实体文档。
+
+验证：`pnpm check` 0/0、单测 959/959 绿灯、E2E UI 回归 497/497 全部通过、Release 门禁通过。
+
+
 ## [0.6.26] — 2026-10-28
 
 重塑：名册多选批量制作思源复习闪卡包（Batch Flashcards Deck Generator）

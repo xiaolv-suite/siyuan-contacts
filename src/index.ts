@@ -102,7 +102,7 @@ import type { PersonCadence } from "./domain/cadence";
 import { listTemplates, saveTemplates } from "./services/templates";
 import type { NoteTemplate } from "./domain/interaction-templates";
 import { loadPersonTopics, addPersonTopic, removePersonTopic } from "./data/topics";
-import { listPersonExchanges, createPersonExchange, updatePersonExchange, changePersonExchangeStatus } from "./services/exchanges";
+import { listPersonExchanges, createPersonExchange, updatePersonExchange, changePersonExchangeStatus, loadExchangesSummary, createExchangesLedgerDoc } from "./services/exchanges";
 import { listPersonAliases, addPersonAlias, removePersonAlias, resolveAlias } from "./services/person-aliases";
 import { listTrash, restoreContactFromTrash, removeContactToTrash, emptyTrash } from "./services/trash";
 import { executeContactMerge } from "./services/duplicate-merge";
@@ -1793,6 +1793,16 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     ) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return createBatchFlashcardsDoc(this, this.settings, people, options);
+    }
+
+    async loadExchangesSummary() {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return loadExchangesSummary(this, this.settings);
+    }
+
+    async createExchangesLedgerDoc(options?: { title?: string }) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return createExchangesLedgerDoc(this, this.settings, options);
     }
 
     async loadExportSummary() {
