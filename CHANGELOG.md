@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.16] — 2026-10-28
+
+重塑：局部社交关系网微雷达（Mini Relation Radar Topology）
+
+- **局部人脉拓扑星系雷达图**：`domain/radar-topology.ts` 与 `MiniRelationRadar.svelte` 实现核心人物 1 度环形星系拓扑雷达。
+- **平滑穿透与双模态切换**：点击雷达节点平滑穿透至好友档案，相关人 Tab 支持「📡 关系雷达」与「📋 清单」秒级切换。
+
+验证：`pnpm check` 0/0、单测 943/943 绿灯、E2E UI 回归全部通过、Release 门禁通过。
+
+
 ## [0.6.15] — 2026-10-28
 
 重塑：名片语义智能画像标签自动推断（Persona Tag Inference Engine）

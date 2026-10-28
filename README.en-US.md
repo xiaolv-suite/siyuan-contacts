@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.15** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.15) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.16** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.16) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.15 (2026-10-28)
+## This release: v0.6.16 (2026-10-28)
+
+This release implements the Mini Relation Radar Topology inside contact detail views:
+
+- **Local Network Orbit Radar (`MiniRelationRadar`)**: Computed via pure function `domain/radar-topology.ts`, rendering crisp SVG radial constellation coordinates of 1st-degree connections around the current contact.
+- **Node Navigation & Dual-Mode Toggle**: Clicking any node in the radar smoothly navigates to that person's file, with a top toggle between "Radar Network" and "List" modes.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (943/943 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.15 (2026-10-28)
 
 This release implements the Persona Tag Inference Engine to solve the classification pain point for growing contact networks:
 

@@ -52,6 +52,7 @@ import StatusNotice from "../StatusNotice.svelte";
     import { createCloseScope, useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
     import PersonPicker from "./PersonPicker.svelte";
+import MiniRelationRadar from "./MiniRelationRadar.svelte";
     import type { PickerItem } from "./PersonPicker.svelte";
     import { dueLabel, hasFollowUpDraft } from "../../domain/followups";
     import type { FollowUpItem, SnoozeOption } from "../../domain/followups";
@@ -299,6 +300,7 @@ import StatusNotice from "../StatusNotice.svelte";
         keywords: `${person.phone} ${person.wechat} ${person.email}`.toLowerCase(),
     })));
     let relationPicker: { openPicker: () => void } | undefined = $state(undefined);
+    let relationViewMode = $state<"radar" | "list">("radar");
     let busy: boolean = $state(false);
     let errorText: string = $state("");
     let noteText: string = $state("");
@@ -4169,7 +4171,25 @@ import StatusNotice from "../StatusNotice.svelte";
 
     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -- tabpanel semantics are required for the tablist contract. -->
     <section id="lvct-detail-panel-relations" role="tabpanel" aria-labelledby="lvct-detail-tab-relations" tabindex="0">
-        <h4>相关人（{relatedPeople.length}）</h4>
+        <div class="fn__flex" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h4 style="margin: 0;">相关人（{relatedPeople.length}）</h4>
+            {#if relatedPeople.length > 0}
+                <div class="fn__flex" style="gap: 4px;">
+                    <button
+                        type="button"
+                        class="b3-chip font-size-11"
+                        class:b3-chip--primary={relationViewMode === "radar"}
+                        onclick={() => (relationViewMode = "radar")}
+                    >📡 关系雷达</button>
+                    <button
+                        type="button"
+                        class="b3-chip font-size-11"
+                        class:b3-chip--primary={relationViewMode === "list"}
+                        onclick={() => (relationViewMode = "list")}
+                    >📋 清单</button>
+                </div>
+            {/if}
+        </div>
         {#if othersLoading}
             <ViewState compact loading title="正在加载相关人" />
         {:else if othersError}
@@ -4186,6 +4206,13 @@ import StatusNotice from "../StatusNotice.svelte";
                 {/if}
             </ViewState>
         {:else}
+            {#if relationViewMode === "radar"}
+                <MiniRelationRadar
+                    {current}
+                    related={relatedPeople}
+                    onNavigate={(p) => void navigate(p)}
+                />
+            {/if}
             <div class="lvct-detail__relations">
                 {#each relatedPeople as other (other.itemId)}
                     <span class="lvct-detail__relation">

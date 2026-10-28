@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.16 发布：局部社交关系网微雷达（Mini Relation Radar Topology）
+
+- 本轮落地局部社交网络拓扑雷达与双模态流转：
+  1. 微型拓扑雷达纯函数：`radar-topology.ts` 计算中心辐射环形星系坐标，`MiniRelationRadar.svelte` 实现纯 SVG 交互式网络；
+  2. 节点穿透与双模态切换：点击雷达节点平滑打开好友详情，相关人视窗支持雷达与清单自由切换；
+- 门禁验证：`pnpm check`（0/0）、单测 943/943 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.15 发布：名片语义智能画像标签自动推断（Persona Tag Inference Engine）
 
 - 本轮落地名片语义智能画像标签自动推断与双端一键采纳：
