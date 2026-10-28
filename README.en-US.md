@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.22** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.22) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.23** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.23) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.22 (2026-10-28)
+## This release: v0.6.23 (2026-10-28)
+
+This release implements Potential Mutual Connections & Icebreaker Referrals in the Related tab:
+
+- **Single-Person Tie Discovery Engine (`discoverPersonTies`)**: Pure function computing co-attendance from shared events, common affiliations/organizations, and mutual friends, automatically excluding already connected contacts and self-identity, ordered by weighted affinity score.
+- **Recommended Ties Cards in Person Detail (`PersonDetail.svelte`)**: Displays potential connection cards with explainable badge reasons below the relation list/radar, enabling one-click bidirectional connection (`[+ Connect]`) and navigation to view profile cards.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (953/953 PASS); browser UI regression passing (493/493); production build and release checks passed.
+
+## Previous release: v0.6.22 (2026-10-28)
 
 This release implements the Annual Social Activity Heatmap & Streaks on the dashboard:
 

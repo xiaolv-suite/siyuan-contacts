@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.23] — 2026-10-28
+
+重塑：相关人面板「潜在交集伙伴与一度破冰引荐」（Co-occurrence & Mutual Ties Recommender）
+
+- **单人交集与破冰引荐引擎**：`domain/connections-discovery.ts` 纯函数 `discoverPersonTies` 综合同场活动、共同机构与共同好友挖掘弱连接。
+- **详情页潜在伙伴推荐卡片**：在相关人面板呈现潜在伙伴与多维度理由标签，提供「+ 建立关联」一键确认为正式双向关系。
+
+验证：`pnpm check` 0/0、单测 953/953 绿灯、E2E UI 回归 493/493 全部通过、Release 门禁通过。
+
+
 ## [0.6.22] — 2026-10-28
 
 重塑：年度人脉交往活跃热力图与打卡足迹（Annual Social Activity Heatmap & Streaks）

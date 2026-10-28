@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.23 发布：相关人面板「潜在交集伙伴与一度破冰引荐」（Co-occurrence & Mutual Ties Recommender）
+
+- 本轮落地单人潜在交集伙伴发现算法与相关人视窗一键建链：
+  1. 潜在关联挖掘纯函数：`connections-discovery.ts` 纯函数 `discoverPersonTies` 综合同场活动出席、共同组织从属与共同一度好友进行打分推荐；
+  2. 详情页相关人视窗潜在伙伴推荐：`PersonDetail.svelte` 呈现潜在交集卡片与多维度理由标签，支持 `[+ 建立关联]` 一键确认为正式双向关系；
+- 门禁验证：`pnpm check`（0/0）、单测 953/953 全部通过、三套 UI 回归 493/493 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.22 发布：年度人脉交往活跃热力图与打卡足迹（Annual Social Activity Heatmap & Streaks）
 
 - 本轮落地 52 周社交活跃度打卡热力图与连击统计：

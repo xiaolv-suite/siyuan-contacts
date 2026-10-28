@@ -176,3 +176,163 @@ export function discoverPotentialConnections(
     results.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
     return results.slice(0, maxResults);
 }
+
+export interface PersonTieRecommendation {
+    id: string; // 对方 docId
+    targetPerson: ContactSummary;
+    score: number;
+    coAttendanceCount: number;
+    commonOrgs: string[];
+    mutualConnectionNames: string[];
+    reasons: string[];
+}
+
+export interface DiscoverPersonTiesOptions {
+    minScore?: number; // 默认 1
+    maxResults?: number; // 默认 6
+    /** 可选传入已知共同出席列表（如 PersonInsights.coAttendance） */
+    knownCoAttendance?: readonly { otherDocId: string; count: number }[];
+}
+
+/**
+ * 针对单个具体联系人（currentPersonDocId）发掘潜在关联伙伴与一度破冰引荐。
+ * 纯函数：零外部依赖，严格遵守 domain/ 架构约束。
+ */
+export function discoverPersonTies(
+    currentPersonDocId: string,
+    people: readonly ContactSummary[],
+    events: readonly InteractionEvent[] = [],
+    options: DiscoverPersonTiesOptions = {},
+): PersonTieRecommendation[] {
+    if (!currentPersonDocId) return [];
+    const minScore = options.minScore ?? 1;
+    const maxResults = options.maxResults ?? 6;
+
+    const peopleByDocId = new Map(people.map((p) => [p.docId, p]));
+    const itemToDoc = new Map(people.map((p) => [p.itemId, p.docId]));
+    const currentPerson = peopleByDocId.get(currentPersonDocId);
+    if (!currentPerson) return [];
+
+    // 1. 已建立的直接关联 docId 集合（排除自身与已有相关人）
+    const excludedDocIds = new Set<string>([currentPersonDocId]);
+    const currentRelatedDocIds = new Set<string>();
+    for (const relItemId of currentPerson.relatedItemIds) {
+        const otherDocId = itemToDoc.get(relItemId);
+        if (otherDocId) {
+            excludedDocIds.add(otherDocId);
+            currentRelatedDocIds.add(otherDocId);
+        }
+    }
+
+    // 2. 聚合同场活动出席事实
+    const occasionParticipants = new Map<string, Set<string>>();
+    for (const event of events) {
+        if (!peopleByDocId.has(event.personDocId)) continue;
+        const key = occasionKey(event);
+        if (!key) continue;
+        let set = occasionParticipants.get(key);
+        if (!set) {
+            set = new Set<string>();
+            occasionParticipants.set(key, set);
+        }
+        set.add(event.personDocId);
+    }
+
+    const coCounts = new Map<string, number>();
+    for (const participants of occasionParticipants.values()) {
+        if (!participants.has(currentPersonDocId) || participants.size < 2) continue;
+        for (const docId of participants) {
+            if (docId === currentPersonDocId) continue;
+            coCounts.set(docId, (coCounts.get(docId) ?? 0) + 1);
+        }
+    }
+
+    if (options.knownCoAttendance) {
+        for (const item of options.knownCoAttendance) {
+            if (item.otherDocId && item.count > 0) {
+                coCounts.set(item.otherDocId, Math.max(coCounts.get(item.otherDocId) ?? 0, item.count));
+            }
+        }
+    }
+
+    // 3. 提取组织信息
+    const extractOrgs = (p: ContactSummary): Set<string> => {
+        const orgs = new Set<string>();
+        if (p.profile?.affiliations.state === "known") {
+            const all = [
+                ...(p.profile.affiliations.value.work || []),
+                ...(p.profile.affiliations.value.education || []),
+                ...(p.profile.affiliations.value.unspecified || []),
+            ];
+            for (const item of all) {
+                if (item.orgName?.trim()) orgs.add(item.orgName.trim());
+            }
+        }
+        const raw = p as unknown as Record<string, unknown>;
+        if (typeof raw.organization === "string" && raw.organization.trim()) orgs.add(raw.organization.trim());
+        if (typeof raw.company === "string" && raw.company.trim()) orgs.add(raw.company.trim());
+        if (typeof raw.school === "string" && raw.school.trim()) orgs.add(raw.school.trim());
+        if (p.group && p.group.trim()) orgs.add(p.group.trim());
+        return orgs;
+    };
+
+    const currentOrgs = extractOrgs(currentPerson);
+
+    // 4. 评估全库其他非本人联系人
+    const recommendations: PersonTieRecommendation[] = [];
+
+    for (const other of people) {
+        if (excludedDocIds.has(other.docId) || other.isSelf) continue;
+
+        const coCount = coCounts.get(other.docId) ?? 0;
+
+        // 共同组织
+        const otherOrgs = extractOrgs(other);
+        const commonOrgs: string[] = [];
+        for (const o of currentOrgs) {
+            if (otherOrgs.has(o)) commonOrgs.push(o);
+        }
+        commonOrgs.sort();
+
+        // 共同一度好友（Mutual Connections）
+        const mutualConnectionNames: string[] = [];
+        for (const relItemId of other.relatedItemIds) {
+            const mutualDocId = itemToDoc.get(relItemId);
+            if (mutualDocId && currentRelatedDocIds.has(mutualDocId)) {
+                const mutualPerson = peopleByDocId.get(mutualDocId);
+                if (mutualPerson?.name && !mutualConnectionNames.includes(mutualPerson.name)) {
+                    mutualConnectionNames.push(mutualPerson.name.trim());
+                }
+            }
+        }
+        mutualConnectionNames.sort();
+
+        // 评分公式：同场一次 3 分，同组织一个 2 分，共同好友一个 2 分
+        const score = coCount * 3 + commonOrgs.length * 2 + mutualConnectionNames.length * 2;
+        if (score < minScore) continue;
+
+        const reasons: string[] = [];
+        if (coCount > 0) {
+            reasons.push(`共同出席 ${coCount} 次活动`);
+        }
+        if (commonOrgs.length > 0) {
+            reasons.push(`共同机构：${commonOrgs.join("、")}`);
+        }
+        if (mutualConnectionNames.length > 0) {
+            reasons.push(`共同好友：${mutualConnectionNames.join("、")}`);
+        }
+
+        recommendations.push({
+            id: other.docId,
+            targetPerson: other,
+            score,
+            coAttendanceCount: coCount,
+            commonOrgs,
+            mutualConnectionNames,
+            reasons,
+        });
+    }
+
+    recommendations.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+    return recommendations.slice(0, maxResults);
+}

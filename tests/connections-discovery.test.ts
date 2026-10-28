@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { discoverPotentialConnections } from "../src/domain/connections-discovery.ts";
+import { discoverPotentialConnections, discoverPersonTies } from "../src/domain/connections-discovery.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 import type { InteractionEvent } from "../src/domain/interactions.ts";
 
@@ -95,3 +95,60 @@ test("discoverPotentialConnections：排除本人档案", () => {
     const results = discoverPotentialConnections([me, p1], events);
     assert.equal(results.length, 0, "本人不应与联系人生成内部潜在关联推荐");
 });
+
+test("discoverPersonTies：针对单个人物发掘潜在共现伙伴与一度破冰引荐人", () => {
+    // 设定：当前人物为张三（doc1）
+    // 赵六（doc4）与张三共同出席过聚会，且两人共同认识王五（doc3）
+    const p1 = makePerson("doc1", "item1", "张三", { relatedItemIds: ["item3"] }); // 张三已关联王五
+    const p2 = makePerson("doc2", "item2", "李四", { relatedItemIds: ["item1"] }); // 李四已与张三关联（排除）
+    const p3 = makePerson("doc3", "item3", "王五", { relatedItemIds: ["item1", "item4"] }); // 王五关联张三和赵六
+    const p4 = makePerson("doc4", "item4", "赵六", {
+        relatedItemIds: ["item3"], // 赵六关联王五
+        profile: {
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "华为技术" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+        },
+    });
+
+    // 张三也在华为技术
+    p1.profile = {
+        affiliations: {
+            state: "known",
+            value: {
+                work: [{ orgName: "华为技术" }],
+                education: [],
+                family: [],
+                unspecified: [],
+            },
+        },
+    };
+
+    const events: InteractionEvent[] = [
+        // 张三与赵六同场出席 summit-2026
+        { id: "e1", personDocId: "doc1", occurredAt: 2000, localDate: "2026-10-27", externalRef: "summit-2026" },
+        { id: "e2", personDocId: "doc4", occurredAt: 2000, localDate: "2026-10-27", externalRef: "summit-2026" },
+    ];
+
+    const ties = discoverPersonTies("doc1", [p1, p2, p3, p4], events);
+
+    // 李四和王五已经与张三关联，应被排除；赵六未与张三关联，应推荐
+    assert.equal(ties.length, 1);
+    const rec = ties[0];
+    assert.equal(rec.targetPerson.name, "赵六");
+    assert.equal(rec.coAttendanceCount, 1, "同场出席 1 次");
+    assert.deepEqual(rec.commonOrgs, ["华为技术"], "共同机构为华为技术");
+    assert.deepEqual(rec.mutualConnectionNames, ["王五"], "共同一度好友为王五");
+    // 得分：同场 3 分 + 机构 2 分 + 共同好友 2 分 = 7 分
+    assert.equal(rec.score, 7);
+    assert(rec.reasons.some((r) => r.includes("共同出席 1 次活动")));
+    assert(rec.reasons.some((r) => r.includes("共同机构：华为技术")));
+    assert(rec.reasons.some((r) => r.includes("共同好友：王五")));
+});
+

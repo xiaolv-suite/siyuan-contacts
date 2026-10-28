@@ -31,6 +31,7 @@
         EyeOff,
         Shield,
         ContactRound,
+        User,
     } from "@lucide/svelte";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
@@ -56,6 +57,7 @@ import StatusNotice from "../StatusNotice.svelte";
     import { translateText } from "../../domain/translation";
     import PersonPicker from "./PersonPicker.svelte";
 import MiniRelationRadar from "./MiniRelationRadar.svelte";
+import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/connections-discovery.ts";
     import type { PickerItem } from "./PersonPicker.svelte";
     import { dueLabel, hasFollowUpDraft } from "../../domain/followups";
     import type { FollowUpItem, SnoozeOption } from "../../domain/followups";
@@ -812,6 +814,14 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
     const candidates = $derived(
         others.filter((item) => item.itemId !== current.itemId && !item.isSelf && !relatedPeople.some((related) => related.itemId === item.itemId)),
     );
+    const recommendedTies = $derived.by<PersonTieRecommendation[]>(() => {
+        if (!current.docId || others.length === 0) return [];
+        return discoverPersonTies(current.docId, others, [], {
+            knownCoAttendance: insights?.coAttendance,
+            minScore: 1,
+            maxResults: 6,
+        });
+    });
     const orderedPeople = $derived(navigationOrder ?? others);
     const currentIndex = $derived(orderedPeople.findIndex((item) => item.itemId === current.itemId));
     const previousPerson = $derived(currentIndex > 0 ? orderedPeople[currentIndex - 1] : null);
@@ -4345,6 +4355,50 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
                         >×</button>
                     </span>
                 {/each}
+            </div>
+        {/if}
+
+        {#if recommendedTies.length > 0}
+            <div class="lvct-detail__recommended-ties" role="region" aria-label="潜在交集伙伴推荐">
+                <div class="lvct-detail__recommended-ties-head">
+                    <span class="lvct-detail__recommended-ties-title">
+                        <Sparkles size={13} class="lvct-icon-inline" style="color: var(--lv-brand, #ea580c);" />
+                        <b>{text("detailRecommendedTiesTitle", "潜在交集伙伴（推荐建立关联）")}</b>
+                    </span>
+                    <span class="ft__smaller ft__on-surface">{text("detailRecommendedTiesSub", "基于同场活动、共同组织或共同好友推断")}</span>
+                </div>
+                <div class="lvct-detail__recommended-ties-grid">
+                    {#each recommendedTies as tie (tie.id)}
+                        <div class="lvct-detail__tie-card">
+                            <div class="lvct-detail__tie-info">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text lvct-detail__tie-name"
+                                    onclick={() => void navigate(tie.targetPerson)}
+                                    title="查看画像"
+                                >
+                                    <User size={13} class="lvct-icon-inline" /> {tie.targetPerson.name}
+                                </button>
+                                <div class="lvct-detail__tie-reasons">
+                                    {#each tie.reasons as reason}
+                                        <span class="lvct-chip lvct-chip--tag font-size-11">{reason}</span>
+                                    {/each}
+                                </div>
+                            </div>
+                            <div class="lvct-detail__tie-actions">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--small b3-button--outline lvct-detail__tie-add-btn"
+                                    disabled={busy}
+                                    onclick={() => void mutateRelationAction("add", tie.targetPerson)}
+                                    title={text("detailAddRelationHint", "与当前人物建立正式双向关联")}
+                                >
+                                    + {text("detailAddRelation", "建立关联")}
+                                </button>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
             </div>
         {/if}
 

@@ -8223,6 +8223,120 @@ await test("F-14 首页仪表盘：年度人脉交往活跃热力图（Activity 
     fixture.remove();
 });
 
+await test("E-34 相关人面板：潜在交集伙伴推荐与一键建立双向关联", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const rows = [
+        { id: "item-tie-a", docId: "doc-tie-a", name: "陈总", phone: "", wechat: "", tags: [], group: "星河科技" },
+        { id: "item-tie-b", docId: "doc-tie-b", name: "周总监", phone: "", wechat: "", tags: [], group: "星河科技" },
+    ];
+    kernel.handler = reflectContactWrites(async (route) => {
+        if (route === "/api/av/renderAttributeView") return { view: {
+            columns: FIELD_SPECS.map((field) => ({ id: field.key, name: field.nameZh, type: field.type })),
+            rows: rows.map((row) => ({ id: row.id, cells: [
+                { valueType: "block", value: { type: "block", keyID: "name", block: { id: row.docId, content: row.name } } },
+                { valueType: "phone", value: { type: "phone", keyID: "phone", phone: { content: row.phone } } },
+                { valueType: "text", value: { type: "text", keyID: "wechat", text: { content: row.wechat } } },
+                { valueType: "mSelect", value: { type: "mSelect", keyID: "group", mSelect: row.group ? [{ content: row.group }] : [] } },
+                { valueType: "mSelect", value: { type: "mSelect", keyID: "tags", mSelect: row.tags.map((tag) => ({ content: tag })) } },
+                { valueType: "relation", value: { type: "relation", keyID: "related", relation: { blockIDs: [] } } },
+            ] })),
+        } };
+        return null;
+    });
+
+    const personA = {
+        docId: "doc-tie-a",
+        itemId: "item-tie-a",
+        name: "陈总",
+        phone: "",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "",
+        isLunar: false,
+        group: "战略客户",
+        tags: [],
+        relatedItemIds: [],
+        company: "星河科技",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "星河科技" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const personB = {
+        docId: "doc-tie-b",
+        itemId: "item-tie-b",
+        name: "周总监",
+        phone: "",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "",
+        isLunar: false,
+        group: "战略客户",
+        tags: [],
+        relatedItemIds: [],
+        company: "星河科技",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "星河科技" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    mounted = mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person: personA,
+            initialTab: "relations",
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => ({
+                timeline: [],
+                coAttendance: [{ otherDocId: "doc-tie-b", count: 2, name: "周总监" }],
+                totalEvents: 2,
+                backlinks: [],
+            }),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-detail__recommended-ties"), "未渲染潜在交集伙伴推荐区域");
+    assert(fixture.textContent.includes("潜在交集伙伴（推荐建立关联）"), "未包含潜在伙伴推荐标题");
+    assert(fixture.textContent.includes("周总监"), "未渲染推荐伙伴姓名");
+    assert(fixture.textContent.includes("共同机构：星河科技"), "未渲染共同机构标签");
+    assert(fixture.textContent.includes("共同出席 2 次活动"), "未渲染共同出席标签");
+
+    const addBtn = fixture.querySelector(".lvct-detail__tie-add-btn");
+    assert(addBtn, "未找到建立关联按钮");
+    assert(addBtn.textContent.includes("建立关联"), "按钮未展示建立关联文案");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
