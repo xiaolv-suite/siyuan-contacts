@@ -10330,6 +10330,107 @@ await test("D-18 联系人详情页：会客拜访行程与行前准备（Person
     fixture.remove();
 });
 
+await test("G-17 关系图谱：网络核心枢纽与跨圈层引荐桥梁人分析（NetworkHubsModal）与画布定位联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const NetworkHubsModal = (await import("../../../src/components/graph/NetworkHubsModal.svelte")).default;
+
+    let locatedDocId = "";
+    let openedDocId = "";
+
+    const testPeople = [
+        {
+            docId: "doc-hub-1",
+            itemId: "item-hub-1",
+            name: "超级枢纽张总",
+            phone: "",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "投资圈",
+            tags: [],
+            relatedItemIds: ["item-hub-2", "item-hub-3"],
+        },
+        {
+            docId: "doc-hub-2",
+            itemId: "item-hub-2",
+            name: "AI科学家王博士",
+            phone: "",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "科技研发",
+            tags: [],
+            relatedItemIds: ["item-hub-1"],
+        },
+        {
+            docId: "doc-hub-3",
+            itemId: "item-hub-3",
+            name: "高校学者李院长",
+            phone: "",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "学术教育",
+            tags: [],
+            relatedItemIds: ["item-hub-1"],
+        },
+    ];
+
+    const testGraph = {
+        nodes: testPeople.map((p) => ({ id: p.docId, label: p.name, group: p.group, degree: 0 })),
+        edges: [
+            { source: "doc-hub-1", target: "doc-hub-2", kind: "related" },
+            { source: "doc-hub-1", target: "doc-hub-3", kind: "related" },
+        ],
+    };
+
+    mount(NetworkHubsModal, {
+        target: fixture,
+        props: {
+            people: testPeople,
+            graph: testGraph,
+            onClose() {},
+            onLocatePerson: (docId) => {
+                locatedDocId = docId;
+            },
+            onOpenPerson: (docId) => {
+                openedDocId = docId;
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-network-hubs"), "未渲染网络枢纽与桥梁分析组件");
+    assert(fixture.textContent.includes("网络总节点"), "未渲染网络总节点指标卡");
+    assert(fixture.textContent.includes("跨圈引荐桥梁"), "未渲染跨圈引荐桥梁指标卡");
+    assert(fixture.textContent.includes("超级枢纽张总"), "未渲染张总卡片");
+    assert(fixture.textContent.includes("跨界指数"), "未渲染跨界指数徽章");
+    assert(fixture.textContent.includes("横跨圈层："), "未渲染横跨圈层小节");
+    assert(fixture.textContent.includes("投资圈") && fixture.textContent.includes("科技研发") && fixture.textContent.includes("学术教育"), "未渲染全部桥接圈层");
+
+    // 点击切换「超级连接者」选项卡
+    const hubsTab = Array.from(fixture.querySelectorAll(".tab-btn")).find((b) => b.textContent.includes("超级连接者"));
+    assert(hubsTab, "未找到超级连接者选项卡");
+    hubsTab.click();
+
+    await until(() => fixture.textContent.includes("连接 2 人"), "超级连接者列表未渲染连接度指标");
+
+    // 点击「画布定位」
+    const locateBtn = fixture.querySelector(".btn-action");
+    assert(locateBtn, "未找到画布定位按钮");
+    locateBtn.click();
+    assert(locatedDocId === "doc-hub-1", "点击定位未传递正确的 docId");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

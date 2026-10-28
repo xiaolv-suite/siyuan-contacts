@@ -2,13 +2,15 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw, Share2 } from "@lucide/svelte";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { copyPlainText } from "../../shared/clipboard";
     import { profileText } from "../../domain/people-profiles";
     import { extractNormalizedRegion } from "../../domain/region";
     import ViewState from "../ViewState.svelte";
     import StatusNotice from "../StatusNotice.svelte";
+    import LvctDialog from "../LvctDialog.svelte";
+    import NetworkHubsModal from "./NetworkHubsModal.svelte";
     import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
     import { GRAPH_MAX_NODES, filterGraphEdges, extractGraphTimeSpan, filterGraphByMaxYear, type GraphTimeSpan } from "../../domain/graph";
     import { buildGraphQuerySnapshot, graphEdgeLabel } from "../../domain/graph-query";
@@ -105,6 +107,7 @@
         }
     });
     let presentation: "canvas" | "text" = $state("canvas");
+    let hubsModalOpen = $state(false);
     let graphFiltersOpen = $state(false);
     let graphExploreOpen = $state(false);
     let graphExpanded = $state(false);
@@ -1894,6 +1897,13 @@
                         </div>
                     {/if}
                 </div>
+                <button
+                    class="lvct-graph__fab-btn lvct-graph__fab-btn--hubs"
+                    title={text("graphHubsBtnTitle", "人脉网络核心枢纽与跨界桥梁人分析")}
+                    aria-label={text("graphHubsBtn", "网络枢纽与桥梁分析")}
+                    disabled={!graphInstance}
+                    onclick={() => (hubsModalOpen = true)}
+                ><Share2 size={15} /></button>
                 <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphFit", "适应")} (0)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphFit", "适应")} disabled={!graphInstance} onclick={() => graphInstance?.fit()}><Scan size={15} /></button>
                 <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomIn", "放大")} (+)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomIn", "放大")} disabled={!graphInstance} onclick={() => zoomBy(1.2)}><ZoomIn size={15} /></button>
                 <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomOut", "缩小")} (-)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomOut", "缩小")} disabled={!graphInstance} onclick={() => zoomBy(1 / 1.2)}><ZoomOut size={15} /></button>
@@ -2391,4 +2401,20 @@
         {/if}
     </section>
 
+    {#if hubsModalOpen}
+        <LvctDialog title={text("graphHubsModalTitle", "🌐 人脉网络核心枢纽与跨界桥梁人分析")} wide onClose={() => (hubsModalOpen = false)}>
+            <NetworkHubsModal
+                {people}
+                graph={snapshot.graph}
+                onClose={() => (hubsModalOpen = false)}
+                onLocatePerson={(docId) => void locateNode(docId)}
+                onOpenPerson={(docId) => {
+                    hubsModalOpen = false;
+                    const p = people.find((x) => x.docId === docId);
+                    if (p) onOpenDetail?.(p);
+                }}
+                {i18n}
+            />
+        </LvctDialog>
+    {/if}
 </div>

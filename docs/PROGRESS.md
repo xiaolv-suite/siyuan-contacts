@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.47 发布：关系网络图谱「核心枢纽与跨界桥梁人」拓扑分析（Network Hubs & Bridge Connectors Analysis）
+
+- 本轮落地图拓扑枢纽分析算法与图谱桥梁分析弹窗：
+  1. 图拓扑算法域：`network-hubs.ts` 纯函数计算度数排行、网络密度并挖掘跨越不同群组/城市的桥梁人物，计算跨界指数；
+  2. 图谱视图集成与画布定位闭环：`NetworkHubsModal.svelte` 呈现大盘指标与圈层标签条；`RelationGraph.svelte` 悬浮操作簇增加分析入口，支持一键在 Cytoscape 画布中定位居中该枢纽节点；
+- 门禁验证：`pnpm check`（0/0）、单测 1010/1010 全部通过、三套 UI 回归 517/517 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.46 发布：联系人会客拜访行程备忘与行前准备清单系统（Meeting Itinerary & Visit Preparation Checklist）
 
 - 本轮落地会面拜访行程模型、准备清单与详情页行程看板：

@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.47] — 2026-10-29
+
+重塑：关系网络图谱「核心枢纽与跨界桥梁人」拓扑分析（Network Hubs & Bridge Connectors Analysis）
+
+- **图拓扑核心枢纽与跨圈桥梁算法**：`domain/network-hubs.ts` 纯函数计算全网络节点连接度、网络连接密度与邻接社群分布；精准挖掘具有广泛触达能力的超级连接者（`topHubs`），以及跨越 ≥2 个不同圈层（分组/地域）的跨界引荐桥梁人（`bridgeConnectors`），计算桥梁指数评分。
+- **图谱枢纽分析看板与画布定位闭环**：`NetworkHubsModal.svelte` 与 `RelationGraph.svelte` 在关系图谱悬浮工具簇中新增「🌐 枢纽与桥梁分析」入口；弹窗呈现全网节点、总边数、跨圈引荐桥梁数与网络密度大盘指标；支持切换查看跨界桥梁人（展示跨越圈层标签路径）与超级连接者，提供一键「画布定位」与一键直达联系人画像。
+
+验证：`pnpm check` 0/0、单测 1010/1010 绿灯、三套 E2E UI 回归各 517/517 全部通过、Release 门禁通过。
+
 ## [0.6.46] — 2026-10-29
 
 重塑：联系人会客拜访行程备忘与行前准备清单系统（Meeting Itinerary & Visit Preparation Checklist）
