@@ -1261,5 +1261,9 @@
   "preMeetingTaboosLabel": "Critical Taboos & Allergies",
   "preMeetingPrefsLabel": "Dietary & Social Preferences",
   "preMeetingPromisesLabel": "Pending Promises & Commitments",
-  "preMeetingTopicsLabel": "Meeting Topics & Memos"
+  "preMeetingTopicsLabel": "Meeting Topics & Memos",
+  "detailTagInferenceTitle": "Persona Tags: ",
+  "detailAdoptTagTip": "Click to adopt this tag",
+  "detailAdoptAllTags": "Adopt All ({n})",
+  "detailAdoptAllTagsTip": "Adopt all suggested persona tags"
 }

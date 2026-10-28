@@ -39,14 +39,14 @@
     } from "@lucide/svelte";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
-    import { inferPersonaTags } from "../../domain/tag-inference.ts";
+    import { inferPersonaTags, adoptSuggestedTags } from "../../domain/tag-inference.ts";
     import { extractFactsFromText } from "../../domain/fact-extraction.ts";
     import { profileText } from "../../domain/people-profiles.ts";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
     import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
     import type { DetailSectionKey, DetailCollapsedSections } from "../../domain/preferences";
-    import { listContacts, removeContact } from "../../services/contacts";
+    import { listContacts, removeContact, updateContactFields } from "../../services/contacts";
     import { addRelation, removeRelation, refreshPerson, retryRelationProjections } from "../../services/relations";
     import { resolveRelated } from "../../services/doc-section";
     import type { RelationMutationReport, RelationProjectionResult } from "../../domain/relations";
@@ -2612,8 +2612,42 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         city: personRegion.city,
         facts,
         topics,
+        socialPreferences,
+        promises,
         existingTags: current.tags,
     }));
+
+    let adoptingTags = $state(false);
+
+    async function handleAdoptTag(tag: string) {
+        if (adoptingTags || busy) return;
+        adoptingTags = true;
+        try {
+            const nextTags = adoptSuggestedTags(current.tags, [tag]);
+            await updateContactFields(settings, current.itemId, { ...current, tags: nextTags }, { onlyFields: ["tags"] });
+            current = { ...current, tags: nextTags };
+            onChanged();
+        } catch (err: unknown) {
+            errorText = requestErrorMessage(err);
+        } finally {
+            adoptingTags = false;
+        }
+    }
+
+    async function handleAdoptAllTags() {
+        if (adoptingTags || busy || detailSuggestedTags.length === 0) return;
+        adoptingTags = true;
+        try {
+            const nextTags = adoptSuggestedTags(current.tags, detailSuggestedTags);
+            await updateContactFields(settings, current.itemId, { ...current, tags: nextTags }, { onlyFields: ["tags"] });
+            current = { ...current, tags: nextTags };
+            onChanged();
+        } catch (err: unknown) {
+            errorText = requestErrorMessage(err);
+        } finally {
+            adoptingTags = false;
+        }
+    }
 
     function handleDetailGlobalKeydown(event: KeyboardEvent) {
         if (event.altKey && (event.key === "ArrowLeft" || event.key === "Left")) {
@@ -3106,19 +3140,32 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <span class="ft__smaller ft__on-surface">暂无标签</span>
                 {/if}
                 {#if detailSuggestedTags.length > 0}
-                    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 6px;">
+                    <div class="lvct-detail__suggested-tags" style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 6px;">
                         <span class="ft__smaller" style="color: var(--lv-brand, #ea580c); display: inline-flex; align-items: center; gap: 3px;">
-                            <Sparkles size={11} /> 画像标签推断：
+                            <Sparkles size={11} /> {text("detailTagInferenceTitle", "画像标签推断：")}
                         </span>
                         {#each detailSuggestedTags as stag}
                             <button
                                 type="button"
-                                class="b3-chip font-size-11"
+                                class="b3-chip font-size-11 lvct-detail__suggested-tag-btn"
                                 style="cursor: pointer;"
-                                title="点击编辑资料并添加标签"
-                                onclick={() => { editing = true; }}
+                                disabled={adoptingTags}
+                                title={text("detailAdoptTagTip", "点击直接采纳此画像标签")}
+                                onclick={() => void handleAdoptTag(stag)}
                             >+ {stag}</button>
                         {/each}
+                        {#if detailSuggestedTags.length > 1}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text b3-button--small lvct-detail__adopt-all-btn"
+                                style="padding: 1px 6px; font-size: 11px; color: var(--lv-brand, #ea580c);"
+                                disabled={adoptingTags}
+                                onclick={handleAdoptAllTags}
+                                title={text("detailAdoptAllTagsTip", "一键采纳全部推荐画像标签")}
+                            >
+                                {text("detailAdoptAllTags", "全部采纳 ({n})", { n: detailSuggestedTags.length })}
+                            </button>
+                        {/if}
                     </div>
                 {/if}
             </dd>

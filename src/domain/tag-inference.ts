@@ -10,6 +10,8 @@ export interface PersonaTagInferenceInput {
     organizations?: readonly string[];
     facts?: readonly { text: string; category?: string }[];
     topics?: readonly { text: string }[];
+    socialPreferences?: readonly { content: string; category?: string }[];
+    promises?: readonly { title: string; detail?: string }[];
     city?: string;
     existingTags?: readonly string[];
 }
@@ -29,6 +31,7 @@ const INDUSTRY_RULES: readonly TagRule[] = [
     { tag: "#行业/法律合规", keywords: ["律师", "律所", "法务", "合规", "法律顾问"] },
     { tag: "#行业/文化传媒", keywords: ["媒体", "设计", "自媒体", "内容", "艺术", "作家", "出版社"] },
     { tag: "#行业/先进制造", keywords: ["制造", "芯片", "半导体", "硬件", "供应链", "工业"] },
+    { tag: "#行业/出海跨境", keywords: ["出海", "跨境", "海外", "外贸", "国际化", "global"] },
 ];
 
 const ROLE_RULES: readonly TagRule[] = [
@@ -57,6 +60,8 @@ export function inferPersonaTags(input: PersonaTagInferenceInput): string[] {
         ...(input.organizations || []),
         ...(input.facts || []).map((f) => f.text),
         ...(input.topics || []).map((t) => t.text),
+        ...(input.socialPreferences || []).map((p) => p.content),
+        ...(input.promises || []).map((p) => `${p.title} ${p.detail || ""}`),
     ].join(" ").toLowerCase();
 
     const candidates = new Set<string>();
@@ -101,4 +106,18 @@ export function buildTagInferencePrompt(input: PersonaTagInferenceInput): string
         "请只输出一个 JSON 数组，例如：[\"#行业/科技\", \"#偏好/品茶\"]",
     ].filter(Boolean);
     return lines.join("\n");
+}
+
+export function adoptSuggestedTags(
+    currentTags: readonly string[],
+    tagsToAdopt: readonly string[],
+): string[] {
+    const set = new Set(currentTags.map((t) => t.trim()).filter(Boolean));
+    for (const tag of tagsToAdopt) {
+        const clean = tag.trim();
+        if (clean && !set.has(clean)) {
+            set.add(clean);
+        }
+    }
+    return Array.from(set);
 }

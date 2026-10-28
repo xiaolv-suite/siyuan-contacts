@@ -53,3 +53,25 @@ test("buildTagInferencePrompt：生成规范的 Prompt 指令", () => {
     assert.ok(prompt.includes("北京"));
     assert.ok(prompt.includes("JSON 数组"));
 });
+
+test("inferPersonaTags：结合社交偏好与承诺推导标签及 adoptSuggestedTags 采纳去重", async () => {
+    const { adoptSuggestedTags } = await import("../src/domain/tag-inference.ts");
+
+    const inferred = inferPersonaTags({
+        name: "陈总",
+        socialPreferences: [
+            { content: "不饮白酒，喜好龙井与普洱茶道" },
+        ],
+        promises: [
+            { title: "探讨东南亚跨境电商出海合作方案" },
+        ],
+        existingTags: ["战略伙伴"],
+    });
+
+    assert.ok(inferred.includes("#偏好/品茶"));
+    assert.ok(inferred.includes("#行业/出海跨境"));
+
+    // 采纳测试
+    const adopted = adoptSuggestedTags(["战略伙伴"], ["#偏好/品茶", "战略伙伴", "#行业/出海跨境"]);
+    assert.deepEqual(adopted, ["战略伙伴", "#偏好/品茶", "#行业/出海跨境"]);
+});

@@ -9965,6 +9965,79 @@ await test("F-17 首页仪表盘：会前备忘与偏好雷区大盘（PreMeetin
     fixture.remove();
 });
 
+await test("D-16 联系人详情页：画像标签智能推断建议与一键采纳闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const person = {
+        docId: "doc-tag-ui-1",
+        itemId: "item-tag-ui-1",
+        name: "标签测试人物",
+        phone: "13900139111",
+        email: "tag@example.com",
+        wechat: "wx_tag",
+        website: "",
+        birthday: "1993-03-03",
+        isLunar: false,
+        group: "技术专家",
+        tags: ["初级标签"],
+        relatedItemIds: [],
+        company: "某AI科技",
+        profile: {
+            readAt: Date.now(),
+            affiliations: { state: "known", value: { work: [{ orgName: "某AI科技", title: "首席大模型算法专家" }], education: [], family: [], unspecified: [] } },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    let updateCellCalled = false;
+    kernel.handler = reflectContactWrites(async (route, body) => {
+        if (route === "/api/av/renderAttributeView") return {
+            view: {
+                columns: FIELD_SPECS.map((field) => ({ id: field.key, name: field.nameZh, type: field.type })),
+                rows: [{ id: person.itemId, cells: [
+                    { valueType: "block", value: { type: "block", keyID: "name", block: { id: person.docId, content: person.name } } },
+                    { valueType: "mSelect", value: { type: "mSelect", keyID: "tags", mSelect: [{ content: "初级标签", color: "1" }] } },
+                ] }],
+            },
+        };
+        if (route === "/api/av/getAttributeViewItemIDsByBoundIDs") return { [person.docId]: person.itemId };
+        if (route === "/api/av/setAttributeViewBlockAttr") {
+            updateCellCalled = true;
+            return null;
+        }
+        return null;
+    });
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-detail__suggested-tags"), "未渲染推断标签推荐区域");
+    assert(fixture.textContent.includes("画像标签推断"), "未渲染标签推断标题");
+    assert(fixture.textContent.includes("#行业/人工智能"), "未成功推断大模型相关的人工智能行业标签");
+
+    // 点击采纳标签按钮
+    const tagBtn = Array.from(fixture.querySelectorAll(".lvct-detail__suggested-tag-btn")).find((b) => b.textContent.includes("#行业/人工智能"));
+    assert(tagBtn, "未找到建议标签采纳按钮");
+    tagBtn.click();
+
+    await until(() => updateCellCalled, "点击采纳标签未触发写入接口");
+    await until(() => fixture.querySelectorAll(".lvct-chip--tag").length >= 2, "采纳后标签列表未包含新增标签");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

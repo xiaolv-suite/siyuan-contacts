@@ -1261,5 +1261,9 @@
   "preMeetingTaboosLabel": "红线禁忌与严重忌口",
   "preMeetingPrefsLabel": "饮食与习惯偏好",
   "preMeetingPromisesLabel": "待兑现承诺约定",
-  "preMeetingTopicsLabel": "谈资备忘"
+  "preMeetingTopicsLabel": "谈资备忘",
+  "detailTagInferenceTitle": "画像标签推断：",
+  "detailAdoptTagTip": "点击直接采纳此画像标签",
+  "detailAdoptAllTags": "全部采纳 ({n})",
+  "detailAdoptAllTagsTip": "一键采纳全部推荐画像标签"
 }

@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.43 发布：联系人多维画像标签智能建议与一键采纳系统（Persona Smart Tag Inference & Quick Adoption）
+
+- 本轮落地多维标签推断纯函数与联系人详情页标签云一键采纳：
+  1. 多维推断纯函数：`tag-inference.ts` 纯函数结合组织/职位/事实/谈资/偏好/承诺与城市推断建议标签，并通过 `adoptSuggestedTags` 幂等合并；
+  2. 详情页交互与写入闭环：`PersonDetail.svelte` 展现建议标签芯片与批量采纳按钮，调用 `updateContactFields` 写入思源属性视图原生多选标签字段并刷新状态；
+- 门禁验证：`pnpm check`（0/0）、单测 997/997 全部通过、三套 UI 回归 513/513 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.42 发布：首页仪表盘「会前备忘与偏好雷区大盘」（Dashboard Pre-Meeting Brief & Taboo Radar）
 
 - 本轮落地会前全景扫雷聚合引擎与首页速查抽屉弹窗：

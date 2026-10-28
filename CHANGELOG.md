@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.43] — 2026-10-29
+
+重塑：联系人多维画像标签智能建议与一键采纳系统（Persona Smart Tag Inference & Quick Adoption）
+
+- **多维标签智能推断引擎**：`domain/tag-inference.ts` 纯函数分析联系人的组织职位、工作履历、城市地域、生活习性事实（`facts`）、会面谈资（`topics`）、自管社交偏好与雷区（`socialPreferences`）及交往信诺（`promises`），根据完备行业词根与关键词规则推断画像建议标签，并通过 `adoptSuggestedTags` 纯函数保证去重幂等采纳。
+- **详情页建议标签云与极速采纳流转**：`PersonDetail.svelte` 在标签栏下方呈现「画像标签推断」建议标签云，支持单标签一键添加（`+ {tag}`）与全部标签批量采纳（`全部采纳 ({count})`），修改经由 `updateContactFields` 写入思源 Attribute View 数据库单元格并即时更新名册缓存。
+
+验证：`pnpm check` 0/0、单测 997/997 绿灯、E2E UI 回归 513/513 全部通过、Release 门禁通过。
+
 ## [0.6.42] — 2026-10-29
 
 重塑：首页仪表盘「会前备忘与偏好雷区大盘」（Dashboard Pre-Meeting Brief & Taboo Radar）
