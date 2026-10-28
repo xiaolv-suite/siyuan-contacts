@@ -27,7 +27,11 @@
         Plus,
         X,
         Sparkles,
+        Eye,
+        EyeOff,
+        Shield,
     } from "@lucide/svelte";
+    import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
     import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
@@ -969,6 +973,32 @@ import StatusNotice from "../StatusNotice.svelte";
     let copiedFieldTimer: ReturnType<typeof setTimeout> | null = null;
     let copyFieldErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
+    let privacyMaskActive = $state(false);
+    let revealSeconds = $state(0);
+    let revealInterval: ReturnType<typeof setInterval> | null = null;
+
+    function togglePrivacyMask(): void {
+        if (privacyMaskActive) {
+            if (revealSeconds > 0) {
+                privacyMaskActive = false;
+                revealSeconds = 0;
+                if (revealInterval) clearInterval(revealInterval);
+            } else {
+                revealSeconds = 5;
+                if (revealInterval) clearInterval(revealInterval);
+                revealInterval = setInterval(() => {
+                    revealSeconds -= 1;
+                    if (revealSeconds <= 0) {
+                        if (revealInterval) clearInterval(revealInterval);
+                    }
+                }, 1000);
+            }
+        } else {
+            privacyMaskActive = true;
+            revealSeconds = 0;
+        }
+    }
+
     async function handleCopyField(value: string, fieldKey: string) {
         if (!value) return;
         try {
@@ -1589,6 +1619,7 @@ import StatusNotice from "../StatusNotice.svelte";
         if (copiedTopicTimer) clearTimeout(copiedTopicTimer);
         if (copiedFieldTimer) clearTimeout(copiedFieldTimer);
         if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
+        if (revealInterval) clearInterval(revealInterval);
     });
     function openBriefingExport() {
         const now = new Date();
@@ -2438,6 +2469,22 @@ import StatusNotice from "../StatusNotice.svelte";
         <RelationshipLabels personDocId={current.docId} {revision} onLoad={onLoadRelationshipLabels} onSave={onSaveRelationshipLabels} {onChanged} />
     {/if}
     <section class="lvct-detail__section lvct-detail__relationship-snapshot" aria-labelledby="lvct-relationship-snapshot-title">
+        {#if !current.isSelf && (relationshipHealth.level === "cold" || (relationshipHealth.overdue && relationshipHealth.overdueDays >= 14))}
+            <div class="lvct-detail__cooling-alert" role="status" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; margin-bottom: 12px; background: color-mix(in srgb, #0284c7 10%, var(--lvct-bg-surface)); border: 1px solid color-mix(in srgb, #0284c7 35%, transparent); border-radius: var(--lvct-r-md);">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--lvct-text-1);">
+                    <span style="font-size: 14px;">❄️</span>
+                    <span><b>关系已渐冻冷却</b> · 距上次联系已过去 {relationshipHealth.elapsedDays ?? "多"} 天，建议主动问候联络</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small"
+                        style="padding: 2px 8px; font-size: 11px; color: var(--lv-brand, #ea580c);"
+                        onclick={() => void selectTab("activity")}
+                    >记一笔互动</button>
+                </div>
+            </div>
+        {/if}
         <div class="lvct-detail__section-head">
             <div>
                 <h4 id="lvct-relationship-snapshot-title">关系摘要</h4>
@@ -2512,12 +2559,35 @@ import StatusNotice from "../StatusNotice.svelte";
             <button class="b3-button b3-button--outline b3-button--small" onclick={() => (editing = true)}>+ 补充资料</button>
         </div>
     {/if}
+    <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-top: 14px; margin-bottom: 6px;">
+        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">通讯与基础资料</h4>
+        <button
+            type="button"
+            class="b3-button b3-button--text b3-button--small lvct-privacy-shield-btn"
+            style="padding: 2px 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;"
+            title={privacyMaskActive ? (revealSeconds > 0 ? `已临时显形，将在 ${revealSeconds} 秒后重新自动掩盖` : "点击暂时显形 5 秒，或长按关闭遮罩") : "开启离席隐私保护盾（投屏/录屏或离席时对电话、微信、邮箱自动打码遮罩）"}
+            onclick={togglePrivacyMask}
+        >
+            {#if privacyMaskActive && revealSeconds === 0}
+                <EyeOff size={13} style="color: var(--lv-brand, #ea580c);" />
+                <span style="color: var(--lv-brand, #ea580c); font-weight: 500;">隐私盾保护中</span>
+            {:else if privacyMaskActive && revealSeconds > 0}
+                <Eye size={13} style="color: var(--lvct-success, #16a34a);" />
+                <span style="color: var(--lvct-success, #16a34a); font-weight: 500;">已显形 ({revealSeconds}s)</span>
+            {:else}
+                <Shield size={13} />
+                <span>隐私盾</span>
+            {/if}
+        </button>
+    </div>
     <dl class="lvct-detail__fields">
         {#if current.phone}
+            {@const isMasked = privacyMaskActive && revealSeconds === 0}
+            {@const displayPhone = isMasked ? maskPhone(current.phone) : current.phone}
             <div>
                 <dt>电话</dt>
                 <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <a href={`tel:${current.phone}`} title="拨打电话">{current.phone}</a>
+                    <a href={`tel:${current.phone}`} title={isMasked ? "隐私遮罩中（点击拨打电话）" : "拨打电话"}>{displayPhone}</a>
                     <button
                         type="button"
                         class="b3-button b3-button--text lvct-detail__copy-btn"
@@ -2535,10 +2605,12 @@ import StatusNotice from "../StatusNotice.svelte";
             </div>
         {/if}
         {#if current.email}
+            {@const isMasked = privacyMaskActive && revealSeconds === 0}
+            {@const displayEmail = isMasked ? maskEmail(current.email) : current.email}
             <div>
                 <dt>邮箱</dt>
                 <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <a href={`mailto:${current.email}`} title="发送邮件">{current.email}</a>
+                    <a href={`mailto:${current.email}`} title={isMasked ? "隐私遮罩中（点击发送邮件）" : "发送邮件"}>{displayEmail}</a>
                     <button
                         type="button"
                         class="b3-button b3-button--text lvct-detail__copy-btn"
@@ -2556,10 +2628,12 @@ import StatusNotice from "../StatusNotice.svelte";
             </div>
         {/if}
         {#if current.wechat}
+            {@const isMasked = privacyMaskActive && revealSeconds === 0}
+            {@const displayWechat = isMasked ? maskWechat(current.wechat) : current.wechat}
             <div>
                 <dt>微信</dt>
                 <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <span>{current.wechat}</span>
+                    <span>{displayWechat}</span>
                     <button
                         type="button"
                         class="b3-button b3-button--text lvct-detail__copy-btn"
