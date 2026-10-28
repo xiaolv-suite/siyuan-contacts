@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.34** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.34) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.35** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.35) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.34 · 2026-10-29）
+## 本次发布（v0.6.35 · 2026-10-29）
+
+本版本将联系人重要纪念日与系统外部日历生态无缝打通，推出了重要日期与纪念日标准 iCalendar (.ics) 日历文件导出系统（Anniversaries & Milestones iCal Export）：
+
+- **RFC 5545 iCalendar 标准序列化纯函数与服务层（`domain/ical-export.ts` & `services/ical.ts`）**：严格遵守 RFC 5545 规范（`CRLF` 换行、75 字节自动折行、特殊字符转义），将联系人生日（公历/农历）与自定义纪念日（结婚纪念、相识相聚、入职合作、里程碑）序列化为标准 `VEVENT` 并支持每年循环（`RRULE:FREQ=YEARLY`），智能排除免打扰条目，并支持单人物与全库批量导出。
+- **详情页纪念日区块导出与浏览器直下联动（`PersonDetail.svelte`）**：在详情页「重要日期与纪念日」标题栏新增「导出 .ics 日历」按钮，点击一键生成并触发浏览器原生下载，支持导入 Apple Calendar、Google Calendar、Outlook 及各平台原生系统日历。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 985/985 100% 通过；浏览器 UI 回归全绿（505/505）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.34 · 2026-10-29）
 
 本版本将用户在日常沟通与浏览中的临时灵感与闪念备忘系统化，推出了联系人自管闪念速记便签板（Person Quick Scratchpad & Ephemeral Memo Pinboard）：
 

@@ -1201,5 +1201,7 @@
   "scratchpadPinTip": "置顶便签",
   "scratchpadConvertTip": "将便签内容填入互动草稿",
   "scratchpadConvertBtn": "转互动",
-  "commonDelete": "删除"
+  "commonDelete": "删除",
+  "exportIcsBtn": "导出 .ics 日历",
+  "exportIcsTip": "导出为 iCalendar (.ics) 标准日历文件，支持导入系统日历"
 }

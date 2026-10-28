@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.35 发布：联系人重要日期与纪念日导出为 iCalendar (.ics) 标准日历文件（Anniversaries & Milestones iCal Export）
+
+- 本轮落地 RFC 5545 iCalendar 标准序列化与详情页日历导出：
+  1. 日历导出域与服务层：`ical-export.ts` 纯函数严格执行 RFC 5545 标准（CRLF换行、75 字节自动折行、特殊字符转义与 VEVENT/RRULE 序列化），`services/ical.ts` 支持单联系人及全库全量导出；
+  2. 详情页纪念日区块导出联动：`PersonDetail.svelte` 重要日期与纪念日卡片标题栏新增「导出 .ics 日历」按钮，一键生成并调用浏览器原生下载；
+- 门禁验证：`pnpm check`（0/0）、单测 985/985 全部通过、三套 UI 回归 505/505 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.34 发布：联系人自管闪念速记便签板（Person Quick Scratchpad & Ephemeral Memo Pinboard）
 
 - 本轮落地自管闪念速记便签域模型与详情页便签图板：

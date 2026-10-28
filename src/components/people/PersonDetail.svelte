@@ -103,6 +103,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         type AnniversaryCategory,
         type AnniversaryItem,
     } from "../../domain/anniversaries";
+    import type { IcsExportResult } from "../../services/ical.ts";
     import {
         newProjectId,
         type PersonProjectItem,
@@ -183,6 +184,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddAnniversary,
         onUpdateAnniversary,
         onRemoveAnniversary,
+        onExportAnniversariesIcs,
         onLoadProjects,
         onAddProject,
         onRemoveProject,
@@ -293,6 +295,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddAnniversary?: (item: import("../../domain/anniversaries").AnniversaryItem) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
         onUpdateAnniversary?: (personDocId: string, annivId: string, patch: Partial<import("../../domain/anniversaries").AnniversaryItem>) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
         onRemoveAnniversary?: (personDocId: string, annivId: string) => Promise<import("../../domain/anniversaries").AnniversaryItem[]>;
+        /** E-43 导出重要日期为 iCalendar (.ics) 日历文件（可选） */
+        onExportAnniversariesIcs?: (person: ContactSummary, anniversaries: readonly import("../../domain/anniversaries").AnniversaryItem[]) => IcsExportResult;
         /** E-37 协作项目与主题关联（可选） */
         onLoadProjects?: (personDocId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         onAddProject?: (item: import("../../domain/projects").PersonProjectItem) => Promise<import("../../domain/projects").PersonProjectItem[]>;
@@ -1433,6 +1437,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         } catch (error) {
             if (detailAlive) anniversariesError = requestErrorMessage(error);
         }
+    }
+
+    function handleExportIcs() {
+        if (!onExportAnniversariesIcs) return;
+        const res = onExportAnniversariesIcs(current, anniversaries);
+        const blob = new Blob([res.content], { type: "text/calendar;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = res.filename;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     // ---- E-37 协作项目与主题 ----
@@ -3431,6 +3447,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <h4 style="margin: 0;">重要日期与纪念日</h4>
                     <span class="lvct-chip lvct-chip--neutral" style="font-size: 11px; padding: 1px 6px;">{anniversaries.length}</span>
                 </div>
+                {#if onExportAnniversariesIcs && (current.birthday || anniversaries.length > 0)}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small"
+                        style="margin-left: auto;"
+                        title={text("exportIcsTip", "导出为 iCalendar (.ics) 标准日历文件，支持导入系统日历")}
+                        onclick={(e) => { e.stopPropagation(); handleExportIcs(); }}
+                    >
+                        <Calendar size={13} style="margin-right: 2px;" />
+                        <span>{text("exportIcsBtn", "导出 .ics 日历")}</span>
+                    </button>
+                {/if}
                 {#if anniversariesLoading}
                     <span class="ft__smaller ft__on-surface">读取中…</span>
                 {/if}

@@ -9266,6 +9266,91 @@ await test("D-09 联系人详情页：闪念速记便签板（PersonScratchpad�
     fixture.remove();
 });
 
+await test("D-10 联系人详情页：重要日期与纪念日导出 .ics 标准日历文件联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let exportIcsCalled = false;
+
+    const person = {
+        docId: "doc-ics-ui-1",
+        itemId: "item-ics-ui-1",
+        name: "日历测试人物",
+        phone: "13700137000",
+        email: "ics@example.com",
+        wechat: "wx_ics",
+        website: "",
+        birthday: "1989-09-09",
+        isLunar: false,
+        group: "伙伴",
+        tags: ["技术"],
+        relatedItemIds: [],
+        company: "某科技",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "某科技", title: "顾问" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockAnnivs = [
+        {
+            id: "anniv-101",
+            personDocId: "doc-ics-ui-1",
+            title: "结婚纪念日",
+            category: "wedding",
+            date: "2018-06-18",
+            isLunar: false,
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+    ];
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadAnniversaries: async () => mockAnnivs,
+            onExportAnniversariesIcs: (_p, _annivs) => {
+                exportIcsCalled = true;
+                return {
+                    filename: "test.ics",
+                    content: "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n",
+                };
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-detail__anniversaries"), "未渲染重要日期与纪念日区块");
+    assert(fixture.textContent.includes("重要日期与纪念日"), "未渲染纪念日标题");
+    assert(fixture.textContent.includes("结婚纪念日"), "未渲染纪念日条目");
+
+    // 点击「导出 .ics 日历」按钮
+    await until(() => fixture.textContent.includes("导出 .ics 日历"), "未找到导出 .ics 日历按钮文本");
+    const icsBtn = Array.from(fixture.querySelectorAll(".lvct-detail__anniversaries button")).find((b) => b.textContent.includes("导出 .ics 日历"));
+    assert(icsBtn, "未找到导出 .ics 日历按钮元素");
+    icsBtn.click();
+
+    await until(() => exportIcsCalled, "点击导出未调用 onExportAnniversariesIcs");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

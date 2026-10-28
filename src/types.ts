@@ -142,6 +142,10 @@ export interface ContactsPluginFacade {
     updatePersonAnniversary?(personDocId: string, annivId: string, patch: Partial<import("./domain/anniversaries").AnniversaryItem>): Promise<import("./domain/anniversaries").AnniversaryItem[]>;
     removePersonAnniversary?(personDocId: string, annivId: string): Promise<import("./domain/anniversaries").AnniversaryItem[]>;
     listUpcomingAnniversaries?(windowDays?: number): Promise<import("./domain/anniversaries").AnniversaryProjection[]>;
+    /** E-43：导出单人物重要日期/纪念日为 iCalendar (.ics) 标准日历文本 */
+    exportPersonAnniversariesIcs?(person: import("./domain/person").ContactSummary, anniversaries?: readonly import("./domain/anniversaries").AnniversaryItem[], options?: import("./domain/ical-export").IcsExportOptions): import("./services/ical").IcsExportResult;
+    /** E-43：导出全库重要日期/纪念日为全量 iCalendar (.ics) 标准日历文件 */
+    exportAllAnniversariesIcs?(options?: import("./domain/ical-export").IcsExportOptions): Promise<import("./services/ical").IcsExportResult>;
     /** E-37：人物协作项目与主题双向关联（Project & Initiative Collaborators） */
     loadPersonProjects?(personDocId: string): Promise<import("./domain/projects").PersonProjectItem[]>;
     addPersonProject?(item: import("./domain/projects").PersonProjectItem): Promise<import("./domain/projects").PersonProjectItem[]>;

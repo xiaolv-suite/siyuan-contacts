@@ -1201,5 +1201,7 @@
   "scratchpadPinTip": "Pin to top",
   "scratchpadConvertTip": "Convert note into interaction draft",
   "scratchpadConvertBtn": "To Interaction",
-  "commonDelete": "Delete"
+  "commonDelete": "Delete",
+  "exportIcsBtn": "Export .ics Calendar",
+  "exportIcsTip": "Export to iCalendar (.ics) format, compatible with system calendars"
 }

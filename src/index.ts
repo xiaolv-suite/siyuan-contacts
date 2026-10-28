@@ -109,6 +109,7 @@ import { executeContactMerge } from "./services/duplicate-merge";
 import { loadPersonGiftIdeas, addPersonGiftIdea, updatePersonGiftIdea, removePersonGiftIdea } from "./data/gift-ideas";
 import { listOccasions, createOccasion, deleteOccasion } from "./services/occasions";
 import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary, removePersonAnniversary, listUpcomingAnniversaries } from "./data/anniversaries.ts";
+import { exportPersonAnniversariesIcs, exportAllAnniversariesIcs } from "./services/ical.ts";
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
@@ -1703,6 +1704,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async listUpcomingAnniversaries(windowDays?: number) {
         return listUpcomingAnniversaries(this, windowDays);
+    }
+
+    /** E-43：导出单人物重要日期/纪念日为 iCalendar (.ics) 标准日历文本 */
+    exportPersonAnniversariesIcs(person: import("./domain/person").ContactSummary, anniversaries?: readonly import("./domain/anniversaries").AnniversaryItem[], options?: import("./domain/ical-export").IcsExportOptions) {
+        return exportPersonAnniversariesIcs(person, anniversaries, options);
+    }
+
+    /** E-43：导出全库重要日期/纪念日为全量 iCalendar (.ics) 标准日历文件 */
+    async exportAllAnniversariesIcs(options?: import("./domain/ical-export").IcsExportOptions) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return exportAllAnniversariesIcs(this, this.settings, options);
     }
 
     async loadPersonProjects(personDocId: string) {

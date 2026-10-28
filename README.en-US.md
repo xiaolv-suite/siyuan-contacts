@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.34** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.34) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.35** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.35) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.34 (2026-10-29)
+## This release: v0.6.35 (2026-10-29)
+
+This release implements Anniversaries & Milestones iCalendar (.ics) Standard Export:
+
+- **RFC 5545 iCalendar Serialization Pure Function & Service (`domain/ical-export.ts` & `services/ical.ts`)**: Adheres strictly to RFC 5545 specifications (CRLF line breaks, 75-octet line folding, proper character escaping); serializes birthdays (solar & lunar) and anniversaries (wedding, acquaintance, work, memorial milestones) into standard VEVENT items with yearly recurrence (`RRULE:FREQ=YEARLY`), automatically skipping muted entries and supporting both single-contact and full-roster export.
+- **Detail View Anniversaries Section Export Trigger (`PersonDetail.svelte`)**: Features an "Export .ics Calendar" action in the header of the anniversaries card, generating and downloading standard `.ics` files ready for seamless import into Apple Calendar, Google Calendar, Outlook, and native OS calendar apps.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (505/505); production build and release checks passed.
+
+## Previous release: v0.6.34 (2026-10-29)
 
 This release implements Quick Scratchpad & Ephemeral Memo Pinboard in the person detail view:
 

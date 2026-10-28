@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.35] — 2026-10-29
+
+重塑：联系人重要日期与纪念日导出为 iCalendar (.ics) 标准日历文件（Anniversaries & Milestones iCal Export）
+
+- **RFC 5545 iCalendar 标准序列化模型**：`domain/ical-export.ts` 与 `services/ical.ts` 纯函数严格遵守 RFC 5545 规范（CRLF 换行、75 字节自动折行、特殊字符转义与 VEVENT 格式化），支持生日（公历/农历）与周年纪念日循环导出（`RRULE:FREQ=YEARLY`），自动排除免打扰项。
+- **详情页纪念日区块导出与浏览器原生下载**：`PersonDetail.svelte` 纪念日卡片标题栏新增「导出 .ics 日历」按钮，一键生成标准日历文件并触发下载，支持无缝导入 Apple Calendar、Google Calendar、Outlook 及各端系统日历。
+
+验证：`pnpm check` 0/0、单测 985/985 绿灯、E2E UI 回归 505/505 全部通过、Release 门禁通过。
+
 ## [0.6.34] — 2026-10-29
 
 重塑：联系人自管闪念速记便签板（Person Quick Scratchpad & Ephemeral Memo Pinboard）
