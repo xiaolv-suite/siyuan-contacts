@@ -119,6 +119,7 @@ import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
 import { createBriefingDoc } from "./services/briefing-doc.ts";
+import { createMilestonesDoc } from "./services/milestones-doc.ts";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1903,6 +1904,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async createBriefingDoc(input: import("./domain/briefing-export").BriefingExportInput, dateStr?: string) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return createBriefingDoc(this, this.settings, input, dateStr);
+    }
+
+    /** E-46：人脉交往编年史里程碑实体文档生成 */
+    async createMilestonesDoc(person: import("./domain/person").ContactSummary, milestones: readonly import("./domain/timeline-milestones").MilestoneEvent[]) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return createMilestonesDoc(this, this.settings, person, milestones);
     }
 
     async loadExchangesSummary() {

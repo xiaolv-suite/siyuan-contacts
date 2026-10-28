@@ -194,6 +194,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onRemoveProject,
         onCreateFlashcardsDoc,
         onCreateBriefingDoc,
+        onCreateMilestonesDoc,
         onLoadKinships,
         onAddKinship,
         onRemoveKinship,
@@ -309,6 +310,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onCreateFlashcardsDoc?: (person: ContactSummary, facts: readonly PersonFactItem[], topics: readonly import("../../domain/topics").PersonTopicItem[]) => Promise<{ docId: string; hpath: string; count: number } | null>;
         /** 制作会面准备简报实体文档（可选） */
         onCreateBriefingDoc?: (input: import("../../domain/briefing-export").BriefingExportInput, dateStr?: string) => Promise<{ docId: string; hpath: string } | null>;
+        /** E-46 制作人脉交往编年史里程碑实体文档（可选） */
+        onCreateMilestonesDoc?: (person: ContactSummary, milestones: readonly import("../../domain/timeline-milestones").MilestoneEvent[]) => Promise<{ docId: string; hpath: string } | null>;
         /** E-38 家庭与亲属关系（可选） */
         onLoadKinships?: (personDocId: string) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
         onAddKinship?: (item: import("../../domain/kinship").KinshipMemberItem) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
@@ -4332,7 +4335,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         </div>
 
         {#if activitySubTab === "milestones"}
-            <PersonMilestonesTimeline milestones={contactMilestones} {i18n} />
+            <PersonMilestonesTimeline
+                person={current}
+                milestones={contactMilestones}
+                onCreateDoc={onCreateMilestonesDoc ? (p, m) => onCreateMilestonesDoc!(p, m) : undefined}
+                onOpenDoc={onOpenPersonDoc}
+                {i18n}
+            />
         {:else}
         <div class="lvct-detail__activity-filters">
             <input class="b3-text-field" type="search" aria-label="搜索互动备注或日期" placeholder="搜索备注或日期" bind:value={activitySearch} oninput={() => (activityLimit = 20)} />

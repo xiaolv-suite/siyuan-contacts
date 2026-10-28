@@ -5,17 +5,26 @@
         type MilestoneEvent,
         type MilestoneType,
     } from "../../domain/timeline-milestones.ts";
+    import type { ContactSummary } from "../../domain/person.ts";
     import { translateText } from "../../domain/translation";
     import {
         Flag,
         Calendar,
+        ExternalLink,
+        FileText,
     } from "@lucide/svelte";
 
     let {
+        person,
         milestones = [],
+        onCreateDoc,
+        onOpenDoc,
         i18n,
     }: {
+        person?: ContactSummary;
         milestones: MilestoneEvent[];
+        onCreateDoc?: (person: ContactSummary, milestones: readonly MilestoneEvent[]) => Promise<{ docId: string; hpath: string } | null>;
+        onOpenDoc?: (docId: string) => void;
         i18n?: Readonly<Record<string, string>>;
     } = $props();
 
@@ -23,6 +32,9 @@
         translateText(i18n, key, fallback, values));
 
     let activeTypeFilter: MilestoneType | "all" = $state("all");
+    let creatingDoc = $state(false);
+    let createdDoc = $state<{ docId: string; hpath: string } | null>(null);
+    let createError = $state("");
 
     const filtered = $derived(filterMilestonesByType(milestones, activeTypeFilter));
     const groupedByYear = $derived(groupMilestonesByYear(filtered));
@@ -38,10 +50,28 @@
         { key: "first_contact", label: "初识相聚" },
         { key: "exchange", label: "人情往来" },
     ];
+
+    async function handleCreateDoc() {
+        if (!person || !onCreateDoc || creatingDoc) return;
+        creatingDoc = true;
+        createError = "";
+        try {
+            const res = await onCreateDoc(person, milestones);
+            if (res) {
+                createdDoc = res;
+            } else {
+                createError = text("milestonesDocFail", "未能生成编年史文档，请检查笔记本配置");
+            }
+        } catch (err: unknown) {
+            createError = err instanceof Error ? err.message : String(err);
+        } finally {
+            creatingDoc = false;
+        }
+    }
 </script>
 
 <div class="lvct-milestones-timeline">
-    <!-- 筛选工具栏 -->
+    <!-- 筛选工具栏与文档沉淀操作 -->
     <div class="milestones-filter-bar">
         <div class="fn__flex" style="align-items: center; gap: 6px;">
             <Flag size={14} class="ft__primary" />
@@ -58,7 +88,45 @@
                 </button>
             {/each}
         </div>
+
+        {#if onCreateDoc && person}
+            <div class="milestones-actions" style="margin-left: auto;">
+                {#if createdDoc}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small ft__primary"
+                        onclick={() => onOpenDoc?.(createdDoc!.docId)}
+                        title={text("milestonesDocOpenTip", "在主编辑器中打开编年史文档")}
+                    >
+                        <ExternalLink size={13} style="margin-right: 3px;" />
+                        <span>{text("milestonesDocOpenBtn", "打开编年史文档 ↗")}</span>
+                    </button>
+                {:else}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small"
+                        disabled={creatingDoc || milestones.length === 0}
+                        onclick={handleCreateDoc}
+                        title={text("milestonesDocCreateTip", "将交往里程碑全量沉淀为思源实体文档")}
+                    >
+                        <FileText size={13} style="margin-right: 3px;" />
+                        <span>{creatingDoc ? text("milestonesDocCreating", "正在生成…") : text("milestonesDocCreateBtn", "沉淀为编年史文档")}</span>
+                    </button>
+                {/if}
+            </div>
+        {/if}
     </div>
+
+    {#if createError}
+        <div class="b3-label b3-label--error ft__smaller" style="margin: 4px 0;">
+            {createError}
+        </div>
+    {/if}
+    {#if createdDoc}
+        <div class="b3-label b3-label--success ft__smaller" style="margin: 4px 0;">
+            {text("milestonesDocSuccess", "已生成编年史文档：")}{createdDoc.hpath}
+        </div>
+    {/if}
 
     <!-- 里程碑长卷主体 -->
     {#if filtered.length === 0}

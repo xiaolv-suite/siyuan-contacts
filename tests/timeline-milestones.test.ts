@@ -77,3 +77,44 @@ test("timeline-milestones domain: 按年份归组与按类型筛选", () => {
     const all = filterMilestonesByType(events, "all");
     assert.equal(all.length, 3);
 });
+
+test("timeline-milestones domain: buildMilestonesDocumentHpath 与 Markdown 实体文档组装", async () => {
+    const { buildMilestonesDocumentHpath, buildMilestonesDocumentMarkdown } = await import("../src/domain/timeline-milestones.ts");
+    const hpath = buildMilestonesDocumentHpath("孙悟空/齐天大圣");
+    assert.equal(hpath, "/人脉回顾/📜 人脉交往编年史 · 孙悟空_齐天大圣");
+
+    const person = {
+        docId: "doc-swk",
+        itemId: "item-swk",
+        name: "孙悟空",
+        phone: "",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "",
+        isLunar: false,
+        group: "神仙",
+        tags: [],
+        relatedItemIds: [],
+    };
+
+    const events = [
+        {
+            id: "m1",
+            type: "first_contact" as const,
+            date: "2024-01-01",
+            title: "初次相识 · 建立连接",
+            detail: "五指山下相遇",
+            badgeLabel: "初识",
+            icon: "🌱",
+            timestamp: 1000,
+        },
+    ];
+
+    const md = buildMilestonesDocumentMarkdown(person, events, "2026-10-29");
+    assert.ok(md.includes("# 📜 人脉交往编年史 · 孙悟空"));
+    assert.ok(md.includes("((doc-swk \"孙悟空\"))"));
+    assert.ok(md.includes("## 2024 年（1 个里程碑）"));
+    assert.ok(md.includes("### 🌱 2024-01-01 · 初次相识 · 建立连接"));
+    assert.ok(md.includes("- **细节**：五指山下相遇"));
+});

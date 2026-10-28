@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.38] — 2026-10-29
+
+重塑：人脉交往编年史里程碑实体文档一键沉淀（Export Milestones Journey to SiYuan Document）
+
+- **编年史实体文档生成服务**：`domain/timeline-milestones.ts` 与 `services/milestones-doc.ts` 纯函数汇编全量里程碑按年份渲染标准 Markdown，归档至 `/人脉回顾/📜 人脉交往编年史 · 姓名`，附带原生块属性与双链引用。
+- **长卷沉淀与直达联动**：`PersonMilestonesTimeline.svelte` 编年史工具栏新增「沉淀为编年史文档」与「打开编年史文档 ↗」快捷入口，直达思源主编辑器展开人生笔记书写。
+
+验证：`pnpm check` 0/0、单测 985/985 绿灯、E2E UI 回归 508/508 全部通过、Release 门禁通过。
+
 ## [0.6.37] — 2026-10-29
 
 重塑：联系人详情页「人脉交往回顾与里程碑时间轴长卷」（Comprehensive Contact Milestones & Lifetime Timeline）

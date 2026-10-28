@@ -7,6 +7,8 @@
 
 import { getStageMeta, type RelationshipStageKey } from "./lifecycle-stage.ts";
 import { ANNIVERSARY_CATEGORY_LABELS, type AnniversaryCategory } from "./anniversaries.ts";
+import type { ContactSummary } from "./person.ts";
+import { escapeMarkdown, sanitizeFileName } from "./format.ts";
 
 export type MilestoneType =
     | "first_contact"      // 初识相聚（最早一条互动）
@@ -209,4 +211,52 @@ export function filterMilestonesByType(
 ): MilestoneEvent[] {
     if (type === "all") return [...events];
     return events.filter((ev) => ev.type === type);
+}
+
+export function buildMilestonesDocumentHpath(personName: string): string {
+    const safeName = sanitizeFileName(personName, "联系人", 50);
+    return `/人脉回顾/📜 人脉交往编年史 · ${safeName}`;
+}
+
+export function buildMilestonesDocumentMarkdown(
+    person: ContactSummary,
+    milestones: readonly MilestoneEvent[],
+    generatedAt?: string,
+): string {
+    const personName = escapeMarkdown(person.name.trim() || "联系人");
+    const stamp = generatedAt || new Date().toISOString().slice(0, 10);
+    const lines: string[] = [];
+
+    lines.push(`# 📜 人脉交往编年史 · ${personName}`);
+    lines.push("");
+    lines.push(`> 联系人：((${person.docId} "${personName}"))  `);
+    lines.push(`> 编年史归档时间：${stamp} · 里程碑总计：${milestones.length} 件`);
+    lines.push("");
+
+    if (milestones.length === 0) {
+        lines.push("暂无交往里程碑记录。");
+        return lines.join("\n");
+    }
+
+    const grouped = groupMilestonesByYear(milestones);
+    const sortedYears = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+    for (const year of sortedYears) {
+        const events = grouped[year] || [];
+        lines.push(`## ${year} 年（${events.length} 个里程碑）`);
+        lines.push("");
+        for (const ev of events) {
+            lines.push(`### ${ev.icon} ${ev.date} · ${escapeMarkdown(ev.title)}`);
+            lines.push(`- **类型**：\`${escapeMarkdown(ev.badgeLabel)}\``);
+            if (ev.detail) {
+                lines.push(`- **细节**：${escapeMarkdown(ev.detail)}`);
+            }
+            lines.push("");
+        }
+    }
+
+    lines.push("---");
+    lines.push("由小驴人脉插件生成 · 真实沉淀交往历史事实");
+
+    return lines.join("\n");
 }

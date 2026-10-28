@@ -926,9 +926,10 @@
             onLoadProjects={facade.loadPersonProjects ? (docId) => facade.loadPersonProjects!(docId) : undefined}
 	            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
 	            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
-		            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
-		            onCreateBriefingDoc={facade.createBriefingDoc ? (input, dateStr) => facade.createBriefingDoc!(input, dateStr) : undefined}
-			            onLoadKinships={facade.loadPersonKinships ? (docId) => facade.loadPersonKinships!(docId) : undefined}
+			            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
+			            onCreateBriefingDoc={facade.createBriefingDoc ? (input, dateStr) => facade.createBriefingDoc!(input, dateStr) : undefined}
+			            onCreateMilestonesDoc={facade.createMilestonesDoc ? (person, milestones) => facade.createMilestonesDoc!(person, milestones) : undefined}
+				            onLoadKinships={facade.loadPersonKinships ? (docId) => facade.loadPersonKinships!(docId) : undefined}
 			            onAddKinship={facade.addPersonKinship ? (item) => facade.addPersonKinship!(item) : undefined}
 			            onRemoveKinship={facade.removePersonKinship ? (docId, memberId) => facade.removePersonKinship!(docId, memberId) : undefined}
 			            onLoadPromises={facade.loadPersonPromises ? (docId) => facade.loadPersonPromises!(docId) : undefined}

@@ -9516,6 +9516,98 @@ await test("D-11 联系人详情页：往来活动与历程编年史长卷（Per
     fixture.remove();
 });
 
+await test("D-12 联系人详情页：交往历程编年史沉淀为思源实体文档（createMilestonesDoc）与主编辑器直达联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let createMilestonesCalled = false;
+    let openedDocId = "";
+
+    const person = {
+        docId: "doc-chronicle-ui-1",
+        itemId: "item-chronicle-ui-1",
+        name: "长卷测试人物",
+        phone: "13900139999",
+        email: "chronicle@example.com",
+        wechat: "wx_chronicle",
+        website: "",
+        birthday: "1986-06-06",
+        isLunar: false,
+        group: "战略伙伴",
+        tags: ["架构"],
+        relatedItemIds: [],
+        company: "深创投",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "深创投", title: "投资总监" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            initialTab: "activity",
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => ({
+                timeline: [
+                    { id: "e1", eventId: "e1", occurredAt: 1000, localDate: "2023-01-01", source: "manual", note: "初次相识交流", groupSize: 1 },
+                ],
+                coAttendance: [],
+                totalEvents: 1,
+                backlinks: [],
+            }),
+            onOpenPersonDoc(docId) {
+                openedDocId = docId;
+            },
+            onNavigate() {},
+            onCreateMilestonesDoc: async (_p, _m) => {
+                createMilestonesCalled = true;
+                return {
+                    docId: "doc-chronicle-created-01",
+                    hpath: "/人脉回顾/📜 人脉交往编年史 · 长卷测试人物",
+                };
+            },
+        },
+    });
+
+    // 切换至历程编年史长卷模式
+    await until(() => fixture.textContent.includes("历程编年史长卷"), "未渲染编年史切换按钮");
+    const milestonesBtn = Array.from(fixture.querySelectorAll(".lvct-detail__activity-subnav button")).find((b) => b.textContent.includes("历程编年史长卷"));
+    assert(milestonesBtn, "未找到历程编年史切换按钮");
+    milestonesBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-milestones-timeline"), "未渲染编年史组件");
+
+    // 点击「沉淀为编年史文档」按钮
+    await until(() => fixture.textContent.includes("沉淀为编年史文档"), "未找到沉淀为编年史文档按钮");
+    const createBtn = Array.from(fixture.querySelectorAll(".milestones-actions button")).find((b) => b.textContent.includes("沉淀为编年史文档"));
+    assert(createBtn, "未找到沉淀为编年史文档按钮元素");
+    createBtn.click();
+
+    await until(() => createMilestonesCalled, "点击沉淀未调用 onCreateMilestonesDoc");
+    await until(() => fixture.textContent.includes("打开编年史文档 ↗"), "创建成功后未显示打开入口");
+
+    const openBtn = Array.from(fixture.querySelectorAll(".milestones-actions button")).find((b) => b.textContent.includes("打开编年史文档 ↗"));
+    assert(openBtn, "未找到打开编年史文档按钮");
+    openBtn.click();
+    assert(openedDocId === "doc-chronicle-created-01", "点击打开文档未传递正确 docId");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

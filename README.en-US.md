@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.37** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.37) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.38** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.38) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.37 (2026-10-29)
+## This release: v0.6.38 (2026-10-29)
+
+This release implements Export Milestones Journey to SiYuan Document:
+
+- **Chronicle Document Generation Service (`domain/timeline-milestones.ts` & `services/milestones-doc.ts`)**: Synthesizes all lifetime relationship milestones into a structured, year-by-year document archived at `/人脉回顾/📜 人脉交往编年史 · Name`, equipped with native SiYuan block attributes (`custom-lvct-milestones-person`, `custom-lvct-created`) and bidirectional document links.
+- **Milestones Timeline Document Creation & Direct Navigation (`PersonMilestonesTimeline.svelte` & `PersonDetail.svelte`)**: Embeds a "Save as Chronicle Doc" action in the timeline toolbar, with direct "Open Chronicle Doc ↗" navigation to open the created document in a new editor tab for in-depth reflection and biographical note-taking.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (508/508); production build and release checks passed.
+
+## Previous release: v0.6.37 (2026-10-29)
 
 This release implements Comprehensive Contact Milestones & Lifetime Timeline in the person detail view:
 

@@ -1207,5 +1207,12 @@
   "activitySubTabLog": "往来明细流水",
   "activitySubTabMilestones": "历程编年史长卷",
   "milestonesFilterTitle": "历程分类：",
-  "milestonesEmpty": "暂无符合筛选条件的交往历程里程碑。随着互动、阶段变迁与信诺履约的推进，这里将自动绘制成编年史故事线。"
+  "milestonesEmpty": "暂无符合筛选条件的交往历程里程碑。随着互动、阶段变迁与信诺履约的推进，这里将自动绘制成编年史故事线。",
+  "milestonesDocCreateBtn": "沉淀为编年史文档",
+  "milestonesDocCreating": "正在生成…",
+  "milestonesDocCreateTip": "将交往里程碑全量沉淀为思源实体文档",
+  "milestonesDocSuccess": "已生成编年史文档：",
+  "milestonesDocFail": "未能生成编年史文档，请检查笔记本配置",
+  "milestonesDocOpenBtn": "打开编年史文档 ↗",
+  "milestonesDocOpenTip": "在主编辑器中打开编年史文档"
 }

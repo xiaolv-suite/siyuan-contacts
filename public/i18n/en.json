@@ -1207,5 +1207,12 @@
   "activitySubTabLog": "Interaction Log",
   "activitySubTabMilestones": "Milestones & Journey",
   "milestonesFilterTitle": "Category: ",
-  "milestonesEmpty": "No relationship milestones found. As interactions, stage progressions, and commitments evolve, your journey will unfold here."
+  "milestonesEmpty": "No relationship milestones found. As interactions, stage progressions, and commitments evolve, your journey will unfold here.",
+  "milestonesDocCreateBtn": "Save as Chronicle Doc",
+  "milestonesDocCreating": "Generating…",
+  "milestonesDocCreateTip": "Save relationship milestones as a SiYuan document",
+  "milestonesDocSuccess": "Chronicle document created: ",
+  "milestonesDocFail": "Failed to create chronicle document, please check notebook settings",
+  "milestonesDocOpenBtn": "Open Chronicle Doc ↗",
+  "milestonesDocOpenTip": "Open chronicle document in main editor"
 }

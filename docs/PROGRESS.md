@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.38 发布：人脉交往编年史里程碑实体文档一键沉淀（Export Milestones Journey to SiYuan Document）
+
+- 本轮落地编年史实体文档生成服务与时间轴沉淀联动：
+  1. 编年史文档生成纯函数：`timeline-milestones.ts` 与 `milestones-doc.ts` 纯函数汇编全量里程碑按年份渲染标准 Markdown，归档至 `/人脉回顾/📜 人脉交往编年史 · 姓名`，附带原生块属性与双链引用；
+  2. 长卷沉淀与直达联动：`PersonMilestonesTimeline.svelte` 编年史工具栏新增「沉淀为编年史文档」与「打开编年史文档 ↗」快捷入口，直达思源主编辑器展开人生笔记书写；
+- 门禁验证：`pnpm check`（0/0）、单测 985/985 全部通过、三套 UI 回归 508/508 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.37 发布：联系人详情页「人脉交往回顾与里程碑时间轴长卷」（Comprehensive Contact Milestones & Lifetime Timeline）
 
 - 本轮落地交往里程碑提取引擎与详情页编年史长卷组件：

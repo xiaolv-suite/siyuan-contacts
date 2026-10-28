@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.37** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.37) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.38** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.38) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.37 · 2026-10-29）
+## 本次发布（v0.6.38 · 2026-10-29）
+
+本版本将编年史里程碑长卷无缝沉淀至思源实体笔记库，推出了人脉交往编年史实体文档一键沉淀与主编辑器直达系统（Export Milestones Journey to SiYuan Document）：
+
+- **编年史实体文档生成服务（`domain/timeline-milestones.ts` & `services/milestones-doc.ts`）**：支持将联系人全量交往大事件（初相识、阶段演进、周年纪念、已兑现诺言、人情礼往）汇编生成按年份结构化的小节长卷，自动归档至 `/人脉回顾/📜 人脉交往编年史 · 姓名`，并附带 `custom-lvct-milestones-person` 原生块属性与思源双链锚定。
+- **编年史长卷沉淀与直达联动（`PersonMilestonesTimeline.svelte` & `PersonDetail.svelte`）**：在编年史时间轴工具栏新增「沉淀为编年史文档」按钮，生成后无缝展示「打开编年史文档 ↗」入口，点击即可在思源主编辑器中开启独立标签页开展长期关系回顾与人生笔记书写。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 985/985 100% 通过；浏览器 UI 回归全绿（508/508）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.37 · 2026-10-29）
 
 本版本将零散在各处的互动记录、阶段演进、纪念日与已履约信诺汇编为生动的个人关系时间线长卷，推出了联系人交往历程编年史长卷（Comprehensive Contact Milestones & Lifetime Timeline）：
 
