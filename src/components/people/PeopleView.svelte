@@ -78,6 +78,7 @@
         onExecuteMerge,
         onCreateBatchFlashcardsDoc,
         onLoadLifecycleStages,
+        onLoadCadences,
         onPreviewSelfIdentityChange,
         onApplySelfIdentityChange,
         onValidateExtended,
@@ -128,6 +129,8 @@
         onCreateBatchFlashcardsDoc?: (people: readonly ContactSummary[], options?: { deckName?: string; batchTitle?: string }) => Promise<{ docId: string; hpath: string; count: number } | null>;
         /** E-41：批量获取全量联系人交往阶段映射表（可选） */
         onLoadLifecycleStages?: () => Promise<Record<string, RelationshipStageKey>>;
+        /** E-59：批量获取全量联系人节奏配置表（可选） */
+        onLoadCadences?: () => Promise<Record<string, import("../../domain/cadence").PersonCadence>>;
         /** B09-1：移动端工具栏收纳（常驻搜索/视图切换/新建，其余收进底部弹层） */
         isMobile?: boolean;
     } = $props();
@@ -208,6 +211,7 @@
     let filterStarredOnly = $state(false);
     let addPersonInitial = $state<ContactDraft | undefined>(undefined);
     let lifecycleStages: Record<string, RelationshipStageKey> = $state({});
+    let cadences: Record<string, import("../../domain/cadence").PersonCadence> = $state({});
 
     $effect(() => {
         void revision;
@@ -216,6 +220,16 @@
             lifecycleStages = res || {};
         }).catch(() => {
             lifecycleStages = {};
+        });
+    });
+
+    $effect(() => {
+        void revision;
+        if (!onLoadCadences) return;
+        void onLoadCadences().then((res) => {
+            cadences = res || {};
+        }).catch(() => {
+            cadences = {};
         });
     });
 
@@ -672,7 +686,7 @@
         const recentSafeFilter = recentState !== "ready"
             ? { ...extraFilter, recentFrom: "", recentTo: "", neverContacted: false }
             : extraFilter;
-        const final = applyPeopleFilters(result, recentState !== "ready" ? {} : recent, recentSafeFilter, lifecycleStages);
+        const final = applyPeopleFilters(result, recentState !== "ready" ? {} : recent, recentSafeFilter, lifecycleStages, cadences, { defaultCadenceDays: preferences.staleThresholdDays });
         const effectiveSortMode = recentState !== "ready" && sortMode === "recent" ? "name" : sortMode;
         // G-11：全员下次生日计算惰性化，仅在生日排序模式下按需计算，避免姓名/分组/最近互动排序下的农历计算开销
         const birthdayDays = effectiveSortMode === "birthday"
@@ -929,6 +943,17 @@
             const sMeta = LIFECYCLE_STAGES.find((s) => s.key === extraFilter.lifecycleStage);
             chips.push({ key: "lifecycleStage", label: `阶段：${sMeta ? `${sMeta.icon} ${sMeta.shortLabel}` : extraFilter.lifecycleStage}` });
         }
+        if (extraFilter.heatLevel) {
+            const hLabels: Record<string, string> = {
+                hot: "🔥 温热",
+                warm: "🍃 常温",
+                cool: "🌬️ 微凉",
+                cold: "❄️ 渐冻",
+                unknown: "⚪ 从未联系",
+                paused: "⏸️ 已暂停",
+            };
+            chips.push({ key: "heatLevel", label: `温度：${hLabels[extraFilter.heatLevel] || extraFilter.heatLevel}` });
+        }
         return chips;
     });
 
@@ -950,7 +975,7 @@
         else if (key === "recentRange") extraFilter = { ...extraFilter, recentFrom: "", recentTo: "" };
         else if (key === "neverContacted") extraFilter = { ...extraFilter, neverContacted: false };
         else if (key === "profileGap") extraFilter = { ...extraFilter, profileGap: "" };
-        else if (["workQuery", "educationQuery", "relationshipLabel", "region", "lifecycleStage"].includes(key)) extraFilter = { ...extraFilter, [key]: "" };
+        else if (["workQuery", "educationQuery", "relationshipLabel", "region", "lifecycleStage", "heatLevel"].includes(key)) extraFilter = { ...extraFilter, [key]: "" };
         visibleCount = PAGE_SIZE;
     }
 
@@ -1014,37 +1039,38 @@
             sort: sortMode,
             ...(extraFilter.workQuery?.trim() ? { workQuery: extraFilter.workQuery.trim() } : {}),
             ...(extraFilter.educationQuery?.trim() ? { educationQuery: extraFilter.educationQuery.trim() } : {}),
-	            ...(extraFilter.relationshipLabel?.trim() ? { relationshipLabel: extraFilter.relationshipLabel.trim() } : {}),
-	            ...(extraFilter.region?.trim() ? { region: extraFilter.region.trim() } : {}),
-	            ...(extraFilter.lifecycleStage ? { lifecycleStage: extraFilter.lifecycleStage } : {}),
-	        };
-	    }
+		            ...(extraFilter.relationshipLabel?.trim() ? { relationshipLabel: extraFilter.relationshipLabel.trim() } : {}),
+		            ...(extraFilter.region?.trim() ? { region: extraFilter.region.trim() } : {}),
+		            ...(extraFilter.lifecycleStage ? { lifecycleStage: extraFilter.lifecycleStage } : {}),
+		            ...(extraFilter.heatLevel ? { heatLevel: extraFilter.heatLevel } : {}),
+		        };
+		    }
 
-	    // 条件漂移检测：当前条件与激活视图的规则不一致时，取消视图标记（人物变化时规则自动重新求值）
-	    $effect(() => {
-	        if (!currentViewId) return;
-	        const view = localViews.find((item) => item.id === currentViewId);
-	        if (!view) {
-	            currentViewId = "";
-	            activeViewName = "";
-	            return;
-	        }
-	        if (JSON.stringify(currentQuery()) !== JSON.stringify(view.query)) {
-	            currentViewId = "";
-	            activeViewName = "";
-	        }
-	    });
+		    // 条件漂移检测：当前条件与激活视图的规则不一致时，取消视图标记（人物变化时规则自动重新求值）
+		    $effect(() => {
+		        if (!currentViewId) return;
+		        const view = localViews.find((item) => item.id === currentViewId);
+		        if (!view) {
+		            currentViewId = "";
+		            activeViewName = "";
+		            return;
+		        }
+		        if (JSON.stringify(currentQuery()) !== JSON.stringify(view.query)) {
+		            currentViewId = "";
+		            activeViewName = "";
+		        }
+		    });
 
-	    function applyQueryToState(query: SavedViewQuery) {
-	        searchInput = query.search;
-	        searchText = query.search;
-	        searchDebouncer.cancel();
-	        groupFilter = query.group;
-	        tagFilter = [...query.tags];
-	        extraFilter = { ...extraFilter, tagMatch: query.tagMatch, recentFrom: query.recentFrom, recentTo: query.recentTo, neverContacted: query.neverContacted,
-	            profileGap: query.profileGap ?? "",
-	            workQuery: query.workQuery ?? "", educationQuery: query.educationQuery ?? "", relationshipLabel: query.relationshipLabel ?? "",
-	            region: query.region ?? "", lifecycleStage: query.lifecycleStage ?? "" };
+		    function applyQueryToState(query: SavedViewQuery) {
+		        searchInput = query.search;
+		        searchText = query.search;
+		        searchDebouncer.cancel();
+		        groupFilter = query.group;
+		        tagFilter = [...query.tags];
+		        extraFilter = { ...extraFilter, tagMatch: query.tagMatch, recentFrom: query.recentFrom, recentTo: query.recentTo, neverContacted: query.neverContacted,
+		            profileGap: query.profileGap ?? "",
+		            workQuery: query.workQuery ?? "", educationQuery: query.educationQuery ?? "", relationshipLabel: query.relationshipLabel ?? "",
+		            region: query.region ?? "", lifecycleStage: query.lifecycleStage ?? "", heatLevel: query.heatLevel ?? "" };
         sortMode = query.sort;
         visibleCount = PAGE_SIZE;
     }
@@ -1828,6 +1854,25 @@
                             {#each LIFECYCLE_STAGES as s (s.key)}
                                 <option value={s.key}>{s.icon} {s.label}</option>
                             {/each}
+                        </select>
+                    </label>
+                    <label class="lvct-form__item">
+                        <span>{text("peopleFilterHeat", "关系温度分级")}</span>
+                        <select
+                            class="b3-select fn__block"
+                            value={extraFilter.heatLevel ?? ""}
+                            onchange={(event) => {
+                                extraFilter = { ...extraFilter, heatLevel: (event.currentTarget.value as import("../../domain/cadence").RelationshipHeatLevel | "") };
+                                visibleCount = PAGE_SIZE;
+                            }}
+                        >
+                            <option value="">{text("peopleFilterHeatAll", "全部温度（不限）")}</option>
+                            <option value="hot">🔥 温热（近期常联系）</option>
+                            <option value="warm">🍃 常温（状态良好）</option>
+                            <option value="cool">🌬️ 微凉（轻度逾期）</option>
+                            <option value="cold">❄️ 渐冻（深度疏远）</option>
+                            <option value="unknown">⚪ 从未联系</option>
+                            <option value="paused">⏸️ 已暂停提醒</option>
                         </select>
                     </label>
                     <p class="ft__smaller">仅匹配已核实的当前分类与当前本人称谓，未知资料不当作未填写。</p>

@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.51] — 2026-10-29
+
+重塑：联系人名册「关系温度多维交叉筛选与自定义视图持久化」（Relationship Heat Multi-Dimensional Filtering）
+
+- **多维交叉筛选域与存储扩展**：`domain/people-filters.ts` 与 `domain/saved-views.ts` 扩展 `PeopleFilterState` 与 `SavedViewQuery` 支持关系温度分级过滤（`heatLevel`：温热、常温、微凉、渐冻、从未联系、已暂停）；纯函数 `applyPeopleFilters` 结合人物独立联系节奏（`cadences`）精准求值；生效条件行支持 `温度：{level}` 动态条件胶囊与单项点击清除。
+- **名册更多筛选面板与视图联动**：`PeopleView.svelte` 更多筛选面板新增关系温度分级下拉选择；与生命周期阶段、地域城市、工作单位、分组及标签形成深度交叉多维矩阵，并支持持久化保存至常用自定义视图。
+
+验证：`pnpm check` 0/0、单测 1020/1020 绿灯、三套 E2E UI 回归各 521/521 全部通过、Release 门禁通过。
+
 ## [0.6.50] — 2026-10-29
 
 重塑：联系人详情页「周年纪念里程碑提醒挂件与温情祝贺流」（Anniversary Milestones Banner & Congratulatory Flow）

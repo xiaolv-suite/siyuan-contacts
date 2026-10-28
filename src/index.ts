@@ -95,7 +95,7 @@ import {
     snoozeFollowUp,
 } from "./services/followups";
 import type { SnoozeOption } from "./domain/followups";
-import { loadPersonCadence, savePersonCadence } from "./data/cadences";
+import { loadPersonCadence, savePersonCadence, loadCadenceMapStrict } from "./data/cadences";
 import { dismissReminder, resumeReminder, loadReminderDismissalsStrict } from "./data/reminder-dismissals";
 import type { ReminderKind } from "./data/reminder-dismissals";
 import type { PersonCadence } from "./domain/cadence";
@@ -1836,6 +1836,10 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async loadAllLifecycleStages() {
         return loadAllLifecycleStages(this);
+    }
+
+    async loadAllCadences() {
+        return loadCadenceMapStrict(this);
     }
 
     /** E-42：联系人自管闪念速记便签板 */

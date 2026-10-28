@@ -24,6 +24,7 @@ export interface SavedViewQuery {
     relationshipLabel?: string;
     region?: string;
     lifecycleStage?: import("./lifecycle-stage.ts").RelationshipStageKey | "";
+    heatLevel?: import("./cadence.ts").RelationshipHeatLevel | "";
 }
 
 export interface SavedView {
@@ -73,6 +74,8 @@ function normalizeQuery(raw: unknown): SavedViewQuery | null {
         ...(typeof record.educationQuery === "string" && record.educationQuery.trim() ? { educationQuery: record.educationQuery.trim().slice(0, 200) } : {}),
         ...(typeof record.relationshipLabel === "string" && record.relationshipLabel.trim() ? { relationshipLabel: record.relationshipLabel.trim().slice(0, 80) } : {}),
         ...(typeof record.region === "string" && record.region.trim() ? { region: record.region.trim().slice(0, 50) } : {}),
+        ...(typeof record.lifecycleStage === "string" && record.lifecycleStage.trim() ? { lifecycleStage: record.lifecycleStage as any } : {}),
+        ...(typeof record.heatLevel === "string" && record.heatLevel.trim() ? { heatLevel: record.heatLevel as any } : {}),
     };
 }
 

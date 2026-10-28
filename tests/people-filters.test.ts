@@ -87,6 +87,37 @@ test("资料完整度（C03）：四类缺口判定、筛选与 chips（只按�
     assert.equal(PROFILE_GAPS.length, 4);
 });
 
+test("关系温度筛选：按温度分级筛选人物", () => {
+    const base = (patch: Partial<PeopleFilterState>): PeopleFilterState => ({ ...EMPTY_PEOPLE_FILTER, ...patch });
+    const nowTime = 1700000000000;
+    const dayMs = 86400 * 1000;
+    const peopleList = [
+        person({ docId: "p-hot", name: "温热" }),
+        person({ docId: "p-cool", name: "微凉" }),
+        person({ docId: "p-cold", name: "渐冻" }),
+        person({ docId: "p-paused", name: "暂停" }),
+        person({ docId: "p-never", name: "从未" }),
+    ];
+    const recents = {
+        "p-hot": { occurredAt: nowTime - 5 * dayMs, localDate: "2023-11-09" },
+        "p-cool": { occurredAt: nowTime - 40 * dayMs, localDate: "2023-10-05" },
+        "p-cold": { occurredAt: nowTime - 90 * dayMs, localDate: "2023-08-16" },
+        "p-paused": { occurredAt: nowTime - 120 * dayMs, localDate: "2023-07-17" },
+    };
+    const cadences = {
+        "p-paused": { days: 30, paused: true },
+    };
+
+    const ids = (heatLevel: import("../src/domain/cadence.ts").RelationshipHeatLevel) =>
+        applyPeopleFilters(peopleList, recents, base({ heatLevel }), undefined, cadences, { defaultCadenceDays: 30, nowTime }).map((p) => p.docId);
+
+    assert.deepEqual(ids("hot"), ["p-hot"]);
+    assert.deepEqual(ids("cool"), ["p-cool"]);
+    assert.deepEqual(ids("cold"), ["p-cold"]);
+    assert.deepEqual(ids("paused"), ["p-paused"]);
+    assert.deepEqual(ids("unknown"), ["p-never"]);
+});
+
 test("联系人窗口：桌面多列按行内最高实测卡片高度累计", () => {
     const cards = ["a", "b", "c", "d"].map((id) => ({ id }));
     const heights = new Map([["a", 180], ["b", 240], ["c", 190], ["d", 200]]);

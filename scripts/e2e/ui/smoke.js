@@ -9164,6 +9164,57 @@ await test("B-10 联系人名册：交往生命周期阶段高级筛选与条件
     fixture.remove();
 });
 
+await test("B-11 联系人名册：关系温度（heatLevel）多维交叉筛选与条件胶囊单项清除闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    kernel.handler = async (route) => {
+        if (route === "/api/av/renderAttributeView") return renderResult();
+        return null;
+    };
+
+    mount(PeopleView, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            loadRecentInteractions: async () => ({}),
+            revision: 0,
+            initialSort: "name",
+            isMobile: false,
+            onOpenDetail() {},
+            onOpenPersonDoc() {},
+            onPreferencesChange: async (next) => next,
+        },
+    });
+
+    await until(() => fixture.textContent.includes("更多筛选"), "未找到更多筛选按钮");
+    const moreBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("更多筛选"));
+    assert(moreBtn, "未找到更多筛选按钮");
+    moreBtn.click();
+
+    await until(() => fixture.querySelector("#lvct-people-moremenu-panel"), "未展开更多筛选面板");
+
+    // 找到关系温度筛选下拉框
+    const select = Array.from(fixture.querySelectorAll("#lvct-people-moremenu-panel select")).find((s) => s.textContent.includes("微凉（轻度逾期）"));
+    assert(select, "未找到关系温度筛选下拉框");
+
+    select.value = "cool";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await until(() => fixture.textContent.includes("温度："), "生效条件行未出现温度条件胶囊");
+    assert(fixture.textContent.includes("微凉"), "生效条件行未显示微凉标签");
+
+    // 点击条件胶囊清除
+    const conditionBtn = Array.from(fixture.querySelectorAll(".lvct-people__condition")).find((b) => b.textContent.includes("温度："));
+    assert(conditionBtn, "未找到温度条件胶囊按钮");
+    conditionBtn.click();
+
+    await until(() => !fixture.textContent.includes("温度："), "清除条件胶囊后条件依然残留");
+
+    fixture.remove();
+});
+
 await test("D-09 联系人详情页：闪念速记便签板（PersonScratchpad）卡片渲染、置顶与一键转互动联动", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);

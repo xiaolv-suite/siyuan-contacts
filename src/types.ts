@@ -171,6 +171,8 @@ export interface ContactsPluginFacade {
     updatePersonLifecycleStage?(personDocId: string, stage: import("./domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string): Promise<import("./domain/lifecycle-stage").PersonLifecycleRecord>;
     /** 批量获取全量联系人交往阶段映射表 */
     loadAllLifecycleStages?(): Promise<Record<string, import("./domain/lifecycle-stage").RelationshipStageKey>>;
+    /** 批量获取全量联系人节奏配置表 */
+    loadAllCadences?(): Promise<Record<string, import("./domain/cadence").PersonCadence>>;
     /** E-42：联系人自管闪念速记便签板（Person Scratchpad & Ephemeral Memo Pinboard） */
     loadPersonScratchpads?(personDocId: string): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
     savePersonScratchpad?(item: import("./domain/person-scratchpad").PersonScratchpadItem): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;

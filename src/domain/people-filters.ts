@@ -10,6 +10,8 @@ import { isValidDateKey } from "./followups.ts";
 import { filterPeopleByRegion } from "./region.ts";
 
 import type { RelationshipStageKey } from "./lifecycle-stage.ts";
+import type { RelationshipHeatLevel, PersonCadence } from "./cadence.ts";
+import { computeRelationshipHealth } from "./cadence.ts";
 
 export type TagMatchMode = "all" | "any";
 
@@ -39,6 +41,8 @@ export interface PeopleFilterState {
     region?: string;
     /** E-41 交往生命周期阶段 */
     lifecycleStage?: RelationshipStageKey | "";
+    /** E-59 关系温度分级过滤 */
+    heatLevel?: RelationshipHeatLevel | "";
 }
 
 export const EMPTY_PEOPLE_FILTER: PeopleFilterState = {
@@ -49,6 +53,7 @@ export const EMPTY_PEOPLE_FILTER: PeopleFilterState = {
     profileGap: "",
     region: "",
     lifecycleStage: "",
+    heatLevel: "",
 };
 
 export type ExtraFilterChipKey = "tagMatch" | "recentRange" | "neverContacted" | "profileGap" | "region";
@@ -86,7 +91,8 @@ export function hasProfileGap(person: ContactSummary, gap: ProfileGap): boolean 
 /** 附加筛选（标签模式之外的部分）是否生效 */
 export function isExtraFilterActive(filter: PeopleFilterState): boolean {
     return filter.tagMatch !== "all" || !!filter.recentFrom || !!filter.recentTo || filter.neverContacted || !!filter.profileGap
-        || !!filter.workQuery || !!filter.educationQuery || !!filter.relationshipLabel || !!filter.region || !!filter.lifecycleStage;
+        || !!filter.workQuery || !!filter.educationQuery || !!filter.relationshipLabel || !!filter.region || !!filter.lifecycleStage
+        || !!filter.heatLevel;
 }
 
 /** 当前生效的附加条件（固定顺序），供生效条件行渲染与单项清除 */
@@ -100,12 +106,14 @@ export function extraFilterChips(filter: PeopleFilterState): ExtraFilterChip[] {
     return chips;
 }
 
-/** 最近互动范围 + 从未联系 + 资料完整度 + 地域过滤 + 交往阶段（标签匹配请先用 matchTags） */
+/** 最近互动范围 + 从未联系 + 资料完整度 + 地域过滤 + 交往阶段 + 关系温度（标签匹配请先用 matchTags） */
 export function applyPeopleFilters(
     people: readonly ContactSummary[],
     recent: Readonly<Record<string, { occurredAt: number; localDate: string }>>,
     filter: PeopleFilterState,
     lifecycleStages?: Readonly<Record<string, RelationshipStageKey>>,
+    cadences?: Readonly<Record<string, PersonCadence>>,
+    options?: { defaultCadenceDays?: number; nowTime?: number },
 ): ContactSummary[] {
     const from = isDateKey(filter.recentFrom) ? filter.recentFrom : "";
     const to = isDateKey(filter.recentTo) ? filter.recentTo : "";
@@ -124,6 +132,16 @@ export function applyPeopleFilters(
             if (!last) return false;
             if (from && last.localDate < from) return false;
             if (to && last.localDate > to) return false;
+        }
+        if (filter.heatLevel) {
+            const cadence = cadences?.[person.docId];
+            const health = computeRelationshipHealth({
+                cadenceDays: cadence?.days ?? options?.defaultCadenceDays ?? 30,
+                lastInteractionTime: last?.occurredAt,
+                paused: cadence?.paused,
+                nowTime: options?.nowTime,
+            });
+            if (health.level !== filter.heatLevel) return false;
         }
         return true;
     });

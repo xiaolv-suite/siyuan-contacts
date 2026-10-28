@@ -1374,5 +1374,7 @@
   "congratulatoryPreview": "Greeting: ",
   "applyGreetingTip": "Pre-fill congratulatory greeting into interaction note",
   "applyGreetingBtn": "Use Greeting",
-  "copyGreetingTip": "Copy greeting to clipboard"
+  "copyGreetingTip": "Copy greeting to clipboard",
+  "peopleFilterHeat": "Relationship Heat Level",
+  "peopleFilterHeatAll": "All Temperatures (Any)"
 }

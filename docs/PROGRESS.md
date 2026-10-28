@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.51 发布：联系人名册「关系温度多维交叉筛选与自定义视图持久化」（Relationship Heat Multi-Dimensional Filtering）
+
+- 本轮落地关系温度多维交叉筛选、条件胶囊与视图序列化：
+  1. 筛选域模型与视图存储：`people-filters.ts` 与 `saved-views.ts` 扩展 `heatLevel` 筛选状态，结合 `cadences` 节奏配置精准求值；
+  2. 名册筛选抽屉与条件胶囊闭环：`PeopleView.svelte` 更多筛选新增温度下拉选单，生效条件行新增温度条件胶囊与单项快速清除；
+- 门禁验证：`pnpm check`（0/0）、单测 1020/1020 全部通过、三套 UI 回归 521/521 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.50 发布：联系人详情页「周年纪念里程碑提醒挂件与温情祝贺流」（Anniversary Milestones Banner & Congratulatory Flow）
 
 - 本轮落地周年里程碑纯函数模型与详情页提醒横幅：

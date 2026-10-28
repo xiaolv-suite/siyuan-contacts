@@ -1374,5 +1374,7 @@
   "congratulatoryPreview": "祝贺问候：",
   "applyGreetingTip": "将周年问候语预填入下方互动备注草稿",
   "applyGreetingBtn": "填入问候",
-  "copyGreetingTip": "复制问候语文本至剪贴板"
+  "copyGreetingTip": "复制问候语文本至剪贴板",
+  "peopleFilterHeat": "关系温度分级",
+  "peopleFilterHeatAll": "全部温度（不限）"
 }
