@@ -87,7 +87,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import { extractMilestoneEvents } from "../../domain/timeline-milestones.ts";
     import BusinessCardModal from "./BusinessCardModal.svelte";
     import PersonSocialPreferences from "./PersonSocialPreferences.svelte";
-    import type { PersonSocialPreferenceItem } from "../../domain/social-preferences.ts";
+    import { extractPreferenceMicroTags, type PersonSocialPreferenceItem, type SocialPreferenceMicroTag } from "../../domain/social-preferences.ts";
     import PersonItinerary from "./PersonItinerary.svelte";
     import type { PersonItineraryItem } from "../../domain/itineraries.ts";
     import PersonReciprocityCard from "./PersonReciprocityCard.svelte";
@@ -857,6 +857,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     const upcomingAnniversaryMilestones = $derived.by(() => {
         return extractUpcomingMilestones(anniversaries, current.name, new Date(), 14);
+    });
+
+    const preferenceMicroTags = $derived.by<SocialPreferenceMicroTag[]>(() => {
+        return extractPreferenceMicroTags(socialPreferences, 4);
     });
 
     // ---- 谈资与事实画像（RF-09 / Issue #135） ----
@@ -2807,6 +2811,19 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     </button>
                 {/if}
             </div>
+            {#if preferenceMicroTags.length > 0}
+                <div class="lvct-detail__micro-prefs-ribbon" role="region" aria-label={text("microPrefsAria", "核心社交偏好速览")}>
+                    {#each preferenceMicroTags as tag (tag.id)}
+                        <span
+                            class="micro-pref-chip {tag.isTaboo ? 'is-taboo' : ''}"
+                            title={tag.isTaboo ? text("tabooAlertTip", "红线禁忌：{text}", { text: tag.text }) : text("preferenceTip", "偏好：{text}", { text: tag.text })}
+                        >
+                            <span class="chip-icon">{tag.icon}</span>
+                            <span class="chip-text">{tag.text}</span>
+                        </span>
+                    {/each}
+                </div>
+            {/if}
         </div>
         <div class="lvct-detail__header-actions">
             <button class="b3-button b3-button--outline" onclick={() => (editing = true)} disabled={busy || deleting}>{text("detailEdit", "编辑")}</button>

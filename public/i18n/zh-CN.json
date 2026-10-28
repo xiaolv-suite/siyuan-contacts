@@ -1383,5 +1383,8 @@
   "batchStageIntro": "为已选择的 {n} 位联系人统一调整交往阶段，并在每个人物档案中追加演进历史记录。",
   "batchStageNoteLabel": "阶段变迁说明备忘（可选）：",
   "batchStageNotePlaceholder": "如：行业交流会结识后批量升温、联合项目推进等",
-  "confirmBatchStage": "确认调整阶段"
+  "confirmBatchStage": "确认调整阶段",
+  "microPrefsAria": "核心社交偏好速览",
+  "tabooAlertTip": "红线禁忌：{text}",
+  "preferenceTip": "偏好：{text}"
 }

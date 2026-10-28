@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.53] — 2026-10-29
+
+重塑：联系人详情页「核心社交偏好与红线禁忌速览微标签」（Social Preferences Ribbon & Micro-Tags）
+
+- **偏好微标签提取与红线优先级排序**：`domain/social-preferences.ts` 纯函数 `extractPreferenceMicroTags` 结构化提取人物的社交偏好；优先排布红线禁忌（`isTaboo` / 🚫），次级排布茶酒咖啡（☕）与饮食习惯（🍲），输出带图标、红线状态与紧凑文案的微标签数据（`SocialPreferenceMicroTag`）。
+- **详情页头部微标签绶带展示**：`PersonDetail.svelte` 在人物头部姓名与元数据芯片下方紧凑呈现偏好微标签绶带；红线禁忌以高对比度警示色（`.is-taboo`）醒目渲染，茶酒与饮食偏好以精致胶囊呈现，在外出会客与日常就餐前无需滑动即可 1 秒洞悉关键偏好。
+
+验证：`pnpm check` 0/0、单测 1022/1022 绿灯、三套 E2E UI 回归各 523/523 全部通过、Release 门禁通过。
+
 ## [0.6.52] — 2026-10-29
 
 重塑：联系人名册「批量设置交往生命周期阶段与变迁历史追踪」（Batch Lifecycle Stage & Transition History）

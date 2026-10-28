@@ -12,6 +12,7 @@ import {
     removeSocialPreference,
     SOCIAL_PREFERENCE_CATEGORIES,
     updateSocialPreference,
+    extractPreferenceMicroTags,
     type PersonSocialPreferenceItem,
 } from "../src/domain/social-preferences.ts";
 
@@ -116,4 +117,30 @@ test("social-preferences domain: CRUD 操作与按类别分组", () => {
     store = removeSocialPreference(store, "doc-alice", "p1");
     assert.equal(store.preferences["doc-alice"]?.length, 2);
     assert.equal(store.preferences["doc-alice"]?.some((p) => p.id === "p1"), false);
+});
+
+test("social-preferences domain: extractPreferenceMicroTags 优先红线禁忌并截取微标签", () => {
+    const items: PersonSocialPreferenceItem[] = [
+        { id: "1", personDocId: "d1", category: "habits", content: "喜上午开会", isTaboo: false, createdAt: 1, updatedAt: 1 },
+        { id: "2", personDocId: "d1", category: "taboos", content: "严禁提及某项目", isTaboo: true, createdAt: 2, updatedAt: 2 },
+        { id: "3", personDocId: "d1", category: "dietary", content: "海鲜严重过敏", isTaboo: true, createdAt: 3, updatedAt: 3 },
+        { id: "4", personDocId: "d1", category: "beverage", content: "喜冰美式", isTaboo: false, createdAt: 4, updatedAt: 4 },
+        { id: "5", personDocId: "d1", category: "dietary", content: "偏好清淡粤菜", isTaboo: false, createdAt: 5, updatedAt: 5 },
+    ];
+
+    const tags = extractPreferenceMicroTags(items, 3);
+    assert.equal(tags.length, 3);
+
+    // 优先排布红线禁忌 (id 2, 3)
+    assert.equal(tags[0].isTaboo, true);
+    assert.equal(tags[0].icon, "🚫");
+    assert.equal(tags[0].text, "严禁提及某项目");
+
+    assert.equal(tags[1].isTaboo, true);
+    assert.equal(tags[1].icon, "🚫");
+    assert.equal(tags[1].text, "海鲜严重过敏");
+
+    // 剩余普通项
+    assert.equal(tags[2].isTaboo, false);
+    assert.equal(tags[2].text, "喜上午开会");
 });

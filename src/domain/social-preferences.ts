@@ -247,3 +247,39 @@ export function removeSocialPreference(
         preferences: updated,
     };
 }
+
+export interface SocialPreferenceMicroTag {
+    id: string;
+    category: SocialPreferenceCategory;
+    icon: string;
+    text: string;
+    isTaboo: boolean;
+}
+
+/**
+ * 纯函数：提取高优先级社交偏好与忌口微标签
+ * 优先排布红线禁忌（isTaboo），其次排布茶酒咖啡与饮食日常偏好，截取前 maxCount 项
+ */
+export function extractPreferenceMicroTags(
+    items: readonly PersonSocialPreferenceItem[],
+    maxCount: number = 4,
+): SocialPreferenceMicroTag[] {
+    const taboos = items.filter((item) => item.isTaboo || item.category === "taboos");
+    const normals = items.filter((item) => !item.isTaboo && item.category !== "taboos");
+
+    const sorted = [...taboos, ...normals];
+    const categoryIcons: Record<SocialPreferenceCategory, string> = {
+        dietary: "🍲",
+        beverage: "☕",
+        habits: "🤝",
+        taboos: "🚫",
+    };
+
+    return sorted.slice(0, maxCount).map((item) => ({
+        id: item.id,
+        category: item.category,
+        icon: item.isTaboo || item.category === "taboos" ? "🚫" : (categoryIcons[item.category] || "📌"),
+        text: item.content.trim(),
+        isTaboo: item.isTaboo || item.category === "taboos",
+    }));
+}

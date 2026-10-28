@@ -10775,6 +10775,51 @@ await test("D-20 联系人详情页：相识相聚周年纪念里程碑提醒挂
     fixture.remove();
 });
 
+await test("D-21 联系人详情页：核心社交偏好与红线禁忌速览微标签（Micro-Preferences Ribbon）展示与红线高亮闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const mockPreferences = [
+        { id: "sp-1", personDocId: person.docId, category: "taboos", content: "严禁提及前东家并购案", isTaboo: true, createdAt: 1000, updatedAt: 1000 },
+        { id: "sp-2", personDocId: person.docId, category: "beverage", content: "喜冰美式不加糖", isTaboo: false, createdAt: 1000, updatedAt: 1000 },
+        { id: "sp-3", personDocId: person.docId, category: "dietary", content: "偏好清淡粤菜", isTaboo: false, createdAt: 1000, updatedAt: 1000 },
+    ];
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadSocialPreferences: async () => mockPreferences,
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-detail__micro-prefs-ribbon"), "未渲染核心社交偏好速览微标签绶带");
+    const chips = Array.from(fixture.querySelectorAll(".micro-pref-chip"));
+    assert(chips.length === 3, "微标签数量不等于 3");
+
+    // 验证红线禁忌高亮
+    const tabooChip = chips[0];
+    assert(tabooChip.classList.contains("is-taboo"), "红线禁忌微标签未包含 is-taboo 高亮样式类");
+    assert(tabooChip.textContent.includes("严禁提及前东家并购案"), "红线微标签内容不正确");
+    assert(tabooChip.textContent.includes("🚫"), "红线微标签未包含禁止图标");
+
+    // 验证饮品与饮食偏好
+    assert(chips[1].textContent.includes("喜冰美式不加糖"), "饮品微标签未包含冰美式内容");
+    assert(chips[1].textContent.includes("☕"), "饮品微标签未包含咖啡图标");
+
+    assert(chips[2].textContent.includes("偏好清淡粤菜"), "饮食微标签未包含粤菜内容");
+    assert(chips[2].textContent.includes("🍲"), "饮食微标签未包含饮食图标");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

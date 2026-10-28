@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.53 发布：联系人详情页「核心社交偏好与红线禁忌速览微标签」（Social Preferences Ribbon & Micro-Tags）
+
+- 本轮落地社交偏好微标签提取模型与详情页头部微标签绶带：
+  1. 微标签提取纯函数：`social-preferences.ts` 纯函数优先排布红线禁忌（`isTaboo`），提取茶酒/餐饮核心日常偏好，截取前 4 项；
+  2. 详情页头部绶带呈现：`PersonDetail.svelte` 在人物头部下方直接渲染微标签胶囊，红线禁忌采用醒目警示样式；
+- 门禁验证：`pnpm check`（0/0）、单测 1022/1022 全部通过、三套 UI 回归 523/523 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.52 发布：联系人名册「批量设置交往生命周期阶段与变迁历史追踪」（Batch Lifecycle Stage & Transition History）
 
 - 本轮落地批量生命周期更新纯函数、存储原子写入与名册批量操作弹窗：

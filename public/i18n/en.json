@@ -1383,5 +1383,8 @@
   "batchStageIntro": "Batch update lifecycle stage for the {n} selected contacts and append history entries.",
   "batchStageNoteLabel": "Transition note (optional): ",
   "batchStageNotePlaceholder": "e.g. Follow up after tech conference, joint project kickoff",
-  "confirmBatchStage": "Update Stages"
+  "confirmBatchStage": "Update Stages",
+  "microPrefsAria": "Social Preferences Ribbon",
+  "tabooAlertTip": "Critical Taboo: {text}",
+  "preferenceTip": "Preference: {text}"
 }
