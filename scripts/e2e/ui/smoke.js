@@ -10431,6 +10431,127 @@ await test("G-17 关系图谱：网络核心枢纽与跨圈层引荐桥梁人分
     fixture.remove();
 });
 
+await test("F-19 首页仪表盘：人脉交往生命周期漏斗（LifecycleFunnelCard）与阶段筛选联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let filteredLabel = "";
+    let filteredItemIds = [];
+
+    const mockFunnel = {
+        totalContacts: 3,
+        healthyMaturityRate: 33,
+        activeProgressCount: 2,
+        activeProgressPercentage: 67,
+        keyInsight: "深度盟友与合作人脉占比达 33%，梯队健康",
+        stages: [
+            {
+                key: "acquaintance",
+                meta: { key: "acquaintance", label: "初相识 · 浅交探索", shortLabel: "初识", icon: "🌱", description: "", suggestedCadenceDays: 30 },
+                count: 1,
+                percentage: 33,
+                personDocIds: ["doc-f-1"],
+                personItemIds: ["item-funnel-1"],
+            },
+            {
+                key: "connection",
+                meta: { key: "connection", label: "常交流 · 互信升温", shortLabel: "交流", icon: "💬", description: "", suggestedCadenceDays: 14 },
+                count: 1,
+                percentage: 33,
+                personDocIds: ["doc-f-2"],
+                personItemIds: ["item-funnel-2"],
+            },
+            {
+                key: "collaboration",
+                meta: { key: "collaboration", label: "共合作 · 价值共创", shortLabel: "共创", icon: "🚀", description: "", suggestedCadenceDays: 7 },
+                count: 1,
+                percentage: 33,
+                personDocIds: ["doc-f-3"],
+                personItemIds: ["item-funnel-3"],
+            },
+            {
+                key: "close_ally",
+                meta: { key: "close_ally", label: "核心挚友 · 深度盟友", shortLabel: "挚友", icon: "⭐", description: "", suggestedCadenceDays: 10 },
+                count: 0,
+                percentage: 0,
+                personDocIds: [],
+                personItemIds: [],
+            },
+            {
+                key: "dormant",
+                meta: { key: "dormant", label: "沉睡维护 · 适时问候", shortLabel: "沉睡", icon: "💤", description: "", suggestedCadenceDays: 90 },
+                count: 0,
+                percentage: 0,
+                personDocIds: [],
+                personItemIds: [],
+            },
+        ],
+    };
+
+    const testDashboardData = {
+        people: 3,
+        relations: 0,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+        heatDistribution: {
+            hot: { count: 3, percentage: 100, itemIds: ["item-funnel-1", "item-funnel-2", "item-funnel-3"] },
+            warm: { count: 0, percentage: 0, itemIds: [] },
+            cool: { count: 0, percentage: 0, itemIds: [] },
+            cold: { count: 0, percentage: 0, itemIds: [] },
+            paused: { count: 0, percentage: 0, itemIds: [] },
+            unknown: { count: 0, percentage: 0, itemIds: [] },
+            total: 3,
+        },
+        lifecycleFunnel: mockFunnel,
+    };
+
+    const facade = {
+        settings,
+        viewPreferences: DEFAULT_VIEW_PREFERENCES,
+        loadDashboard: async () => testDashboardData,
+        loadReminderDismissals: async () => [],
+        openPersonDoc() {},
+    };
+
+    mount(DashboardView, {
+        target: fixture,
+        props: {
+            facade,
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            onOpenPeople: ({ itemIds, label }) => {
+                filteredLabel = label;
+                filteredItemIds = itemIds;
+            },
+            onOpenDetail() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-dash__lifecycle-card"), "未渲染交往生命周期漏斗卡片");
+    assert(fixture.textContent.includes("交往生命周期阶段"), "未渲染生命周期阶段标题");
+    assert(fixture.textContent.includes("深度合作率 33%"), "未渲染深度合作率指标");
+    assert(fixture.textContent.includes("初识"), "未渲染初识阶段");
+    assert(fixture.textContent.includes("共创"), "未渲染共创阶段");
+    assert(fixture.textContent.includes("深度盟友与合作人脉占比达 33%"), "未渲染阶段洞察说明");
+
+    // 点击「共创」行筛选
+    const collabRow = Array.from(fixture.querySelectorAll(".lifecycle-funnel-row")).find((b) => b.textContent.includes("共创"));
+    assert(collabRow, "未找到共创阶段按钮行");
+    collabRow.click();
+
+    assert(filteredLabel === "共合作 · 价值共创", "点击阶段未传递正确标签名");
+    assert(filteredItemIds?.[0] === "item-funnel-3", "点击阶段未传递正确的 itemIds 列表");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

@@ -37,6 +37,9 @@ import { findGlobalOnThisDay } from "../domain/date-review.ts";
 import type { OnThisDayMemory } from "../domain/date-review.ts";
 import { computeActivityHeatmap } from "../domain/activity-heatmap.ts";
 import type { ActivityHeatmapData } from "../domain/activity-heatmap.ts";
+import { loadAllLifecycleStages } from "../data/lifecycle-stage.ts";
+import { computeLifecycleFunnel } from "../domain/lifecycle-funnel.ts";
+import type { LifecycleFunnelReport } from "../domain/lifecycle-funnel.ts";
 
 export interface DashboardOptions {
     /** 多少天未互动算"久未联系" */
@@ -88,6 +91,8 @@ export interface DashboardData {
     onThisDayMemories?: readonly OnThisDayMemory[];
     /** 年度 52 周社交互动活跃度热力图数据 */
     activityHeatmap?: ActivityHeatmapData;
+    /** E-56：人脉交往生命周期阶段漏斗与转化统计 */
+    lifecycleFunnel?: LifecycleFunnelReport;
     /** 名册快照（已排除本人），供仪表盘快速筛选与出差规划联动 */
     allPeople?: import("../domain/person.ts").ContactSummary[];
     /**
@@ -139,7 +144,7 @@ export async function loadDashboard(
     options: DashboardOptions = DEFAULT_DASHBOARD_OPTIONS,
 ): Promise<DashboardData> {
     const readFailures: string[] = [];
-    const [peopleAll, store, followUpStore, cadences, dismissals, identity, anniversaryStore] = await Promise.all([
+    const [peopleAll, store, followUpStore, cadences, dismissals, identity, anniversaryStore, lifecycleStages] = await Promise.all([
         listContacts(settings),
         readModule(readFailures, "interactions", () => loadInteractionStoreStrict(plugin), emptyStore()),
         readModule(readFailures, "followUps", () => loadFollowUpStoreStrict(plugin), emptyFollowUpStore()),
@@ -147,6 +152,7 @@ export async function loadDashboard(
         readModule(readFailures, "dismissals", () => loadReminderDismissalsStrict(plugin), []),
         readModule(readFailures, "self", () => loadSelfIdentity(plugin), null),
         readModule(readFailures, "anniversaries", () => loadAnniversaryStore(plugin), emptyAnniversaryStore()),
+        readModule(readFailures, "lifecycle", () => loadAllLifecycleStages(plugin), {}),
     ]);
     /* B11.4：本人不是"待联系对象"——首页统计与行动清单排除本人（名册本身仍保留并标识）。
        身份读取失败按模块降级（readFailures 指名 self，横幅提示），不静默按无本人处理 */
@@ -261,6 +267,7 @@ export async function loadDashboard(
     const monthlyTrend = computeMonthlyInteractionTrend(store.events, 6, now);
     const onThisDayMemories = findGlobalOnThisDay(store.events, people, today, 10, store.tombstones);
     const activityHeatmap = computeActivityHeatmap(store.events, people, today, 52);
+    const lifecycleFunnel = computeLifecycleFunnel(people, lifecycleStages);
 
     return {
         people: people.length,
@@ -279,6 +286,7 @@ export async function loadDashboard(
         monthlyTrend,
         onThisDayMemories,
         activityHeatmap,
+        lifecycleFunnel,
         allPeople: people,
         ...(ordinaryScopeUnknown ? { ordinaryScopeUnknown: true } : {}),
         ...(identity && !ordinaryScopeUnknown ? { excludedSelfDocId: identity.selfDocId } : {}),

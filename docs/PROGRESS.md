@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.48 发布：首页仪表盘「交往生命周期漏斗与转化看板」（Relationship Lifecycle Funnel & Stage Progression Console）
+
+- 本轮落地生命周期漏斗纯函数算法与首页漏斗卡片组件：
+  1. 漏斗域与服务层：`lifecycle-funnel.ts` 纯函数计算五大阶段分布、合作盟友率与结构洞察；`services/dashboard.ts` 整合生命周期数据载入并计算漏斗；
+  2. 漏斗卡片与名册筛选穿透：`LifecycleFunnelCard.svelte` 在首页展现彩色阶段进度条与洞察卡；点击各阶段一键直达名册对应人选；
+- 门禁验证：`pnpm check`（0/0）、单测 1013/1013 全部通过、三套 UI 回归 518/518 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.47 发布：关系网络图谱「核心枢纽与跨界桥梁人」拓扑分析（Network Hubs & Bridge Connectors Analysis）
 
 - 本轮落地图拓扑枢纽分析算法与图谱桥梁分析弹窗：

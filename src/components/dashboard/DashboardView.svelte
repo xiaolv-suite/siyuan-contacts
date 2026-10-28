@@ -44,6 +44,7 @@
     import ExchangesHubDialog from "./ExchangesHubDialog.svelte";
     import PreMeetingHubDialog from "./PreMeetingHubDialog.svelte";
     import CoolingRadarDialog from "./CoolingRadarDialog.svelte";
+    import LifecycleFunnelCard from "./LifecycleFunnelCard.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
     import { onDestroy } from "svelte";
@@ -1380,6 +1381,19 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             {/each}
                         </div>
                     </div>
+                {/if}
+
+                <!-- 4. 交往生命周期漏斗 -->
+                {#if data.lifecycleFunnel && data.lifecycleFunnel.totalContacts > 0}
+                    <LifecycleFunnelCard
+                        funnel={data.lifecycleFunnel}
+                        onOpenStagePeople={(label, itemIds) => {
+                            if (itemIds.length > 0) {
+                                onOpenPeople({ itemIds, label });
+                            }
+                        }}
+                        {i18n}
+                    />
                 {/if}
             </div>
         {/if}

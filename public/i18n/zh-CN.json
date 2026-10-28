@@ -1350,5 +1350,9 @@
   "bridgeScoreLabel": "跨界指数: {score}",
   "bridgedGroupsLabel": "横跨圈层：",
   "locateCanvas": "画布定位",
-  "viewProfile": "查看画像 ↗"
+  "viewProfile": "查看画像 ↗",
+  "dashLifecycleFunnelTitle": "交往生命周期阶段",
+  "dashLifecycleMaturity": "深度合作率 {n}%",
+  "clickToFilterStage": "点击在名册中筛选 {label} 人脉",
+  "emptyStageTip": "暂无此阶段联系人"
 }

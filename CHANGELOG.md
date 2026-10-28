@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.48] — 2026-10-29
+
+重塑：首页仪表盘「交往生命周期漏斗与转化看板」（Relationship Lifecycle Funnel & Stage Progression Console）
+
+- **全库人脉生命周期漏斗算法**：`domain/lifecycle-funnel.ts` 纯函数统计初相识（`acquaintance`）、常交流（`connection`）、共合作（`collaboration`）、核心挚友（`close_ally`）与沉睡维护（`dormant`）五大阶段人数与百分比分布；自动计算深度合作与盟友率（`healthyMaturityRate`）并输出健康度洞察建议；`services/dashboard.ts` 整合全量生命周期存储计算漏斗报告。
+- **漏斗看板卡片与即时穿透联动**：`LifecycleFunnelCard.svelte` 与 `DashboardView.svelte` 在人脉洞察控制台中呈现精致漏斗进度条；支持点击任意阶段行一键下钻至联系人名册（带筛选标签名与人物列表联动），实时掌控人际关系升温与价值共创态势。
+
+验证：`pnpm check` 0/0、单测 1013/1013 绿灯、三套 E2E UI 回归各 518/518 全部通过、Release 门禁通过。
+
 ## [0.6.47] — 2026-10-29
 
 重塑：关系网络图谱「核心枢纽与跨界桥梁人」拓扑分析（Network Hubs & Bridge Connectors Analysis）

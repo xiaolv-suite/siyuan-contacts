@@ -1350,5 +1350,9 @@
   "bridgeScoreLabel": "Bridge Index: {score}",
   "bridgedGroupsLabel": "Bridged Circles: ",
   "locateCanvas": "Locate in Graph",
-  "viewProfile": "View Profile ↗"
+  "viewProfile": "View Profile ↗",
+  "dashLifecycleFunnelTitle": "Relationship Lifecycle Stages",
+  "dashLifecycleMaturity": "Maturity Rate {n}%",
+  "clickToFilterStage": "Click to filter {label} contacts",
+  "emptyStageTip": "No contacts in this stage"
 }
