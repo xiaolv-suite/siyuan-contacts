@@ -32,6 +32,8 @@
         Shield,
     } from "@lucide/svelte";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
+    import { inferPersonaTags } from "../../domain/tag-inference.ts";
+    import { profileText } from "../../domain/people-profiles.ts";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
     import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
@@ -2280,6 +2282,14 @@ import StatusNotice from "../StatusNotice.svelte";
 
     const personRegion = $derived(extractNormalizedRegion(current));
     const isStarred = $derived(preferences ? isPersonStarred(preferences, current.docId) : false);
+    const detailSuggestedTags = $derived(inferPersonaTags({
+        name: current.name,
+        workText: profileText(current.profile, "work"),
+        city: personRegion.city,
+        facts,
+        topics,
+        existingTags: current.tags,
+    }));
 
     function handleDetailGlobalKeydown(event: KeyboardEvent) {
         if (event.altKey && (event.key === "ArrowLeft" || event.key === "Left")) {
@@ -2688,7 +2698,36 @@ import StatusNotice from "../StatusNotice.svelte";
                 </dd>
             </div>
         {/if}
-        {#if current.tags.length > 0}<div><dt>标签</dt><dd>{current.tags.join(" · ")}</dd></div>{/if}
+        <div>
+            <dt>标签</dt>
+            <dd>
+                {#if current.tags.length > 0}
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+                        {#each current.tags as tag}
+                            <span class="lvct-chip lvct-chip--tag">{tag}</span>
+                        {/each}
+                    </div>
+                {:else}
+                    <span class="ft__smaller ft__on-surface">暂无标签</span>
+                {/if}
+                {#if detailSuggestedTags.length > 0}
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 6px;">
+                        <span class="ft__smaller" style="color: var(--lv-brand, #ea580c); display: inline-flex; align-items: center; gap: 3px;">
+                            <Sparkles size={11} /> 画像标签推断：
+                        </span>
+                        {#each detailSuggestedTags as stag}
+                            <button
+                                type="button"
+                                class="b3-chip font-size-11"
+                                style="cursor: pointer;"
+                                title="点击编辑资料并添加标签"
+                                onclick={() => { editing = true; }}
+                            >+ {stag}</button>
+                        {/each}
+                    </div>
+                {/if}
+            </dd>
+        </div>
         {#if birthday}<div><dt>下次生日</dt><dd>{birthday.date.toLocaleDateString("zh-CN")}（公历{current.isLunar ? `，对应${birthday.label}` : ""}） · {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil} 天后`}</dd></div>{/if}
     </dl>
     {#if copyFieldError}

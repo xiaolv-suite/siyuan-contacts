@@ -18,7 +18,8 @@
     import QuickFillDialog from "./QuickFillDialog.svelte";
     import GroupField from "./GroupField.svelte";
     import BirthdayField from "./BirthdayField.svelte";
-    import { ClipboardPaste } from "@lucide/svelte";
+    import { ClipboardPaste, Sparkles } from "@lucide/svelte";
+    import { inferPersonaTags } from "../../domain/tag-inference.ts";
     import { onDestroy, onMount, tick, untrack } from "svelte";
     import { requestErrorMessage } from "../../shared/error-presenter";
 
@@ -111,6 +112,32 @@
     type OrgDraft = OrgDraftInput & { orgDocId: string; name: string; archived: boolean; attempted?: OrgDraftInput;
         detailsOpen?: boolean; error?: string; errorField?: "joinedOn" | "leftOn" | "statusLabel" | "note" };
     let orgDrafts = $state<OrgDraft[]>([]);
+
+    const currentTagsList = $derived.by(() => tagsText.split(/[，,、\s]+/).map((t) => t.trim()).filter(Boolean));
+    const suggestedTags = $derived.by(() => (typeof inferPersonaTags === "function" ? inferPersonaTags({
+        name: draft.name,
+        workText: [
+            ...orgDrafts.map((o) => `${o.name} ${o.department} ${o.title}`),
+            relationshipDraft,
+            draft.group,
+        ].filter(Boolean).join(" "),
+        existingTags: currentTagsList,
+    }) : []));
+
+    function appendSuggestedTag(tag: string): void {
+        const clean = tag.trim();
+        if (!clean) return;
+        const currentList = currentTagsList;
+        if (!currentList.includes(clean)) {
+            tagsText = currentList.length > 0 ? `${tagsText.trim()} ${clean}` : clean;
+        }
+    }
+
+    function applyAllSuggestedTags(): void {
+        for (const stag of suggestedTags) {
+            appendSuggestedTag(stag);
+        }
+    }
     let membershipReports = $state<OrgMembershipWriteReport[]>([]);
     let recoveredMemberships = $state<string[]>([]);
     let editingMembershipId = $state("");
@@ -828,8 +855,35 @@
         </div>
         <GroupField {i18n} value={draft.group} onValueChange={(value) => (draft.group = value)} onValidityChange={(valid) => (groupValid = valid)} label={text("formGroup", "分组")} ungroupedLabel={text("formUngrouped", "未分组")} {availableGroups} disabled={running} />
         <label class="lvct-form__item">
-            <span>{text("formTagsLabel", "标签（空格/逗号分隔）")}</span>
+            <span style="display: flex; align-items: center; justify-content: space-between;">
+                <span>{text("formTagsLabel", "标签（空格/逗号分隔）")}</span>
+                {#if suggestedTags.length > 0}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small"
+                        style="padding: 0 4px; font-size: 11px; color: var(--lv-brand, #ea580c);"
+                        onclick={applyAllSuggestedTags}
+                        title="一键追加全部推断画像标签"
+                    >+ 采纳全部建议标签</button>
+                {/if}
+            </span>
             <input class="b3-text-field fn__block" type="text" bind:value={tagsText} disabled={running} />
+            {#if suggestedTags.length > 0}
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="ft__smaller" style="color: var(--lvct-text-3); display: inline-flex; align-items: center; gap: 3px;">
+                        <Sparkles size={11} /> 智能推断建议：
+                    </span>
+                    {#each suggestedTags as stag}
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11"
+                            style="cursor: pointer;"
+                            title={`点击将「${stag}」追加到标签`}
+                            onclick={() => appendSuggestedTag(stag)}
+                        >+ {stag}</button>
+                    {/each}
+                </div>
+            {/if}
         </label>
     </div>
 

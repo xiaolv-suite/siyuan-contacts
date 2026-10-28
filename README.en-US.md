@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.14** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.14) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.15** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.15) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.14 (2026-10-28)
+## This release: v0.6.15 (2026-10-28)
+
+This release implements the Persona Tag Inference Engine to solve the classification pain point for growing contact networks:
+
+- **Local Persona Tag Inference Engine (`inferPersonaTags`)**: Automatically infers hierarchical persona tags (e.g., `#industry/AI`, `#industry/finance`, `#role/tech-lead`, `#preference/tea`, `#preference/coffee`, `#region/Shenzhen`) based on occupational background, organization, city, facts, and interaction notes.
+- **Bi-directional Tag Adoption in Detail & Edit Views**: Inferred tag chips are displayed in Person Detail and can be seamlessly appended individually or in bulk via "+ Adopt All Suggested Tags" in PersonEditDialog.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (940/940 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.14 (2026-10-28)
 
 This release implements user-controlled settings for Privacy Mask Shield:
 
