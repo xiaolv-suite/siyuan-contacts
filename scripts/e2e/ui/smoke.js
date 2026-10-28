@@ -8816,6 +8816,110 @@ await test("D-05 联系人详情页：家庭与亲属关系树谱（Family & Kin
     fixture.remove();
 });
 
+await test("D-06 联系人详情页双向承诺与信诺履约本（PersonPromisesLedger）呈现与兑现流转", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let mounted = null;
+    let updateCalled = false;
+    let removeCalled = false;
+
+    const person = {
+        docId: "doc-prm-ui-1",
+        itemId: "item-prm-ui-1",
+        name: "承诺测试人物",
+        phone: "13900004444",
+        email: "prm@example.com",
+        wechat: "prm_wx",
+        website: "",
+        birthday: "1990-01-01",
+        isLunar: false,
+        group: "合作伙伴",
+        tags: ["技术"],
+        relatedItemIds: [],
+        company: "测试科技",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "测试科技", title: "技术总监" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockPromises = [
+        {
+            id: "prm-101",
+            personDocId: "doc-prm-ui-1",
+            direction: "i_promised",
+            title: "赠送思源定制手账",
+            detail: "见面时携带两本现货",
+            promisedOn: "2026-10-20",
+            dueOn: "2026-10-30",
+            status: "pending",
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+        {
+            id: "prm-102",
+            personDocId: "doc-prm-ui-1",
+            direction: "they_promised",
+            title: "引荐云计算架构师",
+            detail: "微信群引荐",
+            promisedOn: "2026-10-22",
+            status: "fulfilled",
+            fulfilledOn: "2026-10-25",
+            createdAt: 2000,
+            updatedAt: 2000,
+        },
+    ];
+
+    mounted = mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadPromises: async () => mockPromises,
+            onAddPromise: async (item) => [...mockPromises, item],
+            onUpdatePromise: async (_docId, _id, _patch) => {
+                updateCalled = true;
+                return mockPromises;
+            },
+            onRemovePromise: async (_docId, _id) => {
+                removeCalled = true;
+                return mockPromises;
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-promises-ledger"), "未渲染双向承诺与信诺履约组件");
+    assert(fixture.textContent.includes("双向承诺与信诺履约本"), "未渲染承诺信诺本标题");
+    assert(fixture.textContent.includes("赠送思源定制手账"), "未渲染我方承诺标题");
+    assert(fixture.textContent.includes("引荐云计算架构师"), "未渲染对方承诺标题");
+    assert(fixture.textContent.includes("我承诺对方"), "未渲染我方承诺统计格");
+    assert(fixture.textContent.includes("对方承诺我"), "未渲染对方承诺统计格");
+
+    // 点击兑现按钮触发更新
+    const fulfillBtn = fixture.querySelector(".lvct-promises-list .action-btn.ft__success");
+    assert(fulfillBtn, "未找到兑现按钮");
+    fulfillBtn.click();
+    await until(() => updateCalled, "点击兑现未触发 onUpdatePromise");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.29** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.29) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.30** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.30) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.29 · 2026-10-28）
+## 本次发布（v0.6.30 · 2026-10-28）
+
+本版本将人际交往中关键的“言出必行、互信守约”机制产品化，推出了联系人双向承诺与信诺履约追踪系统（Mutual Promises & Commitments Tracker）：
+
+- **双向承诺域模型与存储层（`domain/promises.ts` & `data/promises.ts`）**：严格区分“我承诺对方（`i_promised`）”与“对方承诺我（`they_promised`）”，支持待履约（`pending`）、已兑现（`fulfilled`）与已失效（`broken`）全生命周期状态流转；数据持久化经由 Web Lock 排他保护与写后回读校验。
+- **详情页承诺信诺本组件（`PersonPromisesLedger.svelte`）**：在联系人概览页面呈现指标栏（我承诺待履约数、对方承诺待履约数、履约兑现率），支持方向与状态双重胶囊筛选；针对逾期未履约事项高亮预警；支持一键“标记兑现”，并将兑现详情联动填入互动草稿，无缝沉淀交往事实。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 970/970 100% 通过；浏览器 UI 回归全绿（500/500）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.29 · 2026-10-28）
 
 本版本将深受个人知识与人脉管理用户重视的家庭与亲属网络完整引入人物详情视窗，推出了结构清晰、温情直观的多层级亲属谱系管理系统：
 

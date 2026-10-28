@@ -152,6 +152,11 @@ export interface ContactsPluginFacade {
     loadPersonKinships?(personDocId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
     addPersonKinship?(item: import("./domain/kinship").KinshipMemberItem): Promise<import("./domain/kinship").KinshipMemberItem[]>;
     removePersonKinship?(personDocId: string, memberId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
+    /** E-39：双向承诺与信诺履约追踪（Mutual Promises & Commitments） */
+    loadPersonPromises?(personDocId: string): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    addPersonPromise?(item: import("./domain/promises").PersonPromiseItem): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    updatePersonPromise?(personDocId: string, promiseId: string, patch: Partial<import("./domain/promises").PersonPromiseItem>): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    removePersonPromise?(personDocId: string, promiseId: string): Promise<import("./domain/promises").PersonPromiseItem[]>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;

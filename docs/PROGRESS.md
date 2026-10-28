@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.30 发布：联系人详情页「双向承诺与信诺履约本」（Mutual Promises & Commitments Tracker）
+
+- 本轮落地双向承诺全生命周期模型与详情页信诺本组件：
+  1. 承诺信诺域与存储层：`promises.ts` 纯函数区分“我承诺对方”与“对方承诺我”，管理待履约、已兑现与已失效状态，`person-promises.json` 支持 Web Lock 排他保存与读写校验；
+  2. 详情页信诺追踪本组件：`PersonPromisesLedger.svelte` 呈现待履约统计、履约率、方向与状态双重筛选以及逾期高亮，支持一键兑现并联动填入互动草稿；
+- 门禁验证：`pnpm check`（0/0）、单测 970/970 全部通过、三套 UI 回归 500/500 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.29 发布：联系人详情页「家庭与重要亲属关系树谱」（Family & Kinship Relationship Tree）
 
 - 本轮落地多层级亲属网络模型与家庭谱系树组件：

@@ -74,6 +74,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import PersonAliases from "./PersonAliases.svelte";
     import FamilyKinshipTree from "./FamilyKinshipTree.svelte";
     import type { KinshipMemberItem } from "../../domain/kinship.ts";
+    import PersonPromisesLedger from "./PersonPromisesLedger.svelte";
+    import type { PersonPromiseItem } from "../../domain/promises.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -184,6 +186,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onLoadKinships,
         onAddKinship,
         onRemoveKinship,
+        onLoadPromises,
+        onAddPromise,
+        onUpdatePromise,
+        onRemovePromise,
         collapsedSections,
         onToggleSection,
     }: {
@@ -286,6 +292,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onLoadKinships?: (personDocId: string) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
         onAddKinship?: (item: import("../../domain/kinship").KinshipMemberItem) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
         onRemoveKinship?: (personDocId: string, memberId: string) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
+        /** E-39 双向承诺与信诺履约（可选） */
+        onLoadPromises?: (personDocId: string) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
+        onAddPromise?: (item: import("../../domain/promises").PersonPromiseItem) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
+        onUpdatePromise?: (personDocId: string, promiseId: string, patch: Partial<import("../../domain/promises").PersonPromiseItem>) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
+        onRemovePromise?: (personDocId: string, promiseId: string) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -673,6 +684,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadInsights();
     loadPersonNoteState();
     loadKinships();
+    loadPromises();
 
     let kinships = $state<KinshipMemberItem[]>([]);
 
@@ -683,6 +695,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             if (detailAlive) kinships = list;
         } catch {
             kinships = [];
+        }
+    }
+
+    let promises = $state<PersonPromiseItem[]>([]);
+
+    async function loadPromises() {
+        if (!onLoadPromises || !current?.docId) return;
+        try {
+            const list = await onLoadPromises(current.docId);
+            if (detailAlive) promises = list;
+        } catch {
+            promises = [];
         }
     }
 
@@ -2950,6 +2974,31 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 kinships = res;
             }}
             onOpenDoc={onOpenPersonDoc}
+            {i18n}
+        />
+    {/if}
+
+    {#if onLoadPromises && onAddPromise && onUpdatePromise && onRemovePromise && !current.isSelf}
+        <PersonPromisesLedger
+            personDocId={current.docId}
+            personName={current.name}
+            items={promises}
+            onAddPromise={async (item) => {
+                const res = await onAddPromise!(item);
+                promises = res;
+            }}
+            onUpdatePromise={async (id, patch) => {
+                const res = await onUpdatePromise!(current.docId, id, patch);
+                promises = res;
+            }}
+            onRemovePromise={async (id) => {
+                const res = await onRemovePromise!(current.docId, id);
+                promises = res;
+            }}
+            onConvertPromiseToInteraction={async (prm) => {
+                const prefix = prm.direction === "i_promised" ? "【履约兑现-我承诺】" : "【履约兑现-对方承诺】";
+                noteText = `${prefix}${prm.title}${prm.detail ? `：${prm.detail}` : ""}`;
+            }}
             {i18n}
         />
     {/if}

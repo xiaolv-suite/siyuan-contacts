@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.30] — 2026-10-28
+
+重塑：联系人详情页「双向承诺与信诺履约本」（Mutual Promises & Commitments Tracker）
+
+- **双向承诺与信诺全生命周期模型**：`domain/promises.ts` 与 `data/promises.ts` 纯函数区分“我承诺对方”与“对方承诺我”，管理待履约、已兑现、已失效三态及约定兑现日期，支持 Web Lock 锁保护存储。
+- **信诺追踪本组件与互动联动**：`PersonPromisesLedger.svelte` 呈现待履约统计、履约兑现率、双重胶囊筛选与逾期高亮；一键标记兑现时自动联动填入互动草稿，无缝沉淀交往履约事实。
+
+验证：`pnpm check` 0/0、单测 970/970 绿灯、E2E UI 回归 500/500 全部通过、Release 门禁通过。
+
 ## [0.6.29] — 2026-10-28
 
 重塑：联系人详情页「家庭与重要亲属关系树谱」（Family & Kinship Relationship Tree）

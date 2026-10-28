@@ -111,6 +111,7 @@ import { listOccasions, createOccasion, deleteOccasion } from "./services/occasi
 import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary, removePersonAnniversary, listUpcomingAnniversaries } from "./data/anniversaries.ts";
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
+import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1745,6 +1746,32 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async removePersonKinship(personDocId: string, memberId: string) {
         const token = this.lifecycleToken;
         const res = await removePersonKinship(this, personDocId, memberId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    /** E-39：双向承诺与信诺履约追踪（Mutual Promises & Commitments） */
+    async loadPersonPromises(personDocId: string) {
+        return loadPersonPromises(this, personDocId);
+    }
+
+    async addPersonPromise(item: import("./domain/promises").PersonPromiseItem) {
+        const token = this.lifecycleToken;
+        const res = await addPersonPromise(this, item);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
+        return res;
+    }
+
+    async updatePersonPromise(personDocId: string, promiseId: string, patch: Partial<import("./domain/promises").PersonPromiseItem>) {
+        const token = this.lifecycleToken;
+        const res = await updatePersonPromise(this, personDocId, promiseId, patch);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    async removePersonPromise(personDocId: string, promiseId: string) {
+        const token = this.lifecycleToken;
+        const res = await removePersonPromise(this, personDocId, promiseId);
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }

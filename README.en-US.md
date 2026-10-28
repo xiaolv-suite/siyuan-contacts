@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.29** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.29) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.30** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.30) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.29 (2026-10-28)
+## This release: v0.6.30 (2026-10-28)
+
+This release implements the Mutual Promises & Commitments Tracker in the person detail view:
+
+- **Mutual Promises Domain Model & Storage Layer (`domain/promises.ts` & `data/promises.ts`)**: Distinguishes "I Promised Them" (`i_promised`) and "They Promised Me" (`they_promised`), managing the complete commitment lifecycle across `pending`, `fulfilled`, and `broken` statuses; protected by Web Lock critical sections and read-after-write verification (`person-promises.json`).
+- **Interactive Promises Ledger Component (`PersonPromisesLedger.svelte`)**: Overview metrics cards tracking pending counts and fulfillment rates; filter pills by direction and status; overdue deadline warnings; one-click "Mark Fulfilled" with automatic conversion into an interaction note draft for seamless history retention.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (970/970 PASS); browser UI regression passing (500/500); production build and release checks passed.
+
+## Previous release: v0.6.29 (2026-10-28)
 
 This release implements Family & Kinship Relationship Tree in the person detail view:
 
