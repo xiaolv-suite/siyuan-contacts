@@ -9,7 +9,9 @@ import {
     escapeVcf,
     unescapeVcf,
     splitUnescaped,
+    exportSinglePersonVcf,
 } from "../src/domain/vcard.ts";
+import type { ContactSummary } from "../src/domain/person.ts";
 import type { VCardContact } from "../src/domain/vcard.ts";
 
 const base = (overrides: Partial<VCardContact> = {}): VCardContact => ({
@@ -511,4 +513,51 @@ test("serializeVcf 与 parseVcf：支持微信号与常驻城市 ADR 双向保�
     assert.equal(parsed.city, "深圳");
     assert.equal(parsed.org, "未来网络实验室");
     assert.equal(parsed.title, "技术总监");
+});
+
+test("exportSinglePersonVcf：单人物完整全要素导出为 vCard 3.0", () => {
+    const person: ContactSummary = {
+        docId: "doc-1",
+        itemId: "item-1",
+        name: "李四",
+        phone: "13800001234",
+        email: "lisi@example.com",
+        wechat: "lisi_wx",
+        website: "https://lisi.me",
+        birthday: "1995-08-18",
+        isLunar: false,
+        group: "同事",
+        tags: ["架构师", "云计算"],
+        relatedItemIds: [],
+        profile: {
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [
+                        {
+                            orgId: "org-1",
+                            orgName: "某某科技",
+                            title: "首席架构师",
+                            status: "active",
+                        },
+                    ],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            city: "深圳市",
+        } as any,
+    };
+
+    const vcf = exportSinglePersonVcf(person);
+    assert.ok(vcf.includes("BEGIN:VCARD\r\nVERSION:3.0"));
+    assert.ok(vcf.includes("FN:李四"));
+    assert.ok(vcf.includes("TEL;TYPE=CELL:13800001234"));
+    assert.ok(vcf.includes("EMAIL;TYPE=INTERNET:lisi@example.com"));
+    assert.ok(vcf.includes("X-WECHAT:lisi_wx"));
+    assert.ok(vcf.includes("ORG:某某科技"));
+    assert.ok(vcf.includes("TITLE:首席架构师"));
+    assert.ok(vcf.includes("ADR;TYPE=HOME:;;;;深圳市;;"));
+    assert.ok(vcf.includes("END:VCARD"));
 });

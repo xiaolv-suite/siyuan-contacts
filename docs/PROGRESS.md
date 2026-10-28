@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.18 发布：单个联系人标准 vCard 3.0 / .vcf 名片导出与一键复制（Single Contact vCard Export）
+
+- 本轮落地单联系人 vCard 名片导出与一键复制：
+  1. 单联系人序列化纯函数：`vcard.ts` 纯函数 `exportSinglePersonVcf` 实现电话、邮箱、微信、城市、组织、职务、生日与标签全要素导出；
+  2. 详情页顶栏快捷下载与复制：支持直接下载 `${姓名}.vcf` 名片文件与一键复制 RFC vCard 文本；
+- 门禁验证：`pnpm check`（0/0）、单测 945/945 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.17 发布：Cardhop 式自然语言快捷建档条（Cardhop-Style Instant Contact Input）
 
 - 本轮落地 Cardhop 式自然语言快速建档与名册回车直建：

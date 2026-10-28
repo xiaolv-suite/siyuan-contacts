@@ -30,7 +30,9 @@
         Eye,
         EyeOff,
         Shield,
+        ContactRound,
     } from "@lucide/svelte";
+    import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { inferPersonaTags } from "../../domain/tag-inference.ts";
     import { profileText } from "../../domain/people-profiles.ts";
@@ -988,6 +990,32 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
         }
     });
 
+    let vcardCopied = $state(false);
+    let vcardCopiedTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function handleExportVcf(): void {
+        const vcfText = exportSinglePersonVcf(current);
+        const blob = new Blob([vcfText], { type: "text/vcard;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${current.name.trim() || "联系人"}.vcf`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function handleCopyVcf(): Promise<void> {
+        const vcfText = exportSinglePersonVcf(current);
+        try {
+            await copyPlainText(vcfText);
+            vcardCopied = true;
+            if (vcardCopiedTimer) clearTimeout(vcardCopiedTimer);
+            vcardCopiedTimer = setTimeout(() => { vcardCopied = false; }, 1800);
+        } catch (err) {
+            console.warn("[LvContacts] 复制名片文本失败", err);
+        }
+    }
+
     function togglePrivacyMask(): void {
         if (privacyMaskActive) {
             if (revealSeconds > 0) {
@@ -1631,6 +1659,7 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
         if (copiedFieldTimer) clearTimeout(copiedFieldTimer);
         if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
         if (revealInterval) clearInterval(revealInterval);
+        if (vcardCopiedTimer) clearTimeout(vcardCopiedTimer);
     });
     function openBriefingExport() {
         const now = new Date();
@@ -2471,6 +2500,26 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
             title="一键导出会前备忘、背景资料与谈资简报"
         >
             <CalendarDays size={13} /> 导出会前简报
+        </button>
+        <button
+            type="button"
+            class="b3-button b3-button--outline b3-button--small"
+            onclick={handleExportVcf}
+            title="导出为标准手机通讯录 .vcf 名片文件（可直接通过微信/隔空投送发给手机导入）"
+        >
+            <ContactRound size={13} /> 导出名片 (.vcf)
+        </button>
+        <button
+            type="button"
+            class="b3-button b3-button--outline b3-button--small"
+            onclick={handleCopyVcf}
+            title="复制该联系人的标准 vCard 3.0 名片文本到剪贴板"
+        >
+            {#if vcardCopied}
+                <Check size={13} class="lvct-text-success" /> 已复制名片 ✓
+            {:else}
+                <Copy size={13} /> 复制名片
+            {/if}
         </button>
     </div>
 

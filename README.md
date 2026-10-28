@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.17** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.17) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.18** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.18) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.17 · 2026-10-28）
+## 本次发布（v0.6.18 · 2026-10-28）
+
+本版本贯彻落实第二阶段 2.4 节关于通讯录互通与跨设备名片流通的规划，全面打通了单个联系人的原生名片导出通道：
+
+- **单联系人全要素 vCard 序列化纯函数（`exportSinglePersonVcf`）**：严格遵循 RFC 6350 / vCard 3.0 标准，支持姓名、组织机构、职务、电话、微信号、常驻城市、电子邮箱、个人网址、生日（含农历）与标签等全字段导出。
+- **详情页顶栏快捷下载与复制名片（`PersonDetail`）**：联系人详情页顶栏新增「导出名片 (.vcf)」与「复制名片」操作，点击即可直接下载 `${姓名}.vcf` 文件（iPhone/安卓手机点击即可一键存入手机通讯录），或复制标准 vCard 文本至剪贴板。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 945/945 100% 通过；浏览器 UI 回归全绿；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.17 · 2026-10-28）
 
 本版本贯彻落实《ROADMAP 与特性设计》关于 Cardhop 式快速输入建档的规划，全面升级了名册搜索与新建通道：
 

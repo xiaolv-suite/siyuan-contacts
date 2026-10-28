@@ -5,6 +5,9 @@
  * 映射语义决策见 docs/DECISIONS.md D-0013。
  */
 import { isValidDateKey } from "./date-key.ts";
+import type { ContactSummary } from "./person.ts";
+import { extractNormalizedRegion } from "./region.ts";
+import { profileText } from "./people-profiles.ts";
 
 /** 源卡片中的联系方式候选；只供本次导入预览，不是持久条目身份。 */
 export interface VCardMethodPreview {
@@ -557,4 +560,43 @@ export function serializeVcf(people: readonly VCardContact[]): string {
         lines.push("END:VCARD");
     }
     return lines.length > 0 ? lines.join("\r\n") + "\r\n" : "";
+}
+
+/**
+ * 将单个联系人实体完整导出为标准 vCard 3.0 / RFC 6350 文本。
+ * 包含姓名、电话、邮箱、微信号、常驻城市、机构/职务、生日与标签全要素。
+ */
+export function exportSinglePersonVcf(person: ContactSummary): string {
+    const vCardContact: VCardContact = {
+        name: person.name,
+        phone: person.phone,
+        email: person.email,
+        wechat: person.wechat,
+        website: person.website,
+        birthday: person.birthday,
+        isLunar: person.isLunar,
+        tags: person.tags,
+    };
+
+    const region = extractNormalizedRegion(person);
+    if (region.city && region.city !== "未知") {
+        vCardContact.city = region.city;
+    } else if (person.profile && (person.profile as { city?: string }).city) {
+        vCardContact.city = (person.profile as { city?: string }).city;
+    }
+
+    if (person.profile) {
+        const work = profileText(person.profile, "work");
+        if (work && work !== "未填写" && work !== "尚未核实" && work !== "组织归属尚未核实") {
+            vCardContact.org = work;
+        }
+        if (person.profile.affiliations?.state === "known") {
+            const works = person.profile.affiliations.value.work || [];
+            if (works.length > 0 && works[0].title) {
+                vCardContact.title = works[0].title;
+            }
+        }
+    }
+
+    return serializeVcf([vCardContact]);
 }

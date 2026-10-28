@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.17** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.17) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.18** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.18) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.17 (2026-10-28)
+## This release: v0.6.18 (2026-10-28)
+
+This release implements single contact vCard 3.0 / .vcf export and copying:
+
+- **Single Contact vCard Serializer (`exportSinglePersonVcf`)**: Follows RFC 6350 / vCard 3.0 standards, serializing name, org, title, phone, wechat, city (ADR), email, website, birthday, and tags.
+- **Top Quick Bar Actions in Detail View**: Adds "Export Card (.vcf)" (downloads native `.vcf` file for instant mobile importing) and "Copy Card" to clipboard.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (945/945 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.17 (2026-10-28)
 
 This release implements Cardhop-style one-liner natural language contact creation:
 
