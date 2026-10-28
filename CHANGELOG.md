@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.21] — 2026-10-28
+
+重塑：周度人脉交往复盘与回顾实体文档生成（Weekly Social Review & Interaction Digest Doc Generator）
+
+- **周度简报聚合引擎**：`domain/weekly-digest.ts` 纯函数推算 ISO 周区间，聚合本周交往事实、联系人双链纪要与带 `- [ ]` 的下周任务清单。
+- **首页周日程滑轨一键沉淀**：周日程滑轨提供「沉淀周报 ↗」，生成 `/人脉周报/2026-Wxx 人脉交往周报` 并支持在主编辑器直达打开。
+
+验证：`pnpm check` 0/0、单测 951/951 绿灯、E2E UI 回归 491/491 全部通过、Release 门禁通过。
+
+
 ## [0.6.20] — 2026-10-28
 
 重塑：仪表盘「历史上的今天」时光记忆胶囊与社交破冰助手（On This Day Capsule & Icebreaker）

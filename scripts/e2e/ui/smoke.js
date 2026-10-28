@@ -8072,6 +8072,92 @@ await test("F-10 首页仪表盘：历史上的今天时光记忆胶囊（On Thi
     fixture.remove();
 });
 
+await test("F-12 首页仪表盘：周度人脉交往简报实体文档生成（Weekly Digest Generator）与一键直达", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let createdDigestCalled = false;
+    let openedDocId = null;
+
+    const testDashboardData = {
+        people: 2,
+        relations: 1,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [
+            {
+                bucket: "today",
+                person: {
+                    docId: "doc-w1",
+                    itemId: "item-w1",
+                    name: "赵总",
+                    phone: "",
+                    email: "",
+                    wechat: "",
+                    website: "",
+                    birthday: "",
+                    isLunar: false,
+                    group: "",
+                    tags: [],
+                    relatedItemIds: [],
+                },
+                reasons: [{ kind: "followup", label: "周例会讨论", bucket: "today", followUpId: "fu-w1" }],
+            },
+        ],
+        neverOrder: {},
+    };
+
+    mounted = mount(DashboardView, {
+        target: fixture,
+        props: {
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            facade: {
+                loadDashboard: async () => testDashboardData,
+                loadReminderDismissals: async () => [],
+                createWeeklyDigestDoc: async () => {
+                    createdDigestCalled = true;
+                    return {
+                        docId: "doc-weekly-2026-w44",
+                        hpath: "/人脉周报/2026-W44 人脉交往周报",
+                        weekLabel: "2026-W44",
+                    };
+                },
+                openPersonDoc: (docId) => {
+                    openedDocId = docId;
+                },
+            },
+            onOpenDetail() {},
+            onOpenPeople() {},
+            onOpenGraph() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-week-glance__digest-btn"), "未找到沉淀周报按钮");
+    const digestBtn = fixture.querySelector(".lvct-week-glance__digest-btn");
+    assert(digestBtn.textContent.includes("沉淀周报"), "按钮文本未包含沉淀周报");
+
+    // 点击生成周报
+    digestBtn.click();
+    await until(() => createdDigestCalled, "点击未触发 createWeeklyDigestDoc 回调");
+
+    await until(() => fixture.querySelector(".lvct-week-glance__digest-notice"), "未渲染周报生成成功横幅");
+    assert(fixture.textContent.includes("2026-W44 人脉周报"), "横幅未包含周报标签");
+    assert(fixture.textContent.includes("/人脉周报/2026-W44 人脉交往周报"), "横幅未包含生成路径");
+
+    // 点击在主编辑器打开
+    const openDocBtn = fixture.querySelector(".lvct-week-glance__digest-notice button");
+    assert(openDocBtn, "未找到在主编辑器打开按钮");
+    openDocBtn.click();
+    await until(() => openedDocId === "doc-weekly-2026-w44", "点击在主编辑器打开未调用 openPersonDoc");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

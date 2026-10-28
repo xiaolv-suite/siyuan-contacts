@@ -158,6 +158,8 @@ export interface ContactsPluginFacade {
     buildReviewReport(from: string, to: string): Promise<ReviewReport>;
     /** RF-03：将交往回顾沉淀为思源实体文档 */
     createReviewReportDoc?(range: import("./domain/review-report").ReviewRange): Promise<{ docId: string; hpath: string } | null>;
+    /** 周度人脉交往简报（Weekly Social Review）：沉淀为思源实体文档 */
+    createWeeklyDigestDoc?(options?: import("./services/weekly-digest").CreateWeeklyDigestDocOptions): Promise<{ docId: string; hpath: string; weekLabel: string } | null>;
     /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */
     loadExportSummary(): Promise<ExportSummary>;
     /** 导出全量名册为 vCard 3.0 文本（联系人页选中导出外的设置页统一入口） */

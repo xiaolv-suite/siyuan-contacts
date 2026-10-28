@@ -111,6 +111,7 @@ import { listOccasions, createOccasion, deleteOccasion } from "./services/occasi
 import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary, removePersonAnniversary, listUpcomingAnniversaries } from "./data/anniversaries.ts";
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
+import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1765,6 +1766,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async createReviewReportDoc(range: import("./domain/review-report").ReviewRange) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return exportReviewReportToDoc(this, this.settings, range);
+    }
+
+    /** 周度人脉交往简报（Weekly Social Review）：沉淀为思源实体文档 */
+    async createWeeklyDigestDoc(options?: import("./services/weekly-digest").CreateWeeklyDigestDocOptions) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return createWeeklyDigestDoc(this, this.settings, options);
     }
 
     async loadExportSummary() {

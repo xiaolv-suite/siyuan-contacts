@@ -21,6 +21,7 @@
         Copy,
         Check,
         MessageSquare,
+        FileText,
     } from "@lucide/svelte";
     import { pickActions, pickSummaryCounts } from "../../services/dashboard";
     import { newFollowUpRequestId } from "../../services/followups";
@@ -155,6 +156,29 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let showAllFollowUps = $state(false);
     let regionExplorerOpen = $state(false);
     let actionsContainerEl: HTMLElement | undefined = $state();
+    let generatingDigest = $state(false);
+    let digestDocInfo: { docId: string; hpath: string; weekLabel: string } | null = $state(null);
+    let digestError = $state("");
+
+    async function handleGenerateWeeklyDigest() {
+        if (!facade.createWeeklyDigestDoc || generatingDigest) return;
+        generatingDigest = true;
+        digestError = "";
+        try {
+            const res = await facade.createWeeklyDigestDoc();
+            if (alive) {
+                if (res) {
+                    digestDocInfo = res;
+                } else {
+                    digestError = text("dashDigestCreateFailed", "生成周报文档失败，请检查笔记本设置");
+                }
+            }
+        } catch (err) {
+            if (alive) digestError = requestErrorMessage(err);
+        } finally {
+            if (alive) generatingDigest = false;
+        }
+    }
 
     function scrollToActionsSection() {
         actionsContainerEl?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1384,11 +1408,24 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 <div class="lvct-week-glance" role="region" aria-label="本周人脉日程滑轨">
                     <div class="lvct-week-glance__header">
                         <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} class="lvct-icon-inline" /> 📅 本周日程视窗</span>
-                        {#if selectedGlanceOffset !== null}
-                            <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => (selectedGlanceOffset = null)}>
-                                查看全部行动
-                            </button>
-                        {/if}
+                        <div class="fn__flex" style="gap: 6px; align-items: center;">
+                            {#if facade.createWeeklyDigestDoc}
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-week-glance__digest-btn"
+                                    onclick={handleGenerateWeeklyDigest}
+                                    disabled={generatingDigest}
+                                    title={text("dashDigestBtnTitle", "将本周交往足迹、重点联络人与下周待办一键沉淀为思源周报笔记")}
+                                >
+                                    <FileText size={12} class="lvct-icon-inline" /> {generatingDigest ? text("dashDigestGenerating", "周报生成中…") : text("dashDigestCreate", "沉淀周报 ↗")}
+                                </button>
+                            {/if}
+                            {#if selectedGlanceOffset !== null}
+                                <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => (selectedGlanceOffset = null)}>
+                                    查看全部行动
+                                </button>
+                            {/if}
+                        </div>
                     </div>
                     <div class="lvct-week-glance__track">
                         {#each weekGlanceDays as day (day.offset)}
@@ -1442,6 +1479,35 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 {/each}
                             {/if}
                         </div>
+                    {/if}
+                    {#if digestDocInfo}
+                        <div class="lvct-week-glance__digest-notice fn__flex" style="align-items: center; justify-content: space-between; margin-top: 8px; padding: 6px 12px; background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)); border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent); border-radius: 6px; font-size: 12px;">
+                            <span style="color: var(--b3-theme-on-surface);">📄 <b>{digestDocInfo.weekLabel} 人脉周报</b> 已生成至 <code>{digestDocInfo.hpath}</code></span>
+                            <div class="fn__flex" style="gap: 6px;">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small"
+                                    style="padding: 0 4px; font-size: 11.5px; color: var(--b3-theme-primary);"
+                                    onclick={() => {
+                                        facade.openPersonDoc?.(digestDocInfo!.docId);
+                                    }}
+                                >
+                                    在主编辑器打开 ↗
+                                </button>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small"
+                                    style="padding: 0 4px; font-size: 11px;"
+                                    onclick={() => (digestDocInfo = null)}
+                                    title="关闭提示"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    {/if}
+                    {#if digestError}
+                        <div class="ft__smaller lvct-text-danger" style="margin-top: 6px; padding: 4px 8px;">{digestError}</div>
                     {/if}
                 </div>
             {/if}

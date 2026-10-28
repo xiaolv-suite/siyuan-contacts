@@ -8848,6 +8848,23 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     justify-content: space-between;
 }
 
+.lvct-week-glance__digest-btn {
+    font-size: 11px;
+    padding: 2px 6px;
+    color: var(--b3-theme-primary);
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--lvct-r-sm);
+
+    &:hover {
+        background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
+    }
+}
+
+.lvct-week-glance__digest-notice {
+    animation: lvct-fade-in 0.2s ease;
+}
+
 .lvct-week-glance__title {
     font-size: 12px;
     font-weight: 650;

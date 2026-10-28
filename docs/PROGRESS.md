@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.21 发布：周度人脉交往复盘与回顾实体文档生成（Weekly Social Review & Interaction Digest Doc Generator）
+
+- 本轮落地周度人脉交往简报生成引擎与思源笔记实体沉淀：
+  1. 周报生成纯函数：`weekly-digest.ts` 纯函数 `computeISOWeekRange` 精确计算 ISO 自然周，`buildWeeklyDigestMarkdown` 聚合本周交往概览、重点联络人员双链纪要与下周带任务复选框 `- [ ]` 的待办清单；
+  2. 首页仪表盘周日程滑轨一键沉淀：周日程滑轨顶栏增设「沉淀周报 ↗」，在思源当前笔记本生成 `/人脉周报/2026-Wxx 人脉交往周报` 并支持「在主编辑器打开 ↗」；
+- 门禁验证：`pnpm check`（0/0）、单测 951/951 全部通过、三套 UI 回归 491/491 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.20 发布：仪表盘「历史上的今天」时光记忆胶囊与社交破冰助手（On This Day Capsule & Icebreaker）
 
 - 本轮落地时光记忆胶囊全库挖掘与首页温润破冰：
