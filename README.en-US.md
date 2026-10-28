@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.32** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.32) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.33** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.33) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.32 (2026-10-29)
+## This release: v0.6.33 (2026-10-29)
+
+This release implements Roster Filtering by Relationship Lifecycle Stage in the main people view:
+
+- **Lifecycle Stage Roster Filtering Engine (`domain/people-filters.ts` & `domain/saved-views.ts`)**: Enables targeted filtering across initial acquaintance (`acquaintance`), regular connection (`connection`), close collaboration (`collaboration`), core ally/confidant (`close_ally`), and dormant maintenance (`dormant`), with intelligent fallback for unrecorded contacts and full compatibility with Saved Views.
+- **Roster Advanced Filters Integration & Active Condition Pills (`PeopleView.svelte`)**: Embeds a dedicated lifecycle stage selector into the advanced filter panel; automatically displays visual condition pills (e.g. `Stage: ⭐ Ally`, `Stage: 🚀 Co-create`) with one-click single removal and clear-all support.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (977/977 PASS); browser UI regression passing (503/503); production build and release checks passed.
+
+## Previous release: v0.6.32 (2026-10-29)
 
 This release implements Relationship Lifecycle Stages & Journey Progression in the person detail view:
 

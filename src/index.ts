@@ -112,7 +112,7 @@ import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary,
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
-import { loadPersonLifecycleStage, updatePersonLifecycleStage } from "./data/lifecycle-stage.ts";
+import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages } from "./data/lifecycle-stage.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1788,6 +1788,10 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const res = await updatePersonLifecycleStage(this, personDocId, stage, dateStr, note);
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
+    }
+
+    async loadAllLifecycleStages() {
+        return loadAllLifecycleStages(this);
     }
 
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */

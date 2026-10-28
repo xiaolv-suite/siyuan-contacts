@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.33] — 2026-10-29
+
+重塑：名册多维筛选支持「交往生命周期阶段」（Filter & Group Contacts by Lifecycle Stage）
+
+- **生命周期阶段名册筛选引擎**：`domain/people-filters.ts` 与 `domain/saved-views.ts` 扩展 `lifecycleStage` 组合筛选能力，支持按初相识、常交流、共合作、核心挚友与沉睡维护进行过滤，未记录项安全回退为初相识。
+- **名册高级筛选与条件胶囊流**：`PeopleView.svelte` 高级筛选浮层集成阶段选择器，生效条件行自动渲染阶段指示胶囊与一键单项清除。
+
+验证：`pnpm check` 0/0、单测 977/977 绿灯、E2E UI 回归 503/503 全部通过、Release 门禁通过。
+
 ## [0.6.32] — 2026-10-29
 
 重塑：联系人交往生命周期阶段与历程演进管理（Relationship Lifecycle Stages & Journey Progression）

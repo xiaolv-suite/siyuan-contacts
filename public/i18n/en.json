@@ -1187,5 +1187,7 @@
   "stageHistoryTitle": "Stage Transition History",
   "commonCancel": "Cancel",
   "commonSaving": "Saving…",
-  "commonSave": "Confirm"
+  "commonSave": "Confirm",
+  "peopleFilterStage": "Relationship Lifecycle Stage",
+  "peopleFilterStageAll": "All Stages (Any)"
 }

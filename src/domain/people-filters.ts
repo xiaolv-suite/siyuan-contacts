@@ -9,6 +9,8 @@ import { matchesProfileFilters } from "./people-profiles.ts";
 import { isValidDateKey } from "./followups.ts";
 import { filterPeopleByRegion } from "./region.ts";
 
+import type { RelationshipStageKey } from "./lifecycle-stage.ts";
+
 export type TagMatchMode = "all" | "any";
 
 /** C03 资料完整度：按现有九字段判定的资料缺口（不把未来字段当必填项） */
@@ -35,6 +37,8 @@ export interface PeopleFilterState {
     educationQuery?: string;
     relationshipLabel?: string;
     region?: string;
+    /** E-41 交往生命周期阶段 */
+    lifecycleStage?: RelationshipStageKey | "";
 }
 
 export const EMPTY_PEOPLE_FILTER: PeopleFilterState = {
@@ -44,6 +48,7 @@ export const EMPTY_PEOPLE_FILTER: PeopleFilterState = {
     neverContacted: false,
     profileGap: "",
     region: "",
+    lifecycleStage: "",
 };
 
 export type ExtraFilterChipKey = "tagMatch" | "recentRange" | "neverContacted" | "profileGap" | "region";
@@ -81,7 +86,7 @@ export function hasProfileGap(person: ContactSummary, gap: ProfileGap): boolean 
 /** 附加筛选（标签模式之外的部分）是否生效 */
 export function isExtraFilterActive(filter: PeopleFilterState): boolean {
     return filter.tagMatch !== "all" || !!filter.recentFrom || !!filter.recentTo || filter.neverContacted || !!filter.profileGap
-        || !!filter.workQuery || !!filter.educationQuery || !!filter.relationshipLabel || !!filter.region;
+        || !!filter.workQuery || !!filter.educationQuery || !!filter.relationshipLabel || !!filter.region || !!filter.lifecycleStage;
 }
 
 /** 当前生效的附加条件（固定顺序），供生效条件行渲染与单项清除 */
@@ -95,11 +100,12 @@ export function extraFilterChips(filter: PeopleFilterState): ExtraFilterChip[] {
     return chips;
 }
 
-/** 最近互动范围 + 从未联系 + 资料完整度 + 地域过滤（标签匹配请先用 matchTags） */
+/** 最近互动范围 + 从未联系 + 资料完整度 + 地域过滤 + 交往阶段（标签匹配请先用 matchTags） */
 export function applyPeopleFilters(
     people: readonly ContactSummary[],
     recent: Readonly<Record<string, { occurredAt: number; localDate: string }>>,
     filter: PeopleFilterState,
+    lifecycleStages?: Readonly<Record<string, RelationshipStageKey>>,
 ): ContactSummary[] {
     const from = isDateKey(filter.recentFrom) ? filter.recentFrom : "";
     const to = isDateKey(filter.recentTo) ? filter.recentTo : "";
@@ -108,6 +114,10 @@ export function applyPeopleFilters(
     return regionFiltered.filter((person) => {
         if (!matchesProfileFilters(person.profile, filter)) return false;
         if (filter.profileGap && !hasProfileGap(person, filter.profileGap)) return false;
+        if (filter.lifecycleStage) {
+            const stage = lifecycleStages?.[person.docId] || "acquaintance";
+            if (stage !== filter.lifecycleStage) return false;
+        }
         const last = recent[person.docId];
         if (filter.neverContacted && last) return false;
         if (rangeActive) {

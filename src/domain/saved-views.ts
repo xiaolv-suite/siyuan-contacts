@@ -23,6 +23,7 @@ export interface SavedViewQuery {
     educationQuery?: string;
     relationshipLabel?: string;
     region?: string;
+    lifecycleStage?: import("./lifecycle-stage.ts").RelationshipStageKey | "";
 }
 
 export interface SavedView {

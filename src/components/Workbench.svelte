@@ -723,8 +723,9 @@
                     onLoadSelfCandidates={() => facade.listContacts()}
                     onCreateOccasion={facade.createOccasion ? async (input) => { await facade.createOccasion!(input); } : undefined}
                     onExecuteMerge={facade.executeContactMerge ? (plan) => facade.executeContactMerge!(plan) : undefined}
-                    onCreateBatchFlashcardsDoc={facade.createBatchFlashcardsDoc ? (people, options) => facade.createBatchFlashcardsDoc!(people, options) : undefined}
-                    onPreviewSelfIdentityChange={(personItemId) => facade.previewSelfIdentityChange(personItemId)}
+	                    onCreateBatchFlashcardsDoc={facade.createBatchFlashcardsDoc ? (people, options) => facade.createBatchFlashcardsDoc!(people, options) : undefined}
+	                    onLoadLifecycleStages={facade.loadAllLifecycleStages ? () => facade.loadAllLifecycleStages!() : undefined}
+	                    onPreviewSelfIdentityChange={(personItemId) => facade.previewSelfIdentityChange(personItemId)}
                     onApplySelfIdentityChange={(preview) => facade.applySelfIdentityChange(preview)}
                     onValidateExtended={async (details) => {
                         if (details.orgMemberships.length) {

@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.33 发布：名册多维筛选支持「交往生命周期阶段」（Filter & Group Contacts by Lifecycle Stage）
+
+- 本轮落地生命周期阶段名册筛选与生效条件胶囊流：
+  1. 名册筛选纯函数扩充：`people-filters.ts` 与 `saved-views.ts` 支持 `lifecycleStage` 组合过滤，未记录项智能兜底初相识；
+  2. 名册高级筛选浮层与生效胶囊：`PeopleView.svelte` 高级筛选浮层集成阶段下拉框，生效条件栏展示对应阶段微胶囊并支持一键单项清除；
+- 门禁验证：`pnpm check`（0/0）、单测 977/977 全部通过、三套 UI 回归 503/503 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.32 发布：联系人交往生命周期阶段与历程演进管理（Relationship Lifecycle Stages & Journey Progression）
 
 - 本轮落地五阶交往生命周期模型与阶段演进追踪组件：

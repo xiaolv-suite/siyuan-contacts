@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.32** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.32) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.33** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.33) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.32 · 2026-10-29）
+## 本次发布（v0.6.33 · 2026-10-29）
+
+本版本将交往生命周期演进模型无缝延伸至联系人名册主视图，推出了名册多维筛选支持「交往生命周期阶段」（Filter & Group Contacts by Lifecycle Stage）：
+
+- **生命周期阶段名册筛选引擎（`domain/people-filters.ts` & `domain/saved-views.ts`）**：组合筛选状态支持按初相识（`acquaintance`）、常交流（`connection`）、共合作（`collaboration`）、核心挚友（`close_ally`）与沉睡维护（`dormant`）进行精准过滤，未明确记录阶段的人物智能安全兜底为初相识，并深度适配保存视图（Saved Views）持久化。
+- **名册高级筛选面板与生效条件胶囊流（`PeopleView.svelte`）**：在高级筛选浮层中集成阶段下拉选择器；激活后自动在生效条件栏展示对应阶段微胶囊（如 `阶段：⭐ 挚友`、`阶段：🚀 共创`），支持点击一键清除单项条件或一键清空全部。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 977/977 100% 通过；浏览器 UI 回归全绿（503/503）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.32 · 2026-10-29）
 
 本版本将真实社交与人脉维护中的自然演进规律系统化，推出了联系人交往生命周期阶段与历程演进追踪系统（Relationship Lifecycle Stages & Journey Progression）：
 

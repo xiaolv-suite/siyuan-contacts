@@ -36,6 +36,18 @@ export async function loadPersonLifecycleStage(
     return getPersonLifecycle(store, personDocId);
 }
 
+/** 批量获取全量人物的当前阶段映射（personDocId -> currentStage） */
+export async function loadAllLifecycleStages(plugin: Plugin): Promise<Record<string, RelationshipStageKey>> {
+    const store = await loadLifecycleStore(plugin);
+    const result: Record<string, RelationshipStageKey> = {};
+    for (const [docId, record] of Object.entries(store.records)) {
+        if (record && record.currentStage) {
+            result[docId] = record.currentStage;
+        }
+    }
+    return result;
+}
+
 /** 推进或变更人物交往阶段并落盘 */
 export async function updatePersonLifecycleStage(
     plugin: Plugin,

@@ -45,6 +45,7 @@
     import { createDebouncer } from "../../domain/debounce";
     import { groupPeopleByAlphabet, getPersonNameInitial, ALPHABET_LETTERS } from "../../domain/pinyin.ts";
     import { extractNormalizedRegion } from "../../domain/region";
+    import { LIFECYCLE_STAGES, type RelationshipStageKey } from "../../domain/lifecycle-stage.ts";
 
     let {
         settings,
@@ -76,6 +77,7 @@
         onCreateOccasion,
         onExecuteMerge,
         onCreateBatchFlashcardsDoc,
+        onLoadLifecycleStages,
         onPreviewSelfIdentityChange,
         onApplySelfIdentityChange,
         onValidateExtended,
@@ -124,6 +126,8 @@
         onExecuteMerge?: (plan: import("../../domain/duplicate-merge").ContactMergePlan) => Promise<unknown>;
         /** 批量联系人常识复习闪卡制作回调（可选） */
         onCreateBatchFlashcardsDoc?: (people: readonly ContactSummary[], options?: { deckName?: string; batchTitle?: string }) => Promise<{ docId: string; hpath: string; count: number } | null>;
+        /** E-41：批量获取全量联系人交往阶段映射表（可选） */
+        onLoadLifecycleStages?: () => Promise<Record<string, RelationshipStageKey>>;
         /** B09-1：移动端工具栏收纳（常驻搜索/视图切换/新建，其余收进底部弹层） */
         isMobile?: boolean;
     } = $props();
@@ -203,6 +207,17 @@
     let activeLetterFilter = $state("");
     let filterStarredOnly = $state(false);
     let addPersonInitial = $state<ContactDraft | undefined>(undefined);
+    let lifecycleStages: Record<string, RelationshipStageKey> = $state({});
+
+    $effect(() => {
+        void revision;
+        if (!onLoadLifecycleStages) return;
+        void onLoadLifecycleStages().then((res) => {
+            lifecycleStages = res || {};
+        }).catch(() => {
+            lifecycleStages = {};
+        });
+    });
 
     const starredCount = $derived(people.filter((p) => isPersonStarred(preferences, p.docId)).length);
 
@@ -657,7 +672,7 @@
         const recentSafeFilter = recentState !== "ready"
             ? { ...extraFilter, recentFrom: "", recentTo: "", neverContacted: false }
             : extraFilter;
-        const final = applyPeopleFilters(result, recentState !== "ready" ? {} : recent, recentSafeFilter);
+        const final = applyPeopleFilters(result, recentState !== "ready" ? {} : recent, recentSafeFilter, lifecycleStages);
         const effectiveSortMode = recentState !== "ready" && sortMode === "recent" ? "name" : sortMode;
         // G-11：全员下次生日计算惰性化，仅在生日排序模式下按需计算，避免姓名/分组/最近互动排序下的农历计算开销
         const birthdayDays = effectiveSortMode === "birthday"
@@ -910,6 +925,10 @@
         if (extraFilter.educationQuery?.trim()) chips.push({ key: "educationQuery", label: `学校：${extraFilter.educationQuery.trim()}` });
         if (extraFilter.relationshipLabel?.trim()) chips.push({ key: "relationshipLabel", label: `与我的关系：${extraFilter.relationshipLabel.trim()}` });
         if (extraFilter.region?.trim()) chips.push({ key: "region", label: `地区/城市：${extraFilter.region.trim()}` });
+        if (extraFilter.lifecycleStage) {
+            const sMeta = LIFECYCLE_STAGES.find((s) => s.key === extraFilter.lifecycleStage);
+            chips.push({ key: "lifecycleStage", label: `阶段：${sMeta ? `${sMeta.icon} ${sMeta.shortLabel}` : extraFilter.lifecycleStage}` });
+        }
         return chips;
     });
 
@@ -931,7 +950,7 @@
         else if (key === "recentRange") extraFilter = { ...extraFilter, recentFrom: "", recentTo: "" };
         else if (key === "neverContacted") extraFilter = { ...extraFilter, neverContacted: false };
         else if (key === "profileGap") extraFilter = { ...extraFilter, profileGap: "" };
-        else if (["workQuery", "educationQuery", "relationshipLabel", "region"].includes(key)) extraFilter = { ...extraFilter, [key]: "" };
+        else if (["workQuery", "educationQuery", "relationshipLabel", "region", "lifecycleStage"].includes(key)) extraFilter = { ...extraFilter, [key]: "" };
         visibleCount = PAGE_SIZE;
     }
 
@@ -995,36 +1014,37 @@
             sort: sortMode,
             ...(extraFilter.workQuery?.trim() ? { workQuery: extraFilter.workQuery.trim() } : {}),
             ...(extraFilter.educationQuery?.trim() ? { educationQuery: extraFilter.educationQuery.trim() } : {}),
-            ...(extraFilter.relationshipLabel?.trim() ? { relationshipLabel: extraFilter.relationshipLabel.trim() } : {}),
-            ...(extraFilter.region?.trim() ? { region: extraFilter.region.trim() } : {}),
-        };
-    }
+	            ...(extraFilter.relationshipLabel?.trim() ? { relationshipLabel: extraFilter.relationshipLabel.trim() } : {}),
+	            ...(extraFilter.region?.trim() ? { region: extraFilter.region.trim() } : {}),
+	            ...(extraFilter.lifecycleStage ? { lifecycleStage: extraFilter.lifecycleStage } : {}),
+	        };
+	    }
 
-    // 条件漂移检测：当前条件与激活视图的规则不一致时，取消视图标记（人物变化时规则自动重新求值）
-    $effect(() => {
-        if (!currentViewId) return;
-        const view = localViews.find((item) => item.id === currentViewId);
-        if (!view) {
-            currentViewId = "";
-            activeViewName = "";
-            return;
-        }
-        if (JSON.stringify(currentQuery()) !== JSON.stringify(view.query)) {
-            currentViewId = "";
-            activeViewName = "";
-        }
-    });
+	    // 条件漂移检测：当前条件与激活视图的规则不一致时，取消视图标记（人物变化时规则自动重新求值）
+	    $effect(() => {
+	        if (!currentViewId) return;
+	        const view = localViews.find((item) => item.id === currentViewId);
+	        if (!view) {
+	            currentViewId = "";
+	            activeViewName = "";
+	            return;
+	        }
+	        if (JSON.stringify(currentQuery()) !== JSON.stringify(view.query)) {
+	            currentViewId = "";
+	            activeViewName = "";
+	        }
+	    });
 
-    function applyQueryToState(query: SavedViewQuery) {
-        searchInput = query.search;
-        searchText = query.search;
-        searchDebouncer.cancel();
-        groupFilter = query.group;
-        tagFilter = [...query.tags];
-        extraFilter = { ...extraFilter, tagMatch: query.tagMatch, recentFrom: query.recentFrom, recentTo: query.recentTo, neverContacted: query.neverContacted,
-            profileGap: query.profileGap ?? "",
-            workQuery: query.workQuery ?? "", educationQuery: query.educationQuery ?? "", relationshipLabel: query.relationshipLabel ?? "",
-            region: query.region ?? "" };
+	    function applyQueryToState(query: SavedViewQuery) {
+	        searchInput = query.search;
+	        searchText = query.search;
+	        searchDebouncer.cancel();
+	        groupFilter = query.group;
+	        tagFilter = [...query.tags];
+	        extraFilter = { ...extraFilter, tagMatch: query.tagMatch, recentFrom: query.recentFrom, recentTo: query.recentTo, neverContacted: query.neverContacted,
+	            profileGap: query.profileGap ?? "",
+	            workQuery: query.workQuery ?? "", educationQuery: query.educationQuery ?? "", relationshipLabel: query.relationshipLabel ?? "",
+	            region: query.region ?? "", lifecycleStage: query.lifecycleStage ?? "" };
         sortMode = query.sort;
         visibleCount = PAGE_SIZE;
     }
@@ -1794,6 +1814,22 @@
                     <label class="lvct-form__item">工作单位关键词<input class="b3-text-field" type="text" maxlength="200" value={extraFilter.workQuery ?? ""} oninput={(event) => { extraFilter = { ...extraFilter, workQuery: event.currentTarget.value }; visibleCount = PAGE_SIZE; }} /></label>
                     <label class="lvct-form__item">学校关键词<input class="b3-text-field" type="text" maxlength="200" value={extraFilter.educationQuery ?? ""} oninput={(event) => { extraFilter = { ...extraFilter, educationQuery: event.currentTarget.value }; visibleCount = PAGE_SIZE; }} /></label>
                     <label class="lvct-form__item">与我的关系称谓<input class="b3-text-field" type="text" maxlength="80" value={extraFilter.relationshipLabel ?? ""} oninput={(event) => { extraFilter = { ...extraFilter, relationshipLabel: event.currentTarget.value }; visibleCount = PAGE_SIZE; }} /></label>
+                    <label class="lvct-form__item">
+                        <span>{text("peopleFilterStage", "交往生命周期阶段")}</span>
+                        <select
+                            class="b3-select fn__block"
+                            value={extraFilter.lifecycleStage ?? ""}
+                            onchange={(event) => {
+                                extraFilter = { ...extraFilter, lifecycleStage: (event.currentTarget.value as RelationshipStageKey | "") };
+                                visibleCount = PAGE_SIZE;
+                            }}
+                        >
+                            <option value="">{text("peopleFilterStageAll", "全部阶段（不限）")}</option>
+                            {#each LIFECYCLE_STAGES as s (s.key)}
+                                <option value={s.key}>{s.icon} {s.label}</option>
+                            {/each}
+                        </select>
+                    </label>
                     <p class="ft__smaller">仅匹配已核实的当前分类与当前本人称谓，未知资料不当作未填写。</p>
                     <!-- C03 资料完整度：只按现有九字段判定 -->
                     <div class="lvct-form__item">

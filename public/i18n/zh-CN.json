@@ -1187,5 +1187,7 @@
   "stageHistoryTitle": "阶段变迁历史",
   "commonCancel": "取消",
   "commonSaving": "保存中…",
-  "commonSave": "确认变迁"
+  "commonSave": "确认变迁",
+  "peopleFilterStage": "交往生命周期阶段",
+  "peopleFilterStageAll": "全部阶段（不限）"
 }

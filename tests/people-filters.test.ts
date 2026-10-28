@@ -146,3 +146,32 @@ test("联系人窗口：已测卡片样本自适应未测行估值并限制极�
     assert.equal(estimateVirtualHeight([132, 348, 980], 202, 3), 348);
     assert.equal(Math.max(120, Math.min(420, estimateVirtualHeight([132, 348, 980], 202))), 348);
 });
+
+test("E-41：交往生命周期阶段筛选与未登记项默认初相识回退", () => {
+    const lifecycleStages = {
+        a: "close_ally" as const,
+        b: "collaboration" as const,
+        // c 缺失，默认回退为 acquaintance
+    };
+    const base = (patch: Partial<PeopleFilterState>): PeopleFilterState => ({ ...EMPTY_PEOPLE_FILTER, ...patch });
+
+    // 筛选 close_ally
+    const ally = applyPeopleFilters(people, recent, base({ lifecycleStage: "close_ally" }), lifecycleStages);
+    assert.deepEqual(ally.map((p) => p.docId), ["a"]);
+
+    // 筛选 collaboration
+    const collab = applyPeopleFilters(people, recent, base({ lifecycleStage: "collaboration" }), lifecycleStages);
+    assert.deepEqual(collab.map((p) => p.docId), ["b"]);
+
+    // 筛选 acquaintance (c 命中默认回退)
+    const acqu = applyPeopleFilters(people, recent, base({ lifecycleStage: "acquaintance" }), lifecycleStages);
+    assert.deepEqual(acqu.map((p) => p.docId), ["c"]);
+
+    // 不限阶段
+    const all = applyPeopleFilters(people, recent, base({ lifecycleStage: "" }), lifecycleStages);
+    assert.deepEqual(all.map((p) => p.docId), ["a", "b", "c"]);
+
+    // isExtraFilterActive 识别 lifecycleStage
+    assert.equal(isExtraFilterActive(base({ lifecycleStage: "close_ally" })), true);
+    assert.equal(isExtraFilterActive(base({ lifecycleStage: "" })), false);
+});

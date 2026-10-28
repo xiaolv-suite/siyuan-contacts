@@ -9107,6 +9107,63 @@ await test("D-08 联系人详情页：交往生命周期阶段（RelationshipSta
     fixture.remove();
 });
 
+await test("B-10 联系人名册：交往生命周期阶段高级筛选与条件胶囊清除闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    kernel.handler = async (route) => {
+        if (route === "/api/av/renderAttributeView") return renderResult();
+        return null;
+    };
+
+    const mockStages = {
+        "20260101000000-doc01": "close_ally",
+        "20260101000000-doc02": "collaboration",
+    };
+
+    mount(PeopleView, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            loadRecentInteractions: async () => ({}),
+            onLoadLifecycleStages: async () => mockStages,
+            revision: 0,
+            initialSort: "name",
+            isMobile: false,
+            onOpenDetail() {},
+            onOpenPersonDoc() {},
+            onPreferencesChange: async (next) => next,
+        },
+    });
+
+    await until(() => fixture.textContent.includes("更多筛选"), "未找到更多筛选按钮");
+    const moreBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("更多筛选"));
+    assert(moreBtn, "未找到更多筛选按钮");
+    moreBtn.click();
+
+    await until(() => fixture.querySelector("#lvct-people-moremenu-panel"), "未展开更多筛选面板");
+
+    // 找到交往生命周期阶段选择下拉框
+    const select = Array.from(fixture.querySelectorAll("#lvct-people-moremenu-panel select")).find((s) => s.textContent.includes("核心挚友"));
+    assert(select, "未找到生命周期阶段筛选下拉框");
+
+    select.value = "close_ally";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await until(() => fixture.textContent.includes("阶段："), "生效条件行未出现生命周期阶段胶囊");
+    assert(fixture.textContent.includes("挚友"), "生效条件行未显示挚友标签");
+
+    // 点击条件胶囊清除
+    const conditionBtn = Array.from(fixture.querySelectorAll(".lvct-people__condition")).find((b) => b.textContent.includes("阶段："));
+    assert(conditionBtn, "未找到阶段条件胶囊按钮");
+    conditionBtn.click();
+
+    await until(() => !fixture.textContent.includes("阶段："), "点击清除后条件胶囊未移除");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
