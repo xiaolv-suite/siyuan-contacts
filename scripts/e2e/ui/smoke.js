@@ -8655,6 +8655,71 @@ await test("F-16 首页仪表盘：全库人情礼尚往来大账本（Exchanges
     fixture.remove();
 });
 
+await test("D-04 联系人详情页：六维社交资本雷达图（Social Radar）渲染与多维指标", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const person = {
+        docId: "doc-radar-ui-1",
+        itemId: "item-radar-ui-1",
+        name: "方总",
+        phone: "13600002222",
+        email: "fang@example.com",
+        wechat: "fang_wx",
+        website: "",
+        birthday: "1985-05-15",
+        isLunar: false,
+        group: "投资人",
+        tags: ["先进制造"],
+        relatedItemIds: ["item-rel-1", "item-rel-2"],
+        company: "深创投",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "深创投", title: "副总裁" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    mounted = mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => ({
+                timeline: [
+                    { id: "e1", occurredAt: Date.now() - 86400000, localDate: "2026-10-27", source: "manual", note: "项目交流" },
+                ],
+                coAttendance: [{ otherDocId: "doc-rel-1", count: 2, name: "李总" }],
+                totalEvents: 4,
+                backlinks: [],
+            }),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-social-radar"), "未渲染六维社交资本雷达图");
+    assert(fixture.querySelector(".lvct-social-radar__polygon"), "未渲染雷达图 SVG 数据多边形");
+    assert(fixture.querySelector(".lvct-social-radar__tier-chip"), "未渲染社交层级芯片");
+    assert(fixture.textContent.includes("社交资产"), "未渲染社交资产综合得分");
+    assert(fixture.textContent.includes("活跃度"), "未渲染活跃度指标");
+    assert(fixture.textContent.includes("连接度"), "未渲染连接度指标");
+    assert(fixture.textContent.includes("记忆度"), "未渲染记忆度指标");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

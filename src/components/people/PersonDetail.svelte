@@ -58,6 +58,8 @@ import StatusNotice from "../StatusNotice.svelte";
     import { translateText } from "../../domain/translation";
     import PersonPicker from "./PersonPicker.svelte";
 import MiniRelationRadar from "./MiniRelationRadar.svelte";
+import SocialRadar from "./SocialRadar.svelte";
+import { computeSocialRadar, type SocialRadarAssessment } from "../../domain/social-radar.ts";
 import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/connections-discovery.ts";
     import type { PickerItem } from "./PersonPicker.svelte";
     import { dueLabel, hasFollowUpDraft } from "../../domain/followups";
@@ -2332,6 +2334,19 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         });
     });
 
+    const socialRadarAssessment = $derived.by<SocialRadarAssessment>(() => {
+        return computeSocialRadar({
+            person: current,
+            lastContactDays: relationshipHealth.elapsedDays ?? undefined,
+            totalInteractions: insights?.totalEvents ?? 0,
+            facts,
+            topics,
+            followUps,
+            coAttendanceCount: insights?.coAttendance?.length ?? 0,
+            projectCount: projects.length,
+        });
+    });
+
     async function loadCadence() {
         if (!onGetCadence) return;
         const request = ++cadenceRequest;
@@ -2728,6 +2743,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <dd>{current.relatedItemIds.length > 0 ? `${current.relatedItemIds.length} 位` : "尚未建立"}</dd>
             </div>
         </dl>
+
+        {#if !current.isSelf}
+            <SocialRadar assessment={socialRadarAssessment} {i18n} />
+        {/if}
     </section>
     {#if !current.phone && !current.email && !current.wechat && !current.website && current.tags.length === 0}
         <div class="lvct-detail__empty-contact-card" role="region" aria-label="联系资料未填写">

@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.28 发布：联系人全维度社交资本雷达图（Persona Social Capital Radar & Depth Metrics）
+
+- 本轮落地六维社交资本评估算法与关系摘要雷达图组件：
+  1. 社交雷达纯函数：`social-radar.ts` 纯函数 `computeSocialRadar` 汇算活跃度、连接度、记忆度、履约度、交往频度与共同交集 6 大维度，计算 5 档社交层级与标准多边形顶点；
+  2. 详情页关系摘要雷达组件：`SocialRadar.svelte` 在概览摘要区呈现纯 SVG 科技雷达网，支持顶点悬停指标提示、社交评级徽标与暗色模式无缝自适应；
+- 门禁验证：`pnpm check`（0/0）、单测 961/961 全部通过、三套 UI 回归 498/498 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.27 发布：全库人情礼尚往来大账本与实体账簿沉淀（Central Exchanges & Gifts Ledger Hub）
 
 - 本轮落地全库人情往来统计聚合引擎与人情账簿抽屉：

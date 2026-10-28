@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.27** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.27) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.28** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.28) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.27 (2026-10-28)
+## This release: v0.6.28 (2026-10-28)
+
+This release implements the Persona Social Capital Radar & Depth Metrics:
+
+- **6-Dimensional Social Capital Assessment Engine (`domain/social-radar.ts`)**: Pure function evaluating contacts across 6 key axes: recency, connectivity, memory depth, commitment reliability, frequency, and co-occurrence; calculates overall score and classifies into 5 tiers (Core Partner, Deep Connect, Growing Tie, Light Touch, Dormant); generates normalized SVG polygon coordinates.
+- **Embedded Radar Component in Person Detail (`SocialRadar.svelte`)**: Seamlessly embedded in the overview section with native SVG grid, vertex hover tooltips, tier badge, and dark/light adaptive theming.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (961/961 PASS); browser UI regression passing (498/498); production build and release checks passed.
+
+## Previous release: v0.6.27 (2026-10-28)
 
 This release implements the Central Exchanges & Gifts Ledger Hub on the dashboard:
 

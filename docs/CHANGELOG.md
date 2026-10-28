@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.28] — 2026-10-28
+
+重塑：联系人全维度社交资本雷达图（Persona Social Capital Radar & Depth Metrics）
+
+- **六维社交资产评估模型**：`domain/social-radar.ts` 纯函数 `computeSocialRadar` 综合活跃度、连接度、记忆度、履约度、交往频度与共同交集 6 大维度推算综合评级与多边形坐标。
+- **详情页科技感雷达组件**：`SocialRadar.svelte` 呈现纯 SVG 雷达网、顶点悬停指标提示与社交层级徽章，自适应深浅主题。
+
+验证：`pnpm check` 0/0、单测 961/961 绿灯、E2E UI 回归 498/498 全部通过、Release 门禁通过。
+
+
 ## [0.6.27] — 2026-10-28
 
 重塑：全库人情礼尚往来大账本与实体账簿沉淀（Central Exchanges & Gifts Ledger Hub）
