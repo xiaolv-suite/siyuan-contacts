@@ -164,6 +164,8 @@ export interface ViewPreferences {
     readonly starredDocIds: readonly string[];
     /** 主题色彩风格偏好 */
     readonly themeScheme: ThemeScheme;
+    /** 名片私密信息离席隐私保护盾默认开启偏好（为 false 时不默认遮挡，需要保护的用户可自由开启） */
+    readonly privacyShieldEnabled: boolean;
 }
 
 export const DEFAULT_VIEW_PREFERENCES: ViewPreferences = {
@@ -190,6 +192,7 @@ export const DEFAULT_VIEW_PREFERENCES: ViewPreferences = {
     detailCollapsedSections: {},
     starredDocIds: [],
     themeScheme: "cognac",
+    privacyShieldEnabled: false,
 };
 
 /** 设置页数字输入的保存前校验：必须是 0–365 的整数。 */
@@ -271,6 +274,7 @@ export function normalizeViewPreferences(raw: unknown): ViewPreferences {
             : normalizeDetailCollapsedSections(record.detailCollapsedSections),
         starredDocIds: normalizeStarredDocIds(record.starredDocIds),
         themeScheme: isThemeScheme(record.themeScheme) ? record.themeScheme : DEFAULT_VIEW_PREFERENCES.themeScheme,
+        privacyShieldEnabled: typeof record.privacyShieldEnabled === "boolean" ? record.privacyShieldEnabled : DEFAULT_VIEW_PREFERENCES.privacyShieldEnabled,
     };
 }
 

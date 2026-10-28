@@ -190,9 +190,16 @@
     let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
     let drawerFlashcardToastId = $state("");
     let drawerFlashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
-    let drawerPrivacyActive = $state(false);
+    // svelte-ignore state_referenced_locally
+    let drawerPrivacyActive = $state(preferences.privacyShieldEnabled ?? false);
     let drawerRevealSeconds = $state(0);
     let drawerRevealInterval: ReturnType<typeof setInterval> | null = null;
+
+    $effect(() => {
+        if (typeof preferences.privacyShieldEnabled === "boolean") {
+            drawerPrivacyActive = preferences.privacyShieldEnabled;
+        }
+    });
 
     function toggleDrawerPrivacy(): void {
         if (drawerPrivacyActive) {

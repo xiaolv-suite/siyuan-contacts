@@ -1326,6 +1326,11 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                         <span class="lvct-switch"><input type="checkbox" bind:checked={draft.openOnStartup} /><span class="lvct-switch__track"><span class="lvct-switch__thumb"></span></span></span>
                     </label>
 
+                    <label class="lvct-settings__switch-row">
+                        <div><b>名片私密信息离席隐私保护盾</b><small>开启后，名片中的手机、微信、邮箱默认以马赛克脱敏遮挡（可点击显形 5 秒）。默认关闭，不需遮挡的用户可保持直读。</small></div>
+                        <span class="lvct-switch"><input type="checkbox" bind:checked={draft.privacyShieldEnabled} /><span class="lvct-switch__track"><span class="lvct-switch__thumb"></span></span></span>
+                    </label>
+
                     <div class="lvct-settings__row">
                         <div><b>{text("onboardingSettingsTitle", "首页快速开始")}</b><small>{text("onboardingSettingsDesc", "联系人为空时，在首页显示新建、导入和组织整理入口")}</small></div>
                         <button class="b3-button b3-button--outline" onclick={() => void reopenOnboarding()} disabled={savingPreferences || !draft.onboardingDismissed}>
