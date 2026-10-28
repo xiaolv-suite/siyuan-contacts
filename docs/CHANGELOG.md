@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.42] — 2026-10-29
+
+重塑：首页仪表盘「会前备忘与偏好雷区大盘」（Dashboard Pre-Meeting Brief & Taboo Radar）
+
+- **全景扫雷聚合引擎**：`domain/pre-meeting-hub.ts` 与 `services/pre-meeting.ts` 跨存储聚合全量联系人的红线禁忌（`taboos`）、饮食习惯偏好（`normalPreferences`）、待办承诺（`pendingPromises`）与谈资备忘（`topics`），支持全文本多维搜索与红线/待办过滤。
+- **首页一键速查与雷区排查**：`PreMeetingHubDialog.svelte` 与 `DashboardView.svelte` 在今日行动区域提供「🛡️ 会前速查」入口，大盘呈现备忘覆盖人数、全库红线忌口总数与待办承诺，支持一键直达打开人物画像。
+
+验证：`pnpm check` 0/0、单测 996/996 绿灯、E2E UI 回归 512/512 全部通过、Release 门禁通过。
+
 ## [0.6.41] — 2026-10-29
 
 重塑：联系人自管社交偏好与交往忌口档案系统（Personal Social Preferences & Taboo Notes）

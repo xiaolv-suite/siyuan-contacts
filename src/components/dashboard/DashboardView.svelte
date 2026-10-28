@@ -42,6 +42,7 @@
     import QuickStartPanel from "./QuickStartPanel.svelte";
     import ActivityHeatmap from "./ActivityHeatmap.svelte";
     import ExchangesHubDialog from "./ExchangesHubDialog.svelte";
+    import PreMeetingHubDialog from "./PreMeetingHubDialog.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
     import { onDestroy } from "svelte";
@@ -162,6 +163,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let digestDocInfo: { docId: string; hpath: string; weekLabel: string } | null = $state(null);
     let digestError = $state("");
     let exchangesHubOpen = $state(false);
+    let preMeetingOpen = $state(false);
 
     async function handleGenerateWeeklyDigest() {
         if (!facade.createWeeklyDigestDoc || generatingDigest) return;
@@ -1418,6 +1420,15 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             🧧 {text("dashExchangesHub", "人情账本")}
                         </button>
                     {/if}
+                    {#if facade.loadAllPreMeetingDossiers}
+                        <button
+                            class="b3-button b3-button--outline lvct-dash__head-action lvct-dash__pre-meeting-btn"
+                            onclick={() => (preMeetingOpen = true)}
+                            title={text("dashPreMeetingBtnTitle", "会前速查联系人饮食忌口、茶酒偏好、敏感雷区与待办约定")}
+                        >
+                            🛡️ {text("dashPreMeetingBtn", "会前速查")}
+                        </button>
+                    {/if}
                     {#if overdueCount > 0 && !overdueRetry}
                         <button class="b3-button b3-button--outline lvct-dash__head-action" onclick={postponeOverdueToToday} disabled={alBusy}
                             aria-label={text("dashPostponeOverdue", "把 {n} 条逾期跟进顺延到今天", { n: overdueCount })}>
@@ -2037,6 +2048,20 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onClose={() => (exchangesHubOpen = false)}
             onOpenPerson={(docId) => {
                 exchangesHubOpen = false;
+                onOpenPeople({ memberDocIds: [docId] });
+            }}
+        />
+    </LvctDialog>
+{/if}
+
+{#if preMeetingOpen}
+    <LvctDialog title={text("dashPreMeetingDialogTitle", "🛡️ 会前速查与偏好雷区大盘")} wide onClose={() => (preMeetingOpen = false)}>
+        <PreMeetingHubDialog
+            {facade}
+            {i18n}
+            onClose={() => (preMeetingOpen = false)}
+            onOpenPerson={(docId) => {
+                preMeetingOpen = false;
                 onOpenPeople({ memberDocIds: [docId] });
             }}
         />

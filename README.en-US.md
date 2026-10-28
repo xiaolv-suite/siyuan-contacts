@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.41** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.41) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.42** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.42) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.41 (2026-10-29)
+## This release: v0.6.42 (2026-10-29)
+
+This release implements Pre-Meeting Check Hub & Taboo Radar on the home dashboard:
+
+- **Comprehensive Pre-Meeting Aggregation Engine (`domain/pre-meeting-hub.ts` & `services/pre-meeting.ts`)**: Aggregates all contact taboos (`taboos`), dietary and lifestyle preferences (`normalPreferences`), pending commitments (`pendingPromises`), and talking points (`topics`), supporting full-text search and dedicated taboo/promise filtering.
+- **Dashboard 1-Click Pre-Meeting Hub Dialog (`PreMeetingHubDialog.svelte` & `DashboardView.svelte`)**: Features an instant "🛡️ Pre-Meeting" trigger in the action bar; displays total coverage, critical taboos, and pending commitments at a glance, highlighting high-priority alerts with direct access to full contact profiles.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (996/996 PASS); browser UI regression passing (512/512); production build and release checks passed.
+
+## Previous release: v0.6.41 (2026-10-29)
 
 This release implements Personal Social Preferences & Taboo Notes in the person detail view:
 

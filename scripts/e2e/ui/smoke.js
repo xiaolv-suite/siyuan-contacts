@@ -9865,6 +9865,106 @@ await test("D-15 联系人详情页：自管社交偏好与交往忌口档案（
     fixture.remove();
 });
 
+await test("F-17 首页仪表盘：会前备忘与偏好雷区大盘（PreMeetingHubDialog）速查与筛选闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let loadDossiersCalled = false;
+    let openedDocId = "";
+
+    const mockDossiers = [
+        {
+            person: {
+                docId: "doc-pm-1",
+                itemId: "item-pm-1",
+                name: "雷区测试人物",
+                phone: "13800009999",
+                email: "",
+                wechat: "",
+                website: "",
+                birthday: "",
+                isLunar: false,
+                group: "战略客户",
+                tags: ["金融"],
+                relatedItemIds: [],
+            },
+            taboos: [
+                { id: "tb-1", personDocId: "doc-pm-1", category: "taboos", content: "切勿当面提及某历史并购案", isTaboo: true, createdAt: 1000, updatedAt: 1000 },
+            ],
+            normalPreferences: [
+                { id: "pr-1", personDocId: "doc-pm-1", category: "beverage", content: "喜龙井春茶", isTaboo: false, createdAt: 1000, updatedAt: 1000 },
+            ],
+            pendingPromises: [
+                { id: "pm-1", personDocId: "doc-pm-1", direction: "they_promised", title: "提供尽调材料", promisedOn: "2026-10-15", status: "pending", createdAt: 1000, updatedAt: 1000 },
+            ],
+            topics: [
+                { id: "tp-1", text: "会谈围绕出海规划展开", createdAt: 1000 },
+            ],
+            hasUrgentAlerts: true,
+        },
+    ];
+
+    const testDashboardData = {
+        people: 1,
+        relations: 0,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+    };
+
+    const facade = {
+        settings,
+        viewPreferences: DEFAULT_VIEW_PREFERENCES,
+        loadDashboard: async () => testDashboardData,
+        loadReminderDismissals: async () => [],
+        loadAllPreMeetingDossiers: async () => {
+            loadDossiersCalled = true;
+            return mockDossiers;
+        },
+        openPersonDoc() {},
+    };
+
+    mount(DashboardView, {
+        target: fixture,
+        props: {
+            facade,
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            onOpenPeople: ({ memberDocIds }) => {
+                if (memberDocIds?.[0]) openedDocId = memberDocIds[0];
+            },
+            onOpenDetail() {},
+        },
+    });
+
+    // 验证首页「会前速查」按钮
+    await until(() => fixture.textContent.includes("会前速查"), "未找到会前速查按钮");
+    const preMeetingBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("会前速查"));
+    assert(preMeetingBtn, "未找到会前速查按钮元素");
+    preMeetingBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-premeeting-hub"), "未打开会前速查与偏好雷区大盘");
+    assert(loadDossiersCalled, "未调用 loadAllPreMeetingDossiers");
+    assert(fixture.textContent.includes("全库红线忌口"), "未渲染红线忌口指标卡");
+    assert(fixture.textContent.includes("切勿当面提及某历史并购案"), "未渲染红线禁忌内容");
+    assert(fixture.textContent.includes("喜龙井春茶"), "未渲染日常偏好内容");
+    assert(fixture.textContent.includes("提供尽调材料"), "未渲染待兑现承诺内容");
+
+    // 点击「查看画像」
+    const viewBtn = Array.from(fixture.querySelectorAll(".dossier-actions button")).find((b) => b.textContent.includes("查看画像"));
+    assert(viewBtn, "未找到查看画像按钮");
+    viewBtn.click();
+    assert(openedDocId === "doc-pm-1", "点击查看画像未传递正确 docId");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

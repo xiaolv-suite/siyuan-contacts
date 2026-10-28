@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.41** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.41) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.42** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.42) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.41 · 2026-10-29）
+## 本次发布（v0.6.42 · 2026-10-29）
+
+本版本将人脉偏好、红线忌口与日常会客出门准备高效联结，推出了首页仪表盘「会前备忘与偏好雷区大盘」（Dashboard Pre-Meeting Brief & Taboo Radar）：
+
+- **会前全景扫雷聚合引擎（`domain/pre-meeting-hub.ts` & `services/pre-meeting.ts`）**：纯本地跨存储聚合全量联系人的红线禁忌（`taboos`）、日常偏好（`normalPreferences`）、待兑现承诺（`pendingPromises`）以及会面谈资（`topics`），支持全文本多维检索与红线/待办专属过滤。
+- **首页一键速查抽屉弹窗（`PreMeetingHubDialog.svelte` & `DashboardView.svelte`）**：在首页仪表盘操作区新增「🛡️ 会前速查」快捷入口；大盘弹窗清晰呈现全库覆盖人数、红线忌口总数与待办承诺，高亮提示紧急避坑点，支持一键直达打开人物详情画像。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 996/996 100% 通过；浏览器 UI 回归全绿（512/512）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.41 · 2026-10-29）
 
 本版本将交往招待与细微关怀深入产品核心，推出了联系人自管社交偏好与交往忌口档案系统（Personal Social Preferences & Taboo Notes）：
 

@@ -121,6 +121,7 @@ import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
 import { createBriefingDoc } from "./services/briefing-doc.ts";
 import { createMilestonesDoc } from "./services/milestones-doc.ts";
+import { loadAllPreMeetingDossiers } from "./services/pre-meeting.ts";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1947,6 +1948,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async createExchangesLedgerDoc(options?: { title?: string }) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return createExchangesLedgerDoc(this, this.settings, options);
+    }
+
+    /** E-50：会前速查与偏好雷区大盘 */
+    async loadAllPreMeetingDossiers() {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return loadAllPreMeetingDossiers(this, this.settings);
     }
 
     async loadExportSummary() {

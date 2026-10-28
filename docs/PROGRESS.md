@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.42 发布：首页仪表盘「会前备忘与偏好雷区大盘」（Dashboard Pre-Meeting Brief & Taboo Radar）
+
+- 本轮落地会前全景扫雷聚合引擎与首页速查抽屉弹窗：
+  1. 会前速查域与服务层：`pre-meeting-hub.ts` 纯函数跨存储整合红线雷区（`taboos`）、饮食习惯（`normalPreferences`）、待兑现承诺（`pendingPromises`）与会面谈资（`topics`），支持全字段搜索；
+  2. 首页速查弹窗闭环：`PreMeetingHubDialog.svelte` 呈现大盘指标、红线盾牌高亮卡片与查看人物画像联动；
+- 门禁验证：`pnpm check`（0/0）、单测 996/996 全部通过、三套 UI 回归 512/512 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.41 发布：联系人自管社交偏好与交往忌口档案系统（Personal Social Preferences & Taboo Notes）
 
 - 本轮落地社交偏好与交往忌口档案模型与详情页偏好卡片：
