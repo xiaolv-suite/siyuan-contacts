@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.35** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.35) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.36** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.36) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.35 · 2026-10-29）
+## 本次发布（v0.6.36 · 2026-10-29）
+
+本版本将重要日期导出能力升级至系统设置导出中心，推出了全局重要日期与纪念日日历导出面板（Global Calendar & Anniversaries Export Panel）：
+
+- **全量日历导出与安全关闭守门（`SettingsView.svelte` & `services/ical.ts`）**：在设置页「数据与字段 ➔ 导出中心」正式新增「全量纪念日与日历 iCal」导出卡片，一键聚合全量联系人的生日与重要纪念日为标准的 `.ics` 文件并触发下载；导出期间深度接入 `useCloseGuard` 挂起阻断，防止导出中断产生半成品。
+- **导出完成状态与再次导出闭环（`StatusNotice`）**：集成标准状态通知卡片，导出完成后清晰反馈条目状态与再次导出重试入口，与名册 vCard、互动事件与跟进事项导出形成完整的数据导出矩阵。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 985/985 100% 通过；浏览器 UI 回归全绿（506/506）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.35 · 2026-10-29）
 
 本版本将联系人重要纪念日与系统外部日历生态无缝打通，推出了重要日期与纪念日标准 iCalendar (.ics) 日历文件导出系统（Anniversaries & Milestones iCal Export）：
 

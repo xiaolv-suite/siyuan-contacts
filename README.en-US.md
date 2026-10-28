@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.35** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.35) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.36** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.36) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.35 (2026-10-29)
+## This release: v0.6.36 (2026-10-29)
+
+This release implements Global Calendar & Anniversaries Export Panel in Settings:
+
+- **Global iCal Export & Close Guard Integration (`SettingsView.svelte` & `services/ical.ts`)**: Integrates a dedicated "All Anniversaries & Calendar iCal" export row in the Settings export center, compiling birthdays and anniversaries across all contacts into an `.ics` file; protected under `useCloseGuard` busy states to prevent accidental window closure during export.
+- **Notice Feedback & Re-export Loop (`StatusNotice`)**: Provides instant confirmation notices upon export completion and a convenient "Export Again" action, rounding out the complete backup and export matrix alongside vCard, interactions, and follow-ups.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (506/506); production build and release checks passed.
+
+## Previous release: v0.6.35 (2026-10-29)
 
 This release implements Anniversaries & Milestones iCalendar (.ics) Standard Export:
 

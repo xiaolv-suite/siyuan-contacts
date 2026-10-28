@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.36 发布：设置导出中心新增「全量重要日期与纪念日 iCal」导出面板（Global Calendar & Anniversaries Export Panel）
+
+- 本轮落地设置导出中心全量日历导出与安全关闭守门：
+  1. 全局日历导出集成：`SettingsView.svelte` 导出中心接入 `exportAllAnniversariesIcs`，一键将全量联系人的生日与重要纪念日打包为 `.ics` 标准日历文件；
+  2. 挂起阻断与状态反馈：深度接入 `useCloseGuard` 挂起守门，支持导出成功 `StatusNotice` 提示与“再次导出”重试闭环；
+- 门禁验证：`pnpm check`（0/0）、单测 985/985 全部通过、三套 UI 回归 506/506 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.35 发布：联系人重要日期与纪念日导出为 iCalendar (.ics) 标准日历文件（Anniversaries & Milestones iCal Export）
 
 - 本轮落地 RFC 5545 iCalendar 标准序列化与详情页日历导出：

@@ -9351,6 +9351,69 @@ await test("D-10 联系人详情页：重要日期与纪念日导出 .ics 标准
     fixture.remove();
 });
 
+await test("S-11 设置页：全量重要日期与纪念日 iCalendar (.ics) 日历导出与反馈提示闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let exportAllIcsCalled = false;
+    let downloads = 0;
+    let filename = "";
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const originalClick = HTMLAnchorElement.prototype.click;
+    URL.createObjectURL = () => "blob:export-ics-test";
+    URL.revokeObjectURL = () => {};
+    HTMLAnchorElement.prototype.click = function () { downloads += 1; filename = this.download; };
+
+    try {
+        const facade = {
+            settings,
+            viewPreferences: DEFAULT_VIEW_PREFERENCES,
+            loadExportSummary: async () => ({ peopleCount: 5, interactionCount: 12 }),
+            exportAllAnniversariesIcs: async () => {
+                exportAllIcsCalled = true;
+                return {
+                    filename: "小驴人脉_全量纪念日_2026-10-29.ics",
+                    content: "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR\r\n",
+                };
+            },
+            saveViewPreferences: async (v) => v,
+            checkSettingsHealth: async () => ({ ok: true, columns: 9, missing: [], problems: [], availableColumns: [] }),
+            openHostDoc() {},
+        };
+
+        mount(SettingsView, {
+            target: fixture,
+            props: {
+                facade,
+                settings,
+                preferences: DEFAULT_VIEW_PREFERENCES,
+                onSettingsUpdated() {},
+                onPreferencesUpdated() {},
+                onBack() {},
+            },
+        });
+
+        const navTab = Array.from(fixture.querySelectorAll(".lvct-settings__nav-item")).find((n) => n.textContent.includes("数据与字段"));
+        assert(navTab, "未找到数据与字段导航标签");
+        navTab.click();
+
+        await until(() => fixture.textContent.includes("全量纪念日与日历 iCal"), "未渲染全量纪念日日历导出项");
+        const icsBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("导出 .ics"));
+        assert(icsBtn, "未找到导出 .ics 按钮");
+        icsBtn.click();
+
+        await until(() => exportAllIcsCalled, "点击导出 .ics 未调用 exportAllAnniversariesIcs");
+        await until(() => fixture.textContent.includes("全量重要日期与纪念日已导出"), "导出成功后未展示提示消息");
+        assert(downloads === 1 && filename.endsWith(".ics"), "下载未触发或扩展名错误");
+    } finally {
+        URL.createObjectURL = originalCreate;
+        URL.revokeObjectURL = originalRevoke;
+        HTMLAnchorElement.prototype.click = originalClick;
+        fixture.remove();
+    }
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

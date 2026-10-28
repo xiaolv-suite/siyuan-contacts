@@ -398,6 +398,8 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
     let exportMessage = $state("");
     let exportingRoster = $state(false);
     let rosterExportMessage = $state("");
+    let exportingIcs = $state(false);
+    let icsExportMessage = $state("");
     let exportSummary: ExportSummary | null = $state(null);
     let loadingSummary = $state(false);
     let summaryError = $state("");
@@ -530,7 +532,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
         busy: () => identityLoading || selfBusy || checking || auditBusy || orgProjectionBusy || dismissalsLoading || dismissalsBusy
             || savingPreferences || rebinding || mappingBusy || importingInteractions || previewingImport
             || scanningAnchors || rebuilding
-            || loadingSummary || exportingInteractions || exportingRoster || exportingFollowUps || exportingBundle
+            || loadingSummary || exportingInteractions || exportingRoster || exportingIcs || exportingFollowUps || exportingBundle
             || previewingBundle || importingBundle || fuPreviewing || fuImporting,
         dirty: () => JSON.stringify(draft) !== JSON.stringify(savedDraft) || importText.trim().length > 0 || selfPreview !== null
             || rebuildPreview !== null || rebindPreview !== null,
@@ -892,6 +894,28 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
             errorText = requestErrorMessage(error);
         } finally {
             exportingRoster = false;
+        }
+    }
+
+    async function runExportIcs() {
+        if (exportingIcs || !facade.exportAllAnniversariesIcs) return;
+        exportingIcs = true;
+        errorText = "";
+        icsExportMessage = "";
+        try {
+            const res = await facade.exportAllAnniversariesIcs();
+            const blob = new Blob([res.content], { type: "text/calendar;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = res.filename;
+            anchor.click();
+            URL.revokeObjectURL(url);
+            icsExportMessage = "全量重要日期与纪念日已导出为 iCalendar (.ics)";
+        } catch (error) {
+            errorText = requestErrorMessage(error);
+        } finally {
+            exportingIcs = false;
         }
     }
 
@@ -1524,6 +1548,16 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                         <p class="lvct-settings__inline-hint">名册为空：先在联系人页新建或收编联系人，再来导出。</p>
                     {/if}
                     <StatusNotice message={rosterExportMessage} onDismiss={() => (rosterExportMessage = "")} actionLabel="再次导出" onAction={runExportRoster} />
+                    <div class="lvct-settings__row">
+                        <div>
+                            <b>全量纪念日与日历 iCal</b>
+                            <small>标准 RFC 5545 iCalendar (.ics)，全量联系人生日与纪念日（公历/农历双轨），可导入 Apple Calendar、Google、Outlook</small>
+                        </div>
+                        <button class="b3-button b3-button--outline" onclick={runExportIcs} disabled={exportingIcs || !facade.exportAllAnniversariesIcs}>
+                            {exportingIcs ? "导出中…" : "导出 .ics"}
+                        </button>
+                    </div>
+                    <StatusNotice message={icsExportMessage} onDismiss={() => (icsExportMessage = "")} actionLabel="再次导出" onAction={runExportIcs} />
                     <div class="lvct-settings__row">
                         <div>
                             <b>互动事件 JSON</b>
