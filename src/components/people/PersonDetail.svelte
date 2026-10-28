@@ -76,6 +76,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import type { KinshipMemberItem } from "../../domain/kinship.ts";
     import PersonPromisesLedger from "./PersonPromisesLedger.svelte";
     import type { PersonPromiseItem } from "../../domain/promises.ts";
+    import RelationshipStageTracker from "./RelationshipStageTracker.svelte";
+    import type { PersonLifecycleRecord } from "../../domain/lifecycle-stage.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -191,6 +193,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddPromise,
         onUpdatePromise,
         onRemovePromise,
+        onLoadLifecycleStage,
+        onUpdateLifecycleStage,
         collapsedSections,
         onToggleSection,
     }: {
@@ -300,6 +304,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddPromise?: (item: import("../../domain/promises").PersonPromiseItem) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
         onUpdatePromise?: (personDocId: string, promiseId: string, patch: Partial<import("../../domain/promises").PersonPromiseItem>) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
         onRemovePromise?: (personDocId: string, promiseId: string) => Promise<import("../../domain/promises").PersonPromiseItem[]>;
+        /** E-40 交往生命周期阶段（可选） */
+        onLoadLifecycleStage?: (personDocId: string) => Promise<import("../../domain/lifecycle-stage").PersonLifecycleRecord>;
+        onUpdateLifecycleStage?: (personDocId: string, stage: import("../../domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string) => Promise<import("../../domain/lifecycle-stage").PersonLifecycleRecord>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -688,6 +695,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadPersonNoteState();
     loadKinships();
     loadPromises();
+    loadLifecycleStage();
 
     let kinships = $state<KinshipMemberItem[]>([]);
 
@@ -710,6 +718,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             if (detailAlive) promises = list;
         } catch {
             promises = [];
+        }
+    }
+
+    let lifecycleRecord = $state<PersonLifecycleRecord | null>(null);
+
+    async function loadLifecycleStage() {
+        if (!onLoadLifecycleStage || !current?.docId) return;
+        try {
+            const res = await onLoadLifecycleStage(current.docId);
+            if (detailAlive) lifecycleRecord = res;
+        } catch {
+            lifecycleRecord = null;
         }
     }
 
@@ -3009,6 +3029,17 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     </dl>
     {#if copyFieldError}
         <p class="b3-label b3-label--error ft__smaller" style="margin: 4px 0;">{copyFieldError}</p>
+    {/if}
+
+    {#if onLoadLifecycleStage && onUpdateLifecycleStage && lifecycleRecord && !current.isSelf}
+        <RelationshipStageTracker
+            record={lifecycleRecord}
+            onUpdateStage={async (nextStage, dateStr, note) => {
+                const res = await onUpdateLifecycleStage!(current.docId, nextStage, dateStr, note);
+                lifecycleRecord = res;
+            }}
+            {i18n}
+        />
     {/if}
 
     {#if onLoadKinships && onAddKinship && onRemoveKinship && !current.isSelf}

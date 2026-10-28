@@ -931,8 +931,10 @@
 			            onRemoveKinship={facade.removePersonKinship ? (docId, memberId) => facade.removePersonKinship!(docId, memberId) : undefined}
 			            onLoadPromises={facade.loadPersonPromises ? (docId) => facade.loadPersonPromises!(docId) : undefined}
 			            onAddPromise={facade.addPersonPromise ? (item) => facade.addPersonPromise!(item) : undefined}
-			            onUpdatePromise={facade.updatePersonPromise ? (docId, promiseId, patch) => facade.updatePersonPromise!(docId, promiseId, patch) : undefined}
-			            onRemovePromise={facade.removePersonPromise ? (docId, promiseId) => facade.removePersonPromise!(docId, promiseId) : undefined}
+				            onUpdatePromise={facade.updatePersonPromise ? (docId, promiseId, patch) => facade.updatePersonPromise!(docId, promiseId, patch) : undefined}
+				            onRemovePromise={facade.removePersonPromise ? (docId, promiseId) => facade.removePersonPromise!(docId, promiseId) : undefined}
+				            onLoadLifecycleStage={facade.loadPersonLifecycleStage ? (docId) => facade.loadPersonLifecycleStage!(docId) : undefined}
+				            onUpdateLifecycleStage={facade.updatePersonLifecycleStage ? (docId, stage, date, note) => facade.updatePersonLifecycleStage!(docId, stage, date, note) : undefined}
 		            {onOpenPersonDoc}
             onOpenGraphPerson={openGraphPerson}
             onOpenPeople={openPeople}

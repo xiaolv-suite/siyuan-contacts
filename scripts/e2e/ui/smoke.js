@@ -9004,6 +9004,109 @@ await test("D-07 联系人详情页：会面全景简报沉淀为思源实体文
     fixture.remove();
 });
 
+await test("D-08 联系人详情页：交往生命周期阶段（RelationshipStageTracker）步骤条渲染与推进流转", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let stageUpdateCalled = false;
+    let targetStage = "";
+
+    const person = {
+        docId: "doc-stage-ui-1",
+        itemId: "item-stage-ui-1",
+        name: "阶段测试人物",
+        phone: "13500135000",
+        email: "stage@example.com",
+        wechat: "wx_stage",
+        website: "",
+        birthday: "1992-02-02",
+        isLunar: false,
+        group: "业务伙伴",
+        tags: ["投资"],
+        relatedItemIds: [],
+        company: "某创投",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "某创投", title: "投资经理" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockRecord = {
+        personDocId: "doc-stage-ui-1",
+        currentStage: "connection",
+        history: [
+            {
+                stage: "connection",
+                changedAt: "2026-10-15",
+                note: "常态沟通开启",
+                timestamp: 1000,
+            },
+            {
+                stage: "acquaintance",
+                changedAt: "2026-09-01",
+                note: "活动相识",
+                timestamp: 500,
+            },
+        ],
+        updatedAt: 1000,
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadLifecycleStage: async () => mockRecord,
+            onUpdateLifecycleStage: async (_docId, stage, _date, _note) => {
+                stageUpdateCalled = true;
+                targetStage = stage;
+                return { ...mockRecord, currentStage: stage };
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-stage-tracker"), "未渲染交往生命周期追踪组件");
+    assert(fixture.textContent.includes("交往生命周期阶段"), "未渲染生命周期标题");
+    assert(fixture.textContent.includes("常交流"), "未渲染当前阶段标签");
+
+    // 点击「推进/变更阶段」按钮
+    const changeBtn = fixture.querySelector(".lvct-stage-tracker__header button");
+    assert(changeBtn, "未找到推进变更阶段按钮");
+    changeBtn.click();
+
+    await until(() => fixture.querySelector(".stage-edit-form"), "未展开阶段变更表单");
+
+    // 选中「共创」（collaboration）阶段
+    const collabBtn = Array.from(fixture.querySelectorAll(".stage-select-btn")).find((b) => b.textContent.includes("共创"));
+    assert(collabBtn, "未找到共创阶段选择按钮");
+    collabBtn.click();
+
+    // 点击确认变迁按钮
+    const saveBtn = Array.from(fixture.querySelectorAll(".stage-edit-form .form-actions button")).find((b) => b.textContent.includes("确认变迁"));
+    assert(saveBtn, "未找到确认变迁保存按钮");
+    saveBtn.click();
+
+    await until(() => stageUpdateCalled, "点击确认未触发 onUpdateLifecycleStage");
+    assert(targetStage === "collaboration", "目标阶段传递错误");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

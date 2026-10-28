@@ -1175,5 +1175,17 @@
   "briefingDocSuccess": "Briefing document created: ",
   "briefingDocOpen": "Open in Main Editor ↗",
   "briefingDocCreating": "Creating briefing document…",
-  "briefingDocCreateBtn": "Save as SiYuan Doc"
+  "briefingDocCreateBtn": "Save as SiYuan Doc",
+  "stageTrackerTitle": "Relationship Lifecycle Stage",
+  "stageTrackerChangeBtn": "Advance/Change Stage",
+  "stageCadenceHint": "Suggested Cadence: ",
+  "stageDays": "days",
+  "stageSelectTarget": "Target Stage",
+  "stageTransitionDate": "Date",
+  "stageTransitionNote": "Stage Note",
+  "stageNotePlaceholder": "e.g. Completed project review, starting close collaboration",
+  "stageHistoryTitle": "Stage Transition History",
+  "commonCancel": "Cancel",
+  "commonSaving": "Saving…",
+  "commonSave": "Confirm"
 }

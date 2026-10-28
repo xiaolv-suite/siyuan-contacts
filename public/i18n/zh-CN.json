@@ -1175,5 +1175,17 @@
   "briefingDocSuccess": "已生成简报实体文档：",
   "briefingDocOpen": "在主编辑器中打开 ↗",
   "briefingDocCreating": "正在生成简报文档…",
-  "briefingDocCreateBtn": "沉淀为思源文档"
+  "briefingDocCreateBtn": "沉淀为思源文档",
+  "stageTrackerTitle": "交往生命周期阶段",
+  "stageTrackerChangeBtn": "推进/变更阶段",
+  "stageCadenceHint": "建议联络节奏：",
+  "stageDays": "天",
+  "stageSelectTarget": "目标阶段",
+  "stageTransitionDate": "变迁日期",
+  "stageTransitionNote": "阶段备忘",
+  "stageNotePlaceholder": "如：完成联合立项评审，正式进入紧密合作期",
+  "stageHistoryTitle": "阶段变迁历史",
+  "commonCancel": "取消",
+  "commonSaving": "保存中…",
+  "commonSave": "确认变迁"
 }

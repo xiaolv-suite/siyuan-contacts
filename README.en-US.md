@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.31** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.31) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.32** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.32) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.31 (2026-10-29)
+## This release: v0.6.32 (2026-10-29)
+
+This release implements Relationship Lifecycle Stages & Journey Progression in the person detail view:
+
+- **5-Stage Lifecycle Domain Model & Storage Layer (`domain/lifecycle-stage.ts` & `data/lifecycle-stage.ts`)**: Standardizes the relationship continuum across initial acquaintance (`acquaintance`), regular connection (`connection`), close collaboration (`collaboration`), core ally/confidant (`close_ally`), and dormant maintenance (`dormant`), paired with actionable contact cadence recommendations; protected by Web Lock critical sections and read-after-write verification (`person-lifecycle-stage.json`).
+- **Interactive Lifecycle Stage Tracker Component (`RelationshipStageTracker.svelte`)**: Features a 5-step visual progression stepper with current stage highlight and cadence advisory box; includes an expandable stage transition form with date and notes; provides a collapsible journey timeline recording milestones from initial acquaintance to close ally.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (976/976 PASS); browser UI regression passing (502/502); production build and release checks passed.
+
+## Previous release: v0.6.31 (2026-10-29)
 
 This release implements Comprehensive Meeting Briefing & Dossier Document Generator in SiYuan:
 

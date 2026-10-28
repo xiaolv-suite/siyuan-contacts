@@ -157,6 +157,9 @@ export interface ContactsPluginFacade {
     addPersonPromise?(item: import("./domain/promises").PersonPromiseItem): Promise<import("./domain/promises").PersonPromiseItem[]>;
     updatePersonPromise?(personDocId: string, promiseId: string, patch: Partial<import("./domain/promises").PersonPromiseItem>): Promise<import("./domain/promises").PersonPromiseItem[]>;
     removePersonPromise?(personDocId: string, promiseId: string): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    /** E-40：交往生命周期阶段与历程演进（Relationship Lifecycle Stage） */
+    loadPersonLifecycleStage?(personDocId: string): Promise<import("./domain/lifecycle-stage").PersonLifecycleRecord>;
+    updatePersonLifecycleStage?(personDocId: string, stage: import("./domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string): Promise<import("./domain/lifecycle-stage").PersonLifecycleRecord>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;

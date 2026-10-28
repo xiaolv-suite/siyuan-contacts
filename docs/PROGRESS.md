@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.32 发布：联系人交往生命周期阶段与历程演进管理（Relationship Lifecycle Stages & Journey Progression）
+
+- 本轮落地五阶交往生命周期模型与阶段演进追踪组件：
+  1. 生命周期域与存储层：`lifecycle-stage.ts` 纯函数定义初相识、常交流、共合作、核心挚友与沉睡维护五阶演进模型，`person-lifecycle-stage.json` 支持 Web Lock 排他保存与读写校验；
+  2. 详情页阶段追踪组件：`RelationshipStageTracker.svelte` 呈现五阶指示步骤条、当前阶段维护建议、阶段变更表单录入与折叠历程时间线；
+- 门禁验证：`pnpm check`（0/0）、单测 976/976 全部通过、三套 UI 回归 502/502 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.31 发布：联系人会面全景准备简报实体文档沉淀与多维社交资产汇编（Comprehensive Meeting Briefing & Dossier Document Generator）
 
 - 本轮落地全要素会面准备简报模型与思源实体文档生成：

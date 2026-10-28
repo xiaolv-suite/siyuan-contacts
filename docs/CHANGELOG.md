@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.32] — 2026-10-29
+
+重塑：联系人交往生命周期阶段与历程演进管理（Relationship Lifecycle Stages & Journey Progression）
+
+- **五阶生命周期域模型与存储层**：`domain/lifecycle-stage.ts` 与 `data/lifecycle-stage.ts` 纯函数定义初相识、常交流、共合作、核心挚友与沉睡维护五阶演进模型，配套联络节奏建议，支持 Web Lock 锁保护存储。
+- **阶段演进追踪组件与变迁时间线**：`RelationshipStageTracker.svelte` 呈现五阶横向步骤指示条、当前阶段指导建议、变更表单录入与可折叠历程演进时间线。
+
+验证：`pnpm check` 0/0、单测 976/976 绿灯、E2E UI 回归 502/502 全部通过、Release 门禁通过。
+
 ## [0.6.31] — 2026-10-29
 
 重塑：联系人会面全景准备简报实体文档沉淀与多维社交资产汇编（Comprehensive Meeting Briefing & Dossier Document Generator）

@@ -112,6 +112,7 @@ import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary,
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
+import { loadPersonLifecycleStage, updatePersonLifecycleStage } from "./data/lifecycle-stage.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1773,6 +1774,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async removePersonPromise(personDocId: string, promiseId: string) {
         const token = this.lifecycleToken;
         const res = await removePersonPromise(this, personDocId, promiseId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    /** E-40：交往生命周期阶段与历程演进 */
+    async loadPersonLifecycleStage(personDocId: string) {
+        return loadPersonLifecycleStage(this, personDocId);
+    }
+
+    async updatePersonLifecycleStage(personDocId: string, stage: import("./domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string) {
+        const token = this.lifecycleToken;
+        const res = await updatePersonLifecycleStage(this, personDocId, stage, dateStr, note);
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }

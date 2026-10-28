@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.31** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.31) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.32** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.32) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.31 · 2026-10-29）
+## 本次发布（v0.6.32 · 2026-10-29）
+
+本版本将真实社交与人脉维护中的自然演进规律系统化，推出了联系人交往生命周期阶段与历程演进追踪系统（Relationship Lifecycle Stages & Journey Progression）：
+
+- **五阶生命周期域模型与存储层（`domain/lifecycle-stage.ts` & `data/lifecycle-stage.ts`）**：建立初相识（`acquaintance`）、常交流（`connection`）、共合作（`collaboration`）、核心挚友（`close_ally`）与沉睡维护（`dormant`）五阶演进模型，配套健康维护节奏建议；存储层运行于 Web Lock 锁保护与写后回读校验下（`person-lifecycle-stage.json`）。
+- **详情页生命周期阶段演进组件（`RelationshipStageTracker.svelte`）**：在联系人概览页面呈现五阶横向指示步骤条与当前阶段指导建议；支持展开变更表单录入阶段变迁日期与备忘；内置可折叠历程时间线，完整记录人脉从初识到挚友的演进轨迹。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 976/976 100% 通过；浏览器 UI 回归全绿（502/502）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.31 · 2026-10-29）
 
 本版本将人物会面简报与思源实体笔记知识库深度贯通，推出了会面全景准备简报实体文档生成与多维资产汇编系统（Comprehensive Meeting Briefing & Dossier Document Generator）：
 
