@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeBirthday, normalizePhone, parseContactText, quickFillValues, CONTACT_TEMPLATE } from "../src/domain/quick-fill.ts";
+import { normalizeBirthday, normalizePhone, parseContactText, quickFillValues, CONTACT_TEMPLATE, buildDraftFromQuickInput } from "../src/domain/quick-fill.ts";
 
 function fields(text: string) {
     return parseContactText(text);
@@ -114,4 +114,23 @@ test("CONTACT_TEMPLATE：覆盖全部契约字段的中文键（FAST-01.2）", (
     for (const key of ["姓名", "手机", "微信", "邮箱", "生日", "网站", "分组", "标签"]) {
         assert(CONTACT_TEMPLATE.includes(`${key}：`), `模板缺 ${key}`);
     }
+});
+
+test("buildDraftFromQuickInput：Cardhop 风格单行自然语言建档解析", () => {
+    const draft = buildDraftFromQuickInput("张三 13800138000 zhangsan@example.com 微信:zhangsan_wx #朋友 #科技");
+    assert.equal(draft.name, "张三");
+    assert.equal(draft.phone, "13800138000");
+    assert.equal(draft.email, "zhangsan@example.com");
+    assert.equal(draft.wechat, "zhangsan_wx");
+    assert.deepEqual(draft.tags, ["朋友", "科技"]);
+
+    // 仅纯姓名
+    const onlyName = buildDraftFromQuickInput("李四");
+    assert.equal(onlyName.name, "李四");
+    assert.equal(onlyName.phone, "");
+    assert.deepEqual(onlyName.tags, []);
+
+    // 空输入
+    const empty = buildDraftFromQuickInput("");
+    assert.equal(empty.name, "");
 });

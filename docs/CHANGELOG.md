@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.17] — 2026-10-28
+
+重塑：Cardhop 式自然语言快捷建档条（Cardhop-Style Instant Contact Input）
+
+- **自然语言单行解析**：`domain/quick-fill.ts` 纯函数支持从混排文本自动提取姓名、电话、邮箱、微信与 `#标签`。
+- **名册回车与快捷直建**：名册搜索框支持多要素智能感知、`[⚡ 快捷建档]` 与回车直接唤起预填草稿。
+
+验证：`pnpm check` 0/0、单测 944/944 绿灯、E2E UI 回归全部通过、Release 门禁通过。
+
+
 ## [0.6.16] — 2026-10-28
 
 重塑：局部社交关系网微雷达（Mini Relation Radar Topology）

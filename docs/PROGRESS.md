@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.17 发布：Cardhop 式自然语言快捷建档条（Cardhop-Style Instant Contact Input）
+
+- 本轮落地 Cardhop 式自然语言快速建档与名册回车直建：
+  1. 自然语言解析纯函数：`quick-fill.ts` 纯函数智能从混排单行文本提取姓名、电话、邮箱、微信与 `#标签`；
+  2. 搜索框快捷建档与回车直建：名册搜索框支持多要素智能感知，回车或点击快捷建档自动预填新建；
+- 门禁验证：`pnpm check`（0/0）、单测 944/944 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.16 发布：局部社交关系网微雷达（Mini Relation Radar Topology）
 
 - 本轮落地局部社交网络拓扑雷达与双模态流转：

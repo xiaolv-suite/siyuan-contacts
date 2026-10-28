@@ -33,7 +33,8 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
-    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star } from "@lucide/svelte";
+    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap } from "@lucide/svelte";
+    import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
     import { confirmDialog } from "../../libs/confirm-dialog";
@@ -211,7 +212,24 @@
     let searchInputElement: HTMLInputElement | undefined = $state();
 
     function openAddWithName(name: string) {
-        addPersonInitial = { ...emptyDraft(), name };
+        const text = name.trim();
+        if (!text) {
+            addPersonInitial = emptyDraft();
+            adding = true;
+            return;
+        }
+        const quickDraft = buildDraftFromQuickInput(text);
+        addPersonInitial = {
+            ...emptyDraft(),
+            name: quickDraft.name,
+            phone: quickDraft.phone,
+            email: quickDraft.email,
+            wechat: quickDraft.wechat,
+            website: quickDraft.website,
+            birthday: quickDraft.birthday,
+            group: quickDraft.group,
+            tags: quickDraft.tags,
+        };
         adding = true;
     }
 
@@ -1819,9 +1837,24 @@
                         } else {
                             (event.currentTarget as HTMLInputElement).blur();
                         }
+                    } else if (event.key === "Enter" && filtered.length === 0 && searchInput.trim()) {
+                        event.preventDefault();
+                        openAddWithName(searchInput.trim());
                     }
                 }}
             />
+
+            {#if searchInput.trim() && (searchInput.includes(" ") || searchInput.includes("#") || searchInput.includes("@") || /(?:\+?86)?1\d{10}/.test(searchInput))}
+                <button
+                    type="button"
+                    class="b3-button b3-button--small b3-button--primary lvct-people__quick-cardhop-btn"
+                    style="white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;"
+                    title="将当前输入按自然语言快速解析为姓名、电话、邮箱、标签等字段并新建"
+                    onclick={() => openAddWithName(searchInput.trim())}
+                >
+                    <Zap size={13} /> 快捷建档
+                </button>
+            {/if}
 
             {@render viewMenuControl()}
             {@render filterControls()}
@@ -2211,7 +2244,7 @@
                 <div class="lvct-empty__actions">
                     {#if searchText.trim()}
                         <button class="b3-button b3-button--primary" onclick={() => openAddWithName(searchText.trim())}>
-                            <UserPlus size={15} /> 以“{searchText.trim()}”新建联系人
+                            <UserPlus size={15} /> 快捷录入建档 “{searchText.trim()}”
                         </button>
                     {/if}
                     <button class="b3-button b3-button--outline" onclick={clearAllConditions}>清除所有筛选</button>

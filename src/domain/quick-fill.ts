@@ -247,3 +247,48 @@ export function parseContactText(text: string): QuickFillResult {
 export function quickFillValues(result: QuickFillResult, field: QuickFillField): string[] {
     return result.items.filter((item) => item.field === field).map((item) => item.value);
 }
+
+export interface QuickInputDraft {
+    name: string;
+    phone: string;
+    email: string;
+    wechat: string;
+    website: string;
+    birthday: string;
+    group: string;
+    tags: string[];
+}
+
+/**
+ * 从快速单行/多行输入构建联系人草稿（Cardhop 风格自然语言快捷录入）：
+ * 例："张三 13800138000 zhangsan@example.com #互联网 微信:zhangsan"
+ * 自动识别提取各项并填充草稿对象。
+ */
+export function buildDraftFromQuickInput(text: string): QuickInputDraft {
+    const clean = text.trim();
+    if (!clean) {
+        return { name: "", phone: "", email: "", wechat: "", website: "", birthday: "", group: "", tags: [] };
+    }
+    const parsed = parseContactText(clean);
+    const names = quickFillValues(parsed, "name");
+    const name = names[0] || clean.split(/\s+/)[0] || clean;
+    const phone = quickFillValues(parsed, "phone")[0] || "";
+    const email = quickFillValues(parsed, "email")[0] || "";
+    const wechat = quickFillValues(parsed, "wechat")[0] || "";
+    const website = quickFillValues(parsed, "website")[0] || "";
+    const birthday = quickFillValues(parsed, "birthday")[0] || "";
+    const group = quickFillValues(parsed, "group")[0] || "";
+    const tags = quickFillValues(parsed, "tags");
+
+    return {
+        name,
+        phone,
+        email,
+        wechat,
+        website,
+        birthday,
+        group,
+        tags,
+    };
+}
+
