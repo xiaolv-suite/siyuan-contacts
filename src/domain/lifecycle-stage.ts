@@ -225,3 +225,24 @@ export function updatePersonStage(
         },
     };
 }
+
+/** 批量为多位联系人更新交往生命周期阶段并追加演进历史 */
+export function batchUpdatePersonStages(
+    store: PersonLifecycleStore,
+    personDocIds: readonly string[],
+    nextStage: RelationshipStageKey,
+    dateStr?: string,
+    note?: string,
+): { nextStore: PersonLifecycleStore; updatedCount: number } {
+    let currentStore = store;
+    let updatedCount = 0;
+    const stageKey: RelationshipStageKey = isValidStageKey(nextStage) ? nextStage : "acquaintance";
+
+    for (const docId of personDocIds) {
+        if (!docId.trim()) continue;
+        currentStore = updatePersonStage(currentStore, docId.trim(), stageKey, dateStr, note);
+        updatedCount += 1;
+    }
+
+    return { nextStore: currentStore, updatedCount };
+}

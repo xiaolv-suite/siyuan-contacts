@@ -114,7 +114,7 @@ import { loadPersonProjects, addPersonProject, updatePersonProject, removePerson
 import { loadPersonItineraries, savePersonItinerary, removePersonItinerary, togglePersonItineraryChecklist } from "./data/itineraries.ts";
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
-import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages } from "./data/lifecycle-stage.ts";
+import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages, batchUpdatePersonLifecycleStages } from "./data/lifecycle-stage.ts";
 import { loadPersonScratchpads, savePersonScratchpad, updatePersonScratchpad, removePersonScratchpad } from "./data/person-scratchpad.ts";
 import { loadPersonSocialPreferences, addPersonSocialPreference, updatePersonSocialPreference, removePersonSocialPreference } from "./data/social-preferences.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
@@ -1836,6 +1836,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async loadAllLifecycleStages() {
         return loadAllLifecycleStages(this);
+    }
+
+    async batchUpdatePersonLifecycleStages(
+        personDocIds: readonly string[],
+        stage: import("./domain/lifecycle-stage").RelationshipStageKey,
+        dateStr?: string,
+        note?: string,
+    ) {
+        const token = this.lifecycleToken;
+        const res = await batchUpdatePersonLifecycleStages(this, personDocIds, stage, dateStr, note);
+        emitDataChanged({ topics: ["people"], docIds: [...personDocIds] }, token);
+        return res;
     }
 
     async loadAllCadences() {

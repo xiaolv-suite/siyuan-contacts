@@ -9,6 +9,7 @@ import {
     normalizeLifecycleStore,
     normalizeLifecycleStoreForWrite,
     updatePersonStage,
+    batchUpdatePersonStages,
 } from "../src/domain/lifecycle-stage.ts";
 
 test("lifecycle-stage domain: 初始化与各阶段元信息完整性", () => {
@@ -106,4 +107,26 @@ test("lifecycle-stage domain: getPersonLifecycle 与 updatePersonStage 演进变
     assert.equal(step2.history.length, 2);
     assert.equal(step2.history[0]?.stage, "collaboration");
     assert.equal(step2.history[1]?.stage, "connection");
+});
+
+test("lifecycle-stage domain: batchUpdatePersonStages 批量更新多位联系人阶段", () => {
+    let store = emptyLifecycleStore();
+    const docIds = ["doc-u1", "doc-u2", "doc-u3"];
+
+    const { nextStore, updatedCount } = batchUpdatePersonStages(
+        store,
+        docIds,
+        "collaboration",
+        "2026-10-29",
+        "AI峰会达成战略合作",
+    );
+
+    assert.equal(updatedCount, 3);
+    for (const id of docIds) {
+        const record = getPersonLifecycle(nextStore, id);
+        assert.equal(record.currentStage, "collaboration");
+        assert.equal(record.history.length, 1);
+        assert.equal(record.history[0]?.stage, "collaboration");
+        assert.equal(record.history[0]?.note, "AI峰会达成战略合作");
+    }
 });

@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.52 发布：联系人名册「批量设置交往生命周期阶段与变迁历史追踪」（Batch Lifecycle Stage & Transition History）
+
+- 本轮落地批量生命周期更新纯函数、存储原子写入与名册批量操作弹窗：
+  1. 批量生命周期域模型与存储：`lifecycle-stage.ts` 纯函数支持批量更新人物阶段并追加演进历史，`batchUpdatePersonLifecycleStages` 经单一 Web Lock 保护原子更新多人物；
+  2. 批量操作栏与调整弹窗：`PeopleView.svelte` 批量栏新增「设交往阶段」入口；`BatchLifecycleStageModal.svelte` 弹窗支持一键选择 5 个阶段与备注备忘；
+- 门禁验证：`pnpm check`（0/0）、单测 1021/1021 全部通过、三套 UI 回归 522/522 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.51 发布：联系人名册「关系温度多维交叉筛选与自定义视图持久化」（Relationship Heat Multi-Dimensional Filtering）
 
 - 本轮落地关系温度多维交叉筛选、条件胶囊与视图序列化：

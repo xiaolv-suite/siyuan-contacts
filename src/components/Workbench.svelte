@@ -723,9 +723,10 @@
                     onLoadSelfCandidates={() => facade.listContacts()}
                     onCreateOccasion={facade.createOccasion ? async (input) => { await facade.createOccasion!(input); } : undefined}
                     onExecuteMerge={facade.executeContactMerge ? (plan) => facade.executeContactMerge!(plan) : undefined}
-		                    onCreateBatchFlashcardsDoc={facade.createBatchFlashcardsDoc ? (people, options) => facade.createBatchFlashcardsDoc!(people, options) : undefined}
-		                    onLoadLifecycleStages={facade.loadAllLifecycleStages ? () => facade.loadAllLifecycleStages!() : undefined}
-		                    onLoadCadences={facade.loadAllCadences ? () => facade.loadAllCadences!() : undefined}
+			                    onCreateBatchFlashcardsDoc={facade.createBatchFlashcardsDoc ? (people, options) => facade.createBatchFlashcardsDoc!(people, options) : undefined}
+			                    onLoadLifecycleStages={facade.loadAllLifecycleStages ? () => facade.loadAllLifecycleStages!() : undefined}
+			                    onBatchUpdateLifecycleStages={facade.batchUpdatePersonLifecycleStages ? (docIds, stage, date, note) => facade.batchUpdatePersonLifecycleStages!(docIds, stage, date, note) : undefined}
+			                    onLoadCadences={facade.loadAllCadences ? () => facade.loadAllCadences!() : undefined}
 		                    onPreviewSelfIdentityChange={(personItemId) => facade.previewSelfIdentityChange(personItemId)}
                     onApplySelfIdentityChange={(preview) => facade.applySelfIdentityChange(preview)}
                     onValidateExtended={async (details) => {

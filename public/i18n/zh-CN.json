@@ -1376,5 +1376,12 @@
   "applyGreetingBtn": "填入问候",
   "copyGreetingTip": "复制问候语文本至剪贴板",
   "peopleFilterHeat": "关系温度分级",
-  "peopleFilterHeatAll": "全部温度（不限）"
+  "peopleFilterHeatAll": "全部温度（不限）",
+  "peopleBatchStage": "设交往阶段",
+  "peopleBatchStageTitle": "为已选中的联系人批量设置交往生命周期阶段",
+  "batchStageTitle": "批量设置交往生命周期阶段",
+  "batchStageIntro": "为已选择的 {n} 位联系人统一调整交往阶段，并在每个人物档案中追加演进历史记录。",
+  "batchStageNoteLabel": "阶段变迁说明备忘（可选）：",
+  "batchStageNotePlaceholder": "如：行业交流会结识后批量升温、联合项目推进等",
+  "confirmBatchStage": "确认调整阶段"
 }

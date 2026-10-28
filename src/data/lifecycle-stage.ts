@@ -10,6 +10,7 @@ import {
     normalizeLifecycleStore,
     normalizeLifecycleStoreForWrite,
     updatePersonStage,
+    batchUpdatePersonStages,
     type PersonLifecycleRecord,
     type PersonLifecycleStore,
     type RelationshipStageKey,
@@ -61,5 +62,25 @@ export async function updatePersonLifecycleStage(
         const updated = updatePersonStage(store, personDocId, stage, dateStr, note);
         await saveJsonVerified(plugin, PERSON_LIFECYCLE_STORAGE_KEY, updated);
         return getPersonLifecycle(updated, personDocId);
+    });
+}
+
+/** 批量更新多位人物的交往阶段并落盘 */
+export async function batchUpdatePersonLifecycleStages(
+    plugin: Plugin,
+    personDocIds: readonly string[],
+    stage: RelationshipStageKey,
+    dateStr?: string,
+    note?: string,
+): Promise<{ updatedCount: number; currentStages: Record<string, RelationshipStageKey> }> {
+    return withStoreLock(PERSON_LIFECYCLE_STORAGE_KEY, async () => {
+        const store = normalizeLifecycleStoreForWrite(await loadJsonStrict(plugin, PERSON_LIFECYCLE_STORAGE_KEY));
+        const { nextStore, updatedCount } = batchUpdatePersonStages(store, personDocIds, stage, dateStr, note);
+        await saveJsonVerified(plugin, PERSON_LIFECYCLE_STORAGE_KEY, nextStore);
+        const currentStages: Record<string, RelationshipStageKey> = {};
+        for (const [docId, record] of Object.entries(nextStore.records)) {
+            if (record?.currentStage) currentStages[docId] = record.currentStage;
+        }
+        return { updatedCount, currentStages };
     });
 }

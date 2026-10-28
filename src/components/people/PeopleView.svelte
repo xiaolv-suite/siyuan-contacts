@@ -46,6 +46,7 @@
     import { groupPeopleByAlphabet, getPersonNameInitial, ALPHABET_LETTERS } from "../../domain/pinyin.ts";
     import { extractNormalizedRegion } from "../../domain/region";
     import { LIFECYCLE_STAGES, type RelationshipStageKey } from "../../domain/lifecycle-stage.ts";
+    import BatchLifecycleStageModal from "./BatchLifecycleStageModal.svelte";
 
     let {
         settings,
@@ -78,6 +79,7 @@
         onExecuteMerge,
         onCreateBatchFlashcardsDoc,
         onLoadLifecycleStages,
+        onBatchUpdateLifecycleStages,
         onLoadCadences,
         onPreviewSelfIdentityChange,
         onApplySelfIdentityChange,
@@ -129,6 +131,13 @@
         onCreateBatchFlashcardsDoc?: (people: readonly ContactSummary[], options?: { deckName?: string; batchTitle?: string }) => Promise<{ docId: string; hpath: string; count: number } | null>;
         /** E-41：批量获取全量联系人交往阶段映射表（可选） */
         onLoadLifecycleStages?: () => Promise<Record<string, RelationshipStageKey>>;
+        /** E-60：批量为多位联系人更新交往生命周期阶段（可选） */
+        onBatchUpdateLifecycleStages?: (
+            personDocIds: readonly string[],
+            stage: RelationshipStageKey,
+            dateStr?: string,
+            note?: string,
+        ) => Promise<{ updatedCount: number; currentStages: Record<string, RelationshipStageKey> }>;
         /** E-59：批量获取全量联系人节奏配置表（可选） */
         onLoadCadences?: () => Promise<Record<string, import("../../domain/cadence").PersonCadence>>;
         /** B09-1：移动端工具栏收纳（常驻搜索/视图切换/新建，其余收进底部弹层） */
@@ -493,6 +502,7 @@
     let includeHidden = $state(false);
     let batchResult = $state("");
     let batchResultElement: HTMLElement | undefined = $state();
+    let batchStageModalOpen = $state(false);
     let batchOrgOpen = $state(false);
     let batchOrgBusy = $state(false);
     let batchOrgLoading = $state(false);
@@ -2247,6 +2257,16 @@
             <span>{selectionScopeLabel}；筛选外 {hiddenSelectionCount} 人</span>
             <button class="b3-button b3-button--outline" onclick={openBatch} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>批量编辑</button>
             <button class="b3-button b3-button--outline" onclick={() => void openBatchOrganization()} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>加入组织</button>
+            {#if onBatchUpdateLifecycleStages}
+                <button
+                    class="b3-button b3-button--outline lvct-people__batch-stage-btn"
+                    onclick={() => (batchStageModalOpen = true)}
+                    disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
+                    title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}
+                >
+                    {text("peopleBatchStage", "设交往阶段")}
+                </button>
+            {/if}
             {#if onOpenGraphPerson}
                 <button
                     class="b3-button b3-button--outline"
@@ -2716,6 +2736,28 @@
                 }}
                 onOpenDoc={(docId) => onOpenPersonDoc?.(docId)}
                 onClose={() => (regionExploring = false)}
+            />
+        </LvctDialog>
+    {/if}
+
+    {#if batchStageModalOpen}
+        <LvctDialog title={text("batchStageTitle", "批量设置交往生命周期阶段")} onClose={() => (batchStageModalOpen = false)}>
+            <BatchLifecycleStageModal
+                selectedPeopleCount={selectedIds.length}
+                onConfirm={async (stage, note) => {
+                    const targetPeople = selectedIds
+                        .map((itemId) => selectedPeopleCache[itemId] || people.find((p) => p.itemId === itemId))
+                        .filter((p): p is ContactSummary => Boolean(p));
+                    const docIds = targetPeople.map((p) => p.docId);
+                    if (onBatchUpdateLifecycleStages && docIds.length > 0) {
+                        const res = await onBatchUpdateLifecycleStages(docIds, stage, undefined, note);
+                        if (res?.currentStages) {
+                            lifecycleStages = { ...lifecycleStages, ...res.currentStages };
+                        }
+                    }
+                }}
+                onClose={() => (batchStageModalOpen = false)}
+                {i18n}
             />
         </LvctDialog>
     {/if}

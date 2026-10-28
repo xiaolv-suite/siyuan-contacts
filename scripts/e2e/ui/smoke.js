@@ -9215,6 +9215,81 @@ await test("B-11 联系人名册：关系温度（heatLevel）多维交叉筛选
     fixture.remove();
 });
 
+await test("B-12 联系人名册：批量操作栏扩展「批量设置交往生命周期阶段」（BatchLifecycleStageModal）与状态流转闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    kernel.handler = async (route) => {
+        if (route === "/api/av/renderAttributeView") return renderResult();
+        return null;
+    };
+
+    let batchUpdatedStage = "";
+    let batchUpdatedNote = "";
+    let batchUpdatedCount = 0;
+
+    mount(PeopleView, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            loadRecentInteractions: async () => ({}),
+            revision: 0,
+            initialSort: "name",
+            isMobile: false,
+            onOpenDetail() {},
+            onOpenPersonDoc() {},
+            onPreferencesChange: async (next) => next,
+            onBatchUpdateLifecycleStages: async (docIds, stage, _date, note) => {
+                batchUpdatedStage = stage;
+                batchUpdatedNote = note ?? "";
+                batchUpdatedCount = docIds.length;
+                return {
+                    updatedCount: docIds.length,
+                    currentStages: Object.fromEntries(docIds.map((id) => [id, stage])),
+                };
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-person-card__select"), "未找到联系人选择复选框");
+    const checkbox = fixture.querySelector(".lvct-person-card__select");
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await until(() => fixture.querySelector(".lvct-people__batchbar"), "批量操作栏未展开");
+    assert(fixture.textContent.includes("已选 1 人"), "未显示已选 1 人");
+
+    // 找到「设交往阶段」按钮
+    const batchStageBtn = fixture.querySelector(".lvct-people__batch-stage-btn");
+    assert(batchStageBtn, "批量操作栏未渲染设交往阶段按钮");
+    batchStageBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-batch-stage-modal"), "未展开批量设交往阶段弹窗");
+    assert(fixture.textContent.includes("为已选择的 1 位联系人统一调整交往阶段"), "未渲染批量调整说明文本");
+
+    // 选择共合作单选框
+    const collabRadio = fixture.querySelector('input[name="batch-lifecycle-stage"][value="collaboration"]');
+    assert(collabRadio, "未找到共合作单选框");
+    collabRadio.click();
+
+    // 填写备忘
+    const noteInput = fixture.querySelector('.note-field-wrap input');
+    assert(noteInput, "未找到阶段说明备忘输入框");
+    input(noteInput, "批量业务拓展合作推进");
+
+    // 点击确认调整
+    const confirmBtn = fixture.querySelector(".btn-confirm");
+    assert(confirmBtn, "未找到确认调整按钮");
+    confirmBtn.click();
+
+    await until(() => batchUpdatedStage === "collaboration", "未触发 onBatchUpdateLifecycleStages 或阶段值不为 collaboration");
+    assert(batchUpdatedCount === 1, "批量更新人物数量不为 1");
+    assert(batchUpdatedNote === "批量业务拓展合作推进", "批量更新备忘不匹配");
+
+    fixture.remove();
+});
+
 await test("D-09 联系人详情页：闪念速记便签板（PersonScratchpad）卡片渲染、置顶与一键转互动联动", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);

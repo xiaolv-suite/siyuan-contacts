@@ -1376,5 +1376,12 @@
   "applyGreetingBtn": "Use Greeting",
   "copyGreetingTip": "Copy greeting to clipboard",
   "peopleFilterHeat": "Relationship Heat Level",
-  "peopleFilterHeatAll": "All Temperatures (Any)"
+  "peopleFilterHeatAll": "All Temperatures (Any)",
+  "peopleBatchStage": "Set Stage",
+  "peopleBatchStageTitle": "Batch update relationship lifecycle stage for selected contacts",
+  "batchStageTitle": "Batch Update Relationship Lifecycle Stage",
+  "batchStageIntro": "Batch update lifecycle stage for the {n} selected contacts and append history entries.",
+  "batchStageNoteLabel": "Transition note (optional): ",
+  "batchStageNotePlaceholder": "e.g. Follow up after tech conference, joint project kickoff",
+  "confirmBatchStage": "Update Stages"
 }

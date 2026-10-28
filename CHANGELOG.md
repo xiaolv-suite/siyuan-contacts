@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.52] — 2026-10-29
+
+重塑：联系人名册「批量设置交往生命周期阶段与变迁历史追踪」（Batch Lifecycle Stage & Transition History）
+
+- **批量生命周期演进算法与安全存储**：`domain/lifecycle-stage.ts` 与 `data/lifecycle-stage.ts` 新增 `batchUpdatePersonStages` 与 `batchUpdatePersonLifecycleStages`；在单个 Web Lock 临界区内一次性为多位已选联系人原子更新阶段，并各自追加变迁说明历史（`history`），写后回读双重校验。
+- **名册批量操作栏与阶段调整弹窗**：`PeopleView.svelte` 批量操作栏新增「设交往阶段」按钮；`BatchLifecycleStageModal.svelte` 弹窗支持一键将多选人脉（当前页或全部筛选）批量流转至目标阶段（初相识、常交流、共合作、核心挚友、沉睡维护）并附带可选备忘，更新后即时同步名册状态。
+
+验证：`pnpm check` 0/0、单测 1021/1021 绿灯、三套 E2E UI 回归各 522/522 全部通过、Release 门禁通过。
+
 ## [0.6.51] — 2026-10-29
 
 重塑：联系人名册「关系温度多维交叉筛选与自定义视图持久化」（Relationship Heat Multi-Dimensional Filtering）
