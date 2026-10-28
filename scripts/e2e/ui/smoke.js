@@ -9689,6 +9689,88 @@ await test("D-13 联系人详情页：交往历程编年史一键复制 Markdown
     }
 });
 
+await test("D-14 联系人详情页：视觉名片海报与社交微卡片（BusinessCardModal）SVG渲染、版式切换与导出联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let downloads = 0;
+    let filename = "";
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const originalClick = HTMLAnchorElement.prototype.click;
+    URL.createObjectURL = () => "blob:export-svg-test";
+    URL.revokeObjectURL = () => {};
+    HTMLAnchorElement.prototype.click = function () { downloads += 1; filename = this.download; };
+
+    try {
+        const person = {
+            docId: "doc-card-ui-1",
+            itemId: "item-card-ui-1",
+            name: "名片测试人物",
+            phone: "13800138222",
+            email: "card@example.com",
+            wechat: "wx_card",
+            website: "",
+            birthday: "1990-09-09",
+            isLunar: false,
+            group: "投资人",
+            tags: ["半导体", "硬科技"],
+            relatedItemIds: [],
+            company: "深创投",
+            profile: {
+                readAt: Date.now(),
+                affiliations: { state: "known", value: { work: [{ orgName: "深创投", title: "副总裁" }], education: [], family: [], unspecified: [] } },
+                relationship: { state: "unknown", message: "" },
+            },
+        };
+
+        mount(PersonDetail, {
+            target: fixture,
+            props: {
+                person,
+                settings,
+                onClose() {},
+                onChanged() {},
+                onRecord: async () => {},
+                onLoadInsights: async () => emptyInsights(),
+                onOpenPersonDoc() {},
+                onNavigate() {},
+            },
+        });
+
+        // 点击详情页顶部操作栏的「生成名片海报」按钮
+        await until(() => fixture.textContent.includes("生成名片海报"), "未找到生成名片海报按钮");
+        const cardBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("生成名片海报"));
+        assert(cardBtn, "未找到生成名片海报按钮元素");
+        cardBtn.click();
+
+        // 验证名片海报弹窗与 SVG 渲染
+        await until(() => fixture.querySelector(".lvct-card-modal"), "未弹出名片海报窗口");
+        assert(fixture.querySelector(".card-svg-wrapper svg"), "未渲染名片 SVG 图像");
+        assert(fixture.textContent.includes("名片测试人物"), "SVG 内容缺失人物姓名");
+        assert(fixture.textContent.includes("深创投") && fixture.textContent.includes("副总裁"), "SVG 内容缺失组织职称");
+
+        // 切换为「立式海报」版式
+        const verticalBtn = Array.from(fixture.querySelectorAll(".segment-pill")).find((b) => b.textContent.includes("立式海报"));
+        assert(verticalBtn, "未找到立式海报版式切换按钮");
+        verticalBtn.click();
+        await until(() => fixture.querySelector(".card-svg-wrapper.vertical"), "未切换为立式海报容器");
+
+        // 点击「下载 SVG 名片」
+        const downloadBtn = Array.from(fixture.querySelectorAll(".card-modal-footer button")).find((b) => b.textContent.includes("下载 SVG 名片"));
+        assert(downloadBtn, "未找到下载 SVG 名片按钮");
+        downloadBtn.click();
+
+        assert(downloads === 1 && filename.endsWith(".svg"), "下载未触发或文件扩展名错误");
+        assert(filename.includes("名片测试人物"), "文件名未包含人物姓名");
+    } finally {
+        URL.createObjectURL = originalCreate;
+        URL.revokeObjectURL = originalRevoke;
+        HTMLAnchorElement.prototype.click = originalClick;
+        fixture.remove();
+    }
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

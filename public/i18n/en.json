@@ -1217,5 +1217,18 @@
   "milestonesDocOpenTip": "Open chronicle document in main editor",
   "milestonesCopyBtn": "Copy All",
   "milestonesCopied": "Copied All ✓",
-  "milestonesCopyTip": "Copy entire chronicle Markdown to clipboard"
+  "milestonesCopyTip": "Copy entire chronicle Markdown to clipboard",
+  "detailGenerateCard": "Business Card Poster",
+  "cardThemeLabel": "Theme: ",
+  "cardThemeBrand": "Brand Luxury",
+  "cardThemeMinimal": "Minimal White",
+  "cardThemeDark": "Obsidian Dark",
+  "cardLayoutLabel": "Layout: ",
+  "cardLayoutHorizontal": "Horizontal",
+  "cardLayoutVertical": "Vertical Poster",
+  "cardCopySvgBtn": "Copy SVG",
+  "cardCopySvgTip": "Copy standard SVG vector code",
+  "cardSvgCopied": "Copied SVG ✓",
+  "cardDownloadBtn": "Download SVG",
+  "cardDownloadTip": "Download high-resolution SVG file"
 }

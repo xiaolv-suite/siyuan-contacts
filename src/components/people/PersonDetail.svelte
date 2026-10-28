@@ -35,6 +35,7 @@
         Layers,
         Flag,
         Clock,
+        Image,
     } from "@lucide/svelte";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
@@ -79,11 +80,12 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import PersonPromisesLedger from "./PersonPromisesLedger.svelte";
     import type { PersonPromiseItem } from "../../domain/promises.ts";
     import RelationshipStageTracker from "./RelationshipStageTracker.svelte";
-    import type { PersonLifecycleRecord } from "../../domain/lifecycle-stage.ts";
+    import { getStageMeta, type PersonLifecycleRecord } from "../../domain/lifecycle-stage.ts";
     import PersonScratchpad from "./PersonScratchpad.svelte";
     import type { PersonScratchpadItem } from "../../domain/person-scratchpad.ts";
     import PersonMilestonesTimeline from "./PersonMilestonesTimeline.svelte";
     import { extractMilestoneEvents } from "../../domain/timeline-milestones.ts";
+    import BusinessCardModal from "./BusinessCardModal.svelte";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -1547,6 +1549,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let briefingDocBusy = $state(false);
     let briefingDocCreated = $state<{ docId: string; hpath: string } | null>(null);
     let briefingDocError = $state("");
+    let cardModalOpen = $state(false);
     let siyuanRefCopied = $state(false);
     let siyuanRefTimer: ReturnType<typeof setTimeout> | null = null;
     let siyuanUriCopied = $state(false);
@@ -2769,6 +2772,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             title="导出为标准手机通讯录 .vcf 名片文件（可直接通过微信/隔空投送发给手机导入）"
         >
             <ContactRound size={13} /> 导出名片 (.vcf)
+        </button>
+        <button
+            type="button"
+            class="b3-button b3-button--outline b3-button--small lvct-detail__business-card-btn"
+            onclick={() => (cardModalOpen = true)}
+            title="生成高保真视觉名片海报与社交微卡片（支持复制 SVG 或下载矢量图）"
+        >
+            <Image size={13} /> {text("detailGenerateCard", "生成名片海报")}
         </button>
         <button
             type="button"
@@ -4912,5 +4923,20 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             </div>
             <p class="ft__smaller ft__on-surface">预览与下载内容一致；仅含本地记录的事实，交往次数不代表关系亲疏。</p>
         </div>
+    </LvctDialog>
+{/if}
+
+{#if cardModalOpen}
+    <LvctDialog title={`视觉名片海报 · ${current.name}`} wide onClose={() => (cardModalOpen = false)}>
+        <BusinessCardModal
+            person={current}
+            orgAndTitle={profileText(current.profile, "work")}
+            region={personRegion.city ? `${personRegion.province ? `${personRegion.province} ` : ''}${personRegion.city}` : personRegion.province || ""}
+            socialScore={socialRadarAssessment?.overallScore}
+            tierLabel={socialRadarAssessment?.tierLabel}
+            stageLabel={lifecycleRecord ? getStageMeta(lifecycleRecord.currentStage).shortLabel : undefined}
+            onClose={() => (cardModalOpen = false)}
+            {i18n}
+        />
     </LvctDialog>
 {/if}

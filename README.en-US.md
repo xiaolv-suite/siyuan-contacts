@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.39** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.39) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.40** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.40) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.39 (2026-10-29)
+## This release: v0.6.40 (2026-10-29)
+
+This release implements Persona Visual Business Card & Social Poster Generator in pure SVG:
+
+- **Pure SVG High-Fidelity Card Engine (`domain/business-card.ts`)**: Pure function with zero external dependencies; calculates rounded card containers, gradient initial-letter avatar badge, organization & title, contact coordinates, tags, social capital tier badges, and lifecycle stage chips across 3 themes (brand luxury, minimal white, obsidian dark) and dual orientations (classic horizontal 600x380 and vertical poster 440x600).
+- **Detail View Card Modal & Export Actions (`BusinessCardModal.svelte` & `PersonDetail.svelte`)**: Features an instant "Business Card Poster" trigger in the top action bar; supports live theme and orientation toggling, with one-click "Copy SVG Code" and "Download SVG Card" for seamless sharing and embedding.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (991/991 PASS); browser UI regression passing (510/510); production build and release checks passed.
+
+## Previous release: v0.6.39 (2026-10-29)
 
 This release implements Copy Milestones Chronicle Markdown in the person detail view:
 

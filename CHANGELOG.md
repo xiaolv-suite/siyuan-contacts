@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.40] — 2026-10-29
+
+重塑：人物视觉名片海报纯 SVG 渲染与多版式导出系统（Persona Visual Business Card & Social Poster Generator）
+
+- **纯 SVG 矢量名片排版模型**：`domain/business-card.ts` 纯函数计算首字渐变头像徽标、姓名职称、联系方式、标签组、社交资产星级与阶段微标，适配品牌轻奢、极简雅白与曜石极夜三套主题，并支持横版（600x380）与立式海报（440x600）双重版式。
+- **详情页名片海报弹窗与即时流转**：`BusinessCardModal.svelte` 与 `PersonDetail.svelte` 支持实时切换版式风格，提供一键「复制 SVG 代码」与一键「下载 SVG 名片」，满足社交引荐与笔记内嵌全场景。
+
+验证：`pnpm check` 0/0、单测 991/991 绿灯、E2E UI 回归 510/510 全部通过、Release 门禁通过。
+
 ## [0.6.39] — 2026-10-29
 
 重塑：人脉交往历程编年史一键复制 Markdown 全文（Copy Milestones Chronicle Markdown）

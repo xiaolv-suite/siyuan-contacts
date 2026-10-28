@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.39** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.39) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.40** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.40) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.39 · 2026-10-29）
+## 本次发布（v0.6.40 · 2026-10-29）
+
+本版本将静态文本资料与人脉分享体验提升为高保真视觉名片与社交海报，推出了人物视觉名片海报纯 SVG 渲染与导出系统（Persona Visual Business Card & Social Poster Generator）：
+
+- **纯 SVG 高保真名片排版引擎（`domain/business-card.ts`）**：纯函数零外部依赖，严格计算圆角容器、姓名首字渐变头像徽标、机构职称、联系方式、标签组、社交资产星级评级（`tierLabel`）与生命周期阶段微标，自适应品牌轻奢（`brand`）、极简雅白（`minimal`）与曜石极夜（`dark`）三套主题，并支持经典横版（600x380）与立式海报（440x600）双重版式。
+- **详情页名片海报弹窗与导出联动（`BusinessCardModal.svelte` & `PersonDetail.svelte`）**：在详情页顶部操作栏新增「生成名片海报」快捷入口；弹窗内实时响应版式与风格切换，支持一键「复制 SVG 代码」与一键「下载 SVG 名片」，满足名片分享、社交引荐与笔记内嵌全场景。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 991/991 100% 通过；浏览器 UI 回归全绿（510/510）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.39 · 2026-10-29）
 
 本版本将编年史长卷的流转与分享体验进一步完善，推出了人脉交往历程编年史一键复制 Markdown 全文功能（Copy Milestones Chronicle Markdown）：
 

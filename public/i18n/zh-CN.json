@@ -1217,5 +1217,18 @@
   "milestonesDocOpenTip": "在主编辑器中打开编年史文档",
   "milestonesCopyBtn": "复制全文",
   "milestonesCopied": "已复制全文 ✓",
-  "milestonesCopyTip": "将交往编年史 Markdown 全文复制到剪贴板"
+  "milestonesCopyTip": "将交往编年史 Markdown 全文复制到剪贴板",
+  "detailGenerateCard": "生成名片海报",
+  "cardThemeLabel": "主题风格：",
+  "cardThemeBrand": "品牌轻奢",
+  "cardThemeMinimal": "极简雅白",
+  "cardThemeDark": "曜石极夜",
+  "cardLayoutLabel": "名片版式：",
+  "cardLayoutHorizontal": "经典横版",
+  "cardLayoutVertical": "立式海报",
+  "cardCopySvgBtn": "复制 SVG 代码",
+  "cardCopySvgTip": "复制标准 SVG 矢量代码",
+  "cardSvgCopied": "已复制 SVG 代码 ✓",
+  "cardDownloadBtn": "下载 SVG 名片",
+  "cardDownloadTip": "下载高保真 SVG 矢量图文件"
 }
