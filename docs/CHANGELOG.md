@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.20] — 2026-10-28
+
+重塑：仪表盘「历史上的今天」时光记忆胶囊与社交破冰助手（On This Day Capsule & Icebreaker）
+
+- **全库时光记忆挖掘引擎**：`domain/date-review.ts` 纯函数 `findGlobalOnThisDay` 提取往年今天互动交集，排除墓碑与当年，年数层次分明。
+- **首页时光胶囊卡片**：展示往昔岁月徽章与当事回忆备注，提供「复制回忆」破冰问候文本与「问候破冰」一键直达。
+
+验证：`pnpm check` 0/0、单测 949/949 绿灯、E2E UI 回归 490/490 全部通过、Release 门禁通过。
+
+
 ## [0.6.19] — 2026-10-28
 
 重塑：互动沟通文本事实画像智能提炼（Fact & Quote Extraction Engine）

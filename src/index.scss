@@ -10412,3 +10412,138 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         }
     }
 }
+
+/* 历史上的今天 · 时光记忆胶囊 */
+.lvct-dash__on-this-day {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+    border-radius: 8px;
+    background: var(--b3-theme-background-light, var(--b3-theme-surface));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    &-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    &-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+
+        b {
+            font-weight: 600;
+        }
+    }
+
+    &-icon {
+        font-size: 15px;
+    }
+
+    &-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .lvct-dash__memory-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: var(--b3-theme-surface);
+        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+
+        &:hover {
+            border-color: var(--b3-theme-primary, #4285f4);
+        }
+    }
+
+    .lvct-dash__memory-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 58px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        background: var(--b3-theme-primary-light, rgba(66, 133, 244, 0.1));
+        color: var(--b3-theme-primary, #4285f4);
+        flex-shrink: 0;
+
+        .lvct-dash__memory-years {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .lvct-dash__memory-date {
+            font-size: 9px;
+            opacity: 0.85;
+            line-height: 1.2;
+        }
+    }
+
+    .lvct-dash__memory-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .lvct-dash__memory-person {
+        display: flex;
+        align-items: center;
+    }
+
+    .lvct-dash__memory-name {
+        padding: 0;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--b3-theme-primary, #4285f4);
+            text-decoration: underline;
+        }
+    }
+
+    .lvct-dash__memory-note {
+        margin: 0;
+        font-size: 12px;
+        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        opacity: 0.88;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .lvct-dash__memory-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .lvct-dash__memory-copy-btn {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    .lvct-dash__memory-icebreak-btn {
+        font-size: 11px;
+        padding: 2px 8px;
+        color: var(--b3-theme-primary, #4285f4);
+    }
+}
+

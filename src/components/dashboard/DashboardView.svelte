@@ -17,6 +17,10 @@
         MapPin,
         Calendar,
         Pin,
+        User,
+        Copy,
+        Check,
+        MessageSquare,
     } from "@lucide/svelte";
     import { pickActions, pickSummaryCounts } from "../../services/dashboard";
     import { newFollowUpRequestId } from "../../services/followups";
@@ -44,6 +48,8 @@ import type { RelationshipHeatLevel } from "../../domain/cadence";
 import RegionExplorerDialog from "../people/RegionExplorerDialog.svelte";
 import { filterPeopleByRegion } from "../../domain/region";
 import { toLocalDateKey } from "../../domain/interactions";
+import { formatMemoryIcebreakerText, type OnThisDayMemory } from "../../domain/date-review.ts";
+import { copyPlainText } from "../../shared/clipboard.ts";
 
     let {
         facade,
@@ -112,7 +118,24 @@ import { toLocalDateKey } from "../../domain/interactions";
     let refreshVersion = 0;
     // 页面切换时丢弃尚未完成的仪表盘请求，避免旧视图的迟到结果回填新实例。
     let alive = true;
-    onDestroy(() => { alive = false; refreshVersion += 1; });
+    let copiedMemoryId = $state("");
+    let copiedMemoryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function handleCopyMemory(memory: OnThisDayMemory): Promise<void> {
+        const textToCopy = formatMemoryIcebreakerText(memory);
+        await copyPlainText(textToCopy);
+        copiedMemoryId = memory.eventId;
+        if (copiedMemoryTimer) clearTimeout(copiedMemoryTimer);
+        copiedMemoryTimer = setTimeout(() => {
+            copiedMemoryId = "";
+        }, 2000);
+    }
+
+    onDestroy(() => {
+        alive = false;
+        refreshVersion += 1;
+        if (copiedMemoryTimer) clearTimeout(copiedMemoryTimer);
+    });
     // 待办跟进（F05）
     let fuSnoozeForId = $state("");
     let fuCustomDate = $state("");
@@ -1060,6 +1083,76 @@ import { toLocalDateKey } from "../../domain/interactions";
                 {#if data.staleTotal > data.neverContacted}<span class="lvct-dash__stat-ft">{text("dashStatNeverFt", "另有久未联系 {n} 人", { n: data.staleTotal })}</span>{/if}
             </button>
         </div>
+
+        {#if data.onThisDayMemories && data.onThisDayMemories.length > 0}
+            <div class="lvct-home__card lvct-dash__on-this-day" role="region" aria-label="历史上的今天时光胶囊">
+                <div class="lvct-dash__on-this-day-head">
+                    <div class="lvct-dash__on-this-day-title">
+                        <span class="lvct-dash__on-this-day-icon" aria-hidden="true">⏳</span>
+                        <b>{text("dashOnThisDayTitle", "历史上的今天 · 时光记忆")}</b>
+                        <span class="ft__smaller ft__on-surface">{text("dashOnThisDaySub", "（发现往昔交集 {n} 条，温润破冰）", { n: data.onThisDayMemories.length })}</span>
+                    </div>
+                </div>
+                <div class="lvct-dash__on-this-day-list">
+                    {#each data.onThisDayMemories as memory (memory.eventId)}
+                        <div class="lvct-dash__memory-item">
+                            <div class="lvct-dash__memory-badge">
+                                <span class="lvct-dash__memory-years">{memory.yearsAgo} 年前</span>
+                                <small class="lvct-dash__memory-date">{memory.localDate}</small>
+                            </div>
+                            <div class="lvct-dash__memory-main">
+                                <div class="lvct-dash__memory-person">
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-dash__memory-name"
+                                        onclick={() => {
+                                            if (memory.person) onOpenDetail(memory.person);
+                                            else onOpenPeople({ memberDocIds: [memory.personDocId] });
+                                        }}
+                                        title={text("dashViewPersonDetail", "点击查看联系人画像")}
+                                    >
+                                        <User size={13} class="lvct-icon-inline" /> {memory.personName}
+                                    </button>
+                                </div>
+                                {#if memory.note}
+                                    <p class="lvct-dash__memory-note" title={memory.note}>
+                                        💬 “{memory.note}”
+                                    </p>
+                                {/if}
+                            </div>
+                            <div class="lvct-dash__memory-actions">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--small b3-button--outline lvct-dash__memory-copy-btn"
+                                    onclick={() => void handleCopyMemory(memory)}
+                                    title={text("dashCopyIcebreakerTitle", "复制带往昔回忆的破冰语录")}
+                                >
+                                    {#if copiedMemoryId === memory.eventId}
+                                        <Check size={12} class="lvct-icon-inline" /> {text("copied", "已复制")}
+                                    {:else}
+                                        <Copy size={12} class="lvct-icon-inline" /> {text("dashCopyMemory", "复制回忆")}
+                                    {/if}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--small b3-button--text lvct-dash__memory-icebreak-btn"
+                                    onclick={() => {
+                                        if (memory.person) {
+                                            onOpenDetail(memory.person, "activity");
+                                        } else {
+                                            onOpenPeople({ memberDocIds: [memory.personDocId] });
+                                        }
+                                    }}
+                                    title={text("dashIcebreakerHint", "直达联系人互动时间流，记录新的问候破冰")}
+                                >
+                                    <MessageSquare size={12} class="lvct-icon-inline" /> {text("dashIcebreakerAction", "问候破冰 ›")}
+                                </button>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        {/if}
 
         {#if data.heatDistribution && data.heatDistribution.total > 0}
             <!-- 人脉洞察全景控制台：三栏对称紧凑排版，视觉与上方指标卡完全统一 -->

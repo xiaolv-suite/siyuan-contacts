@@ -33,6 +33,8 @@ import type { RelationshipHealthDistribution } from "../domain/cadence.ts";
 import { groupContactsByRegion } from "../domain/region.ts";
 import { computeMonthlyInteractionTrend } from "../domain/interactions.ts";
 import type { MonthlyInteractionTrend } from "../domain/interactions.ts";
+import { findGlobalOnThisDay } from "../domain/date-review.ts";
+import type { OnThisDayMemory } from "../domain/date-review.ts";
 
 export interface DashboardOptions {
     /** 多少天未互动算"久未联系" */
@@ -80,6 +82,8 @@ export interface DashboardData {
     topRegions?: { city: string; province?: string; count: number; people: import("../domain/person.ts").ContactSummary[] }[];
     /** 近 6 个月互动频次与人脉活跃走势 */
     monthlyTrend?: MonthlyInteractionTrend;
+    /** 历史上的今天时光记忆胶囊（往年今天有互动的联系人，按年数升序） */
+    onThisDayMemories?: readonly OnThisDayMemory[];
     /** 名册快照（已排除本人），供仪表盘快速筛选与出差规划联动 */
     allPeople?: import("../domain/person.ts").ContactSummary[];
     /**
@@ -251,6 +255,7 @@ export async function loadDashboard(
     const regionGroups = groupContactsByRegion(people);
     const topRegions = regionGroups.slice(0, 6);
     const monthlyTrend = computeMonthlyInteractionTrend(store.events, 6, now);
+    const onThisDayMemories = findGlobalOnThisDay(store.events, people, today, 10, store.tombstones);
 
     return {
         people: people.length,
@@ -267,6 +272,7 @@ export async function loadDashboard(
         heatDistribution,
         topRegions,
         monthlyTrend,
+        onThisDayMemories,
         allPeople: people,
         ...(ordinaryScopeUnknown ? { ordinaryScopeUnknown: true } : {}),
         ...(identity && !ordinaryScopeUnknown ? { excludedSelfDocId: identity.selfDocId } : {}),

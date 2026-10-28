@@ -6,6 +6,8 @@
  */
 
 import { isValidDateKey } from "./date-key.ts";
+import type { ContactSummary } from "./person.ts";
+import type { InteractionEvent } from "./interactions.ts";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -66,4 +68,85 @@ export function addReviewDays(dateKey: string, days: number): string {
     const date = new Date(year, month - 1, day + days);
     const pad = (value: number) => String(value).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export interface OnThisDayMemory {
+    readonly eventId: string;
+    readonly personDocId: string;
+    readonly personName: string;
+    readonly localDate: string; // "YYYY-MM-DD"
+    readonly yearsAgo: number;  // 1, 2, 3...
+    readonly source: string;
+    readonly note?: string;
+    readonly person?: ContactSummary;
+}
+
+/**
+ * 全库「历史上的今天」时光胶囊提取引擎。
+ * 纯函数：零外部依赖，严格比对月日与更早年份。
+ * 规则：
+ * 1. 过滤掉 tombstones 集合中的已删除互动；
+ * 2. localDate 必须合法且有效，月日（MM-DD）与 today 严格相同；
+ * 3. localDate 年份必须早于 today 年份（排除今天本年产生的记录）；
+ * 4. 匹配对应人物（people），若找不到名字则回退为未知；
+ * 5. 按年份由近及远（yearsAgo 升序，即 1年前 > 2年前 > 3年前）排列，同年按日期/事件ID稳定排序；
+ * 6. 可选限制最大返回条数（默认 10）。
+ */
+export function findGlobalOnThisDay(
+    events: readonly InteractionEvent[],
+    people: readonly ContactSummary[],
+    today: string,
+    limit: number = 10,
+    tombstones?: readonly string[],
+): OnThisDayMemory[] {
+    if (!isValidReviewDate(today)) return [];
+    const todayYear = parseInt(today.slice(0, 4), 10);
+    const todayMonthDay = today.slice(5);
+
+    const tombstoneSet = tombstones && tombstones.length > 0 ? new Set(tombstones) : null;
+    const peopleByDocId = new Map(people.map((p) => [p.docId, p]));
+    const candidates: OnThisDayMemory[] = [];
+
+    for (const event of events) {
+        if (tombstoneSet && tombstoneSet.has(event.id)) continue;
+        if (!isValidReviewDate(event.localDate)) continue;
+        if (event.localDate.slice(5) !== todayMonthDay) continue;
+        const eventYear = parseInt(event.localDate.slice(0, 4), 10);
+        if (eventYear >= todayYear) continue;
+
+        const yearsAgo = todayYear - eventYear;
+        const person = peopleByDocId.get(event.personDocId);
+        const personName = person?.name?.trim() || "未命名联系人";
+
+        candidates.push({
+            eventId: event.id,
+            personDocId: event.personDocId,
+            personName,
+            localDate: event.localDate,
+            yearsAgo,
+            source: event.source,
+            ...(event.note ? { note: event.note } : {}),
+            ...(person ? { person } : {}),
+        });
+    }
+
+    // 排序：先按距今年数升序（1年前在前），同年按 localDate 降序、eventId 稳定排序
+    candidates.sort((a, b) => {
+        if (a.yearsAgo !== b.yearsAgo) return a.yearsAgo - b.yearsAgo;
+        if (a.localDate !== b.localDate) return b.localDate.localeCompare(a.localDate);
+        return a.eventId.localeCompare(b.eventId);
+    });
+
+    return candidates.slice(0, Math.max(1, limit));
+}
+
+/**
+ * 组装时光记忆破冰文本（用于一键复制发送给微信好友/通讯软件）。
+ */
+export function formatMemoryIcebreakerText(memory: OnThisDayMemory): string {
+    const noteTrimmed = memory.note?.trim();
+    if (noteTrimmed) {
+        return `刚好 ${memory.yearsAgo} 年前的今天（${memory.localDate}），我们曾交流：${noteTrimmed}`;
+    }
+    return `刚好 ${memory.yearsAgo} 年前的今天（${memory.localDate}），曾与你有过互动交集，特此问候！`;
 }

@@ -7996,6 +7996,82 @@ await test("F-07 首页行动清单：跟进与纪念日支持【顺延】与【
     await until(() => dismissedReminder !== null && dismissedReminder.docId === "20261019000000-doc0002" && dismissedReminder.until === "", "点击不再提醒未派发永久暂缓");
 });
 
+await test("F-10 首页仪表盘：历史上的今天时光记忆胶囊（On This Day Capsule）卡片渲染、往年往事回顾与破冰交互", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let openedDetailTab = null;
+    let openedPerson = null;
+
+    const mockMemory = {
+        eventId: "evt-mem-1",
+        personDocId: "doc-mem-1",
+        personName: "王总",
+        localDate: "2025-10-28",
+        yearsAgo: 1,
+        source: "manual",
+        note: "在科技园喝咖啡洽谈战略合作",
+        person: {
+            docId: "doc-mem-1",
+            itemId: "item-mem-1",
+            name: "王总",
+            phone: "13900000001",
+            relatedItemIds: [],
+        },
+    };
+
+    const testDashboardData = {
+        people: 1,
+        relations: 0,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+        onThisDayMemories: [mockMemory],
+    };
+
+    mounted = mount(DashboardView, {
+        target: fixture,
+        props: {
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            facade: {
+                loadDashboard: async () => testDashboardData,
+                loadReminderDismissals: async () => [],
+            },
+            onOpenDetail(person, tab) {
+                openedPerson = person;
+                openedDetailTab = tab;
+            },
+            onOpenPeople() {},
+            onOpenGraph() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-dash__on-this-day"), "时光记忆胶囊未渲染");
+    assert(fixture.textContent.includes("历史上的今天 · 时光记忆"), "未包含时光记忆标题");
+    assert(fixture.textContent.includes("1 年前"), "未显示年数徽章");
+    assert(fixture.textContent.includes("王总"), "未显示联系人姓名");
+    assert(fixture.textContent.includes("在科技园喝咖啡洽谈战略合作"), "未渲染回忆备注文本");
+
+    // 点击问候破冰
+    const icebreakBtn = fixture.querySelector(".lvct-dash__memory-icebreak-btn");
+    assert(icebreakBtn, "未找到问候破冰按钮");
+    icebreakBtn.click();
+    await until(() => openedPerson && openedPerson.name === "王总" && openedDetailTab === "activity", "点击破冰未直达 activity tab");
+
+    // 点击复制回忆
+    const copyBtn = fixture.querySelector(".lvct-dash__memory-copy-btn");
+    assert(copyBtn, "未找到复制回忆按钮");
+    copyBtn.click();
+    await until(() => copyBtn.textContent.includes("已复制"), "点击复制未展示已复制反馈");
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.19** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.19) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.20** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.20) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.19 (2026-10-28)
+## This release: v0.6.20 (2026-10-28)
+
+This release implements the "On This Day" Memory Capsule & Icebreaker on the dashboard:
+
+- **Global "On This Day" Memory Extraction Engine (`findGlobalOnThisDay`)**: Pure function matching interactions from previous years on the same calendar day, filtering out tombstones and same-year events, ordered by years elapsed.
+- **Dashboard Memory Capsule Card (`DashboardView`)**: Renders an elegant capsule card on days with past memories, showing the years badge, past note, one-click icebreaker quote copying (`[📋 Copy Memory]`), and instant navigation to the interaction timeline (`[💬 Say Hello ›]`).
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (949/949 PASS); browser UI regression passing (490/490); production build and release checks passed.
+
+## Previous release: v0.6.19 (2026-10-28)
 
 This release implements the Fact & Quote Extraction Engine for unstructured interaction notes:
 
