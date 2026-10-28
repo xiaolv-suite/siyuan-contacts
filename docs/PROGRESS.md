@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.49 发布：联系人详情页「交往互惠与双向平衡透视」（Mutual Reciprocity & Exchange Balance Audit）
+
+- 本轮落地双向互惠平衡评估模型与详情页天平卡片：
+  1. 互惠评估域模型：`reciprocity.ts` 纯函数分析双方信诺履约比例、人情往来金额差额与互动频次，计算互惠指数（0-100）并裁决平衡态势；
+  2. 详情页互惠卡片：`PersonReciprocityCard.svelte` 呈现双向天平比例条、信诺履约率、净差额与行动建议，在 `PersonDetail.svelte` 中紧凑沉淀；
+- 门禁验证：`pnpm check`（0/0）、单测 1017/1017 全部通过、三套 UI 回归 519/519 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.48 发布：首页仪表盘「交往生命周期漏斗与转化看板」（Relationship Lifecycle Funnel & Stage Progression Console）
 
 - 本轮落地生命周期漏斗纯函数算法与首页漏斗卡片组件：

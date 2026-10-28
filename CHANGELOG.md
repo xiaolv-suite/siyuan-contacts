@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.49] — 2026-10-29
+
+重塑：联系人详情页「交往互惠与双向平衡透视」（Mutual Reciprocity & Exchange Balance Audit）
+
+- **双向互惠平衡评估模型**：`domain/reciprocity.ts` 纯函数综合双向信诺（我方承诺 vs 对方承诺）履约率、人情礼尚往来收支差额（应收/付出 vs 应付/受惠）与交往频次，测算 0–100 综合互惠指数；智能裁决均平互利（`balanced`）、付出偏多（`giver_heavy`）、受惠偏多（`receiver_heavy`）与初识浅交（`nascent`）四大平衡态势，输出针对性维系建议。
+- **详情页互惠天平卡片与对账透视**：`PersonReciprocityCard.svelte` 与 `PersonDetail.svelte` 在概览页紧凑呈现双向付出天平比例条与三栏指标透视（双向信诺履约、人情往来净差额、互惠行动建议），直观辅助用户审视关系的长期健康度与对等性。
+
+验证：`pnpm check` 0/0、单测 1017/1017 绿灯、三套 E2E UI 回归各 519/519 全部通过、Release 门禁通过。
+
 ## [0.6.48] — 2026-10-29
 
 重塑：首页仪表盘「交往生命周期漏斗与转化看板」（Relationship Lifecycle Funnel & Stage Progression Console）

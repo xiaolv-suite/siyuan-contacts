@@ -10552,6 +10552,49 @@ await test("F-19 首页仪表盘：人脉交往生命周期漏斗（LifecycleFun
     fixture.remove();
 });
 
+await test("D-19 联系人详情页：交往互惠与双向平衡透视（PersonReciprocityCard）渲染与对账闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const mockPromises = [
+        { id: "prm-1", personDocId: person.docId, direction: "i_promised", title: "分享AI研报", status: "fulfilled", createdAt: 1000, updatedAt: 1000 },
+        { id: "prm-2", personDocId: person.docId, direction: "they_promised", title: "引荐技术总监", status: "fulfilled", createdAt: 1000, updatedAt: 1000 },
+    ];
+
+    const mockExchanges = [
+        { id: "ex-1", personDocId: person.docId, kind: "money", direction: "receivable", amount: 500, status: "settled", currency: "CNY", occurredOn: "2026-10-01", dueOn: "2026-10-05", settledOn: "2026-10-05", description: "项目评审费", note: "", createdAt: 1000, updatedAt: 1000 },
+        { id: "ex-2", personDocId: person.docId, kind: "money", direction: "payable", amount: 500, status: "settled", currency: "CNY", occurredOn: "2026-10-02", dueOn: "2026-10-06", settledOn: "2026-10-06", description: "回请商务餐叙", note: "", createdAt: 1000, updatedAt: 1000 },
+    ];
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadPromises: async () => mockPromises,
+            onLoadExchanges: async () => mockExchanges,
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-reciprocity-card"), "未渲染交往互惠与双向平衡卡片");
+    assert(fixture.textContent.includes("交往互惠与双向平衡"), "未渲染互惠卡片标题");
+    assert(fixture.textContent.includes("互利共赢 · 往来均衡"), "未渲染平衡状态标签");
+    assert(fixture.textContent.includes("互惠指数 100 分"), "未渲染互惠指数评分");
+    assert(fixture.textContent.includes("我方付出与承诺 (50%)"), "未渲染我方付出占比");
+    assert(fixture.textContent.includes("对方关照与信诺 (50%)"), "未渲染对方关照占比");
+    assert(fixture.textContent.includes("我方履约："), "未渲染我方履约行");
+    assert(fixture.textContent.includes("对方履约："), "未渲染对方履约行");
+    assert(fixture.textContent.includes("¥0 均衡"), "未渲染净往来差额均衡指示");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

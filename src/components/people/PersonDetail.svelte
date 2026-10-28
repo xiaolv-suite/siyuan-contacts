@@ -90,6 +90,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import type { PersonSocialPreferenceItem } from "../../domain/social-preferences.ts";
     import PersonItinerary from "./PersonItinerary.svelte";
     import type { PersonItineraryItem } from "../../domain/itineraries.ts";
+    import PersonReciprocityCard from "./PersonReciprocityCard.svelte";
+    import { computeReciprocityAudit } from "../../domain/reciprocity.ts";
+    import type { ExchangeRecord } from "../../domain/exchanges.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -756,6 +759,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadScratchpads();
     loadSocialPreferences();
     loadItineraries();
+    loadPersonExchanges();
 
     let kinships = $state<KinshipMemberItem[]>([]);
 
@@ -828,6 +832,26 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             itineraries = [];
         }
     }
+
+    let personExchanges = $state<ExchangeRecord[]>([]);
+
+    async function loadPersonExchanges() {
+        if (!onLoadExchanges || !current?.docId) return;
+        try {
+            const list = await onLoadExchanges(current.docId);
+            if (detailAlive) personExchanges = list;
+        } catch {
+            personExchanges = [];
+        }
+    }
+
+    const reciprocityAudit = $derived.by(() => {
+        return computeReciprocityAudit({
+            promises,
+            exchanges: personExchanges,
+            timelineCount: insights?.timeline?.length ?? 0,
+        });
+    });
 
     // ---- 谈资与事实画像（RF-09 / Issue #135） ----
     let facts: PersonFactItem[] = $state([]);
@@ -3024,6 +3048,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
         {#if !current.isSelf}
             <SocialRadar assessment={socialRadarAssessment} {i18n} />
+            <PersonReciprocityCard audit={reciprocityAudit} {i18n} />
         {/if}
     </section>
     {#if !current.phone && !current.email && !current.wechat && !current.website && current.tags.length === 0}

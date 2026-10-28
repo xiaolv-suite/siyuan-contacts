@@ -1354,5 +1354,17 @@
   "dashLifecycleFunnelTitle": "Relationship Lifecycle Stages",
   "dashLifecycleMaturity": "Maturity Rate {n}%",
   "clickToFilterStage": "Click to filter {label} contacts",
-  "emptyStageTip": "No contacts in this stage"
+  "emptyStageTip": "No contacts in this stage",
+  "reciprocityCardTitle": "Reciprocity & Balance Audit",
+  "reciprocityScoreLabel": "Reciprocity: {n} pts",
+  "myShareLabel": "Our Contributions & Promises ({n}%)",
+  "theirShareLabel": "Their Care & Commitments ({n}%)",
+  "promisesFulfillTitle": "Bilateral Commitments",
+  "myPromiseRate": "Our Fulfillment: ",
+  "theirPromiseRate": "Their Fulfillment: ",
+  "exchangesBalanceTitle": "Exchange Ledger Audit",
+  "exchangesCountLabel": "Ledger Transactions: ",
+  "exchangesSettledRatio": "{s} Settled / {o} Open",
+  "netBalanceLabel": "Net Exchange Balance: ",
+  "reciprocityAdviceTitle": "Reciprocity Advice"
 }

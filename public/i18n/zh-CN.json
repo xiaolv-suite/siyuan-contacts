@@ -1354,5 +1354,17 @@
   "dashLifecycleFunnelTitle": "交往生命周期阶段",
   "dashLifecycleMaturity": "深度合作率 {n}%",
   "clickToFilterStage": "点击在名册中筛选 {label} 人脉",
-  "emptyStageTip": "暂无此阶段联系人"
+  "emptyStageTip": "暂无此阶段联系人",
+  "reciprocityCardTitle": "交往互惠与双向平衡",
+  "reciprocityScoreLabel": "互惠指数 {n} 分",
+  "myShareLabel": "我方付出与承诺 ({n}%)",
+  "theirShareLabel": "对方关照与信诺 ({n}%)",
+  "promisesFulfillTitle": "双向信诺履约",
+  "myPromiseRate": "我方履约：",
+  "theirPromiseRate": "对方履约：",
+  "exchangesBalanceTitle": "往来对账透视",
+  "exchangesCountLabel": "往来流水：",
+  "exchangesSettledRatio": "{s} 结清 / {o} 待结",
+  "netBalanceLabel": "净往来差额：",
+  "reciprocityAdviceTitle": "关系互惠建议"
 }
