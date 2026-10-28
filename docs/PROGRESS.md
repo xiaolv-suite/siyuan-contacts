@@ -1,3 +1,10 @@
+## 2026-10-28 v0.6.29 发布：联系人详情页「家庭与重要亲属关系树谱」（Family & Kinship Relationship Tree）
+
+- 本轮落地多层级亲属网络模型与家庭谱系树组件：
+  1. 亲属关系域与存储层：`kinship.ts` 纯函数 `groupKinshipByRole` 分类长辈、伴侣、同辈、子女与亲属，`person-kinship.json` 支持 Web Lock 排他保存与双向反链绑定；
+  2. 详情页家庭树谱组件：`FamilyKinshipTree.svelte` 呈现亲属卡片、称谓标签、出生年与备忘，支持底栏快捷添加与即时移除；
+- 门禁验证：`pnpm check`（0/0）、单测 963/963 全部通过、三套 UI 回归 499/499 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-28 v0.6.28 发布：联系人全维度社交资本雷达图（Persona Social Capital Radar & Depth Metrics）
 
 - 本轮落地六维社交资本评估算法与关系摘要雷达图组件：

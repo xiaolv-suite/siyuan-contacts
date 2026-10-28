@@ -8720,6 +8720,102 @@ await test("D-04 联系人详情页：六维社交资本雷达图（Social Radar
     fixture.remove();
 });
 
+await test("D-05 联系人详情页：家庭与亲属关系树谱（Family & Kinship Tree）多层级渲染与交互", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let removeKinshipCalled = false;
+
+    const person = {
+        docId: "doc-kin-ui-1",
+        itemId: "item-kin-ui-1",
+        name: "刘总",
+        phone: "13700003333",
+        email: "liu@example.com",
+        wechat: "liu_wx",
+        website: "",
+        birthday: "1983-03-12",
+        isLunar: false,
+        group: "战略客户",
+        tags: ["新能源"],
+        relatedItemIds: [],
+        company: "宁德时代",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "宁德时代", title: "事业部总经理" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockKinships = [
+        {
+            id: "kin-101",
+            personDocId: "doc-kin-ui-1",
+            role: "spouse",
+            name: "赵女士",
+            relationLabel: "妻子",
+            birthYearOrDate: "1985",
+            note: "花艺师",
+            createdAt: 1000,
+        },
+        {
+            id: "kin-102",
+            personDocId: "doc-kin-ui-1",
+            role: "child",
+            name: "刘沐沐",
+            relationLabel: "女儿",
+            birthYearOrDate: "2018",
+            note: "读小学二年级",
+            createdAt: 2000,
+        },
+    ];
+
+    mounted = mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadKinships: async () => mockKinships,
+            onAddKinship: async (item) => {
+                return [...mockKinships, item];
+            },
+            onRemoveKinship: async (_personDocId, memberId) => {
+                removeKinshipCalled = true;
+                return mockKinships.filter((m) => m.id !== memberId);
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-kinship-tree"), "未渲染家庭亲属树谱组件");
+    assert(fixture.textContent.includes("家庭与亲属树谱"), "未渲染家庭亲属树谱标题");
+    assert(fixture.textContent.includes("赵女士"), "未渲染配偶姓名");
+    assert(fixture.textContent.includes("刘沐沐"), "未渲染子女姓名");
+    assert(fixture.textContent.includes("花艺师"), "未渲染配偶备注");
+    assert(fixture.textContent.includes("读小学二年级"), "未渲染子女备注");
+
+    // 点击移除按钮
+    const removeBtn = fixture.querySelector(".lvct-kinship-tree__remove");
+    assert(removeBtn, "未找到亲属移除按钮");
+    removeBtn.click();
+    await until(() => removeKinshipCalled, "点击移除未调用 onRemoveKinship");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

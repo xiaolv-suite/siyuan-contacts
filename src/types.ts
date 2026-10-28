@@ -148,6 +148,10 @@ export interface ContactsPluginFacade {
     updatePersonProject?(personDocId: string, projectId: string, patch: Partial<import("./domain/projects").PersonProjectItem>): Promise<import("./domain/projects").PersonProjectItem[]>;
     removePersonProject?(personDocId: string, projectId: string): Promise<import("./domain/projects").PersonProjectItem[]>;
     findCollaboratorsByProject?(matcher: { title?: string; docId?: string }): Promise<Array<{ personDocId: string; role?: string; status: import("./domain/projects").ProjectStatus; title: string }>>;
+    /** E-38：人物家庭与重要亲属关系（Family & Kinship Members） */
+    loadPersonKinships?(personDocId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
+    addPersonKinship?(item: import("./domain/kinship").KinshipMemberItem): Promise<import("./domain/kinship").KinshipMemberItem[]>;
+    removePersonKinship?(personDocId: string, memberId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;

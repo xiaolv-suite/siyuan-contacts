@@ -1040,6 +1040,8 @@
   "socialRadarTierGrowing": "稳步升温",
   "socialRadarTierLight": "轻度浅交",
   "socialRadarTierDormant": "沉睡人脉",
+  "kinshipTreeTitle": "家庭与亲属树谱",
+  "kinshipAddBtn": "添加亲属",
   "fuGroupTitle": "按视角分组",
   "fuGroupCount": "{open} 条待办 / {total} 条",
   "fuGroupEmpty": "当前没有可分组的跟进事项。",

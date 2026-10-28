@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.28** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.28) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.29** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.29) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.28 (2026-10-28)
+## This release: v0.6.29 (2026-10-28)
+
+This release implements Family & Kinship Relationship Tree in the person detail view:
+
+- **Multi-Level Kinship Domain Model & Storage Layer (`domain/kinship.ts` & `data/kinship.ts`)**: Pure function categorizing family into 5 key tiers: parents, spouse, siblings, children, and other relatives; backed by Web Lock critical sections and read-after-write verification (`person-kinship.json`).
+- **Interactive Family Kinship Tree Component (`FamilyKinshipTree.svelte`)**: Renders warm family cards across tiers with role badges, birth year/age, and notes; supports clicking to open linked contact documents, along with compact quick-add form and instant removal.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (963/963 PASS); browser UI regression passing (499/499); production build and release checks passed.
+
+## Previous release: v0.6.28 (2026-10-28)
 
 This release implements the Persona Social Capital Radar & Depth Metrics:
 

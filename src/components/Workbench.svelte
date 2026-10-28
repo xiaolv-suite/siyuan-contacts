@@ -924,8 +924,11 @@
             onLoadProjects={facade.loadPersonProjects ? (docId) => facade.loadPersonProjects!(docId) : undefined}
 	            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
 	            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
-	            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
-	            {onOpenPersonDoc}
+		            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
+		            onLoadKinships={facade.loadPersonKinships ? (docId) => facade.loadPersonKinships!(docId) : undefined}
+		            onAddKinship={facade.addPersonKinship ? (item) => facade.addPersonKinship!(item) : undefined}
+		            onRemoveKinship={facade.removePersonKinship ? (docId, memberId) => facade.removePersonKinship!(docId, memberId) : undefined}
+		            {onOpenPersonDoc}
             onOpenGraphPerson={openGraphPerson}
             onOpenPeople={openPeople}
             onNavigate={showDetail}

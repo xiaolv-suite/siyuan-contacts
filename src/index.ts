@@ -110,6 +110,7 @@ import { loadPersonGiftIdeas, addPersonGiftIdea, updatePersonGiftIdea, removePer
 import { listOccasions, createOccasion, deleteOccasion } from "./services/occasions";
 import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary, removePersonAnniversary, listUpcomingAnniversaries } from "./data/anniversaries.ts";
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
+import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1727,6 +1728,25 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async findCollaboratorsByProject(matcher: { title?: string; docId?: string }) {
         return findCollaboratorsByProject(this, matcher);
+    }
+
+    /** E-38：人物家庭与重要亲属关系 */
+    async loadPersonKinships(personDocId: string) {
+        return loadPersonKinships(this, personDocId);
+    }
+
+    async addPersonKinship(item: import("./domain/kinship").KinshipMemberItem) {
+        const token = this.lifecycleToken;
+        const res = await addPersonKinship(this, item);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
+        return res;
+    }
+
+    async removePersonKinship(personDocId: string, memberId: string) {
+        const token = this.lifecycleToken;
+        const res = await removePersonKinship(this, personDocId, memberId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
     }
 
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */

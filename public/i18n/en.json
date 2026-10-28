@@ -1040,6 +1040,8 @@
   "socialRadarTierGrowing": "Growing Tie",
   "socialRadarTierLight": "Light Touch",
   "socialRadarTierDormant": "Dormant",
+  "kinshipTreeTitle": "Family & Kinship Tree",
+  "kinshipAddBtn": "Add Relative",
   "fuGroupTitle": "Group by Perspective",
   "fuGroupCount": "{open} open / {total} total",
   "fuGroupEmpty": "No follow-up items to group.",

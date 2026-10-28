@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.29] — 2026-10-28
+
+重塑：联系人详情页「家庭与重要亲属关系树谱」（Family & Kinship Relationship Tree）
+
+- **多层级亲属网络模型**：`domain/kinship.ts` 与 `data/kinship.ts` 纯函数推算长辈、伴侣、同辈、子女与亲属 5 大层级，支持 Web Lock 锁保护存储。
+- **家庭谱系树可视化组件**：`FamilyKinshipTree.svelte` 呈现亲属卡片、称谓标签、出生年与备忘，支持一键快捷添加与即时移除。
+
+验证：`pnpm check` 0/0、单测 963/963 绿灯、E2E UI 回归 499/499 全部通过、Release 门禁通过。
+
+
 ## [0.6.28] — 2026-10-28
 
 重塑：联系人全维度社交资本雷达图（Persona Social Capital Radar & Depth Metrics）

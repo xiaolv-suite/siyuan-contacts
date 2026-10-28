@@ -72,6 +72,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import TemplateManager from "./TemplateManager.svelte";
     import ExchangeLedger from "./ExchangeLedger.svelte";
     import PersonAliases from "./PersonAliases.svelte";
+    import FamilyKinshipTree from "./FamilyKinshipTree.svelte";
+    import type { KinshipMemberItem } from "../../domain/kinship.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -179,6 +181,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddProject,
         onRemoveProject,
         onCreateFlashcardsDoc,
+        onLoadKinships,
+        onAddKinship,
+        onRemoveKinship,
         collapsedSections,
         onToggleSection,
     }: {
@@ -277,6 +282,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onRemoveProject?: (personDocId: string, projectId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         /** 制作思源记忆复习闪卡（Riff Cards）实体文档（可选） */
         onCreateFlashcardsDoc?: (person: ContactSummary, facts: readonly PersonFactItem[], topics: readonly import("../../domain/topics").PersonTopicItem[]) => Promise<{ docId: string; hpath: string; count: number } | null>;
+        /** E-38 家庭与亲属关系（可选） */
+        onLoadKinships?: (personDocId: string) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
+        onAddKinship?: (item: import("../../domain/kinship").KinshipMemberItem) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
+        onRemoveKinship?: (personDocId: string, memberId: string) => Promise<import("../../domain/kinship").KinshipMemberItem[]>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -663,6 +672,19 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     loadInsights();
     loadPersonNoteState();
+    loadKinships();
+
+    let kinships = $state<KinshipMemberItem[]>([]);
+
+    async function loadKinships() {
+        if (!onLoadKinships || !current?.docId) return;
+        try {
+            const list = await onLoadKinships(current.docId);
+            if (detailAlive) kinships = list;
+        } catch {
+            kinships = [];
+        }
+    }
 
     // ---- 谈资与事实画像（RF-09 / Issue #135） ----
     let facts: PersonFactItem[] = $state([]);
@@ -2913,6 +2935,23 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     </dl>
     {#if copyFieldError}
         <p class="b3-label b3-label--error ft__smaller" style="margin: 4px 0;">{copyFieldError}</p>
+    {/if}
+
+    {#if onLoadKinships && onAddKinship && onRemoveKinship && !current.isSelf}
+        <FamilyKinshipTree
+            personDocId={current.docId}
+            items={kinships}
+            onAddMember={async (item) => {
+                const res = await onAddKinship!(item);
+                kinships = res;
+            }}
+            onRemoveMember={async (id) => {
+                const res = await onRemoveKinship!(current.docId, id);
+                kinships = res;
+            }}
+            onOpenDoc={onOpenPersonDoc}
+            {i18n}
+        />
     {/if}
 
     {#if topicsSupported}

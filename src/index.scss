@@ -11134,3 +11134,119 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     }
 }
 
+/* 家庭与亲属关系树谱 */
+.lvct-kinship-tree {
+    margin: 12px 0 16px;
+    padding: 12px 14px;
+    background: color-mix(in srgb, var(--lvct-group-family, #e11d48) 3%, var(--b3-theme-surface));
+    border: 1px solid color-mix(in srgb, var(--lvct-group-family, #e11d48) 25%, transparent);
+    border-radius: 8px;
+
+    &__header {
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+    }
+
+    &__groups {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    &__group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    &__group-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        min-width: 90px;
+        flex-shrink: 0;
+    }
+
+    &__cards {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+
+    &__card {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 8px;
+        background: var(--b3-theme-surface);
+        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+        border-radius: 6px;
+        font-size: 12px;
+        transition: border-color 0.15s ease;
+
+        &:hover {
+            border-color: var(--lvct-group-family, #e11d48);
+        }
+
+        &--spouse {
+            border-color: color-mix(in srgb, #e11d48 40%, transparent);
+        }
+
+        &--child {
+            border-color: color-mix(in srgb, #0284c7 40%, transparent);
+        }
+    }
+
+    &__name {
+        color: var(--b3-theme-on-surface);
+        font-size: 12px;
+    }
+
+    &__note {
+        font-size: 11px;
+        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        opacity: 0.8;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__remove {
+        border: none;
+        background: none;
+        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 13px;
+        line-height: 1;
+
+        &:hover {
+            opacity: 1;
+            color: #ef4444;
+        }
+    }
+
+    &__form {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+}
+
