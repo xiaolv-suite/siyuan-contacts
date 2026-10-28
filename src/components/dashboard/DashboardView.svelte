@@ -40,6 +40,7 @@
     import LvctDialog from "../LvctDialog.svelte";
     import ReviewReportDialog from "./ReviewReportDialog.svelte";
     import QuickStartPanel from "./QuickStartPanel.svelte";
+    import ActivityHeatmap from "./ActivityHeatmap.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
     import { onDestroy } from "svelte";
@@ -1366,6 +1367,23 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                         </div>
                     </div>
                 {/if}
+            </div>
+        {/if}
+
+        <!-- 年度人脉交往活跃度热力图 -->
+        {#if data.activityHeatmap && data.activityHeatmap.totalEvents > 0}
+            <div class="lvct-home__card lvct-dash__heatmap-card">
+                <div class="lvct-dash__chart-header" style="margin-bottom: 8px;">
+                    <div class="lvct-dash__chart-title-wrap">
+                        <span class="lvct-dash__chart-icon">📅</span>
+                        <span class="lvct-dash__chart-title">{text("dashHeatmapTitle", "年度交往活跃度")}</span>
+                        <span class="lvct-text-muted font-size-11">（52周互动打卡足迹）</span>
+                    </div>
+                </div>
+                <ActivityHeatmap
+                    data={data.activityHeatmap}
+                    {i18n}
+                />
             </div>
         {/if}
 

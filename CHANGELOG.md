@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.22] — 2026-10-28
+
+重塑：年度人脉交往活跃热力图与打卡足迹（Annual Social Activity Heatmap & Streaks）
+
+- **52周热力图挖掘引擎**：`domain/activity-heatmap.ts` 纯函数推算 52 周自然周矩阵，支持 5 档活跃度分级与当前/最长连击统计。
+- **仪表盘交互式热力卡片**：`ActivityHeatmap.svelte` 呈现紧凑热力网格与月份/星期刻度，支持悬停互动明细与主题自适应。
+
+验证：`pnpm check` 0/0、单测 952/952 绿灯、E2E UI 回归 492/492 全部通过、Release 门禁通过。
+
+
 ## [0.6.21] — 2026-10-28
 
 重塑：周度人脉交往复盘与回顾实体文档生成（Weekly Social Review & Interaction Digest Doc Generator）

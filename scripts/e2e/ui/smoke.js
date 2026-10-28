@@ -8158,6 +8158,71 @@ await test("F-12 首页仪表盘：周度人脉交往简报实体文档生成（
     fixture.remove();
 });
 
+await test("F-14 首页仪表盘：年度人脉交往活跃热力图（Activity Heatmap）渲染与打卡统计", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const mockHeatmapData = {
+        startDate: "2025-11-03",
+        endDate: "2026-11-01",
+        totalEvents: 36,
+        activeDays: 18,
+        maxDayCount: 5,
+        currentStreak: 2,
+        longestStreak: 5,
+        weeks: [
+            [
+                { dateKey: "2026-10-26", dayOfWeek: 0, count: 2, level: 2, peopleCount: 1, personNames: ["张总"] },
+                { dateKey: "2026-10-27", dayOfWeek: 1, count: 0, level: 0, peopleCount: 0, personNames: [] },
+                { dateKey: "2026-10-28", dayOfWeek: 2, count: 4, level: 3, peopleCount: 2, personNames: ["张总", "李教授"] },
+                { dateKey: "2026-10-29", dayOfWeek: 3, count: 0, level: 0, peopleCount: 0, personNames: [], isFuture: true },
+                { dateKey: "2026-10-30", dayOfWeek: 4, count: 0, level: 0, peopleCount: 0, personNames: [], isFuture: true },
+                { dateKey: "2026-10-31", dayOfWeek: 5, count: 0, level: 0, peopleCount: 0, personNames: [], isFuture: true },
+                { dateKey: "2026-11-01", dayOfWeek: 6, count: 0, level: 0, peopleCount: 0, personNames: [], isFuture: true },
+            ],
+        ],
+        months: [{ label: "10月", weekIndex: 0 }],
+    };
+
+    const testDashboardData = {
+        people: 2,
+        relations: 1,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+        activityHeatmap: mockHeatmapData,
+    };
+
+    mounted = mount(DashboardView, {
+        target: fixture,
+        props: {
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            facade: {
+                loadDashboard: async () => testDashboardData,
+                loadReminderDismissals: async () => [],
+            },
+            onOpenDetail() {},
+            onOpenPeople() {},
+            onOpenGraph() {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-heatmap"), "未找到年度交往活跃热力图");
+    assert(fixture.textContent.includes("年度交往活跃度"), "未渲染热力图标题");
+    assert(fixture.textContent.includes("年度活跃"), "未渲染年度活跃统计");
+    assert(fixture.textContent.includes("18"), "活跃天数数值未正确渲染");
+    assert(fixture.textContent.includes("36"), "累计记录数值未正确渲染");
+    assert(fixture.querySelector(".lvct-heatmap__cell--lvl-3"), "未渲染 level-3 活跃度高亮单元格");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

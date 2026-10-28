@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.21** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.21) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.22** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.22) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.21 (2026-10-28)
+## This release: v0.6.22 (2026-10-28)
+
+This release implements the Annual Social Activity Heatmap & Streaks on the dashboard:
+
+- **52-Week Social Activity Heatmap Engine (`activity-heatmap.ts`)**: Pure function calculating a 52-week natural week matrix with 5 levels of activity intensity (Levels 0~4), calculating current streak and longest streak, and tracking contacts and events on each date.
+- **Interactive Heatmap Card in Dashboard (`ActivityHeatmap.svelte`)**: Renders a compact heatmap grid with month/weekday labels, showing "Active xx days · xx interactions · Current streak xx days · Longest streak xx days", rich tooltips on hover, and seamless adaptive theming for light and dark modes.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (952/952 PASS); browser UI regression passing (492/492); production build and release checks passed.
+
+## Previous release: v0.6.21 (2026-10-28)
 
 This release implements the Weekly Social Review & Interaction Digest Doc Generator:
 
