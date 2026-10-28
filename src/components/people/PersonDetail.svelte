@@ -122,6 +122,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import {
         newProjectId,
         type PersonProjectItem,
+        getNextProjectStatus,
+        getProjectStatusMeta,
     } from "../../domain/projects";
     import {
         parseBacklinkOccurredTime,
@@ -202,6 +204,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onExportAnniversariesIcs,
         onLoadProjects,
         onAddProject,
+        onUpdateProject,
         onRemoveProject,
         onCreateFlashcardsDoc,
         onCreateBriefingDoc,
@@ -324,7 +327,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         /** E-37 协作项目与主题关联（可选） */
         onLoadProjects?: (personDocId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         onAddProject?: (item: import("../../domain/projects").PersonProjectItem) => Promise<import("../../domain/projects").PersonProjectItem[]>;
+        onUpdateProject?: (personDocId: string, projectId: string, patch: Partial<import("../../domain/projects").PersonProjectItem>) => Promise<import("../../domain/projects").PersonProjectItem[]>;
         onRemoveProject?: (personDocId: string, projectId: string) => Promise<import("../../domain/projects").PersonProjectItem[]>;
+        onFindCollaborators?: (matcher: { title?: string; docId?: string }) => Promise<Array<{ personDocId: string; role?: string; status: import("../../domain/projects").ProjectStatus; title: string }>>;
         /** 制作思源记忆复习闪卡（Riff Cards）实体文档（可选） */
         onCreateFlashcardsDoc?: (person: ContactSummary, facts: readonly PersonFactItem[], topics: readonly import("../../domain/topics").PersonTopicItem[]) => Promise<{ docId: string; hpath: string; count: number } | null>;
         /** 制作会面准备简报实体文档（可选） */
@@ -1619,6 +1624,20 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         if (!onRemoveProject) return;
         try {
             const list = await onRemoveProject(current.docId, projectId);
+            if (detailAlive) {
+                projects = list;
+                onChanged();
+            }
+        } catch (error) {
+            if (detailAlive) projectsError = requestErrorMessage(error);
+        }
+    }
+
+    async function handleToggleProjectStatus(proj: PersonProjectItem) {
+        if (!onUpdateProject || busy) return;
+        const nextStatus = getNextProjectStatus(proj.status);
+        try {
+            const list = await onUpdateProject(current.docId, proj.id, { status: nextStatus });
             if (detailAlive) {
                 projects = list;
                 onChanged();
@@ -3847,10 +3866,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 {:else}
                     <ul class="lvct-detail__topic-list">
                         {#each projects as proj (proj.id)}
-                            <li class="lvct-detail__topic-item">
+                            <li class="lvct-detail__topic-item lvct-detail__project-item">
                                 <span class="lvct-detail__topic-text">
-                                    <span class="lvct-chip lvct-bucket--soon" style="display: inline-flex; align-items: center;">
-                                        <FolderGit2 size={12} class="lvct-icon-inline" /> {proj.role || "项目"}
+                                    <button
+                                        type="button"
+                                        class="lvct-chip lvct-detail__project-status-btn {getProjectStatusMeta(proj.status).className}"
+                                        onclick={() => void handleToggleProjectStatus(proj)}
+                                        title={text("toggleProjectStatusTip", "点击切换项目协作状态：进行中 ➔ 已结项 ➔ 已归档")}
+                                    >
+                                        {getProjectStatusMeta(proj.status).icon} {getProjectStatusMeta(proj.status).label}
+                                    </button>
+                                    <span class="lvct-chip lvct-chip--neutral font-size-11" style="display: inline-flex; align-items: center;">
+                                        <FolderGit2 size={12} class="lvct-icon-inline" /> {proj.role || text("projectRoleDefault", "协同成员")}
                                     </span>
                                     <b>{proj.title}</b>
                                     {#if proj.docId}

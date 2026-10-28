@@ -926,8 +926,10 @@
             onRemoveAnniversary={facade.removePersonAnniversary ? (docId, annivId) => facade.removePersonAnniversary!(docId, annivId) : undefined}
             onExportAnniversariesIcs={facade.exportPersonAnniversariesIcs ? (person, annivs) => facade.exportPersonAnniversariesIcs!(person, annivs) : undefined}
             onLoadProjects={facade.loadPersonProjects ? (docId) => facade.loadPersonProjects!(docId) : undefined}
-	            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
-	            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
+            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
+            onUpdateProject={facade.updatePersonProject ? (docId, projId, patch) => facade.updatePersonProject!(docId, projId, patch) : undefined}
+            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
+            onFindCollaborators={facade.findCollaboratorsByProject ? (matcher) => facade.findCollaboratorsByProject!(matcher) : undefined}
 			            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
 			            onCreateBriefingDoc={facade.createBriefingDoc ? (input, dateStr) => facade.createBriefingDoc!(input, dateStr) : undefined}
 			            onCreateMilestonesDoc={facade.createMilestonesDoc ? (person, milestones) => facade.createMilestonesDoc!(person, milestones) : undefined}

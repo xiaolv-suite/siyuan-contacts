@@ -11,6 +11,8 @@ import {
     updateProjectInStore,
     validatePersonProject,
     MAX_PROJECTS_PER_PERSON,
+    getNextProjectStatus,
+    filterOtherCollaborators,
     type PersonProjectItem,
 } from "../src/domain/projects.ts";
 import { StoreIntegrityError } from "../src/domain/store-integrity.ts";
@@ -152,4 +154,21 @@ test("E-37 project 数据层：存储闭环、严格读写与坏数据拒绝", a
     // 坏数据严格拒绝
     memory.set(PERSON_PROJECTS_STORAGE_KEY, { schemaVersion: 999, projects: {} });
     await assert.rejects(() => loadPersonProjectsStoreStrict(plugin), StoreIntegrityError);
+});
+
+test("E-37/E-62 project: 状态机流转与排除自身同项目协作者过滤", () => {
+    assert.equal(getNextProjectStatus("active"), "completed");
+    assert.equal(getNextProjectStatus("completed"), "archived");
+    assert.equal(getNextProjectStatus("archived"), "active");
+
+    const collabs = [
+        { personDocId: "doc-A", role: "发起人", status: "active" as const, title: "开源项目" },
+        { personDocId: "doc-B", role: "核心成员", status: "active" as const, title: "开源项目" },
+        { personDocId: "doc-C", role: "顾问", status: "completed" as const, title: "开源项目" },
+    ];
+
+    const others = filterOtherCollaborators(collabs, "doc-A");
+    assert.equal(others.length, 2);
+    assert.equal(others[0].personDocId, "doc-B");
+    assert.equal(others[1].personDocId, "doc-C");
 });

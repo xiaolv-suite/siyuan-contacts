@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.54 发布：联系人详情页「协作项目状态流转与进度指示」（Project Progression & Status Lifecycle Tracker）
+
+- 本轮落地协作项目状态机流转纯函数与详情页项目状态切换闭环：
+  1. 项目状态机域模型：`projects.ts` 纯函数定义进行中/已结项/已归档状态机与协作者过滤；
+  2. 详情页项目状态切换：`PersonDetail.svelte` 与 `Workbench.svelte` 接入 `onUpdateProject`，点击状态胶囊一键流转并即时落盘；
+- 门禁验证：`pnpm check`（0/0）、单测 1023/1023 全部通过、三套 UI 回归 524/524 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.53 发布：联系人详情页「核心社交偏好与红线禁忌速览微标签」（Social Preferences Ribbon & Micro-Tags）
 
 - 本轮落地社交偏好微标签提取模型与详情页头部微标签绶带：

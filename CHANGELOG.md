@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.54] — 2026-10-29
+
+重塑：联系人详情页「协作项目状态流转与进度指示」（Project Progression & Status Lifecycle Tracker）
+
+- **项目状态机与协作者过滤算法**：`domain/projects.ts` 新增 `PROJECT_STATUS_METAS`、`getProjectStatusMeta`、`getNextProjectStatus` 与 `filterOtherCollaborators` 纯函数；规范进行中（`active` / 🚀）、已结项（`completed` / ✅）与已归档（`archived` / 📦）三态循环流转。
+- **详情页项目卡片状态切换与联动**：`PersonDetail.svelte` 与 `Workbench.svelte` 完整接线 `onUpdateProject`；在项目条目中呈现状态胶囊按钮，支持一键点击流转状态并即时保存至 `person-projects.json`，提升人脉协作深度管理效率。
+
+验证：`pnpm check` 0/0、单测 1023/1023 绿灯、三套 E2E UI 回归各 524/524 全部通过、Release 门禁通过。
+
 ## [0.6.53] — 2026-10-29
 
 重塑：联系人详情页「核心社交偏好与红线禁忌速览微标签」（Social Preferences Ribbon & Micro-Tags）

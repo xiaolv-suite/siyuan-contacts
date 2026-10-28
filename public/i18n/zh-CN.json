@@ -1386,5 +1386,7 @@
   "confirmBatchStage": "确认调整阶段",
   "microPrefsAria": "核心社交偏好速览",
   "tabooAlertTip": "红线禁忌：{text}",
-  "preferenceTip": "偏好：{text}"
+  "preferenceTip": "偏好：{text}",
+  "toggleProjectStatusTip": "点击切换项目协作状态：进行中 ➔ 已结项 ➔ 已归档",
+  "projectRoleDefault": "协同成员"
 }

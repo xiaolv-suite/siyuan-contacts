@@ -261,3 +261,36 @@ export function normalizePersonProjectsStoreForWrite(raw: unknown): PersonProjec
 
     return normalizePersonProjectsStore(raw);
 }
+
+export interface ProjectStatusMeta {
+    status: ProjectStatus;
+    label: string;
+    icon: string;
+    className: string;
+    nextStatus: ProjectStatus;
+}
+
+export const PROJECT_STATUS_METAS: Record<ProjectStatus, ProjectStatusMeta> = {
+    active: { status: "active", label: "进行中", icon: "🚀", className: "status-active", nextStatus: "completed" },
+    completed: { status: "completed", label: "已结项", icon: "✅", className: "status-completed", nextStatus: "archived" },
+    archived: { status: "archived", label: "已归档", icon: "📦", className: "status-archived", nextStatus: "active" },
+};
+
+export function getProjectStatusMeta(status: unknown): ProjectStatusMeta {
+    if (typeof status === "string" && status in PROJECT_STATUS_METAS) {
+        return PROJECT_STATUS_METAS[status as ProjectStatus];
+    }
+    return PROJECT_STATUS_METAS.active;
+}
+
+export function getNextProjectStatus(status: ProjectStatus): ProjectStatus {
+    return PROJECT_STATUS_METAS[status]?.nextStatus ?? "active";
+}
+
+/** 过滤排除自身的同项目协作者 */
+export function filterOtherCollaborators(
+    collaborators: ReadonlyArray<{ personDocId: string; role?: string; status: ProjectStatus; title: string }>,
+    currentPersonDocId: string,
+): Array<{ personDocId: string; role?: string; status: ProjectStatus; title: string }> {
+    return collaborators.filter((c) => c.personDocId !== currentPersonDocId);
+}

@@ -10820,6 +10820,56 @@ await test("D-21 联系人详情页：核心社交偏好与红线禁忌速览微
     fixture.remove();
 });
 
+await test("D-22 联系人详情页：协作项目状态流转与进度指示（ProjectStatusToggle）交互闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let updatedTargetStatus = "";
+
+    const mockProject = {
+        id: "proj-smoke-1",
+        personDocId: person.docId,
+        title: "开源人脉插件重构",
+        status: "active",
+        role: "核心成员",
+        createdAt: 1000,
+        updatedAt: 1000,
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadProjects: async () => [mockProject],
+            onUpdateProject: async (_docId, _projId, patch) => {
+                updatedTargetStatus = patch.status ?? "";
+                return [{ ...mockProject, ...patch }];
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-detail__projects"), "未渲染协作项目区域");
+    assert(fixture.textContent.includes("开源人脉插件重构"), "未渲染项目名称");
+
+    const statusBtn = fixture.querySelector(".lvct-detail__project-status-btn");
+    assert(statusBtn, "未找到项目状态按钮");
+    assert(statusBtn.textContent.includes("进行中"), "项目初始状态未显示为进行中");
+
+    // 点击切换状态至已结项
+    statusBtn.click();
+    await until(() => updatedTargetStatus === "completed", "未触发 onUpdateProject 或状态未变更为 completed");
+    await until(() => fixture.querySelector(".lvct-detail__project-status-btn")?.textContent.includes("已结项"), "项目状态按钮未更新为已结项");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

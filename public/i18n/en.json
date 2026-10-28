@@ -1386,5 +1386,7 @@
   "confirmBatchStage": "Update Stages",
   "microPrefsAria": "Social Preferences Ribbon",
   "tabooAlertTip": "Critical Taboo: {text}",
-  "preferenceTip": "Preference: {text}"
+  "preferenceTip": "Preference: {text}",
+  "toggleProjectStatusTip": "Click to toggle project status: Active ➔ Completed ➔ Archived",
+  "projectRoleDefault": "Collaborator"
 }
