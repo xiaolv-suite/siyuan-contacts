@@ -2,7 +2,8 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield } from "@lucide/svelte";
+    import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { copyPlainText } from "../../shared/clipboard";
     import { profileText } from "../../domain/people-profiles";
     import { extractNormalizedRegion } from "../../domain/region";
@@ -189,6 +190,31 @@
     let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
     let drawerFlashcardToastId = $state("");
     let drawerFlashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
+    let drawerPrivacyActive = $state(false);
+    let drawerRevealSeconds = $state(0);
+    let drawerRevealInterval: ReturnType<typeof setInterval> | null = null;
+
+    function toggleDrawerPrivacy(): void {
+        if (drawerPrivacyActive) {
+            if (drawerRevealSeconds > 0) {
+                drawerPrivacyActive = false;
+                drawerRevealSeconds = 0;
+                if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+            } else {
+                drawerRevealSeconds = 5;
+                if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+                drawerRevealInterval = setInterval(() => {
+                    drawerRevealSeconds -= 1;
+                    if (drawerRevealSeconds <= 0) {
+                        if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+                    }
+                }, 1000);
+            }
+        } else {
+            drawerPrivacyActive = true;
+            drawerRevealSeconds = 0;
+        }
+    }
 
     function makeDrawerFlashcard(fact: import("../../domain/doc-section").PersonFactItem) {
         if (!drawerPerson) return;
@@ -348,6 +374,7 @@
         clearHover();
         if (copyToastTimer) clearTimeout(copyToastTimer);
         if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
+        if (drawerRevealInterval) clearInterval(drawerRevealInterval);
     });
 
     function openSnapshotPerson(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
@@ -1942,11 +1969,33 @@
                     <div class="lvct-graph-drawer__body">
                         <!-- 快捷通讯资料 -->
                         <div class="lvct-graph-drawer__section">
-                            <div class="lvct-graph-drawer__section-title">通讯资料</div>
+                            <div class="lvct-between" style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="lvct-graph-drawer__section-title">通讯资料</div>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small"
+                                    style="padding: 1px 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px;"
+                                    title={drawerPrivacyActive ? (drawerRevealSeconds > 0 ? `已临时显形 (${drawerRevealSeconds}s)` : "点击暂时显形 5 秒") : "开启离席隐私保护盾"}
+                                    onclick={toggleDrawerPrivacy}
+                                >
+                                    {#if drawerPrivacyActive && drawerRevealSeconds === 0}
+                                        <EyeOff size={12} style="color: var(--lv-brand, #ea580c);" />
+                                        <span style="color: var(--lv-brand, #ea580c);">遮罩中</span>
+                                    {:else if drawerPrivacyActive && drawerRevealSeconds > 0}
+                                        <Eye size={12} style="color: var(--lvct-success, #16a34a);" />
+                                        <span style="color: var(--lvct-success, #16a34a);">{drawerRevealSeconds}s</span>
+                                    {:else}
+                                        <Shield size={12} />
+                                        <span>隐私盾</span>
+                                    {/if}
+                                </button>
+                            </div>
                             {#if drawerPerson.phone}
+                                {@const isMasked = drawerPrivacyActive && drawerRevealSeconds === 0}
+                                {@const displayPhone = isMasked ? maskPhone(drawerPerson.phone) : drawerPerson.phone}
                                 <div class="lvct-graph-drawer__field">
                                     <Phone size={13} class="lvct-graph-drawer__field-icon" />
-                                    <span class="lvct-graph-drawer__field-val">{drawerPerson.phone}</span>
+                                    <span class="lvct-graph-drawer__field-val">{displayPhone}</span>
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text lvct-graph-drawer__field-action"
@@ -1958,9 +2007,11 @@
                                 </div>
                             {/if}
                             {#if drawerPerson.wechat}
+                                {@const isMasked = drawerPrivacyActive && drawerRevealSeconds === 0}
+                                {@const displayWechat = isMasked ? maskWechat(drawerPerson.wechat) : drawerPerson.wechat}
                                 <div class="lvct-graph-drawer__field">
                                     <MessageSquare size={13} class="lvct-graph-drawer__field-icon" />
-                                    <span class="lvct-graph-drawer__field-val">{drawerPerson.wechat}</span>
+                                    <span class="lvct-graph-drawer__field-val">{displayWechat}</span>
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text lvct-graph-drawer__field-action"
@@ -1972,9 +2023,11 @@
                                 </div>
                             {/if}
                             {#if drawerPerson.email}
+                                {@const isMasked = drawerPrivacyActive && drawerRevealSeconds === 0}
+                                {@const displayEmail = isMasked ? maskEmail(drawerPerson.email) : drawerPerson.email}
                                 <div class="lvct-graph-drawer__field">
                                     <Mail size={13} class="lvct-graph-drawer__field-icon" />
-                                    <span class="lvct-graph-drawer__field-val">{drawerPerson.email}</span>
+                                    <span class="lvct-graph-drawer__field-val">{displayEmail}</span>
                                     <button
                                         type="button"
                                         class="b3-button b3-button--text lvct-graph-drawer__field-action"

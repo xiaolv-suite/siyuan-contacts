@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.12** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.12) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.13** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.13) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.12 (2026-10-28)
+## This release: v0.6.13 (2026-10-28)
+
+This release implements Privacy Mask Shield and Social Relationship Cooling Alert:
+
+- **Privacy Mask Shield**: Masks phone (`138****5678`), email (`al***r@domain.com`), and wechat (`wx****88`) in Person Detail and Graph Drawer. Includes a 5-second temporary reveal countdown with automatic re-locking to safeguard private data during screen shares or walking away.
+- **Social Relationship Cooling Alert Banner**: Prominently warns when contact cadence enters "cold" level (`❄️ Relationship Cooled`), with instant one-click ice-breaker logging.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (936/936 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.12 (2026-10-28)
 
 This release implements decentralized peer-to-peer task integration with Task Horizon (by 5kyfkr):
 
