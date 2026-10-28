@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.46 发布：联系人会客拜访行程备忘与行前准备清单系统（Meeting Itinerary & Visit Preparation Checklist）
+
+- 本轮落地会面拜访行程模型、准备清单与详情页行程看板：
+  1. 行程域与数据层：`itineraries.ts` 纯函数结构化主题、日期时间、地点、随行人员、核对清单（`checklists`），`person-itineraries.json` 经 Web Lock 锁保护存储，支持一键派生交往互动；
+  2. 详情页行程看板与履约闭环：`PersonItinerary.svelte` 呈现待赴约倒计时、交互式核对清单、一键「履约并记互动」预填入互动草稿，支持复制 Markdown 文本；
+- 门禁验证：`pnpm check`（0/0）、单测 1008/1008 全部通过、三套 UI 回归 516/516 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.45 发布：首页仪表盘「关系降温预警与破冰重联中枢」（Relationship Cadence Cooling Radar & Reconnect Hub）
 
 - 本轮落地全库人脉降温紧急度加权引擎与破冰重联大盘弹窗：

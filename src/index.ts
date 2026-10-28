@@ -111,6 +111,7 @@ import { listOccasions, createOccasion, deleteOccasion } from "./services/occasi
 import { loadPersonAnniversaries, addPersonAnniversary, updatePersonAnniversary, removePersonAnniversary, listUpcomingAnniversaries } from "./data/anniversaries.ts";
 import { exportPersonAnniversariesIcs, exportAllAnniversariesIcs } from "./services/ical.ts";
 import { loadPersonProjects, addPersonProject, updatePersonProject, removePersonProject, findCollaboratorsByProject } from "./data/projects.ts";
+import { loadPersonItineraries, savePersonItinerary, removePersonItinerary, togglePersonItineraryChecklist } from "./data/itineraries.ts";
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
 import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages } from "./data/lifecycle-stage.ts";
@@ -1748,6 +1749,32 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async findCollaboratorsByProject(matcher: { title?: string; docId?: string }) {
         return findCollaboratorsByProject(this, matcher);
+    }
+
+    /** E-54：会客拜访行程备忘与准备清单 */
+    async loadPersonItineraries(personDocId: string) {
+        return loadPersonItineraries(this, personDocId);
+    }
+
+    async savePersonItinerary(item: import("./domain/itineraries").PersonItineraryItem) {
+        const token = this.lifecycleToken;
+        const res = await savePersonItinerary(this, item);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
+        return res;
+    }
+
+    async removePersonItinerary(personDocId: string, itineraryId: string) {
+        const token = this.lifecycleToken;
+        const res = await removePersonItinerary(this, personDocId, itineraryId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    async togglePersonItineraryChecklist(personDocId: string, itineraryId: string, checklistId: string) {
+        const token = this.lifecycleToken;
+        const res = await togglePersonItineraryChecklist(this, personDocId, itineraryId, checklistId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
     }
 
     /** E-38：人物家庭与重要亲属关系 */

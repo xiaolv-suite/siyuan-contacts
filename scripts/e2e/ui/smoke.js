@@ -10254,6 +10254,82 @@ await test("F-18 首页仪表盘：关系降温预警与破冰重联中枢（Coo
     fixture.remove();
 });
 
+await test("D-18 联系人详情页：会客拜访行程与行前准备（PersonItinerary）规划与转交往记录闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let savedItem = null;
+    let toggled = false;
+
+    const mockItinerary = {
+        id: "itn-smoke-1",
+        personDocId: person.docId,
+        title: "探讨战略算力芯片合作",
+        targetDate: "2026-11-15",
+        targetTime: "14:30",
+        location: "深圳南山科技园腾讯大厦 18F",
+        attendees: "李总（CTO）、王博士",
+        checklists: [
+            { id: "c1", text: "携带产品样机与测试数据", done: true },
+            { id: "c2", text: "打印商业合作方案（双份）", done: false },
+        ],
+        note: "重点关注散热性能指标与交付周期",
+        status: "planned",
+        createdAt: 1000,
+        updatedAt: 1000,
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadItineraries: async () => [mockItinerary],
+            onSaveItinerary: async (item) => {
+                savedItem = item;
+                return [item];
+            },
+            onRemoveItinerary: async () => [],
+            onToggleItineraryChecklist: async (_docId, _itnId, _chkId) => {
+                toggled = true;
+                return [{ ...mockItinerary, checklists: mockItinerary.checklists.map((c) => c.id === _chkId ? { ...c, done: !c.done } : c) }];
+            },
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-itinerary-section"), "未渲染会客拜访行程组件");
+    assert(fixture.textContent.includes("会客拜访行程与行前准备"), "未渲染会客拜访行程标题");
+    assert(fixture.textContent.includes("1 待赴约"), "未渲染待赴约徽章");
+    assert(fixture.textContent.includes("探讨战略算力芯片合作"), "未渲染行程主题");
+    assert(fixture.textContent.includes("深圳南山科技园腾讯大厦 18F"), "未渲染会面地点");
+    assert(fixture.textContent.includes("携带产品样机与测试数据"), "未渲染行前核对清单");
+
+    // 点击清单项切换状态
+    const chkBtn = Array.from(fixture.querySelectorAll(".checklist-chip")).find((b) => b.textContent.includes("打印商业合作方案"));
+    assert(chkBtn, "未找到打印方案检查项按钮");
+    chkBtn.click();
+    await until(() => toggled, "点击核验清单未触发 onToggleItineraryChecklist");
+
+    // 点击「履约并记互动」
+    const completeBtn = fixture.querySelector(".btn-action.ft__primary");
+    assert(completeBtn, "未找到履约并记互动按钮");
+    completeBtn.click();
+    await until(() => savedItem?.status === "completed", "点击履约未将行程状态更新为 completed");
+
+    // 验证备注输入框自动填入会面拜访纪要
+    const recordInput = fixture.querySelector('input[aria-label="互动备注"]');
+    assert(recordInput?.value.includes("【会面拜访】"), "履约后未自动填入会面拜访纪要草稿");
+    assert(recordInput?.value.includes("探讨战略算力芯片合作"), "拜访纪要未包含行程主题");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

@@ -152,6 +152,11 @@ export interface ContactsPluginFacade {
     updatePersonProject?(personDocId: string, projectId: string, patch: Partial<import("./domain/projects").PersonProjectItem>): Promise<import("./domain/projects").PersonProjectItem[]>;
     removePersonProject?(personDocId: string, projectId: string): Promise<import("./domain/projects").PersonProjectItem[]>;
     findCollaboratorsByProject?(matcher: { title?: string; docId?: string }): Promise<Array<{ personDocId: string; role?: string; status: import("./domain/projects").ProjectStatus; title: string }>>;
+    /** E-54：会客拜访行程备忘与准备清单（Meeting & Visit Itineraries） */
+    loadPersonItineraries?(personDocId: string): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    savePersonItinerary?(item: import("./domain/itineraries").PersonItineraryItem): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    removePersonItinerary?(personDocId: string, itineraryId: string): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    togglePersonItineraryChecklist?(personDocId: string, itineraryId: string, checklistId: string): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
     /** E-38：人物家庭与重要亲属关系（Family & Kinship Members） */
     loadPersonKinships?(personDocId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
     addPersonKinship?(item: import("./domain/kinship").KinshipMemberItem): Promise<import("./domain/kinship").KinshipMemberItem[]>;

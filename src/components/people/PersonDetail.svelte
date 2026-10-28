@@ -88,6 +88,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import BusinessCardModal from "./BusinessCardModal.svelte";
     import PersonSocialPreferences from "./PersonSocialPreferences.svelte";
     import type { PersonSocialPreferenceItem } from "../../domain/social-preferences.ts";
+    import PersonItinerary from "./PersonItinerary.svelte";
+    import type { PersonItineraryItem } from "../../domain/itineraries.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -216,6 +218,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddSocialPreference,
         onUpdateSocialPreference,
         onRemoveSocialPreference,
+        onLoadItineraries,
+        onSaveItinerary,
+        onRemoveItinerary,
+        onToggleItineraryChecklist,
         collapsedSections,
         onToggleSection,
     }: {
@@ -342,6 +348,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onAddSocialPreference?: (item: import("../../domain/social-preferences").PersonSocialPreferenceItem) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
         onUpdateSocialPreference?: (personDocId: string, prefId: string, patch: Partial<import("../../domain/social-preferences").PersonSocialPreferenceItem>) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
         onRemoveSocialPreference?: (personDocId: string, prefId: string) => Promise<import("../../domain/social-preferences").PersonSocialPreferenceItem[]>;
+        /** E-54 会客拜访行程备忘与准备清单（可选） */
+        onLoadItineraries?: (personDocId: string) => Promise<PersonItineraryItem[]>;
+        onSaveItinerary?: (item: PersonItineraryItem) => Promise<PersonItineraryItem[]>;
+        onRemoveItinerary?: (personDocId: string, itineraryId: string) => Promise<PersonItineraryItem[]>;
+        onToggleItineraryChecklist?: (personDocId: string, itineraryId: string, checklistId: string) => Promise<PersonItineraryItem[]>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -744,6 +755,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadLifecycleStage();
     loadScratchpads();
     loadSocialPreferences();
+    loadItineraries();
 
     let kinships = $state<KinshipMemberItem[]>([]);
 
@@ -802,6 +814,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             if (detailAlive) socialPreferences = list;
         } catch {
             socialPreferences = [];
+        }
+    }
+
+    let itineraries = $state<PersonItineraryItem[]>([]);
+
+    async function loadItineraries() {
+        if (!onLoadItineraries || !current?.docId) return;
+        try {
+            const list = await onLoadItineraries(current.docId);
+            if (detailAlive) itineraries = list;
+        } catch {
+            itineraries = [];
         }
     }
 
@@ -3250,6 +3274,31 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             onRemove={async (prefId) => {
                 const res = await onRemoveSocialPreference!(current.docId, prefId);
                 socialPreferences = res;
+            }}
+            {i18n}
+        />
+    {/if}
+
+    {#if onLoadItineraries && onSaveItinerary && onRemoveItinerary && onToggleItineraryChecklist && !current.isSelf}
+        <PersonItinerary
+            personDocId={current.docId}
+            personName={current.name}
+            items={itineraries}
+            onSave={async (item) => {
+                const res = await onSaveItinerary!(item);
+                itineraries = res;
+            }}
+            onRemove={async (itineraryId) => {
+                const res = await onRemoveItinerary!(current.docId, itineraryId);
+                itineraries = res;
+            }}
+            onToggleChecklist={async (itineraryId, checklistId) => {
+                const res = await onToggleItineraryChecklist!(current.docId, itineraryId, checklistId);
+                itineraries = res;
+            }}
+            onConvertItineraryToInteraction={(item) => {
+                const loc = item.location ? `在 ${item.location} ` : "";
+                noteText = `【会面拜访】${loc}与 ${current.name} 会见交流。\n主题：${item.title}${item.attendees ? `\n参会人员：${item.attendees}` : ""}${item.note ? `\n备忘：${item.note}` : ""}`;
             }}
             {i18n}
         />

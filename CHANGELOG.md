@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.46] — 2026-10-29
+
+重塑：联系人会客拜访行程备忘与行前准备清单系统（Meeting Itinerary & Visit Preparation Checklist）
+
+- **会面行程域模型与存储层**：`domain/itineraries.ts` 与 `data/itineraries.ts` 结构化管理会见日期时间、会面地点、随行/参会人员、行前准备核对清单（`checklists`，如资料/样品/伴手礼）与补充备忘；数据由 Web Lock 锁保护存储于 `person-itineraries.json`；提供 `deriveInteractionFromItinerary` 纯函数一键派生正式交往互动事件。
+- **详情页行程看板与交互闭环**：`PersonItinerary.svelte` 与 `PersonDetail.svelte` 呈现待赴约倒计时胶囊（“今天”、“N 天后”、“已逾期”）、交互式行前核验复选框与过滤工具栏；支持一键「履约并记互动」将拜访纪要预填入互动草稿并沉淀至时间线，支持一键「复制行程单 Markdown」供笔记协同。
+
+验证：`pnpm check` 0/0、单测 1008/1008 绿灯、三套 E2E UI 回归各 516/516 全部通过、Release 门禁通过。
+
 ## [0.6.45] — 2026-10-29
 
 重塑：首页仪表盘「关系降温预警与破冰重联中枢」（Relationship Cadence Cooling Radar & Reconnect Hub）
