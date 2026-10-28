@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.38** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.38) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.39** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.39) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.38 · 2026-10-29）
+## 本次发布（v0.6.39 · 2026-10-29）
+
+本版本将编年史长卷的流转与分享体验进一步完善，推出了人脉交往历程编年史一键复制 Markdown 全文功能（Copy Milestones Chronicle Markdown）：
+
+- **编年史 Markdown 极速流转（`PersonMilestonesTimeline.svelte`）**：在历程编年史长卷工具栏新增「复制全文」按钮，点击一键将排版规范、按年份分节的人脉编年史长卷复制到剪贴板，支持在邮件、即时通讯或外部报告中快捷引用；
+- **操作反馈与复制防抖体验**：点击后显示「已复制全文 ✓」绿色状态反馈，2 秒后自动恢复初始状态，结合既有的「沉淀为编年史文档」实现文档沉淀与临时文本流通双轮驱动。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 985/985 100% 通过；浏览器 UI 回归全绿（509/509）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.38 · 2026-10-29）
 
 本版本将编年史里程碑长卷无缝沉淀至思源实体笔记库，推出了人脉交往编年史实体文档一键沉淀与主编辑器直达系统（Export Milestones Journey to SiYuan Document）：
 

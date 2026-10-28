@@ -9608,6 +9608,87 @@ await test("D-12 联系人详情页：交往历程编年史沉淀为思源实体
     fixture.remove();
 });
 
+await test("D-13 联系人详情页：交往历程编年史一键复制 Markdown 全文到剪贴板与反馈提示", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let clipboardText = "";
+    const originalWriteText = navigator.clipboard?.writeText;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText = async (text) => {
+            clipboardText = text;
+        };
+    }
+
+    try {
+        const person = {
+            docId: "doc-copy-mls-1",
+            itemId: "item-copy-mls-1",
+            name: "复制测试人物",
+            phone: "13800008888",
+            email: "copy@example.com",
+            wechat: "wx_copy",
+            website: "",
+            birthday: "1995-05-05",
+            isLunar: false,
+            group: "朋友",
+            tags: [],
+            relatedItemIds: [],
+            company: "",
+            profile: {
+                readAt: Date.now(),
+                affiliations: { state: "known", value: { work: [], education: [], family: [], unspecified: [] } },
+                relationship: { state: "unknown", message: "" },
+            },
+        };
+
+        mount(PersonDetail, {
+            target: fixture,
+            props: {
+                person,
+                settings,
+                initialTab: "activity",
+                onClose() {},
+                onChanged() {},
+                onRecord: async () => {},
+                onLoadInsights: async () => ({
+                    timeline: [
+                        { id: "e1", eventId: "e1", occurredAt: 1000, localDate: "2024-01-01", source: "manual", note: "新年首次问候", groupSize: 1 },
+                    ],
+                    coAttendance: [],
+                    totalEvents: 1,
+                    backlinks: [],
+                }),
+                onOpenPersonDoc() {},
+                onNavigate() {},
+            },
+        });
+
+        // 切换至历程编年史长卷模式
+        await until(() => fixture.textContent.includes("历程编年史长卷"), "未渲染编年史切换按钮");
+        const milestonesBtn = Array.from(fixture.querySelectorAll(".lvct-detail__activity-subnav button")).find((b) => b.textContent.includes("历程编年史长卷"));
+        assert(milestonesBtn, "未找到历程编年史切换按钮");
+        milestonesBtn.click();
+
+        await until(() => fixture.querySelector(".lvct-milestones-timeline"), "未渲染编年史组件");
+
+        // 点击「复制全文」按钮
+        await until(() => fixture.textContent.includes("复制全文"), "未找到复制全文按钮");
+        const copyBtn = Array.from(fixture.querySelectorAll(".milestones-actions button")).find((b) => b.textContent.includes("复制全文"));
+        assert(copyBtn, "未找到复制全文按钮元素");
+        copyBtn.click();
+
+        await until(() => fixture.textContent.includes("已复制全文 ✓"), "未显示复制成功反馈提示");
+        assert(clipboardText.includes("# 📜 人脉交往编年史 · 复制测试人物"), "剪贴板内容缺失编年史大标题");
+        assert(clipboardText.includes("新年首次问候"), "剪贴板内容缺失事件细节");
+    } finally {
+        if (navigator.clipboard && originalWriteText) {
+            navigator.clipboard.writeText = originalWriteText;
+        }
+        fixture.remove();
+    }
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

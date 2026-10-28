@@ -2,16 +2,21 @@
     import {
         filterMilestonesByType,
         groupMilestonesByYear,
+        buildMilestonesDocumentMarkdown,
         type MilestoneEvent,
         type MilestoneType,
     } from "../../domain/timeline-milestones.ts";
     import type { ContactSummary } from "../../domain/person.ts";
     import { translateText } from "../../domain/translation";
+    import { copyPlainText } from "../../shared/clipboard";
+    import { onDestroy } from "svelte";
     import {
         Flag,
         Calendar,
         ExternalLink,
         FileText,
+        Copy,
+        Check,
     } from "@lucide/svelte";
 
     let {
@@ -35,6 +40,27 @@
     let creatingDoc = $state(false);
     let createdDoc = $state<{ docId: string; hpath: string } | null>(null);
     let createError = $state("");
+    let copied = $state(false);
+    let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+    onDestroy(() => {
+        if (copyTimer) clearTimeout(copyTimer);
+    });
+
+    async function handleCopyMarkdown() {
+        if (!person || milestones.length === 0) return;
+        try {
+            const md = buildMilestonesDocumentMarkdown(person, milestones);
+            await copyPlainText(md);
+            copied = true;
+            if (copyTimer) clearTimeout(copyTimer);
+            copyTimer = setTimeout(() => {
+                copied = false;
+            }, 2000);
+        } catch (err: unknown) {
+            createError = err instanceof Error ? err.message : String(err);
+        }
+    }
 
     const filtered = $derived(filterMilestonesByType(milestones, activeTypeFilter));
     const groupedByYear = $derived(groupMilestonesByYear(filtered));
@@ -89,8 +115,25 @@
             {/each}
         </div>
 
-        {#if onCreateDoc && person}
-            <div class="milestones-actions" style="margin-left: auto;">
+        <div class="milestones-actions" style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
+            {#if person && milestones.length > 0}
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small"
+                    onclick={handleCopyMarkdown}
+                    title={text("milestonesCopyTip", "将交往编年史 Markdown 全文复制到剪贴板")}
+                >
+                    {#if copied}
+                        <Check size={13} class="lvct-text-success" style="margin-right: 3px;" />
+                        <span class="lvct-text-success">{text("milestonesCopied", "已复制全文 ✓")}</span>
+                    {:else}
+                        <Copy size={13} style="margin-right: 3px;" />
+                        <span>{text("milestonesCopyBtn", "复制全文")}</span>
+                    {/if}
+                </button>
+            {/if}
+
+            {#if onCreateDoc && person}
                 {#if createdDoc}
                     <button
                         type="button"
@@ -113,8 +156,8 @@
                         <span>{creatingDoc ? text("milestonesDocCreating", "正在生成…") : text("milestonesDocCreateBtn", "沉淀为编年史文档")}</span>
                     </button>
                 {/if}
-            </div>
-        {/if}
+            {/if}
+        </div>
     </div>
 
     {#if createError}

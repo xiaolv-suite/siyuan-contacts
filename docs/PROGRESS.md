@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.39 发布：人脉交往历程编年史一键复制 Markdown 全文（Copy Milestones Chronicle Markdown）
+
+- 本轮落地编年史长卷剪贴板快捷复制与状态反馈：
+  1. 编年史 Markdown 流转支持：`PersonMilestonesTimeline.svelte` 增加「复制全文」按钮，一键将排版规范、按年份分节的人脉编年史长卷复制到剪贴板；
+  2. 复制防抖与反馈提示：提供「已复制全文 ✓」状态反馈与 2 秒防抖自动恢复，与实体文档沉淀形成完整流转方案；
+- 门禁验证：`pnpm check`（0/0）、单测 985/985 全部通过、三套 UI 回归 509/509 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.38 发布：人脉交往编年史里程碑实体文档一键沉淀（Export Milestones Journey to SiYuan Document）
 
 - 本轮落地编年史实体文档生成服务与时间轴沉淀联动：

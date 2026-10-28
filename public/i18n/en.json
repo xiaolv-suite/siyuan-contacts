@@ -1214,5 +1214,8 @@
   "milestonesDocSuccess": "Chronicle document created: ",
   "milestonesDocFail": "Failed to create chronicle document, please check notebook settings",
   "milestonesDocOpenBtn": "Open Chronicle Doc ↗",
-  "milestonesDocOpenTip": "Open chronicle document in main editor"
+  "milestonesDocOpenTip": "Open chronicle document in main editor",
+  "milestonesCopyBtn": "Copy All",
+  "milestonesCopied": "Copied All ✓",
+  "milestonesCopyTip": "Copy entire chronicle Markdown to clipboard"
 }

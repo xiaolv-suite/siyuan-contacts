@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.38** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.38) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.39** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.39) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.38 (2026-10-29)
+## This release: v0.6.39 (2026-10-29)
+
+This release implements Copy Milestones Chronicle Markdown in the person detail view:
+
+- **Instant Chronicle Markdown Sharing (`PersonMilestonesTimeline.svelte`)**: Adds a dedicated "Copy All" action to the relationship milestones timeline toolbar, allowing users to copy the entire formatted chronicle Markdown to the clipboard for sharing via email, chat, or external reviews.
+- **Copy Feedback & Status Indication**: Provides a clear "Copied All ✓" confirmation state reverting after 2 seconds, pairing clipboard export with the existing "Save as Chronicle Doc" capability.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (509/509); production build and release checks passed.
+
+## Previous release: v0.6.38 (2026-10-29)
 
 This release implements Export Milestones Journey to SiYuan Document:
 
