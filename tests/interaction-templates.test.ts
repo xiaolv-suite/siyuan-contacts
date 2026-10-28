@@ -5,6 +5,9 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
     DEFAULT_TEMPLATES,
+    getDefaultTemplates,
+    TEMPLATE_PLACEHOLDERS,
+    insertPlaceholderToContent,
     newTemplateId,
     normalizeTemplates,
     normalizeTemplatesForWrite,
@@ -62,12 +65,47 @@ test("变量逐字保留：美元替换语法及变量中的占位符不二次�
     }
 });
 
-test("内置默认模板：见面/电话/聚会三条且占位符合法", () => {
-    assert.deepEqual(DEFAULT_TEMPLATES.map((template) => template.name), ["见面", "电话", "聚会"]);
+test("内置默认模板：保留前置见面/电话/聚会并扩充商务/咖啡/餐叙等9套高频精选模板", () => {
+    assert.deepEqual(DEFAULT_TEMPLATES.map((template) => template.name).slice(0, 3), ["见面", "电话", "聚会"]);
+    assert.equal(DEFAULT_TEMPLATES.length, 9);
+    assert.equal(getDefaultTemplates().length, 9);
     for (const template of DEFAULT_TEMPLATES) {
         assert.equal(normalizeTemplates([template]).length, 1);
     }
     assert.notEqual(newTemplateId(), newTemplateId());
+});
+
+test("多维扩展占位符变量替换：公司、机构、职位、城市", () => {
+    const rendered = renderTemplate(
+        "拜访{{公司}}（{{机构}}）的{{姓名}}，职位是{{职位}}，常驻{{城市}}，日期{{日期}}，上次{{上次互动}}",
+        {
+            name: "李总",
+            date: "2026-10-29",
+            lastInteraction: "2026-09-15",
+            company: "未来智能创新中心",
+            title: "首席架构师",
+            city: "深圳",
+        },
+    );
+    assert.equal(rendered, "拜访未来智能创新中心（未来智能创新中心）的李总，职位是首席架构师，常驻深圳，日期2026-10-29，上次2026-09-15");
+});
+
+test("占位符变量插入器 insertPlaceholderToContent：支持任意位置插入与光标前移", () => {
+    const r1 = insertPlaceholderToContent("和聊了", "{{姓名}}", 1, 1);
+    assert.equal(r1.newContent, "和{{姓名}}聊了");
+    assert.equal(r1.newCursor, 1 + "{{姓名}}".length);
+
+    const r2 = insertPlaceholderToContent("和某人见面的记录", "【{{日期}}】", 0, 0);
+    assert.equal(r2.newContent, "【{{日期}}】和某人见面的记录");
+
+    const r3 = insertPlaceholderToContent("末尾追加", " {{城市}}");
+    assert.equal(r3.newContent, "末尾追加 {{城市}}");
+    assert.equal(r3.newCursor, "末尾追加 {{城市}}".length);
+});
+
+test("占位符元数据 TEMPLATE_PLACEHOLDERS 完整性", () => {
+    assert.equal(TEMPLATE_PLACEHOLDERS.length, 6);
+    assert.deepEqual(TEMPLATE_PLACEHOLDERS.map((p) => p.key), ["{{姓名}}", "{{日期}}", "{{上次互动}}", "{{公司}}", "{{职位}}", "{{城市}}"]);
 });
 
 function templateFixture(initial: unknown = null, failRead = false) {

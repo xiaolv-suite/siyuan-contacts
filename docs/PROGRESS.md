@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.44 发布：互动备注场景化精选模板库与动态占位符变量插入器（Interaction Templates Rich Presets & Dynamic Variable Inserter）
+
+- 本轮落地互动模板扩展变量、预置场景库与模板管理变量插入工具栏：
+  1. 模板域模型增强：`interaction-templates.ts` 纯函数扩充 `TemplateVars` 支持公司/机构/职位/城市，扩充内置模板至 9 组高频场景（商务拜访、咖啡、餐叙、论坛、请教、问候等），实现 `insertPlaceholderToContent` 光标插入纯函数；
+  2. 管理器与详情页上下文联动：`TemplateManager.svelte` 增加变量插入芯片栏与恢复预置模板闭环；`PersonDetail.svelte` 应用模板时自动提取当前人物的组织履历与归属城市进行动态替换；
+- 门禁验证：`pnpm check`（0/0）、单测 1000/1000 全部通过、三套 UI 回归 514/514 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.43 发布：联系人多维画像标签智能建议与一键采纳系统（Persona Smart Tag Inference & Quick Adoption）
 
 - 本轮落地多维标签推断纯函数与联系人详情页标签云一键采纳：

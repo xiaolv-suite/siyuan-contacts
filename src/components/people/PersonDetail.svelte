@@ -933,10 +933,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             templateChoice = "";
             return;
         }
+        const aff = current.profile?.affiliations?.state === "known" ? current.profile.affiliations.value.work?.[0] : undefined;
+        const region = extractNormalizedRegion(current);
+        const cityStr = region.city !== "未知" ? region.city : (region.province && region.province !== "未知" ? region.province : "");
         noteText = renderTemplate(template.content, {
             name: current.name,
             date: toLocalDateKey(new Date()),
             lastInteraction: insights?.timeline?.[0]?.localDate ?? "无",
+            company: aff?.orgName || (current as any).company || "",
+            title: aff?.title || "",
+            city: cityStr,
         });
         recorded = false;
         templateChoice = "";

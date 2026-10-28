@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.44] — 2026-10-29
+
+重塑：互动备注场景化精选模板库与动态占位符变量插入器（Interaction Templates Rich Presets & Dynamic Variable Inserter）
+
+- **多维动态占位符变量与高频场景预置**：`domain/interaction-templates.ts` 扩充模板占位符支持至 `{{姓名}}`、`{{日期}}`、`{{上次互动}}`、`{{公司}}`（`{{机构}}`）、`{{职位}}`、`{{城市}}`；扩充系统精选内置模板至 9 组高频交往场景（包含商务拜访、咖啡小聚、餐饮宴请、活动论坛、请教咨询、日常问候等）；新增 `insertPlaceholderToContent` 与 `getDefaultTemplates` 纯函数。
+- **模板管理变量插入工具栏与一键恢复**：`TemplateManager.svelte` 升级提供变量快捷插入芯片工具栏（点击即插入占位符至光标位置）与「恢复精选预置模板」一键重置闭环；`PersonDetail.svelte` 在应用模板时无缝结合人物组织职位（`work[0]`）与常驻城市（`region`）进行真实上下文变量替换。
+
+验证：`pnpm check` 0/0、单测 1000/1000 绿灯、三套 E2E UI 回归各 514/514 全部通过、Release 门禁通过。
+
 ## [0.6.43] — 2026-10-29
 
 重塑：联系人多维画像标签智能建议与一键采纳系统（Persona Smart Tag Inference & Quick Adoption）

@@ -5193,8 +5193,8 @@ await test("备注模板：空存储回退内置默认，增改删落盘且重�
         loadData: async () => (saved === "" ? "" : JSON.parse(JSON.stringify(saved))),
         saveData: async (_key, value) => { writes += 1; saved = JSON.parse(JSON.stringify(value)); },
     };
-    // 空存储 → 内置默认（见面/电话/聚会），不落盘
-    assert(JSON.stringify((await listTemplates(plugin)).map((item) => item.name)) === JSON.stringify(["见面", "电话", "聚会"]), "空存储未回退内置默认");
+    // 空存储 → 内置默认（精选模板库），不落盘
+    assert(JSON.stringify((await listTemplates(plugin)).map((item) => item.name)) === JSON.stringify(DEFAULT_TEMPLATES.map((item) => item.name)), "空存储未回退内置默认");
     assert(writes === 0, "回退默认不应写存储");
     // 增改删全量保存
     const next = [
@@ -10036,6 +10036,65 @@ await test("D-16 联系人详情页：画像标签智能推断建议与一键采
     await until(() => fixture.querySelectorAll(".lvct-chip--tag").length >= 2, "采纳后标签列表未包含新增标签");
 
     fixture.remove();
+});
+
+await test("D-17 互动备注模板管理：场景变量插入器与精选预置模板库恢复闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const TemplateManager = (await import("../../../src/components/people/TemplateManager.svelte")).default;
+    let savedList = [];
+    const origConfirm = window.confirm;
+    window.confirm = () => true;
+
+    try {
+        mount(TemplateManager, {
+            target: fixture,
+            props: {
+                templates: [
+                    { id: "custom-1", name: "自定义测试", content: "初次交流" },
+                ],
+                onSave: async (list) => {
+                    savedList = list;
+                    return list;
+                },
+                onClose() {},
+            },
+        });
+
+        await until(() => fixture.querySelector(".lvct-templates__var-toolbar"), "未渲染占位符变量工具栏");
+        assert(fixture.textContent.includes("插入变量："), "未渲染插入变量提示文本");
+
+        // 验证变量按钮存在并点击插入
+        const companyChip = Array.from(fixture.querySelectorAll(".lvct-templates__var-chip")).find((b) => b.textContent.includes("{{公司}}"));
+        assert(companyChip, "未找到公司占位符插入按钮");
+        companyChip.click();
+
+        await until(() => {
+            const textarea = fixture.querySelector(".lvct-templates__content");
+            return textarea?.value.includes("{{公司}}");
+        }, "点击变量芯片未插入变量");
+
+        // 点击恢复精选预置模板
+        const resetBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("恢复精选预置模板"));
+        assert(resetBtn, "未找到恢复精选预置模板按钮");
+        resetBtn.click();
+
+        await until(() => fixture.querySelectorAll(".lvct-templates__item").length === 9, "恢复预置后模板数量不等于 9");
+        const names = Array.from(fixture.querySelectorAll(".lvct-templates__item-head input")).map((el) => el.value);
+        assert(names.includes("商务拜访"), "预置模板未包含商务拜访");
+        assert(names.includes("咖啡小聚"), "预置模板未包含咖啡小聚");
+
+        // 保存模板
+        const saveBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("保存模板"));
+        assert(saveBtn, "未找到保存模板按钮");
+        saveBtn.click();
+
+        await until(() => savedList.length === 9, "点击保存未触发保存 9 条预置模板");
+    } finally {
+        window.confirm = origConfirm;
+        fixture.remove();
+    }
 });
 
 await pause(100);

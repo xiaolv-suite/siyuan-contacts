@@ -1,6 +1,6 @@
 <script lang="ts">
     /** 本地草稿带编辑基线保存；冲突/未知保留输入，重读仅作核对，不自动换基线。 */
-    import { newTemplateId, TEMPLATES_LIMIT } from "../../domain/interaction-templates";
+    import { newTemplateId, TEMPLATES_LIMIT, TEMPLATE_PLACEHOLDERS, getDefaultTemplates, insertPlaceholderToContent } from "../../domain/interaction-templates";
     import type { NoteTemplate } from "../../domain/interaction-templates";
     import StatusNotice from "../StatusNotice.svelte";
     import { useCloseGuard } from "../close-guard";
@@ -47,6 +47,26 @@
     function addTemplate() {
         if (busy || draft.length >= TEMPLATES_LIMIT) return;
         draft = [...draft, { id: newTemplateId(), name: "", content: "" }];
+    }
+
+    function insertVar(itemIndex: number, varKey: string) {
+        if (busy || !draft[itemIndex]) return;
+        const currentContent = draft[itemIndex].content;
+        const res = insertPlaceholderToContent(currentContent, varKey);
+        draft[itemIndex] = { ...draft[itemIndex], content: res.newContent };
+    }
+
+    async function resetToPresets() {
+        if (busy) return;
+        const confirmed = await confirmDialog({
+            title: text("tplManagerResetTitle", "恢复精选预置模板"),
+            message: text("tplManagerResetConfirm", "将模板列表重置为系统精选的 9 组高频场景模板？未保存的草稿将被替换，点击保存后生效。"),
+            confirmLabel: text("tplManagerResetConfirmBtn", "恢复预置"),
+            cancelLabel: text("cancel", "取消"),
+        });
+        if (!confirmed) return;
+        draft = getDefaultTemplates();
+        savedMessage = text("tplManagerResetDone", "已恢复系统预置高频模板，点击「保存模板」后生效。");
     }
 
     async function removeTemplate(id: string) {
@@ -141,7 +161,7 @@
 </script>
 
 <div class="lvct-form">
-    <p class="ft__smaller ft__on-surface">{text("tplManagerIntro", "模板支持占位符 {{姓名}}{{日期}}{{上次互动}}，应用时自动替换；日期与参与者在记录时仍需确认，模板不会自动提交。")}</p>
+    <p class="ft__smaller ft__on-surface">{text("tplManagerIntro", "模板支持占位符 {{姓名}} {{日期}} {{上次互动}} {{公司}} {{职位}} {{城市}}，应用时自动替换；日期与参与者在记录时仍需确认，模板不会自动提交。")}</p>
     {#if draft.length === 0}
         <p class="ft__smaller ft__on-surface">{text("tplManagerEmpty", "还没有模板，点下方「新增模板」创建一个。")}</p>
     {/if}
@@ -151,11 +171,26 @@
                 <input class="b3-text-field" type="text" aria-label={text("tplNameAria", "模板 {n} 名称", { n: index + 1 })} placeholder={text("tplNamePlaceholder", "模板名称（如：见面）")} bind:value={item.name} disabled={busy} />
                 <button class="b3-button b3-button--cancel" title={text("tplDeleteTitle", "删除模板 {n}", { n: index + 1 })} disabled={busy} onclick={() => removeTemplate(item.id)}>{text("tplManagerDelete", "删除")}</button>
             </div>
-            <textarea class="b3-text-field fn__block lvct-templates__content" rows="3" aria-label={text("tplContentAria", "模板 {n} 内容", { n: index + 1 })} placeholder={text("tplContentPlaceholder", "备注内容，可用 {{姓名}} {{日期}} {{上次互动}} 占位")} bind:value={item.content} disabled={busy}></textarea>
+            <div class="lvct-templates__var-toolbar">
+                <span class="ft__smaller ft__on-surface">{text("tplInsertVarTip", "插入变量：")}</span>
+                {#each TEMPLATE_PLACEHOLDERS as placeholder}
+                    <button
+                        type="button"
+                        class="lvct-templates__var-chip"
+                        title={placeholder.descZh}
+                        disabled={busy}
+                        onclick={() => insertVar(index, placeholder.key)}
+                    >
+                        + {placeholder.key}
+                    </button>
+                {/each}
+            </div>
+            <textarea class="b3-text-field fn__block lvct-templates__content" rows="3" aria-label={text("tplContentAria", "模板 {n} 内容", { n: index + 1 })} placeholder={text("tplContentPlaceholder", "备注内容，可用 {{姓名}} {{日期}} {{上次互动}} {{公司}} {{职位}} {{城市}} 占位")} bind:value={item.content} disabled={busy}></textarea>
         </div>
     {/each}
     <div class="lvct-form__actions">
         <button class="b3-button b3-button--outline" onclick={addTemplate} disabled={busy || draft.length >= TEMPLATES_LIMIT}>{text("tplManagerAdd", "＋ 新增模板")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => void resetToPresets()} disabled={busy}>{text("tplManagerReset", "恢复精选预置模板")}</button>
         {#if onReload}<button class="b3-button b3-button--outline" onclick={() => void reload()} disabled={busy}>{text("tplManagerReload", "重新读取当前版本")}</button>{/if}
         <span style="flex:1"></span>
         <button class="b3-button b3-button--cancel" onclick={() => void guardedClose(onClose)} disabled={busy}>{text("tplManagerClose", "关闭")}</button>
