@@ -10097,6 +10097,163 @@ await test("D-17 互动备注模板管理：场景变量插入器与精选预置
     }
 });
 
+await test("F-18 首页仪表盘：关系降温预警与破冰重联中枢（CoolingRadarDialog）速查与筛选闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let loadCoolingCalled = false;
+    let openedDocId = "";
+
+    const mockCoolingSummary = {
+        totalCooling: 2,
+        starredCooling: 1,
+        coldCount: 1,
+        coolCount: 1,
+        unknownCount: 0,
+        avgOverdueDays: 37,
+        items: [
+            {
+                person: {
+                    docId: "doc-cool-1",
+                    itemId: "item-cool-1",
+                    name: "降温星标李总",
+                    phone: "13800008888",
+                    email: "",
+                    wechat: "",
+                    website: "",
+                    birthday: "",
+                    isLunar: false,
+                    group: "投资人",
+                    tags: ["AI芯片"],
+                    relatedItemIds: [],
+                },
+                health: {
+                    level: "cold",
+                    score: 0,
+                    elapsedDays: 90,
+                    cadenceDays: 30,
+                    overdue: true,
+                    overdueDays: 60,
+                },
+                isStarred: true,
+                urgencyScore: 210,
+                primaryOrgAndTitle: "未来芯片创新 · 合伙人",
+                lastInteractionDate: "2026-08-01",
+                cadenceDays: 30,
+                overdueDays: 60,
+            },
+            {
+                person: {
+                    docId: "doc-cool-2",
+                    itemId: "item-cool-2",
+                    name: "微凉王总",
+                    phone: "13800007777",
+                    email: "",
+                    wechat: "",
+                    website: "",
+                    birthday: "",
+                    isLunar: false,
+                    group: "科技组",
+                    tags: ["新能源"],
+                    relatedItemIds: [],
+                },
+                health: {
+                    level: "cool",
+                    score: 30,
+                    elapsedDays: 45,
+                    cadenceDays: 30,
+                    overdue: true,
+                    overdueDays: 15,
+                },
+                isStarred: false,
+                urgencyScore: 35,
+                primaryOrgAndTitle: "绿能储能 · 投资经理",
+                lastInteractionDate: "2026-09-15",
+                cadenceDays: 30,
+                overdueDays: 15,
+            },
+        ],
+    };
+
+    const testDashboardData = {
+        people: 2,
+        relations: 0,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+        heatDistribution: {
+            hot: { count: 0, percentage: 0, itemIds: [] },
+            warm: { count: 0, percentage: 0, itemIds: [] },
+            cool: { count: 1, percentage: 50, itemIds: ["item-cool-2"] },
+            cold: { count: 1, percentage: 50, itemIds: ["item-cool-1"] },
+            paused: { count: 0, percentage: 0, itemIds: [] },
+            unknown: { count: 0, percentage: 0, itemIds: [] },
+            total: 2,
+        },
+    };
+
+    const facade = {
+        settings,
+        viewPreferences: DEFAULT_VIEW_PREFERENCES,
+        loadDashboard: async () => testDashboardData,
+        loadReminderDismissals: async () => [],
+        loadCoolingRadarSummary: async () => {
+            loadCoolingCalled = true;
+            return mockCoolingSummary;
+        },
+        openPersonDoc() {},
+    };
+
+    mount(DashboardView, {
+        target: fixture,
+        props: {
+            facade,
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            onOpenPeople: ({ memberDocIds }) => {
+                if (memberDocIds?.[0]) openedDocId = memberDocIds[0];
+            },
+            onOpenDetail() {},
+        },
+    });
+
+    // 验证首页「降温预警」按钮
+    await until(() => fixture.textContent.includes("降温预警"), "未找到降温预警按钮");
+    const coolingBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("降温预警"));
+    assert(coolingBtn, "未找到降温预警按钮元素");
+    coolingBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-cooling-radar"), "未打开降温预警与破冰重联中枢弹窗");
+    assert(loadCoolingCalled, "未调用 loadCoolingRadarSummary");
+    assert(fixture.textContent.includes("需破冰人脉"), "未渲染需破冰人脉指标卡");
+    assert(fixture.textContent.includes("星标重点降温"), "未渲染星标重点降温指标卡");
+    assert(fixture.textContent.includes("降温星标李总"), "未渲染李总降温卡片");
+    assert(fixture.textContent.includes("渐冻 · 逾期 60 天"), "未渲染渐冻徽章");
+    assert(fixture.textContent.includes("微凉王总"), "未渲染微凉王总卡片");
+
+    // 点击筛选「渐冻」
+    const coldFilterBtn = Array.from(fixture.querySelectorAll(".filter-pill")).find((b) => b.textContent.includes("渐冻"));
+    assert(coldFilterBtn, "未找到渐冻筛选胶囊");
+    coldFilterBtn.click();
+
+    await until(() => fixture.querySelectorAll(".cooling-card").length === 1, "筛选渐冻后卡片数量不为 1");
+    assert(fixture.textContent.includes("降温星标李总"), "渐冻列表中未包含李总");
+
+    // 点击「查看画像 ↗」
+    const viewBtn = fixture.querySelector(".btn-open-person");
+    assert(viewBtn, "未找到查看画像按钮");
+    viewBtn.click();
+    assert(openedDocId === "doc-cool-1", "点击查看画像未传递正确 docId");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

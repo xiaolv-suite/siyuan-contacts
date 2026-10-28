@@ -209,6 +209,8 @@ export interface ContactsPluginFacade {
     createExchangesLedgerDoc?(options?: { title?: string }): Promise<{ docId: string; hpath: string; count: number } | null>;
     /** E-50：会前速查与偏好雷区大盘 */
     loadAllPreMeetingDossiers?(): Promise<import("./domain/pre-meeting-hub").ContactPreMeetingDossier[]>;
+    /** E-53：关系降温预警与破冰重联服务 */
+    loadCoolingRadarSummary?(): Promise<import("./services/cooling-radar").CoolingRadarSummaryData>;
     /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */
     loadExportSummary(): Promise<ExportSummary>;
     /** 导出全量名册为 vCard 3.0 文本（联系人页选中导出外的设置页统一入口） */

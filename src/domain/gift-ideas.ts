@@ -237,6 +237,7 @@ export function convertGiftIdeaToExchange(idea: GiftIdeaItem, occurredOn: string
 export function deriveGiftInteractionEvent(
     idea: GiftIdeaItem,
     occurredAt: number = Date.now(),
+    suffix?: string,
 ): InteractionEvent {
     const occasionPrefix = idea.targetOccasion?.trim()
         ? `[赠礼 · ${idea.targetOccasion.trim()}]`
@@ -250,7 +251,7 @@ export function deriveGiftInteractionEvent(
     }
 
     return {
-        id: `gift-${idea.id}-${occurredAt}`,
+        id: suffix ? `gift-${idea.id}-${occurredAt}-${suffix}` : `gift-${idea.id}-${occurredAt}`,
         personDocId: idea.personDocId,
         occurredAt,
         localDate: toLocalDateKey(new Date(occurredAt)),

@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.45] — 2026-10-29
+
+重塑：首页仪表盘「关系降温预警与破冰重联中枢」（Relationship Cadence Cooling Radar & Reconnect Hub）
+
+- **降温紧急度加权引擎**：`domain/cooling-radar.ts` 纯函数计算全库人脉关系温度，筛选并聚合微凉（`cool`）、渐冻（`cold`）与从未联系（`unknown`）的破冰候选；采用星标 VIP（+100）、深度疏远（+50）与逾期天数综合评分排序；`services/cooling-radar.ts` 纯本地汇编输出指标大盘。
+- **降温预警与破冰重联弹窗**：`CoolingRadarDialog.svelte` 与 `DashboardView.svelte` 在人脉温度分布卡提供「🧊 降温预警」入口；弹窗呈现需破冰总数、星标降温、渐冻及微凉核心指标，支持按星标/渐冻/微凉分维筛选，直达人物画像与破冰行动。
+
+验证：`pnpm check` 0/0、单测 1003/1003 绿灯、三套 E2E UI 回归各 515/515 全部通过、Release 门禁通过。
+
 ## [0.6.44] — 2026-10-29
 
 重塑：互动备注场景化精选模板库与动态占位符变量插入器（Interaction Templates Rich Presets & Dynamic Variable Inserter）

@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.45 发布：首页仪表盘「关系降温预警与破冰重联中枢」（Relationship Cadence Cooling Radar & Reconnect Hub）
+
+- 本轮落地全库人脉降温紧急度加权引擎与破冰重联大盘弹窗：
+  1. 降温雷达域与服务层：`cooling-radar.ts` 纯函数加权星标与逾期天数，筛选微凉/渐冻/从未联系人脉；`services/cooling-radar.ts` 纯本地整合多源数据输出汇总；
+  2. 首页温度卡联动与破冰弹窗：`CoolingRadarDialog.svelte` 呈现大盘指标、分级胶囊筛选与人物画像直达；`DashboardView.svelte` 在温度卡头部署「🧊 降温预警」入口；
+- 门禁验证：`pnpm check`（0/0）、单测 1003/1003 全部通过、三套 UI 回归 515/515 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.44 发布：互动备注场景化精选模板库与动态占位符变量插入器（Interaction Templates Rich Presets & Dynamic Variable Inserter）
 
 - 本轮落地互动模板扩展变量、预置场景库与模板管理变量插入工具栏：

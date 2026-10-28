@@ -43,6 +43,7 @@
     import ActivityHeatmap from "./ActivityHeatmap.svelte";
     import ExchangesHubDialog from "./ExchangesHubDialog.svelte";
     import PreMeetingHubDialog from "./PreMeetingHubDialog.svelte";
+    import CoolingRadarDialog from "./CoolingRadarDialog.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
     import { onDestroy } from "svelte";
@@ -164,6 +165,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let digestError = $state("");
     let exchangesHubOpen = $state(false);
     let preMeetingOpen = $state(false);
+    let coolingRadarOpen = $state(false);
 
     async function handleGenerateWeeklyDigest() {
         if (!facade.createWeeklyDigestDoc || generatingDigest) return;
@@ -1194,6 +1196,14 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             <span class="lvct-dash__chart-title">人脉温度分布</span>
                             <span class="lvct-text-muted font-size-11">（{data.heatDistribution.total} 人）</span>
                         </div>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline lvct-dash__cooling-radar-btn"
+                            title={text("dashCoolingRadarBtnTitle", "查看需破冰与降温中的联系人列表，快速发起互动或安排跟进")}
+                            onclick={() => (coolingRadarOpen = true)}
+                        >
+                            🧊 {text("dashCoolingRadarBtn", "降温预警")}
+                        </button>
                     </div>
 
                     <!-- 精致细长比例条 -->
@@ -2062,6 +2072,20 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onClose={() => (preMeetingOpen = false)}
             onOpenPerson={(docId) => {
                 preMeetingOpen = false;
+                onOpenPeople({ memberDocIds: [docId] });
+            }}
+        />
+    </LvctDialog>
+{/if}
+
+{#if coolingRadarOpen}
+    <LvctDialog title={text("dashCoolingRadarDialogTitle", "🧊 关系降温预警与破冰重联中枢")} wide onClose={() => (coolingRadarOpen = false)}>
+        <CoolingRadarDialog
+            {facade}
+            {i18n}
+            onClose={() => (coolingRadarOpen = false)}
+            onOpenPerson={(docId) => {
+                coolingRadarOpen = false;
                 onOpenPeople({ memberDocIds: [docId] });
             }}
         />

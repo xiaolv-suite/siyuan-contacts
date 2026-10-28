@@ -67,7 +67,7 @@ export async function updatePersonGiftIdea(
         if (options?.syncInteraction !== false) {
             // 状态流转为已送出（given）：自动派生并写入时间线互动事件
             if (currentItem && currentItem.status === "given" && previous?.status !== "given") {
-                const event = deriveGiftInteractionEvent(currentItem);
+                const event = deriveGiftInteractionEvent(currentItem, Date.now(), Math.random().toString(36).slice(2, 7));
                 await appendInteractionBatch(plugin, [event]);
             } else if (previous?.status === "given" && currentItem?.status !== "given") {
                 // 状态从 given 撤回：自动清理对应的互动事件

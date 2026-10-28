@@ -122,6 +122,7 @@ import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/
 import { createBriefingDoc } from "./services/briefing-doc.ts";
 import { createMilestonesDoc } from "./services/milestones-doc.ts";
 import { loadAllPreMeetingDossiers } from "./services/pre-meeting.ts";
+import { loadCoolingRadarSummary } from "./services/cooling-radar.ts";
 import { importInteractionJson, previewInteractionImport } from "./services/interaction-import";
 import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
@@ -1954,6 +1955,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async loadAllPreMeetingDossiers() {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return loadAllPreMeetingDossiers(this, this.settings);
+    }
+
+    /** E-53：关系降温预警与破冰重联服务 */
+    async loadCoolingRadarSummary() {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        return loadCoolingRadarSummary(this, this.settings);
     }
 
     async loadExportSummary() {
