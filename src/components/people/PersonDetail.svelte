@@ -973,9 +973,16 @@ import StatusNotice from "../StatusNotice.svelte";
     let copiedFieldTimer: ReturnType<typeof setTimeout> | null = null;
     let copyFieldErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
-    let privacyMaskActive = $state(false);
+    // svelte-ignore state_referenced_locally
+    let privacyMaskActive = $state(preferences?.privacyShieldEnabled ?? false);
     let revealSeconds = $state(0);
     let revealInterval: ReturnType<typeof setInterval> | null = null;
+
+    $effect(() => {
+        if (preferences && typeof preferences.privacyShieldEnabled === "boolean") {
+            privacyMaskActive = preferences.privacyShieldEnabled;
+        }
+    });
 
     function togglePrivacyMask(): void {
         if (privacyMaskActive) {

@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.13** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.13) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.14** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.14) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.13 (2026-10-28)
+## This release: v0.6.14 (2026-10-28)
+
+This release implements user-controlled settings for Privacy Mask Shield:
+
+- **Settings Option (`privacyShieldEnabled`)**: Added a dedicated switch in General Preferences to enable or disable the privacy mask shield. Defaults to `false`, allowing unmasked direct reading for users who do not require masking, while giving users full control to enable protection when needed.
+- **Dynamic Omni-Channel Sync**: Detail pages and graph drawers dynamically sync with the preference, while still supporting 5-second temporary reveal when shield is active.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (937/937 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.13 (2026-10-28)
 
 This release implements Privacy Mask Shield and Social Relationship Cooling Alert:
 

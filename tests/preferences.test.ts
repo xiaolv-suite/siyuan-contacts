@@ -539,3 +539,22 @@ test("主题色彩方案（ThemeScheme）：5大预设、合法保留与容错�
     const patched = applyPreferencePatch(baseline, diff);
     assert.equal(patched.themeScheme, "emerald");
 });
+
+test("名片私密信息隐私保护盾偏好（privacyShieldEnabled）：默认关闭与自由切换", () => {
+    // 默认关闭，不需要遮挡的用户保持清晰直读
+    assert.equal(DEFAULT_VIEW_PREFERENCES.privacyShieldEnabled, false);
+    assert.equal(normalizeViewPreferences({}).privacyShieldEnabled, false);
+
+    // 用户在设置中显式开启
+    assert.equal(normalizeViewPreferences({ privacyShieldEnabled: true }).privacyShieldEnabled, true);
+    assert.equal(normalizeViewPreferences({ privacyShieldEnabled: false }).privacyShieldEnabled, false);
+    assert.equal(normalizeViewPreferences({ privacyShieldEnabled: "invalid" }).privacyShieldEnabled, false);
+
+    // diff 与 patch 能够安全更新
+    const baseline = DEFAULT_VIEW_PREFERENCES;
+    const next = { ...baseline, privacyShieldEnabled: true };
+    const diff = diffViewPreferences(baseline, next);
+    assert.deepEqual(diff, { privacyShieldEnabled: true });
+    const patched = applyPreferencePatch(baseline, diff);
+    assert.equal(patched.privacyShieldEnabled, true);
+});
