@@ -35,6 +35,7 @@
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { inferPersonaTags } from "../../domain/tag-inference.ts";
+    import { extractFactsFromText } from "../../domain/fact-extraction.ts";
     import { profileText } from "../../domain/people-profiles.ts";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
@@ -664,6 +665,40 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
     let newFactSource = $state("");
     let detailSaveAsFact = $state(false);
     let detailFactCategory: FactCategory = $state("quote");
+    let extractedFactsPreview = $state<PersonFactItem[]>([]);
+
+    function handleAutoExtractFacts(): void {
+        const text = noteText.trim();
+        if (!text) return;
+        const autoFacts = extractFactsFromText(text, toLocalDateKey(new Date()));
+        if (autoFacts.length > 0) {
+            extractedFactsPreview = autoFacts;
+        }
+    }
+
+    async function adoptExtractedFact(fact: PersonFactItem): Promise<void> {
+        if (!onSavePersonFacts || !current?.docId) return;
+        const next = [fact, ...facts];
+        try {
+            await onSavePersonFacts(current.docId, next);
+            facts = next;
+            extractedFactsPreview = extractedFactsPreview.filter((f) => f.id !== fact.id);
+        } catch (err) {
+            console.warn("[LvContacts] 采纳提炼事实失败", err);
+        }
+    }
+
+    async function adoptAllExtractedFacts(): Promise<void> {
+        if (!onSavePersonFacts || !current?.docId || extractedFactsPreview.length === 0) return;
+        const next = [...extractedFactsPreview, ...facts];
+        try {
+            await onSavePersonFacts(current.docId, next);
+            facts = next;
+            extractedFactsPreview = [];
+        } catch (err) {
+            console.warn("[LvContacts] 批量采纳提炼事实失败", err);
+        }
+    }
 
     async function loadFacts(): Promise<void> {
         if (!onLoadPersonFacts || !current?.docId) return;
@@ -3407,10 +3442,46 @@ import MiniRelationRadar from "./MiniRelationRadar.svelte";
             >{recorded ? text("detailRecorded", "已记录 ✓") : text("detailRecord", "记录")}</button>
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--lvct-text-2);">
-                <input type="checkbox" bind:checked={detailSaveAsFact} disabled={busy} />
-                <span>💡 同时沉淀为社交画像事实（提炼观点与关键备忘）</span>
-            </label>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--lvct-text-2);">
+                    <input type="checkbox" bind:checked={detailSaveAsFact} disabled={busy} />
+                    <span>💡 同时沉淀为社交画像事实（提炼观点与关键备忘）</span>
+                </label>
+                {#if noteText.trim().length >= 4}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small"
+                        style="padding: 1px 6px; font-size: 11px; color: var(--lv-brand, #ea580c); display: inline-flex; align-items: center; gap: 4px;"
+                        disabled={busy}
+                        onclick={handleAutoExtractFacts}
+                    >
+                        <Sparkles size={12} /> 智能提炼事实
+                    </button>
+                {/if}
+            </div>
+            {#if extractedFactsPreview.length > 0}
+                <div style="display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: color-mix(in srgb, var(--lv-brand, #ea580c) 6%, var(--lvct-bg-surface)); border: 1px dashed color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent); border-radius: var(--lvct-r-sm);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span class="ft__smaller" style="color: var(--lv-brand, #ea580c); font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
+                            <Sparkles size={12} /> 从互动备注智能提炼出 {extractedFactsPreview.length} 项事实备忘：
+                        </span>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11px; padding: 0 4px; color: var(--lv-brand, #ea580c);" onclick={adoptAllExtractedFacts}>一键全部采纳</button>
+                            <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11px; padding: 0 4px;" onclick={() => (extractedFactsPreview = [])}>关闭</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        {#each extractedFactsPreview as ef (ef.id)}
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px; background: var(--lvct-bg-elevated); border-radius: var(--lvct-r-xs); font-size: 12px;">
+                                <div>
+                                    <b>{ef.category === "quote" ? "💡 [观点]" : ef.category === "preference" ? "❤️ [喜好]" : ef.category === "background" ? "💼 [背景]" : "📌 [事实]"}</b> {ef.text}
+                                </div>
+                                <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11px; padding: 1px 6px;" onclick={() => adoptExtractedFact(ef)}>+ 采纳</button>
+                            </div>
+                        {/each}
+                    </div>
+                </div>
+            {/if}
             {#if detailSaveAsFact}
                 <div style="display: flex; gap: 4px; padding-left: 20px; flex-wrap: wrap;">
                     <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={detailFactCategory === "quote"} disabled={busy} onclick={() => (detailFactCategory = "quote")}>💡 观点见解</button>

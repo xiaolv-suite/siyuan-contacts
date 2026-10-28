@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.18** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.18) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.19** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.19) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.18 · 2026-10-28）
+## 本次发布（v0.6.19 · 2026-10-28）
+
+本版本深入贯彻落实第三阶段 3.1 节关于“本地离线智能社交助理（Local AI Copilot）”的规划，推出了纯本地零外部依赖的沟通文本事实提取引擎：
+
+- **多分类社交事实画像提炼引擎（`extractFactCandidates` / `extractFactsFromText`）**：纯函数零外部依赖，自动从长段交谈备注与会议随笔中提炼观点见解（`quote`）、喜好忌口（`preference`）、背景经历（`background`）与关键事实（`fact`）4 大受控分类条目。
+- **详情页记互动区域智能提炼与一键采纳（`PersonDetail`）**：在记互动备注输入框下方提供「💡 智能提炼事实」按钮，一键瞬间将长句拆解为结构化事实条目卡片，支持单条点选采纳或一键全部采纳至 `custom-lvct-facts` 受控区块。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 948/948 100% 通过；浏览器 UI 回归全绿；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.18 · 2026-10-28）
 
 本版本贯彻落实第二阶段 2.4 节关于通讯录互通与跨设备名片流通的规划，全面打通了单个联系人的原生名片导出通道：
 

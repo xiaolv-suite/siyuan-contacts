@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [0.6.19] — 2026-10-28
+
+重塑：互动沟通文本事实画像智能提炼（Fact & Quote Extraction Engine）
+
+- **本地事实画像提炼引擎**：`domain/fact-extraction.ts` 纯函数智能提炼观点、喜好、背景与事实 4 大分类。
+- **记互动一键提炼与结构化采纳**：记互动备注支持智能提炼事实条目预览、单项点选与「一键全部采纳」。
+
+验证：`pnpm check` 0/0、单测 948/948 绿灯、E2E UI 回归全部通过、Release 门禁通过。
+
+
 ## [0.6.18] — 2026-10-28
 
 重塑：单个联系人标准 vCard 3.0 / .vcf 名片导出与一键复制（Single Contact vCard Export）

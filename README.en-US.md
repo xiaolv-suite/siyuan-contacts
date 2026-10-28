@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.18** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.18) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.19** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.19) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.18 (2026-10-28)
+## This release: v0.6.19 (2026-10-28)
+
+This release implements the Fact & Quote Extraction Engine for unstructured interaction notes:
+
+- **Multi-Category Fact Extraction Engine (`extractFactCandidates`)**: Pure local extraction for quotes (`quote`), dietary/leisure preferences (`preference`), career/background experiences (`background`), and schedule/milestone facts (`fact`).
+- **Interactive Fact Preview & Adoption in Detail View**: Adds instant "Extract Facts" below the interaction note input with structured card preview and one-click bulk adoption.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (948/948 PASS); browser UI regression passing; production build and release checks passed.
+
+## Previous release: v0.6.18 (2026-10-28)
 
 This release implements single contact vCard 3.0 / .vcf export and copying:
 
