@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.36** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.36) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.37** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.37) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.36 (2026-10-29)
+## This release: v0.6.37 (2026-10-29)
+
+This release implements Comprehensive Contact Milestones & Lifetime Timeline in the person detail view:
+
+- **Relationship Milestones Extraction Engine (`domain/timeline-milestones.ts`)**: Synthesizes first contact connection (`first_contact`), relationship lifecycle stage advances (`stage_advance`), key anniversaries (`anniversary`), fulfilled commitments (`promise_fulfilled`), and significant exchanges (`exchange`), sorted chronologically with year grouping and multi-type filtering.
+- **Activity Tab Sub-Navigation & Milestones Timeline View (`PersonMilestonesTimeline.svelte` & `PersonDetail.svelte`)**: Embeds a sleek sub-navigation switcher between "Detailed Interaction Log" and "Milestones & Journey", rendering a vertical timeline rail with custom glowing node badges, highlighting life-long milestones from initial acquaintance to trusted confidant.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (507/507); production build and release checks passed.
+
+## Previous release: v0.6.36 (2026-10-29)
 
 This release implements Global Calendar & Anniversaries Export Panel in Settings:
 

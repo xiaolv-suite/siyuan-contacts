@@ -9414,6 +9414,108 @@ await test("S-11 设置页：全量重要日期与纪念日 iCalendar (.ics) 日
     }
 });
 
+await test("D-11 联系人详情页：往来活动与历程编年史长卷（PersonMilestonesTimeline）多模切换与里程碑渲染", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const person = {
+        docId: "doc-mls-ui-1",
+        itemId: "item-mls-ui-1",
+        name: "编年史人物",
+        phone: "13900139000",
+        email: "mls@example.com",
+        wechat: "wx_mls",
+        website: "",
+        birthday: "1987-07-07",
+        isLunar: false,
+        group: "战略伙伴",
+        tags: ["投资"],
+        relatedItemIds: [],
+        company: "某创投",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "某创投", title: "合伙人" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockAnnivs = [
+        {
+            id: "anniv-mls-1",
+            personDocId: "doc-mls-ui-1",
+            title: "相识纪念日",
+            category: "acquaintance",
+            date: "2024-05-10",
+            isLunar: false,
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+    ];
+
+    const mockLifecycle = {
+        personDocId: "doc-mls-ui-1",
+        currentStage: "close_ally",
+        history: [
+            {
+                stage: "close_ally",
+                changedAt: "2026-06-01",
+                note: "结为长期同行挚友",
+                timestamp: 2000,
+            },
+        ],
+        updatedAt: 2000,
+    };
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            initialTab: "activity",
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => ({
+                timeline: [
+                    { id: "e1", eventId: "e1", occurredAt: 1000, localDate: "2024-05-10", source: "manual", note: "行业峰会初次相识", groupSize: 2 },
+                    { id: "e2", eventId: "e2", occurredAt: 3000, localDate: "2026-10-01", source: "manual", note: "季度闭门交流", groupSize: 1 },
+                ],
+                coAttendance: [],
+                totalEvents: 2,
+                backlinks: [],
+            }),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadAnniversaries: async () => mockAnnivs,
+            onLoadLifecycleStage: async () => mockLifecycle,
+        },
+    });
+
+    await until(() => fixture.textContent.includes("往来明细流水"), "未渲染活动子导航");
+    assert(fixture.textContent.includes("历程编年史长卷"), "未渲染历程编年史切换按钮");
+
+    // 点击「历程编年史长卷」按钮
+    const milestonesBtn = Array.from(fixture.querySelectorAll(".lvct-detail__activity-subnav button")).find((b) => b.textContent.includes("历程编年史长卷"));
+    assert(milestonesBtn, "未找到历程编年史长卷切换按钮");
+    milestonesBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-milestones-timeline"), "未渲染历程编年史时间轴组件");
+    assert(fixture.textContent.includes("初次相识 · 建立连接"), "未渲染初相识里程碑");
+    assert(fixture.textContent.includes("行业峰会初次相识"), "未渲染初相识细节");
+    assert(fixture.textContent.includes("相识纪念日"), "未渲染相识纪念日里程碑");
+    assert(fixture.textContent.includes("结为长期同行挚友"), "未渲染生命周期阶段跃迁里程碑");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

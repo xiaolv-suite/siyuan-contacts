@@ -1203,5 +1203,9 @@
   "scratchpadConvertBtn": "转互动",
   "commonDelete": "删除",
   "exportIcsBtn": "导出 .ics 日历",
-  "exportIcsTip": "导出为 iCalendar (.ics) 标准日历文件，支持导入系统日历"
+  "exportIcsTip": "导出为 iCalendar (.ics) 标准日历文件，支持导入系统日历",
+  "activitySubTabLog": "往来明细流水",
+  "activitySubTabMilestones": "历程编年史长卷",
+  "milestonesFilterTitle": "历程分类：",
+  "milestonesEmpty": "暂无符合筛选条件的交往历程里程碑。随着互动、阶段变迁与信诺履约的推进，这里将自动绘制成编年史故事线。"
 }

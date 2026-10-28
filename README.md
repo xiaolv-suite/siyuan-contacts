@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.36** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.36) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.37** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.37) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.36 · 2026-10-29）
+## 本次发布（v0.6.37 · 2026-10-29）
+
+本版本将零散在各处的互动记录、阶段演进、纪念日与已履约信诺汇编为生动的个人关系时间线长卷，推出了联系人交往历程编年史长卷（Comprehensive Contact Milestones & Lifetime Timeline）：
+
+- **交往里程碑汇聚引擎（`domain/timeline-milestones.ts`）**：智能提取初次相识（`first_contact`）、生命周期阶段跃迁（`stage_advance`）、重要纪念日（`anniversary`）、已履约信诺（`promise_fulfilled`）以及重要人情礼往（`exchange`），按时间戳排序并提供年份归组与多维类型过滤。
+- **活动视窗双模切换与时间轴组件（`PersonMilestonesTimeline.svelte` & `PersonDetail.svelte`）**：在详情页活动页顶部增加「往来明细流水」与「历程编年史长卷」子导航切换；编年史模式下以带发光图标轨道的纵向时间轴展示年份区块与卡片，生动呈现从相识破冰到挚友同盟的一生交往脉络。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 985/985 100% 通过；浏览器 UI 回归全绿（507/507）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.36 · 2026-10-29）
 
 本版本将重要日期导出能力升级至系统设置导出中心，推出了全局重要日期与纪念日日历导出面板（Global Calendar & Anniversaries Export Panel）：
 

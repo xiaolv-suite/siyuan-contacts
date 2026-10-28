@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.37 发布：联系人详情页「人脉交往回顾与里程碑时间轴长卷」（Comprehensive Contact Milestones & Lifetime Timeline）
+
+- 本轮落地交往里程碑提取引擎与详情页编年史长卷组件：
+  1. 里程碑提取纯函数：`timeline-milestones.ts` 纯函数汇聚初相识、阶段跃迁、核心纪念日、履约承诺与人情礼往，支持年份归组与类别筛选；
+  2. 活动页双模切换与时间轴：`PersonDetail.svelte` 新增「往来明细流水」与「历程编年史长卷」子导航切换；`PersonMilestonesTimeline.svelte` 呈现纵向图钉式里程碑轨道长卷；
+- 门禁验证：`pnpm check`（0/0）、单测 985/985 全部通过、三套 UI 回归 507/507 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.36 发布：设置导出中心新增「全量重要日期与纪念日 iCal」导出面板（Global Calendar & Anniversaries Export Panel）
 
 - 本轮落地设置导出中心全量日历导出与安全关闭守门：

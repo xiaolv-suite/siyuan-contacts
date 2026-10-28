@@ -1203,5 +1203,9 @@
   "scratchpadConvertBtn": "To Interaction",
   "commonDelete": "Delete",
   "exportIcsBtn": "Export .ics Calendar",
-  "exportIcsTip": "Export to iCalendar (.ics) format, compatible with system calendars"
+  "exportIcsTip": "Export to iCalendar (.ics) format, compatible with system calendars",
+  "activitySubTabLog": "Interaction Log",
+  "activitySubTabMilestones": "Milestones & Journey",
+  "milestonesFilterTitle": "Category: ",
+  "milestonesEmpty": "No relationship milestones found. As interactions, stage progressions, and commitments evolve, your journey will unfold here."
 }

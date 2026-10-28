@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.37] — 2026-10-29
+
+重塑：联系人详情页「人脉交往回顾与里程碑时间轴长卷」（Comprehensive Contact Milestones & Lifetime Timeline）
+
+- **交往里程碑汇聚引擎**：`domain/timeline-milestones.ts` 纯函数综合提取初次相识（`first_contact`）、生命周期阶段跃迁（`stage_advance`）、重要纪念日（`anniversary`）、已履约信诺（`promise_fulfilled`）与人情往来（`exchange`），按时间倒序排列并支持年份归组与类型过滤。
+- **活动页双模切换与时间轴组件**：`PersonDetail.svelte` 活动页新增「往来明细流水」与「历程编年史长卷」子导航切换；`PersonMilestonesTimeline.svelte` 呈现带发光图标轨道的纵向编年史时间轴，生动串联一生交往大事记。
+
+验证：`pnpm check` 0/0、单测 985/985 绿灯、E2E UI 回归 507/507 全部通过、Release 门禁通过。
+
 ## [0.6.36] — 2026-10-29
 
 重塑：设置导出中心新增「全量重要日期与纪念日 iCal」导出面板（Global Calendar & Anniversaries Export Panel）

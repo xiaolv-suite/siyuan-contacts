@@ -33,6 +33,8 @@
         ContactRound,
         User,
         Layers,
+        Flag,
+        Clock,
     } from "@lucide/svelte";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
@@ -80,6 +82,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import type { PersonLifecycleRecord } from "../../domain/lifecycle-stage.ts";
     import PersonScratchpad from "./PersonScratchpad.svelte";
     import type { PersonScratchpadItem } from "../../domain/person-scratchpad.ts";
+    import PersonMilestonesTimeline from "./PersonMilestonesTimeline.svelte";
+    import { extractMilestoneEvents } from "../../domain/timeline-milestones.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -654,6 +658,17 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     const historyToday = $derived.by(() => {
         const timeline = insights?.timeline ?? [];
         return onThisDay(timeline, toLocalDateKey(new Date()));
+    });
+
+    let activitySubTab: "log" | "milestones" = $state("log");
+
+    const contactMilestones = $derived.by(() => {
+        return extractMilestoneEvents({
+            timeline: insights?.timeline ?? [],
+            lifecycleHistory: lifecycleRecord?.history ?? [],
+            anniversaries,
+            promises,
+        });
     });
 
     function setQuickRange(days: number) {
@@ -4296,6 +4311,29 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 {/each}
             </div>
         {/if}
+
+        <div class="lvct-detail__activity-subnav fn__flex" style="gap: 6px; margin-bottom: 12px;">
+            <button
+                type="button"
+                class="b3-button b3-button--small {activitySubTab === 'log' ? 'b3-button--primary' : 'b3-button--outline'}"
+                onclick={() => activitySubTab = "log"}
+            >
+                <Clock size={13} style="margin-right: 4px;" />
+                {text("activitySubTabLog", "往来明细流水")}
+            </button>
+            <button
+                type="button"
+                class="b3-button b3-button--small {activitySubTab === 'milestones' ? 'b3-button--primary' : 'b3-button--outline'}"
+                onclick={() => activitySubTab = "milestones"}
+            >
+                <Flag size={13} style="margin-right: 4px;" />
+                {text("activitySubTabMilestones", "历程编年史长卷")} ({contactMilestones.length})
+            </button>
+        </div>
+
+        {#if activitySubTab === "milestones"}
+            <PersonMilestonesTimeline milestones={contactMilestones} {i18n} />
+        {:else}
         <div class="lvct-detail__activity-filters">
             <input class="b3-text-field" type="search" aria-label="搜索互动备注或日期" placeholder="搜索备注或日期" bind:value={activitySearch} oninput={() => (activityLimit = 20)} />
             <select class="b3-select" aria-label="互动来源" bind:value={activitySource} onchange={() => (activityLimit = 20)}>
@@ -4413,6 +4451,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             <ViewState compact title="还没有互动记录" description="从一次聊天或见面开始，记录你们的往来。">
                 <button class="b3-button b3-button--text" onclick={() => void selectTab("overview")}>去记一笔</button>
             </ViewState>
+        {/if}
         {/if}
 
         <!-- Issue #87：笔记与日志反向链接（Backlinks / 提及）视窗 -->
