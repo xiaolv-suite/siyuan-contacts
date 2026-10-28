@@ -1189,5 +1189,17 @@
   "commonSaving": "保存中…",
   "commonSave": "确认变迁",
   "peopleFilterStage": "交往生命周期阶段",
-  "peopleFilterStageAll": "全部阶段（不限）"
+  "peopleFilterStageAll": "全部阶段（不限）",
+  "scratchpadTitle": "闪念速记便签板",
+  "scratchpadAddBtn": "贴一张便签",
+  "scratchpadContentRequired": "便签内容不能为空",
+  "scratchpadPlaceholder": "随手记下灵感、电话留言、临时约定或待求证细节…",
+  "scratchpadPinLabel": "置顶",
+  "scratchpadSaveBtn": "贴上便签",
+  "scratchpadEmpty": "暂无速记便签。无论是临时电话号码、灵感闪念还是下次沟通草稿，都可以贴在这里。",
+  "scratchpadUnpinTip": "取消置顶",
+  "scratchpadPinTip": "置顶便签",
+  "scratchpadConvertTip": "将便签内容填入互动草稿",
+  "scratchpadConvertBtn": "转互动",
+  "commonDelete": "删除"
 }

@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.33** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.33) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.34** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.34) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -21,7 +21,16 @@
 
 小驴人脉把联系人、关系和共同经历放进思源工作空间。每个人对应一篇普通思源文档，结构化资料保存在关联的思源数据库中，可以继续使用思源的搜索、双链和同步能力。
 
-## 本次发布（v0.6.33 · 2026-10-29）
+## 本次发布（v0.6.34 · 2026-10-29）
+
+本版本将用户在日常沟通与浏览中的临时灵感与闪念备忘系统化，推出了联系人自管闪念速记便签板（Person Quick Scratchpad & Ephemeral Memo Pinboard）：
+
+- **闪念便签域模型与存储层（`domain/person-scratchpad.ts` & `data/person-scratchpad.ts`）**：为每个人物建立独立的闪念便笺卡片存储，支持置顶排序、多彩便签分类（暖黄/天蓝/青翠/浅紫/默认）与更新时间倒序；数据持久化经由 Web Lock 排他保护与写后回读校验（`person-scratchpads.json`）。
+- **详情页便签板与一键转互动联动（`PersonScratchpad.svelte`）**：在联系人概览页面呈现温暖贴纸质感的便签图板，支持即写即贴、置顶图钉切换与即时删除；点击便签卡片上的「转互动」按钮，一键将便签内容填入互动输入框，实现从临时灵感到正式时间线事实的平滑沉淀。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 981/981 100% 通过；浏览器 UI 回归全绿（504/504）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+## 上一版本（v0.6.33 · 2026-10-29）
 
 本版本将交往生命周期演进模型无缝延伸至联系人名册主视图，推出了名册多维筛选支持「交往生命周期阶段」（Filter & Group Contacts by Lifecycle Stage）：
 

@@ -113,6 +113,7 @@ import { loadPersonProjects, addPersonProject, updatePersonProject, removePerson
 import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./data/kinship.ts";
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
 import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages } from "./data/lifecycle-stage.ts";
+import { loadPersonScratchpads, savePersonScratchpad, updatePersonScratchpad, removePersonScratchpad } from "./data/person-scratchpad.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1792,6 +1793,32 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async loadAllLifecycleStages() {
         return loadAllLifecycleStages(this);
+    }
+
+    /** E-42：联系人自管闪念速记便签板 */
+    async loadPersonScratchpads(personDocId: string) {
+        return loadPersonScratchpads(this, personDocId);
+    }
+
+    async savePersonScratchpad(item: import("./domain/person-scratchpad").PersonScratchpadItem) {
+        const token = this.lifecycleToken;
+        const res = await savePersonScratchpad(this, item);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
+        return res;
+    }
+
+    async updatePersonScratchpad(personDocId: string, noteId: string, patch: Partial<import("./domain/person-scratchpad").PersonScratchpadItem>) {
+        const token = this.lifecycleToken;
+        const res = await updatePersonScratchpad(this, personDocId, noteId, patch);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
+    }
+
+    async removePersonScratchpad(personDocId: string, noteId: string) {
+        const token = this.lifecycleToken;
+        const res = await removePersonScratchpad(this, personDocId, noteId);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
+        return res;
     }
 
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */

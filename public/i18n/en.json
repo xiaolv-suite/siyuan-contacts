@@ -1189,5 +1189,17 @@
   "commonSaving": "Saving…",
   "commonSave": "Confirm",
   "peopleFilterStage": "Relationship Lifecycle Stage",
-  "peopleFilterStageAll": "All Stages (Any)"
+  "peopleFilterStageAll": "All Stages (Any)",
+  "scratchpadTitle": "Quick Scratchpad & Pinboard",
+  "scratchpadAddBtn": "Add Note",
+  "scratchpadContentRequired": "Note content cannot be empty",
+  "scratchpadPlaceholder": "Quick notes, phone memos, meeting ideas, or details to follow up…",
+  "scratchpadPinLabel": "Pin",
+  "scratchpadSaveBtn": "Pin Note",
+  "scratchpadEmpty": "No scratchpad notes yet. Quick memos, meeting thoughts, or ideas can be pinned here.",
+  "scratchpadUnpinTip": "Unpin",
+  "scratchpadPinTip": "Pin to top",
+  "scratchpadConvertTip": "Convert note into interaction draft",
+  "scratchpadConvertBtn": "To Interaction",
+  "commonDelete": "Delete"
 }

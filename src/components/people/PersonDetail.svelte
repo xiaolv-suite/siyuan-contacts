@@ -78,6 +78,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import type { PersonPromiseItem } from "../../domain/promises.ts";
     import RelationshipStageTracker from "./RelationshipStageTracker.svelte";
     import type { PersonLifecycleRecord } from "../../domain/lifecycle-stage.ts";
+    import PersonScratchpad from "./PersonScratchpad.svelte";
+    import type { PersonScratchpadItem } from "../../domain/person-scratchpad.ts";
     import RelationshipLabels from "./RelationshipLabels.svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import PersonFieldsEditor from "./PersonFieldsEditor.svelte";
@@ -195,6 +197,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onRemovePromise,
         onLoadLifecycleStage,
         onUpdateLifecycleStage,
+        onLoadScratchpads,
+        onSaveScratchpad,
+        onUpdateScratchpad,
+        onRemoveScratchpad,
         collapsedSections,
         onToggleSection,
     }: {
@@ -307,6 +313,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         /** E-40 交往生命周期阶段（可选） */
         onLoadLifecycleStage?: (personDocId: string) => Promise<import("../../domain/lifecycle-stage").PersonLifecycleRecord>;
         onUpdateLifecycleStage?: (personDocId: string, stage: import("../../domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string) => Promise<import("../../domain/lifecycle-stage").PersonLifecycleRecord>;
+        /** E-42 闪念速记便签板（可选） */
+        onLoadScratchpads?: (personDocId: string) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
+        onSaveScratchpad?: (item: import("../../domain/person-scratchpad").PersonScratchpadItem) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
+        onUpdateScratchpad?: (personDocId: string, noteId: string, patch: Partial<import("../../domain/person-scratchpad").PersonScratchpadItem>) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
+        onRemoveScratchpad?: (personDocId: string, noteId: string) => Promise<import("../../domain/person-scratchpad").PersonScratchpadItem[]>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -696,6 +707,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadKinships();
     loadPromises();
     loadLifecycleStage();
+    loadScratchpads();
 
     let kinships = $state<KinshipMemberItem[]>([]);
 
@@ -730,6 +742,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             if (detailAlive) lifecycleRecord = res;
         } catch {
             lifecycleRecord = null;
+        }
+    }
+
+    let scratchpads = $state<PersonScratchpadItem[]>([]);
+
+    async function loadScratchpads() {
+        if (!onLoadScratchpads || !current?.docId) return;
+        try {
+            const list = await onLoadScratchpads(current.docId);
+            if (detailAlive) scratchpads = list;
+        } catch {
+            scratchpads = [];
         }
     }
 
@@ -3079,6 +3103,29 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             onConvertPromiseToInteraction={async (prm) => {
                 const prefix = prm.direction === "i_promised" ? "【履约兑现-我承诺】" : "【履约兑现-对方承诺】";
                 noteText = `${prefix}${prm.title}${prm.detail ? `：${prm.detail}` : ""}`;
+            }}
+            {i18n}
+        />
+    {/if}
+
+    {#if onLoadScratchpads && onSaveScratchpad && onUpdateScratchpad && onRemoveScratchpad && !current.isSelf}
+        <PersonScratchpad
+            personDocId={current.docId}
+            items={scratchpads}
+            onSave={async (item) => {
+                const res = await onSaveScratchpad!(item);
+                scratchpads = res;
+            }}
+            onUpdate={async (noteId, patch) => {
+                const res = await onUpdateScratchpad!(current.docId, noteId, patch);
+                scratchpads = res;
+            }}
+            onRemove={async (noteId) => {
+                const res = await onRemoveScratchpad!(current.docId, noteId);
+                scratchpads = res;
+            }}
+            onConvertToInteraction={(content) => {
+                noteText = content;
             }}
             {i18n}
         />

@@ -934,8 +934,12 @@
 			            onAddPromise={facade.addPersonPromise ? (item) => facade.addPersonPromise!(item) : undefined}
 				            onUpdatePromise={facade.updatePersonPromise ? (docId, promiseId, patch) => facade.updatePersonPromise!(docId, promiseId, patch) : undefined}
 				            onRemovePromise={facade.removePersonPromise ? (docId, promiseId) => facade.removePersonPromise!(docId, promiseId) : undefined}
-				            onLoadLifecycleStage={facade.loadPersonLifecycleStage ? (docId) => facade.loadPersonLifecycleStage!(docId) : undefined}
-				            onUpdateLifecycleStage={facade.updatePersonLifecycleStage ? (docId, stage, date, note) => facade.updatePersonLifecycleStage!(docId, stage, date, note) : undefined}
+					            onLoadLifecycleStage={facade.loadPersonLifecycleStage ? (docId) => facade.loadPersonLifecycleStage!(docId) : undefined}
+					            onUpdateLifecycleStage={facade.updatePersonLifecycleStage ? (docId, stage, date, note) => facade.updatePersonLifecycleStage!(docId, stage, date, note) : undefined}
+					            onLoadScratchpads={facade.loadPersonScratchpads ? (docId) => facade.loadPersonScratchpads!(docId) : undefined}
+					            onSaveScratchpad={facade.savePersonScratchpad ? (item) => facade.savePersonScratchpad!(item) : undefined}
+					            onUpdateScratchpad={facade.updatePersonScratchpad ? (docId, noteId, patch) => facade.updatePersonScratchpad!(docId, noteId, patch) : undefined}
+					            onRemoveScratchpad={facade.removePersonScratchpad ? (docId, noteId) => facade.removePersonScratchpad!(docId, noteId) : undefined}
 		            {onOpenPersonDoc}
             onOpenGraphPerson={openGraphPerson}
             onOpenPeople={openPeople}

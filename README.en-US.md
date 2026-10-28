@@ -9,7 +9,7 @@
 
 **Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.33** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.33) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.34** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.34) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -21,7 +21,16 @@ English | [简体中文](README.md)
 
 Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
 
-## This release: v0.6.33 (2026-10-29)
+## This release: v0.6.34 (2026-10-29)
+
+This release implements Quick Scratchpad & Ephemeral Memo Pinboard in the person detail view:
+
+- **Scratchpad Domain Model & Storage Layer (`domain/person-scratchpad.ts` & `data/person-scratchpad.ts`)**: Manages dedicated ephemeral memos and thought snippets per person with pin-to-top prioritization, color-coded categorization (warm, blue, green, purple, default), and modification timestamp ordering; protected by Web Lock critical sections and read-after-write verification (`person-scratchpads.json`).
+- **Interactive Pinboard Component & One-Click Interaction Bridging (`PersonScratchpad.svelte`)**: Renders warm sticky-note cards on the overview board with instant text recording, pin toggling, and deletion; clicking "To Interaction" instantly populates the interaction note draft with the scratchpad memo for smooth transition into permanent timeline records.
+
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (981/981 PASS); browser UI regression passing (504/504); production build and release checks passed.
+
+## Previous release: v0.6.33 (2026-10-29)
 
 This release implements Roster Filtering by Relationship Lifecycle Stage in the main people view:
 

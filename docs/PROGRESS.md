@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.34 发布：联系人自管闪念速记便签板（Person Quick Scratchpad & Ephemeral Memo Pinboard）
+
+- 本轮落地自管闪念速记便签域模型与详情页便签图板：
+  1. 闪念便签域与存储层：`person-scratchpad.ts` 纯函数支持便签正文、置顶排序、5 色色调标记与时间倒序排序，`person-scratchpads.json` 经 Web Lock 锁保护与写后回读；
+  2. 详情页便签图板与转互动闭环：`PersonScratchpad.svelte` 呈现贴纸式速记板，支持即时新增、置顶图钉切换与一键「转互动」填入备注草稿；
+- 门禁验证：`pnpm check`（0/0）、单测 981/981 全部通过、三套 UI 回归 504/504 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.33 发布：名册多维筛选支持「交往生命周期阶段」（Filter & Group Contacts by Lifecycle Stage）
 
 - 本轮落地生命周期阶段名册筛选与生效条件胶囊流：

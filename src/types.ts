@@ -162,6 +162,11 @@ export interface ContactsPluginFacade {
     updatePersonLifecycleStage?(personDocId: string, stage: import("./domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string): Promise<import("./domain/lifecycle-stage").PersonLifecycleRecord>;
     /** 批量获取全量联系人交往阶段映射表 */
     loadAllLifecycleStages?(): Promise<Record<string, import("./domain/lifecycle-stage").RelationshipStageKey>>;
+    /** E-42：联系人自管闪念速记便签板（Person Scratchpad & Ephemeral Memo Pinboard） */
+    loadPersonScratchpads?(personDocId: string): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    savePersonScratchpad?(item: import("./domain/person-scratchpad").PersonScratchpadItem): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    updatePersonScratchpad?(personDocId: string, noteId: string, patch: Partial<import("./domain/person-scratchpad").PersonScratchpadItem>): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    removePersonScratchpad?(personDocId: string, noteId: string): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;

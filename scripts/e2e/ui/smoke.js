@@ -9164,6 +9164,108 @@ await test("B-10 联系人名册：交往生命周期阶段高级筛选与条件
     fixture.remove();
 });
 
+await test("D-09 联系人详情页：闪念速记便签板（PersonScratchpad）卡片渲染、置顶与一键转互动联动", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let pinUpdateCalled = false;
+
+    const person = {
+        docId: "doc-scb-ui-1",
+        itemId: "item-scb-ui-1",
+        name: "便签测试人物",
+        phone: "13600136000",
+        email: "scb@example.com",
+        wechat: "wx_scb",
+        website: "",
+        birthday: "1991-03-03",
+        isLunar: false,
+        group: "好友",
+        tags: ["设计"],
+        relatedItemIds: [],
+        company: "某工作室",
+        profile: {
+            readAt: Date.now(),
+            affiliations: {
+                state: "known",
+                value: {
+                    work: [{ orgName: "某工作室", title: "主理人" }],
+                    education: [],
+                    family: [],
+                    unspecified: [],
+                },
+            },
+            relationship: { state: "unknown", message: "" },
+        },
+    };
+
+    const mockScratchpads = [
+        {
+            id: "scb-101",
+            personDocId: "doc-scb-ui-1",
+            content: "推荐看黑泽明的《罗生门》",
+            pinned: false,
+            color: "warm",
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+        {
+            id: "scb-102",
+            personDocId: "doc-scb-ui-1",
+            content: "下周三下午讨论界面交互细节",
+            pinned: true,
+            color: "blue",
+            createdAt: 2000,
+            updatedAt: 2000,
+        },
+    ];
+
+    mount(PersonDetail, {
+        target: fixture,
+        props: {
+            person,
+            settings,
+            onClose() {},
+            onChanged() {},
+            onRecord: async () => {},
+            onLoadInsights: async () => emptyInsights(),
+            onOpenPersonDoc() {},
+            onNavigate() {},
+            onLoadScratchpads: async () => mockScratchpads,
+            onSaveScratchpad: async (item) => [...mockScratchpads, item],
+            onUpdateScratchpad: async (_docId, id, patch) => {
+                pinUpdateCalled = true;
+                return mockScratchpads.map((n) => n.id === id ? { ...n, ...patch } : n);
+            },
+            onRemoveScratchpad: async (_docId, id) => mockScratchpads.filter((n) => n.id !== id),
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-scratchpad"), "未渲染闪念速记便签板组件");
+    assert(fixture.textContent.includes("闪念速记便签板"), "未渲染便签板标题");
+    assert(fixture.textContent.includes("推荐看黑泽明的《罗生门》"), "未渲染便签正文");
+    assert(fixture.textContent.includes("下周三下午讨论界面交互细节"), "未渲染置顶便签正文");
+
+    // 点击置顶按钮
+    const pinBtn = fixture.querySelector(".memo-card .pin-btn");
+    assert(pinBtn, "未找到便签置顶按钮");
+    pinBtn.click();
+    await until(() => pinUpdateCalled, "点击置顶按钮未触发 onUpdateScratchpad");
+
+    // 点击「转互动」按钮
+    const convertBtn = Array.from(fixture.querySelectorAll(".memo-actions button")).find((b) => b.textContent.includes("转互动"));
+    assert(convertBtn, "未找到转互动按钮");
+    convertBtn.click();
+
+    // 检查互动备注输入框是否填入便签内容
+    const noteArea = fixture.querySelector(".lvct-detail__record textarea");
+    if (noteArea) {
+        assert(noteArea.value.includes("《罗生门》") || noteArea.value.includes("下周三"), "点击转互动未将便签内容填入互动输入框");
+    }
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
