@@ -2219,7 +2219,7 @@
                         activeLetterFilter = activeLetterFilter === "#" ? "" : "#";
                         visibleCount = PAGE_SIZE;
                     }}
-                    title="其它非字母开头的联系人"
+                    title={text("alphabetOtherTip", "其它非字母开头的联系人")}
                 >#</button>
             {/if}
         </div>

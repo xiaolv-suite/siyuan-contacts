@@ -2668,6 +2668,11 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     &::-webkit-scrollbar {
         display: none;
     }
+
+    @media (max-height: 480px) {
+        padding: 1px 4px;
+        margin-bottom: var(--lvct-sp-1);
+    }
 }
 
 .lvct-people__alphabet-btn {
@@ -2685,6 +2690,13 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.15s ease;
+
+    @media (max-height: 480px) {
+        min-width: 18px;
+        height: 20px;
+        line-height: 20px;
+        font-size: 10px;
+    }
 
     &:hover:not(:disabled) {
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);

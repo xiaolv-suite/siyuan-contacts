@@ -429,7 +429,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
     {#if loadError}
         <ViewState compact error title={text("captureLoadFail", "笔记分析失败")} description={loadError}>
             <button class="b3-button b3-button--outline" onclick={load}>{text("captureRetry", "重试")}</button>
-            <button class="b3-button b3-button--cancel" onclick={closeIfIdle}>关闭</button>
+            <button class="b3-button b3-button--cancel" onclick={closeIfIdle}>{text("commonClose", "关闭")}</button>
         </ViewState>
     {:else if !preview}
         <ViewState compact loading title={text("captureAnalyzing", "正在分析笔记中的联系人")} />
@@ -448,7 +448,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                 {#if result.attendeeBlockWritten}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneBlock", "笔记已写入「参与人员」双链区块")}</p>{/if}
                 {#if result.occasionLinksWritten > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneOccasionLinks", "已完成 {n} 个事项双链区块", { n: result.occasionLinksWritten })}</p>{/if}
                 {#if result.dateDocId || result.placeDocId}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneOccasionDocuments", "已关联当日日记与地点文档")}</p>{/if}
-                {#if factsWrittenCount > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> 已为 {factsWrittenCount} 位参与人员沉淀关键观点与事实</p>{/if}
+                {#if factsWrittenCount > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneFacts", "已为 {n} 位参与人员沉淀关键观点与事实", { n: factsWrittenCount })}</p>{/if}
             </div>
             {#if result.occasionLinkFailures.length > 0}
                 <p class="ft__smaller lvct-text-danger">
@@ -483,15 +483,15 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                         {#if candidate.writeCheckpoint}<p class="ft__smaller">目标 {candidate.writeCheckpoint.docId} · {candidate.writeCheckpoint.itemId}</p>{/if}
                         {#if !candidate.writeCheckpoint && candidate.status === "pending"}
                             <label class="lvct-form__item">
-                                <span>选择已建立的人物目标（不按姓名自动关联）</span>
+                                <span>{text("captureSelectTargetTitle", "选择已建立的人物目标（不按姓名自动关联）")}</span>
                                 <select class="b3-select" bind:value={candidate.selectedDocId} disabled={running}>
-                                    <option value="">待选择稳定人物 ID</option>
+                                    <option value="">{text("capturePendingTargetDoc", "待选择稳定人物 ID")}</option>
                                     {#each aiAvailableTargets as target (target.docId)}
                                         <option value={target.docId}>{target.name} · {target.docId} · {target.itemId}</option>
                                     {/each}
                                 </select>
                             </label>
-                            <button class="b3-button b3-button--cancel" onclick={() => decideCandidate(candidate, "rejected")} disabled={running}>拒绝本项</button>
+                            <button class="b3-button b3-button--cancel" onclick={() => decideCandidate(candidate, "rejected")} disabled={running}>{text("captureRejectDraft", "拒绝本项")}</button>
                         {/if}
                         {#if candidate.error}<p class="ft__smaller lvct-text-danger" role="alert">{candidate.error}</p>{/if}
                     </div>
@@ -541,7 +541,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
         <p class="ft__smaller ft__on-surface lvct-form__hint">
             {text("captureSourceNote", "笔记：")}{preview.docName || docId}
         </p>
-        <p class="ft__smaller">来源 {docId} · 双链按文档 ID 核对。保留原文，仅追加/更新插件标记区块。</p>
+        <p class="ft__smaller">{text("captureSourceNoteDesc", "来源 {docId} · 双链按文档 ID 核对。保留原文，仅追加/更新插件标记区块。", { docId })}</p>
 
         {#if step === 1}
         <div id="lvct-capture-panel-1" role="region" aria-labelledby="lvct-capture-step-1">
@@ -562,7 +562,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                             {/if}
                             <span class="ft__smaller ft__on-surface">{person.group || text("captureUngrouped", "未分组")}</span>
                             {#if linkedDocIds.includes(person.docId)}<span class="lvct-capture__source-badge">{text("captureBadgeLink", "双链")}</span>{/if}
-                            {#if mentionedDocIds.includes(person.docId)}<span class="lvct-capture__source-badge lvct-capture__source-badge--ai" style="background: color-mix(in srgb, #f59e0b 16%, transparent); color: #d97706;">正文提及</span>{/if}
+                            {#if mentionedDocIds.includes(person.docId)}<span class="lvct-capture__source-badge lvct-capture__source-badge--ai" style="background: color-mix(in srgb, #f59e0b 16%, transparent); color: #d97706;">{text("captureBadgeMention", "正文提及")}</span>{/if}
                             {#if aiMatchedIds.includes(person.docId) || (!linkedDocIds.includes(person.docId) && !mentionedDocIds.includes(person.docId))}<span class="lvct-capture__source-badge lvct-capture__source-badge--ai">{text("captureBadgeAi", "AI 提名")}</span>{/if}
                         </label>
                     {/each}
@@ -577,7 +577,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                         <span class="lvct-skeleton" aria-hidden="true"></span>
                         {text("captureAiProgress", "正在准备或分析本次文本…")}
                     </div>
-                    <button class="b3-button b3-button--cancel" onclick={cancelAi}>取消 AI，忽略结果</button>
+                    <button class="b3-button b3-button--cancel" onclick={cancelAi}>{text("captureCancelAi", "取消 AI，忽略结果")}</button>
                 {/if}
                 {#if aiError}
                     <p class="ft__smaller lvct-text-danger" role="alert">{aiError}</p>
@@ -587,37 +587,37 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
 
         {#if aiPreflightOpen && facade.viewPreferences.aiEnabled}
             <section class="lvct-capture__preflight" aria-label="AI 外发预检">
-                <p><b>AI 调用前确认</b> · 尚未发送</p>
+                <p><b>{text("captureAiPreflightTitle", "AI 调用前确认")}</b> · {text("captureAiPreflightNotSent", "尚未发送")}</p>
                 <label class="lvct-form__item">
-                    <span>正文范围与来源</span>
+                    <span>{text("captureAiSourceScopeLabel", "正文范围与来源")}</span>
                     <select class="b3-select" bind:value={aiSourceKind} onchange={invalidatePreflight} disabled={aiRunning}>
-                        <option value="document">当前文档（可编辑缩小）</option>
-                        <option value="selection">我提供的选段</option>
-                        <option value="paste">我粘贴的文本</option>
+                        <option value="document">{text("captureAiSourceDoc", "当前文档（可编辑缩小）")}</option>
+                        <option value="selection">{text("captureAiSourceSelection", "我提供的选段")}</option>
+                        <option value="paste">{text("captureAiSourcePaste", "我粘贴的文本")}</option>
                     </select>
                 </label>
                 <label class="lvct-form__item">
-                    <span>本次原文（修改后需重新生成预览）</span>
+                    <span>{text("captureAiSourceTextLabel", "本次原文（修改后需重新生成预览）")}</span>
                     <textarea class="b3-text-field fn__block" rows="6" bind:value={aiSourceText} oninput={editAiSource} disabled={aiRunning}></textarea>
                 </label>
-                <label class="lvct-import__row"><input type="checkbox" bind:checked={aiRemoveContacts} onchange={invalidatePreflight} disabled={aiRunning} />去除可识别电话/邮箱（默认）</label>
+                <label class="lvct-import__row"><input type="checkbox" bind:checked={aiRemoveContacts} onchange={invalidatePreflight} disabled={aiRunning} />{text("captureAiRemoveContactsLabel", "去除可识别电话/邮箱（默认）")}</label>
                 <fieldset class="lvct-capture__fields">
-                    <legend>允许的候选字段</legend>
+                    <legend>{text("captureAiAllowedFieldsLegend", "允许的候选字段")}</legend>
                     {#each AI_CANDIDATE_FIELDS as field}
                         <label><input type="checkbox" value={field} bind:group={aiFields} onchange={invalidatePreflight} disabled={aiRunning} />{field}</label>
                     {/each}
                 </fieldset>
-                <p class="ft__smaller">只发送下方最终全文，名册仅本地核对。去除策略不能保证识别自由文本中的微信号或秘密，请自行核对。原文/回复不写日志。</p>
+                <p class="ft__smaller">{text("captureAiPreflightPrivacyNotice", "只发送下方最终全文，名册仅本地核对。去除策略不能保证识别自由文本中的微信号或秘密，请自行核对。原文/回复不写日志。")}</p>
                 {#if aiPreflight}
                     <p class="ft__smaller">POST {aiPreflight.endpoint} · 下游地址/宿主附加上下文未验证（HOST pending）</p>
                     <p class="ft__smaller">来源 {aiPreflight.sourceDocId} · {aiPreflight.sourceKind} · 字段 {aiPreflight.fields.join("、")}</p>
                     <p class="ft__smaller">最终 {aiPreflight.characters} 字符 / {aiPreflight.bytes} UTF-8 字节；去除联系方式 {aiPreflight.removed.contacts} 项、元数据 {aiPreflight.removed.metadata} 项；截断 {aiPreflight.removed.truncated} 字符</p>
-                    <label class="lvct-form__item"><span>最终实际发送文本（包含提示词）</span><textarea class="b3-text-field fn__block" rows="9" readonly value={aiPreflight.msg}></textarea></label>
+                    <label class="lvct-form__item"><span>{text("captureAiFinalPromptLabel", "最终实际发送文本（包含提示词）")}</span><textarea class="b3-text-field fn__block" rows="9" readonly value={aiPreflight.msg}></textarea></label>
                 {/if}
                 <div class="lvct-form__actions">
-                    <button class="b3-button b3-button--cancel" onclick={() => { cancelAi(); aiPreflightOpen = false; }}>取消，不发送</button>
-                    <button class="b3-button b3-button--outline" onclick={refreshPreflight} disabled={aiRunning || aiFields.length === 0}>重新生成发送预览</button>
-                    <button class="b3-button" onclick={confirmAi} disabled={aiRunning || !aiPreflight || aiFields.length === 0}>确认发送本次文本</button>
+                    <button class="b3-button b3-button--cancel" onclick={() => { cancelAi(); aiPreflightOpen = false; }}>{text("captureAiCancelPreflight", "取消，不发送")}</button>
+                    <button class="b3-button b3-button--outline" onclick={refreshPreflight} disabled={aiRunning || aiFields.length === 0}>{text("captureAiRegenPreview", "重新生成发送预览")}</button>
+                    <button class="b3-button" onclick={confirmAi} disabled={aiRunning || !aiPreflight || aiFields.length === 0}>{text("captureAiConfirmSend", "确认发送本次文本")}</button>
                 </div>
             </section>
         {/if}
@@ -629,8 +629,8 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
 
         {#if aiDone && aiCandidates.length > 0}
             <div class="lvct-form__item" aria-label="AI 结构化候选">
-                <span><b>AI 草稿（每项初始未接受，编辑后需再次确认）</b></span>
-                {#if aiRejected > 0}<p class="ft__smaller">已丢弃 {aiRejected} 个非法或超限候选。</p>{/if}
+                <span><b>{text("captureAiDraftsHeading", "AI 草稿（每项初始未接受，编辑后需再次确认）")}</b></span>
+                {#if aiRejected > 0}<p class="ft__smaller">{text("captureAiRejectedNotice", "已丢弃 {n} 个非法或超限候选。", { n: aiRejected })}</p>{/if}
                 {#each aiCandidates as candidate (candidate.id)}
                     <section class="lvct-capture__candidate" data-ai-kind={candidate.kind}>
                         <p><b>{candidate.personName || "场合"}</b> · {candidate.kind} / {candidate.field} · {candidate.decision}</p>
@@ -641,27 +641,27 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                             <p class="ft__smaller">{candidate.personName} ↔ {candidate.personB}（{candidate.value}）· 仅展示草稿，不写关系或笔记</p>
                         {:else}
                             {#if candidate.kind === "followup"}
-                                <label class="lvct-form__item"><span>跟进标题</span><input class="b3-text-field" bind:value={candidate.title} oninput={() => editCandidate(candidate)} /></label>
-                                <label class="lvct-form__item"><span>跟进日期</span><input class="b3-text-field" type="date" bind:value={candidate.dueDate} oninput={() => editCandidate(candidate)} /></label>
+                                <label class="lvct-form__item"><span>{text("captureFollowUpTitleLabel", "跟进标题")}</span><input class="b3-text-field" bind:value={candidate.title} oninput={() => editCandidate(candidate)} /></label>
+                                <label class="lvct-form__item"><span>{text("captureFollowUpDateLabel", "跟进日期")}</span><input class="b3-text-field" type="date" bind:value={candidate.dueDate} oninput={() => editCandidate(candidate)} /></label>
                             {:else}
-                                <label class="lvct-form__item"><span>建议值</span><input class="b3-text-field" bind:value={candidate.value} oninput={() => editCandidate(candidate)} /></label>
+                                <label class="lvct-form__item"><span>{text("captureSuggestedValueLabel", "建议值")}</span><input class="b3-text-field" bind:value={candidate.value} oninput={() => editCandidate(candidate)} /></label>
                             {/if}
                             {#if candidate.kind !== "occasion" && candidate.targets.length > 0}
                                 <label class="lvct-form__item">
-                                    <span>人物目标（docId / itemId）</span>
+                                    <span>{text("captureTargetDocLabel", "人物目标（docId / itemId）")}</span>
                                     <select class="b3-select" bind:value={candidate.selectedDocId} onchange={() => editCandidate(candidate)}>
-                                        <option value="">待消歧，请选稳定 ID</option>
+                                        <option value="">{text("captureDisambigPending", "待消歧，请选稳定 ID")}</option>
                                         {#each candidate.targets as target (target.docId)}
                                             <option value={target.docId}>{target.name} · {target.docId} · {target.itemId}</option>
                                         {/each}
                                     </select>
                                 </label>
                             {:else if candidate.kind === "profile" || candidate.kind === "followup"}
-                                <p class="ft__smaller">新人/未绑定目标草稿保留，主捕获完成后选择已建立人物 ID 才能写入。</p>
+                                <p class="ft__smaller">{text("captureUnboundTargetNotice", "新人/未绑定目标草稿保留，主捕获完成后选择已建立人物 ID 才能写入。")}</p>
                             {/if}
-                            <button class="b3-button b3-button--outline" onclick={() => decideCandidate(candidate, "accepted")} disabled={!aiCandidateCanAccept(candidate) || candidate.checked}>接受本项</button>
+                            <button class="b3-button b3-button--outline" onclick={() => decideCandidate(candidate, "accepted")} disabled={!aiCandidateCanAccept(candidate) || candidate.checked}>{text("captureAcceptDraft", "接受本项")}</button>
                         {/if}
-                        <button class="b3-button b3-button--cancel" onclick={() => decideCandidate(candidate, "rejected")}>拒绝本项</button>
+                        <button class="b3-button b3-button--cancel" onclick={() => decideCandidate(candidate, "rejected")}>{text("captureRejectDraft", "拒绝本项")}</button>
                     </section>
                 {/each}
             </div>
@@ -686,40 +686,40 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
             <input class="b3-text-field fn__block" type="text" bind:value={note} placeholder={text("captureNotePlaceholder", "产品发布会")} />
         </label>
         <div class="lvct-form__item">
-            <span>💡 观点或关键事实随路沉淀（可选）</span>
+            <span>{text("captureFactPreserveTitle", "💡 观点或关键事实随路沉淀（可选）")}</span>
             <div style="display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
                 <button
                     type="button"
                     class="b3-chip"
                     class:b3-chip--primary={factCategory === "quote"}
                     onclick={() => (factCategory = "quote")}
-                >💡 观点见解</button>
+                >{text("factCatQuote", "💡 观点见解")}</button>
                 <button
                     type="button"
                     class="b3-chip"
                     class:b3-chip--primary={factCategory === "preference"}
                     onclick={() => (factCategory = "preference")}
-                >❤️ 喜好忌口</button>
+                >{text("factCatPref", "❤️ 喜好忌口")}</button>
                 <button
                     type="button"
                     class="b3-chip"
                     class:b3-chip--primary={factCategory === "background"}
                     onclick={() => (factCategory = "background")}
-                >💼 背景经历</button>
+                >{text("factCatBg", "💼 背景经历")}</button>
                 <button
                     type="button"
                     class="b3-chip"
                     class:b3-chip--primary={factCategory === "fact"}
                     onclick={() => (factCategory = "fact")}
-                >📌 关键事实</button>
+                >{text("factCatFact", "📌 关键事实")}</button>
             </div>
             <input
                 class="b3-text-field fn__block"
-                placeholder="记录本文提到的核心观点、独到见解或人物事实…"
+                placeholder={text("captureFactPlaceholder", "记录本文提到的核心观点、独到见解或人物事实…")}
                 bind:value={factText}
                 disabled={running}
             />
-            <small class="ft__smaller ft__on-surface">选填。勾选的参与人员文档中将自动追加此条事实（带本文来源链接出处）。</small>
+            <small class="ft__smaller ft__on-surface">{text("captureFactHint", "选填。勾选的参与人员文档中将自动追加此条事实（带本文来源链接出处）。")}</small>
         </div>
 
         {#if errorText}

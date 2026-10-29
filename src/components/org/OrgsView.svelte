@@ -135,6 +135,15 @@
         const archived = orgs.filter((org) => org.archived).sort((first, second) => first.name.localeCompare(second.name, "zh-Hans-CN") || first.docId.localeCompare(second.docId));
         return [...active, ...archived];
     });
+    const duplicateNames = $derived.by(() => {
+        const names = new Set<string>();
+        const duplicates = new Set<string>();
+        for (const o of orgs) {
+            if (names.has(o.name)) duplicates.add(o.name);
+            names.add(o.name);
+        }
+        return duplicates;
+    });
     const filteredOrgs = $derived.by(() => {
         return filterOrganizations(sortedOrgs, { query: organizationQuery, status: organizationStatus });
     });
@@ -348,7 +357,7 @@
                         {:else}
                             <span class="lvct-orgs-view__card-icon" aria-hidden="true">{org.name.slice(0, 1)}</span>
                         {/if}
-                        <b class="lvct-orgs-view__card-name">{org.name}</b>
+                        <b class="lvct-orgs-view__card-name" title={org.docId}>{org.name}{#if duplicateNames.has(org.name)}<small class="ft__smaller ft__on-surface-light font-weight-normal font-size-11" style="margin-left: 4px;">…{org.docId.slice(-6)}</small>{/if}</b>
                         {#if org.profile?.shortName}<span class="lvct-chip lvct-chip--group">{org.profile.shortName}</span>{/if}
                         {#if org.archived}<span class="lvct-chip lvct-chip--group">{text("orgArchivedTag", "已归档")}</span>{/if}
                     </div>
@@ -370,7 +379,10 @@
                             title="在名册中筛选属于该组织的成员"
                             onclick={() => {
                                 const memberDocIds = org.memberships.map((m) => m.personDocId);
-                                onOpenPeople?.({ workQuery: org.name, memberDocIds, label: `组织 · ${org.name}` });
+                                const label = duplicateNames.has(org.name)
+                                    ? text("orgFilterDisambigLabel", "组织 · {name}（…{id}）", { name: org.name, id: org.docId.slice(-6) })
+                                    : text("orgFilterLabel", "组织 · {name}", { name: org.name });
+                                onOpenPeople?.({ workQuery: org.name, memberDocIds, label });
                             }}>
                             <Users size={13} /> {text("orgsViewMembers", "成员")}</button>{/if}
                         {#if onOpenGraphOrg}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}

@@ -534,17 +534,52 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         }
     }
 
-    // 工作台可能跨午夜持续打开；定期推进时钟依赖，让问候、日期和“今日不再展示”
-    // 在同一实例中自动切换，而不需要用户离开再回来。
+    // 工作台可能跨午夜持续打开或休眠挂机；定期推进时钟依赖，并监听唤醒与窗口可见性，
+    // 跨天或长时间挂机返回时自动静默刷新，让生日、行动清单和问候实时更新。
     let clockTick = $state(0);
-    $effect(() => {
-        const timer = window.setInterval(() => { clockTick += 1; }, 30_000);
-        return () => window.clearInterval(timer);
+    const localTodayKey = $derived.by(() => {
+        clockTick;
+        const now = new Date();
+        const pad = (value: number) => String(value).padStart(2, "0");
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     });
     let lastRefreshedDate = $state(toLocalToday());
+    let lastRefreshedTime = $state(Date.now());
+
+    $effect(() => {
+        const timer = window.setInterval(() => { clockTick += 1; }, 30_000);
+        const onWakeCheck = () => {
+            clockTick += 1;
+            const currentToday = toLocalToday();
+            const elapsed = Date.now() - lastRefreshedTime;
+            if (currentToday !== lastRefreshedDate || elapsed > 15 * 60 * 1000) {
+                lastRefreshedDate = currentToday;
+                lastRefreshedTime = Date.now();
+                if (!quickBusy && !fuBusy && !alBusy) {
+                    void refresh();
+                }
+            }
+        };
+
+        const onVisibility = () => {
+            if (document.visibilityState === "visible") onWakeCheck();
+        };
+        const onFocus = () => onWakeCheck();
+
+        document.addEventListener("visibilitychange", onVisibility);
+        window.addEventListener("focus", onFocus);
+
+        return () => {
+            window.clearInterval(timer);
+            document.removeEventListener("visibilitychange", onVisibility);
+            window.removeEventListener("focus", onFocus);
+        };
+    });
+
     $effect(() => {
         if (localTodayKey !== lastRefreshedDate) {
             lastRefreshedDate = localTodayKey;
+            lastRefreshedTime = Date.now();
             void refresh();
         }
     });
@@ -929,12 +964,6 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let onboardingHiddenThisSession = $state(false);
     let onboardingSaving = $state(false);
     let onboardingError = $state("");
-    const localTodayKey = $derived.by(() => {
-        clockTick;
-        const now = new Date();
-        const pad = (value: number) => String(value).padStart(2, "0");
-        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    });
     const summaryVisible = $derived.by(() => {
         if (!preferences.summaryEnabled) return false;
         if (summaryHiddenThisSession) return false;
