@@ -140,7 +140,9 @@ export async function appendFollowUpToDailyNote(
                     await flushBlockIndex();
                     dailyDoc = await findDailyNoteDocument(notebookId, input.dueDate);
                 }
-            } catch {}
+            } catch (error) {
+                console.warn("[LvContacts] 创建今日日记文档失败：", error);
+            }
         }
 
         if (!dailyDoc?.docId) return null;

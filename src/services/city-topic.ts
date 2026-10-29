@@ -154,7 +154,9 @@ export async function createTripItineraryDoc(
             "custom-lvct-created": String(Date.now()),
         });
         await flushBlockIndex();
-    } catch {}
+    } catch (error) {
+        console.warn("[LvContacts] 设置行程备忘文档属性失败（已降级保留正文）：", error);
+    }
 
     return { docId, hpath };
 }

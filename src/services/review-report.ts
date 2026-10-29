@@ -46,7 +46,9 @@ export async function exportReviewReportToDoc(
             "custom-lvct-created": String(Date.now()),
         });
         await flushBlockIndex();
-    } catch {}
+    } catch (error) {
+        console.warn("[LvContacts] 设置交往回顾文档属性失败（已降级保留正文）：", error);
+    }
 
     return { docId, hpath };
 }

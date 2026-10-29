@@ -55,7 +55,9 @@ export async function createPersonFlashcardsDoc(
             "custom-lvct-created": String(Date.now()),
         });
         await flushBlockIndex();
-    } catch {}
+    } catch (error) {
+        console.warn("[LvContacts] 设置个人闪卡文档属性失败（已降级保留正文）：", error);
+    }
 
     return { docId, hpath, count: cards.length };
 }
@@ -107,7 +109,9 @@ export async function createBatchFlashcardsDoc(
             "custom-lvct-created": String(Date.now()),
         });
         await flushBlockIndex();
-    } catch {}
+    } catch (error) {
+        console.warn("[LvContacts] 设置批量闪卡文档属性失败（已降级保留正文）：", error);
+    }
 
     return { docId, hpath, count: totalCards };
 }

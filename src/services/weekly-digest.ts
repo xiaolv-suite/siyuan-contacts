@@ -50,7 +50,9 @@ export async function createWeeklyDigestDoc(
             "custom-lvct-created": String(Date.now()),
         });
         await flushBlockIndex();
-    } catch {}
+    } catch (error) {
+        console.warn("[LvContacts] 设置人脉周报文档属性失败（已降级保留正文）：", error);
+    }
 
     return { docId, hpath, weekLabel: weekRange.weekLabel };
 }

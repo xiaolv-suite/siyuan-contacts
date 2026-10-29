@@ -2074,6 +2074,10 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         return this.openDoc(docId);
     }
 
+    openSetting(): void {
+        this.openSettings();
+    }
+
     openSettings() {
         if (!this.settings) {
             notify("请先完成人脉工作空间初始化", 3000);

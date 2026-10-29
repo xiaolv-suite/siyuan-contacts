@@ -775,7 +775,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const list = await onLoadKinships(current.docId);
             if (detailAlive) kinships = list;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取亲属成员失败：", err);
             kinships = [];
         }
     }
@@ -787,7 +788,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const list = await onLoadPromises(current.docId);
             if (detailAlive) promises = list;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取双向承诺失败：", err);
             promises = [];
         }
     }
@@ -799,7 +801,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const res = await onLoadLifecycleStage(current.docId);
             if (detailAlive) lifecycleRecord = res;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取交往阶段失败：", err);
             lifecycleRecord = null;
         }
     }
@@ -811,7 +814,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const list = await onLoadScratchpads(current.docId);
             if (detailAlive) scratchpads = list;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取闪念便签失败：", err);
             scratchpads = [];
         }
     }
@@ -823,7 +827,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const list = await onLoadSocialPreferences(current.docId);
             if (detailAlive) socialPreferences = list;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取社交偏好失败：", err);
             socialPreferences = [];
         }
     }
@@ -835,7 +840,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const list = await onLoadItineraries(current.docId);
             if (detailAlive) itineraries = list;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取拜访行程失败：", err);
             itineraries = [];
         }
     }
@@ -847,7 +853,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         try {
             const list = await onLoadExchanges(current.docId);
             if (detailAlive) personExchanges = list;
-        } catch {
+        } catch (err) {
+            console.warn("[LvContacts] 读取往来账目失败：", err);
             personExchanges = [];
         }
     }
@@ -872,6 +879,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let facts: PersonFactItem[] = $state([]);
     let factsLoading = $state(false);
     let factsSaving = $state(false);
+    let factsError = $state("");
     let newFactText = $state("");
     let newFactCategory: FactCategory = $state("quote");
     let newFactSource = $state("");
@@ -915,10 +923,12 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     async function loadFacts(): Promise<void> {
         if (!onLoadPersonFacts || !current?.docId) return;
         factsLoading = true;
+        factsError = "";
         try {
             facts = await onLoadPersonFacts(current.docId);
-        } catch {
+        } catch (err) {
             facts = [];
+            factsError = `读取事实画像失败：${err instanceof Error ? err.message : String(err)}`;
         } finally {
             factsLoading = false;
         }
@@ -3629,6 +3639,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <p class="ft__smaller ft__on-surface" style="margin: 4px 0 8px 0;">记录对方的独到观点、喜好忌口、经历背景或关键事实，自动沉淀至人物文档受控区块，可作为会前准备谈资。</p>
                 {#if factsLoading}
                     <p class="ft__smaller ft__on-surface" role="status">正在读取事实画像…</p>
+                {:else if factsError}
+                    <div class="lvct-form__error" role="alert" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 8px;">
+                        <span>{factsError}</span>
+                        <button type="button" class="b3-button b3-button--text b3-button--small" onclick={loadFacts}>重试</button>
+                    </div>
                 {:else}
                     {#if facts.length > 0}
                         <ul class="lvct-facts-list">
