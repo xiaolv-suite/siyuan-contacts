@@ -508,24 +508,26 @@
     }
 
     .anniv-card {
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 8px;
-        padding: 12px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        padding: 14px 16px;
         display: flex;
         flex-direction: column;
         gap: 8px;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: var(--lvct-shadow-1);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .anniv-card:hover {
-        border-color: var(--b3-theme-primary-light);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+        box-shadow: var(--lvct-shadow-2);
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
     }
 
     .anniv-card--today {
-        border-color: var(--lv-heat-cool, #f59e0b);
-        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 4%, transparent);
+        border-color: var(--lv-data-amber, #d97706);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
     }
 
     .anniv-card-top {
@@ -623,22 +625,23 @@
 
     .anniv-years-badge {
         font-size: 11px;
-        color: var(--lv-heat-cool, #f59e0b);
-        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 12%, transparent);
-        padding: 2px 8px;
-        border-radius: 999px;
+        color: var(--lv-data-amber, #d97706);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        padding: 2px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
         align-self: flex-start;
         display: inline-flex;
         align-items: center;
         gap: 3px;
-        font-weight: 500;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
     }
 
     .anniv-greeting-box {
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
-        padding: 8px 10px;
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        padding: 8px 12px;
     }
 
     .greeting-text {

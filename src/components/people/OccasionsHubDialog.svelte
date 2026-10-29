@@ -344,23 +344,32 @@
     .metric-card {
         flex: 1;
         padding: var(--lvct-sp-2, 8px) var(--lvct-sp-3, 12px);
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: var(--lv-r-sm, 8px);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 2px;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .metric-title {
         font-size: var(--lvct-fs-micro, 12px);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
+        font-weight: 500;
     }
 
     .metric-number {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
+        color: var(--lvct-text-1);
     }
 
     .occ-toolbar {
@@ -418,18 +427,21 @@
     }
 
     .occ-card {
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 8px;
-        padding: 12px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        padding: 14px 16px;
         display: flex;
         flex-direction: column;
         gap: 8px;
-        transition: border-color 0.15s ease;
+        box-shadow: var(--lvct-shadow-1);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .occ-card:hover {
-        border-color: var(--b3-theme-primary-light);
+        transform: translateY(-1px);
+        box-shadow: var(--lvct-shadow-2);
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
     }
 
     .occ-card-top {
@@ -447,14 +459,16 @@
     }
 
     .occ-date-badge {
-        font-size: 12px;
-        color: var(--b3-theme-primary);
-        background: var(--b3-theme-primary-lightest, var(--b3-theme-primary-light, rgba(66, 133, 244, 0.12)));
-        padding: 2px 8px;
-        border-radius: 4px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--lv-brand, #ea580c);
+        background: var(--lv-brand-soft);
+        padding: 2px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
         display: inline-flex;
         align-items: center;
         gap: 4px;
+        font-variant-numeric: tabular-nums;
     }
 
     .occ-type-tag, .occ-place-tag {

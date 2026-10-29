@@ -227,10 +227,11 @@
 <style>
     .lvct-scratchpad {
         margin: 14px 0;
-        padding: 12px 14px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter);
-        border-radius: var(--b3-border-radius-b);
+        padding: 14px 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -243,10 +244,10 @@
     }
 
     .scratchpad-new-card {
-        padding: 10px 12px;
-        background: var(--b3-theme-background);
-        border: 1px dashed var(--b3-theme-primary);
-        border-radius: 8px;
+        padding: 10px 14px;
+        background: var(--lvct-bg-app);
+        border: 1px dashed color-mix(in srgb, var(--lv-brand) 40%, transparent);
+        border-radius: var(--lvct-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -309,23 +310,25 @@
     }
 
     .memo-card {
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--b3-border-color);
+        padding: 12px 14px;
+        border-radius: var(--lvct-r-md, 12px);
+        border: 1px solid var(--lvct-border-subtle);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 6px;
         position: relative;
-        background: var(--b3-theme-background);
-        transition: box-shadow 0.15s ease, transform 0.15s ease;
+        background: var(--lvct-bg-surface);
+        transition: box-shadow var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .memo-card:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--lvct-shadow-2);
+        transform: translateY(-1px);
     }
 
     .memo-card.is-pinned {
-        border-top: 3px solid var(--b3-theme-primary);
+        border-top: 3px solid var(--lv-brand);
     }
 
     .memo-card--warm {

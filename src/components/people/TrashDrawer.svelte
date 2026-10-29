@@ -318,16 +318,19 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 14px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 8px;
+        padding: 12px 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: var(--lvct-shadow-1);
         gap: 12px;
-        transition: border-color 0.15s ease;
-    }
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
 
-    .trash-item-card:hover {
-        border-color: var(--b3-theme-primary-light);
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+            border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
+        }
     }
 
     .trash-item-left {

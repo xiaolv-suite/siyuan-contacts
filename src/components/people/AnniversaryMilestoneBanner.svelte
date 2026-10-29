@@ -106,17 +106,23 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 8px 12px;
-        background: color-mix(in srgb, var(--b3-theme-warning) 8%, var(--b3-theme-surface));
-        border: 1px solid color-mix(in srgb, var(--b3-theme-warning) 30%, var(--b3-border-color));
-        border-radius: 6px;
-        transition: all 0.15s ease;
+        padding: 10px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            box-shadow: var(--lvct-shadow-2);
+            transform: translateY(-1px);
+        }
     }
 
     .milestone-item.is-today {
-        background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface));
-        border: 1px solid var(--b3-theme-primary);
-        box-shadow: 0 1px 4px color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-surface));
+        border: 1px solid var(--lv-brand, #ea580c);
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--lv-brand, #ea580c) 16%, transparent);
     }
 
     .milestone-left {
@@ -154,21 +160,23 @@
 
     .years-pill {
         font-size: 10px;
-        font-weight: 600;
-        padding: 1px 6px;
-        border-radius: 10px;
-        background: color-mix(in srgb, var(--b3-theme-warning) 20%, transparent);
-        color: var(--b3-theme-warning);
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.14));
+        color: var(--lv-data-amber, #d97706);
+        font-variant-numeric: tabular-nums;
     }
 
     .countdown-badge {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
+        font-variant-numeric: tabular-nums;
     }
 
     .countdown-badge.is-today {
         font-weight: 700;
-        color: var(--b3-theme-primary);
+        color: var(--lv-brand, #ea580c);
     }
 
     .greeting-preview {

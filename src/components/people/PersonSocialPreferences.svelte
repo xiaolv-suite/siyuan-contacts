@@ -239,10 +239,11 @@
 <style>
     .lvct-social-prefs {
         margin: 14px 0;
-        padding: 12px 14px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter);
-        border-radius: var(--b3-border-radius-b);
+        padding: 14px 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -255,10 +256,10 @@
     }
 
     .social-prefs-form {
-        padding: 10px 12px;
-        background: var(--b3-theme-background);
-        border: 1px dashed var(--b3-theme-primary);
-        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--lvct-bg-app);
+        border: 1px dashed color-mix(in srgb, var(--lv-brand) 36%, transparent);
+        border-radius: var(--lvct-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -334,20 +335,26 @@
     }
 
     .pref-card {
-        padding: 6px 10px;
-        border-radius: 6px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
+        padding: 8px 12px;
+        border-radius: var(--lvct-r-md, 12px);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        transition: border-color 0.15s ease;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .pref-card.is-taboo {
-        border-left: 3px solid var(--b3-theme-error);
-        background: var(--b3-theme-error-lightest, rgba(235, 77, 75, 0.06));
+        border-left: 3px solid var(--lvct-danger, #e11d48);
+        background: color-mix(in srgb, var(--lvct-danger, #e11d48) 5%, var(--lvct-bg-surface));
     }
 
     .pref-content {
@@ -360,10 +367,10 @@
 
     .taboo-badge {
         font-size: 10px;
-        font-weight: 600;
-        padding: 1px 5px;
-        border-radius: 4px;
-        background: var(--b3-theme-error);
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lvct-danger, #e11d48);
         color: #ffffff;
         display: inline-flex;
         align-items: center;

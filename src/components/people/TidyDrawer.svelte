@@ -293,15 +293,22 @@
     }
 
     .tidy-item-card {
-        padding: 8px 12px;
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
-        background: var(--b3-theme-surface);
+        padding: 10px 14px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        background: var(--lvct-bg-surface);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
         flex-wrap: wrap;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .card-left {

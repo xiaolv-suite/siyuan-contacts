@@ -328,6 +328,7 @@
 
     .search-input-box input {
         padding-left: 28px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .filter-pills {
@@ -337,22 +338,23 @@
     }
 
     .filter-pill {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 11px;
-        padding: 3px 9px;
-        border-radius: 12px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         display: inline-flex;
         align-items: center;
-        transition: all 0.15s ease;
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary);
-        color: var(--b3-theme-on-primary);
-        border-color: var(--b3-theme-primary);
+        background: var(--lv-brand);
+        color: #ffffff;
+        border-color: var(--lv-brand);
+        font-weight: 600;
     }
 
     .cooling-content {
@@ -369,18 +371,24 @@
     }
 
     .cooling-card {
-        padding: 10px 12px;
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
-        background: var(--b3-theme-surface);
+        padding: 12px 14px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        background: var(--lvct-bg-surface);
         display: flex;
         flex-direction: column;
         gap: 8px;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: var(--lvct-shadow-1);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
+    }
+
+    .cooling-card:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--lvct-shadow-2);
     }
 
     .cooling-card.is-starred {
-        border-left: 3px solid var(--lv-heat-cool, #f59e0b);
+        border-left: 3px solid var(--lv-data-amber, #d97706);
     }
 
     .cooling-card-head {

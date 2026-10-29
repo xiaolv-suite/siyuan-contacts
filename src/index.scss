@@ -11086,41 +11086,50 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     &__stat-card {
         display: flex;
         flex-direction: column;
-        padding: 10px 14px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
-        border-radius: 8px;
+        padding: 12px 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            box-shadow: var(--lvct-shadow-2);
+            transform: translateY(-1px);
+        }
 
         &--warn {
-            border-left: 3px solid #f59e0b;
+            border-left: 3px solid var(--lv-data-amber, #d97706);
         }
 
         &--success {
-            border-left: 3px solid #10b981;
+            border-left: 3px solid var(--lvct-success, #16a34a);
         }
     }
 
     &__stat-num {
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 700;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-1);
         line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
     }
 
     &__stat-label {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
-        opacity: 0.75;
+        color: var(--lvct-text-3);
         margin-top: 2px;
+        font-weight: 500;
     }
 
     &__notice {
         align-items: center;
         justify-content: space-between;
-        padding: 6px 12px;
-        background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface));
-        border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent);
-        border-radius: 6px;
+        padding: 8px 14px;
+        background: var(--lv-brand-soft);
+        border: 1px solid color-mix(in srgb, var(--lv-brand) 30%, transparent);
+        border-radius: var(--lvct-r-md, 12px);
         font-size: 12px;
     }
 
@@ -11145,14 +11154,17 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 8px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
-        border-radius: 6px;
-        transition: border-color 0.15s ease;
+        padding: 10px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
-            border-color: var(--b3-theme-primary, #4285f4);
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+            border-color: color-mix(in srgb, var(--lv-brand) 35%, var(--lvct-border-subtle));
         }
     }
 

@@ -329,22 +329,22 @@
     }
 
     .filter-pill {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 11px;
-        padding: 3px 9px;
-        border-radius: 12px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         display: flex;
         align-items: center;
-        color: var(--b3-theme-on-surface);
-        transition: all 0.15s ease;
+        color: var(--lvct-text-2);
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft);
+        border-color: var(--lv-brand);
+        color: var(--lv-brand);
         font-weight: 600;
     }
 
@@ -361,18 +361,24 @@
     }
 
     .dossier-card {
-        padding: 10px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 8px;
+        padding: 12px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 8px;
-        transition: border-color 0.15s ease;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .dossier-card.has-alert {
-        border-left: 3px solid var(--b3-theme-error);
+        border-left: 3px solid var(--lvct-danger, #e11d48);
     }
 
     .dossier-head {
