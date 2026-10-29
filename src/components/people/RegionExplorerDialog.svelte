@@ -203,8 +203,7 @@
         <div class="lvct-region-dialog__header-left">
             <Compass size={18} class="lvct-region-dialog__header-icon" />
             <div>
-                <h3 class="lvct-region-dialog__title">城市人脉探索与行程助手</h3>
-                <p class="lvct-region-dialog__subtitle">出差出游、假期旅行、顺路途经，随时发现同城与周边好友，一键生成探访备忘录</p>
+                <p class="lvct-region-dialog__subtitle" style="margin: 0;">出差出游、假期旅行、顺路途经，随时发现同城与周边好友，一键生成探访备忘录</p>
             </div>
         </div>
         <div class="lvct-region-dialog__header-search">
@@ -477,14 +476,8 @@
         color: var(--b3-theme-primary);
         flex-shrink: 0;
     }
-    .lvct-region-dialog__title {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 600;
-        line-height: 1.3;
-    }
     .lvct-region-dialog__subtitle {
-        margin: 2px 0 0 0;
+        margin: 0;
         font-size: 12px;
         color: var(--b3-theme-on-surface);
     }

@@ -125,7 +125,9 @@
     let returnObserver: MutationObserver | undefined;
     /* B14.8 按组织收窄（会话态：组织可能被归档/改名，不持久化） */
     let orgNarrowId = $state("");
-    let searchText: string = $state("");
+    let searchInput: string = $state("");
+    let debouncedSearchText: string = $state("");
+    let searchTimer: ReturnType<typeof setTimeout> | null = null;
     let groupFilter: string = $state("");
     let isolatedOnly = $state(false);
     let relationDepth: "direct" | "second" = $state("direct");
@@ -298,7 +300,7 @@
     /* B14.8 按组织收窄：选中组织后画布人物=该组织成员（成员边来自组织覆盖层） */
     const query: GraphQuery = $derived({ mode: graphMode, scope: graphMode === "native" ? nativeScope : relationScope,
         centerDocId: graphMode === "native" ? nativeCenterDocId : relationCenterDocId, orgDocId: orgNarrowId,
-        search: searchText, group: groupFilter, isolatedOnly, showOrgs, depth: relationDepth, focusId, compareId, queryMode });
+        search: debouncedSearchText, group: groupFilter, isolatedOnly, showOrgs, depth: relationDepth, focusId, compareId, queryMode });
     const activeFilterCount = $derived(Number(Boolean(orgNarrowId)) + Number(query.scope !== "global")
         + (graphMode === "relations" ? Number(Boolean(groupFilter)) + Number(isolatedOnly) + Number(!showOrgs) : 0)
         + hiddenEdgeKinds.size);
@@ -368,7 +370,7 @@
             : snapshot.state === "partial" ? "已显示核实部分" : "查询完成");
     const canvasCanRender = $derived(snapshot.state !== "unknown" && snapshot.state !== "center_missing");
     const orgOverlay = $derived({ nodes: snapshot.organizations });
-    const searchNeedle = $derived(searchText.trim().toLowerCase());
+    const searchNeedle = $derived(debouncedSearchText.trim().toLowerCase());
     const emptyStateDescription = $derived.by(() => {
         if (graphMode === "native" && people.length === 0) return text("graphEmptyNativeNoPeopleDesc", "还没有可绘制的登记文档。创建或导入联系人后，可查看其与本人或组织文档之间的双链；没有引用不代表没有关联。");
         if (graphMode === "native") return text("graphEmptyNoNativeMatchDesc", "当前文档引用范围没有匹配节点。请调整引用范围、搜索关键词或组织范围；没有引用不代表没有关联。");
@@ -437,6 +439,7 @@
         if (copyToastTimer) clearTimeout(copyToastTimer);
         if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
         if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+        if (searchTimer) clearTimeout(searchTimer);
     });
 
     function openSnapshotPerson(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
@@ -1231,10 +1234,22 @@
 
     function clearFilters() {
         selectedOrgId = "";
-        searchText = ""; groupFilter = ""; isolatedOnly = false; orgNarrowId = "";
+        searchInput = "";
+        debouncedSearchText = "";
+        if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
+        groupFilter = ""; isolatedOnly = false; orgNarrowId = "";
         hiddenEdgeKinds = new Set();
         if (relationScope === "org") relationScope = "global";
         if (nativeScope === "org") nativeScope = "global";
+    }
+
+    function handleSearchInput(event: Event) {
+        const val = (event.currentTarget as HTMLInputElement).value;
+        searchInput = val;
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            debouncedSearchText = val;
+        }, 250);
     }
 
     /**
@@ -1608,7 +1623,7 @@
                     onclick={() => void switchGraphMode("native")}
                 >{text("graphModeNative", "文档引用")}</button>
             </div>
-            <input class="b3-text-field" type="search" placeholder={text("graphSearchPlaceholder", "搜索节点…")} aria-label={text("graphSearchNodes", "搜索关系图谱节点")} aria-controls="lvct-graph-results" aria-describedby="lvct-graph-status" bind:value={searchText} />
+            <input class="b3-text-field" type="search" placeholder={text("graphSearchPlaceholder", "搜索节点…")} aria-label={text("graphSearchNodes", "搜索关系图谱节点")} aria-controls="lvct-graph-results" aria-describedby="lvct-graph-status" value={searchInput} oninput={handleSearchInput} />
             {#if searchNeedle}<span class="ft__smaller ft__on-surface">{text("graphSnapshotHits", "筛选后 {n} 个节点（含保留中心）", { n: snapshot.counts.filteredNodes })}</span>{/if}
         </div>
         <div class="lvct-graph-toolbar__actions">
@@ -1872,6 +1887,8 @@
                         class:lvct-graph__fab-btn--active={layoutMenuOpen}
                         title={`当前布局：${layoutLabels[activeLayout]}，点击切换`}
                         aria-label="切换图谱布局"
+                        aria-haspopup="menu"
+                        aria-expanded={layoutMenuOpen}
                         disabled={!graphInstance}
                         onclick={() => (layoutMenuOpen = !layoutMenuOpen)}
                     >
@@ -1882,16 +1899,16 @@
                     </button>
                     {#if layoutMenuOpen}
                         <div class="lvct-graph__layout-menu" role="menu">
-                            <button type="button" class:active={activeLayout === "cose"} onclick={() => changeLayout("cose")}>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "cose"} onclick={() => changeLayout("cose")}>
                                 <Network size={14} class="lvct-icon-inline" /> 力导向聚类 (CoSE)
                             </button>
-                            <button type="button" class:active={activeLayout === "concentric"} onclick={() => changeLayout("concentric")}>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "concentric"} onclick={() => changeLayout("concentric")}>
                                 <Target size={14} class="lvct-icon-inline" /> 六度辐射圈 (六度人脉)
                             </button>
-                            <button type="button" class:active={activeLayout === "breadthfirst"} onclick={() => changeLayout("breadthfirst")}>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "breadthfirst"} onclick={() => changeLayout("breadthfirst")}>
                                 <GitFork size={14} class="lvct-icon-inline" /> 层级展开 (族谱树)
                             </button>
-                            <button type="button" class:active={activeLayout === "circle"} onclick={() => changeLayout("circle")}>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "circle"} onclick={() => changeLayout("circle")}>
                                 <CircleDot size={14} class="lvct-icon-inline" /> 全局环形 (全景圈)
                             </button>
                         </div>

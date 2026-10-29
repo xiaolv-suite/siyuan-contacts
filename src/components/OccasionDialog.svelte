@@ -89,10 +89,10 @@
     }
 </script>
 
-<div class="lvct-occ-dialog" role="dialog" aria-modal="true" aria-labelledby="lvct-occ-title">
+<div class="lvct-occ-dialog">
     <header class="lvct-occ-dialog__head">
         <h3 id="lvct-occ-title" class="lvct-occ-dialog__title">{text("occDialogTitle", "记录群体活动与场合")}</h3>
-        <p class="ft__smaller ft__on-surface">
+        <p class="ft__smaller ft__on-surface" style="margin-top: 0;">
             {text("occDialogDesc", "统一记录多人参加的会议、聚餐、婚礼等活动；保存后自动为每位参与者生成互动时间线并标记同场同行。")}
         </p>
     </header>
@@ -263,7 +263,9 @@
     flex-direction: column;
     gap: 4px;
 }
-.lvct-occ-dialog__title { margin: 0; }
+.lvct-occ-dialog__title {
+    display: none;
+}
 .lvct-occ-dialog__body {
     display: flex;
     flex-direction: column;

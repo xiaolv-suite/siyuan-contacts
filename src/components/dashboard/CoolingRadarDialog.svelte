@@ -7,6 +7,8 @@
     } from "../../domain/cooling-radar.ts";
     import { heatLevelColorClass } from "../../domain/cadence.ts";
     import { translateText } from "../../domain/translation";
+    import ViewState from "../ViewState.svelte";
+    import { onDestroy } from "svelte";
     import {
         Search,
         ExternalLink,
@@ -31,6 +33,7 @@
     const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
         translateText(i18n, key, fallback, values));
 
+    let alive = true;
     let loading = $state(true);
     let items = $state<CoolingContactItem[]>([]);
     let searchQuery = $state("");
@@ -42,10 +45,16 @@
             return;
         }
         void facade.loadCoolingRadarSummary().then((res) => {
-            items = res.items;
+            if (alive) items = res.items;
+        }).catch(() => {
+            if (alive) items = [];
         }).finally(() => {
-            loading = false;
+            if (alive) loading = false;
         });
+    });
+
+    onDestroy(() => {
+        alive = false;
     });
 
     const filteredItems = $derived(
@@ -161,15 +170,15 @@
     <!-- 降温候选卡片列表 -->
     <div class="cooling-content">
         {#if loading}
-            <div class="loading-state ft__smaller ft__on-surface-light">
-                {text("coolingLoading", "正在读取全库联系人交往节奏与温度分布…")}
-            </div>
+            <ViewState compact loading title={text("coolingLoading", "正在读取全库联系人交往节奏与温度分布…")} />
         {:else if filteredItems.length === 0}
-            <div class="empty-state ft__smaller ft__on-surface-variant">
-                {searchQuery || filterType !== "all"
+            <ViewState
+                compact
+                icon="check"
+                title={searchQuery || filterType !== "all"
                     ? text("coolingNoMatch", "未找到符合当前筛选条件的降温联系人。")
                     : text("coolingEmptyAll", "太棒了！当前没有任何降温中的联系人，人脉交往温度保持十分活跃。")}
-            </div>
+            />
         {:else}
             <div class="cooling-cards-grid">
                 {#each filteredItems as item (item.person.docId)}
@@ -260,7 +269,16 @@
 
     .cooling-metrics-bar {
         display: flex;
-        gap: 12px;
+        gap: 8px;
+    }
+
+    @media (max-width: 640px) {
+        .cooling-metrics-bar {
+            flex-wrap: wrap;
+        }
+        .metric-card {
+            min-width: calc(50% - 6px);
+        }
     }
 
     .metric-card {
@@ -345,7 +363,7 @@
 
     .cooling-cards-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
         gap: 10px;
     }
 
@@ -361,7 +379,7 @@
     }
 
     .cooling-card.is-starred {
-        border-left: 3px solid #f59e0b;
+        border-left: 3px solid var(--lv-heat-cool, #f59e0b);
     }
 
     .cooling-card-head {
@@ -473,12 +491,5 @@
     .btn-open-person {
         font-size: 11px;
         padding: 2px 8px;
-    }
-
-    .loading-state,
-    .empty-state {
-        text-align: center;
-        padding: 40px 16px;
-        color: var(--b3-theme-on-surface-light);
     }
 </style>

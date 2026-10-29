@@ -130,7 +130,7 @@ export function filterAnniversaryMilestones<T extends { title: string; personNam
         if (windowFilter === "month" && item.daysUntil > 30) return false;
         if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
         if (!q) return true;
-        const matchTitle = item.title.toLowerCase().includes(q);
+        const matchTitle = (item.title ?? "").toLowerCase().includes(q);
         const matchPerson = (item.personName ?? "").toLowerCase().includes(q);
         return matchTitle || matchPerson;
     });

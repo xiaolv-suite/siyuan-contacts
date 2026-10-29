@@ -4,6 +4,8 @@
  * 区分“我承诺对方”与“对方承诺我”，管理履约全生命周期（待履行/已兑现/已取消）。
  */
 
+import { toLocalDateKey } from "./interactions.ts";
+
 export type PromiseDirection = "i_promised" | "they_promised";
 export type PromiseStatus = "pending" | "fulfilled" | "broken";
 
@@ -67,7 +69,7 @@ function sanitizePromise(raw: unknown, expectedPersonDocId?: string): PersonProm
     const detail = typeof r.detail === "string" && r.detail.trim() ? r.detail.trim() : undefined;
     const promisedOn = typeof r.promisedOn === "string" && r.promisedOn.trim()
         ? r.promisedOn.trim()
-        : new Date().toISOString().slice(0, 10);
+        : toLocalDateKey(new Date());
     const dueOn = typeof r.dueOn === "string" && r.dueOn.trim() ? r.dueOn.trim() : undefined;
     const status: PromiseStatus = isValidPromiseStatus(r.status) ? r.status : "pending";
     const fulfilledOn = typeof r.fulfilledOn === "string" && r.fulfilledOn.trim() ? r.fulfilledOn.trim() : undefined;

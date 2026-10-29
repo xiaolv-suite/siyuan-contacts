@@ -258,13 +258,17 @@
     }
 
     .card-svg-wrapper.horizontal {
-        width: 600px;
-        height: 380px;
+        width: 100%;
+        max-width: 600px;
+        aspect-ratio: 600 / 380;
+        height: auto;
     }
 
     .card-svg-wrapper.vertical {
-        width: 440px;
-        height: 600px;
+        width: 100%;
+        max-width: 440px;
+        aspect-ratio: 440 / 600;
+        height: auto;
     }
 
     .card-svg-wrapper :global(svg) {

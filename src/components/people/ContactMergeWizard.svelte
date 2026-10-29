@@ -129,10 +129,10 @@
     });
 </script>
 
-<div class="lvct-merge" role="dialog" aria-modal="true" aria-labelledby="lvct-merge-title">
+<div class="lvct-merge">
     <header class="lvct-merge__head">
         <h3 id="lvct-merge-title" class="lvct-merge__title">{translateText(i18n, "mergeTitle", "合并重复联系人")}</h3>
-        <p class="ft__smaller ft__on-surface">
+        <p class="ft__smaller ft__on-surface" style="margin-top: 0;">
             并排比对 <b>{primary.name}</b> 与 <b>{secondary.name}</b>，逐字段选择保留方。可随时重置默认值。人物文档与互动、关系历史会保留。
         </p>
         <div class="lvct-merge__switch" role="group" aria-label="切换主次人物">
@@ -280,6 +280,9 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+.lvct-merge__title {
+    display: none;
 }
 .lvct-merge__switch { display: flex; }
 .lvct-merge__headrow, .lvct-merge__row {

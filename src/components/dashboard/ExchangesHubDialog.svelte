@@ -3,6 +3,7 @@
     import type { ContactsPluginFacade } from "../../types";
     import type { ExchangesSummary, ExchangeRecordWithPerson } from "../../domain/exchanges-summary.ts";
     import { translateText } from "../../domain/translation";
+    import { toLocalDateKey } from "../../domain/interactions.ts";
     import ViewState from "../ViewState.svelte";
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { CheckCircle2, FileText } from "@lucide/svelte";
@@ -63,7 +64,7 @@
     async function toggleRecordStatus(record: ExchangeRecordWithPerson) {
         if (!facade.changePersonExchangeStatus) return;
         const nextStatus = record.status === "open" ? "settled" : "open";
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
         try {
             await facade.changePersonExchangeStatus(
                 record.id,

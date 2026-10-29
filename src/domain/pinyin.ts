@@ -24,19 +24,32 @@ const SPECIAL_INITIALS: Record<string, string> = {
 const ZH_INITIAL_BOUNDS = "啊芭擦搭蛾发噶哈击喀拉妈拿哦啪期然撒塌挖昔压匝".split("");
 const ZH_LETTERS = "abcdefghjklmnopqrstwxyz".split("");
 
+const charInitialCache = new Map<string, string>();
+const zhCollator = new Intl.Collator("zh-Hans-CN");
+
 export function getChineseCharInitial(ch: string): string {
     if (!ch) return "";
-    if (/[a-zA-Z0-9]/.test(ch)) return ch.toLowerCase();
-    if (SPECIAL_INITIALS[ch]) return SPECIAL_INITIALS[ch];
-    const code = ch.charCodeAt(0);
-    if (code < 0x4e00 || code > 0x9fa5) return "";
+    const cached = charInitialCache.get(ch);
+    if (cached !== undefined) return cached;
 
-    for (let i = ZH_INITIAL_BOUNDS.length - 1; i >= 0; i--) {
-        if (ch.localeCompare(ZH_INITIAL_BOUNDS[i], "zh-Hans-CN") >= 0) {
-            return ZH_LETTERS[i];
+    let result = "";
+    if (/[a-zA-Z0-9]/.test(ch)) {
+        result = ch.toLowerCase();
+    } else if (SPECIAL_INITIALS[ch]) {
+        result = SPECIAL_INITIALS[ch];
+    } else {
+        const code = ch.charCodeAt(0);
+        if (code >= 0x4e00 && code <= 0x9fa5) {
+            for (let i = ZH_INITIAL_BOUNDS.length - 1; i >= 0; i--) {
+                if (zhCollator.compare(ch, ZH_INITIAL_BOUNDS[i]) >= 0) {
+                    result = ZH_LETTERS[i];
+                    break;
+                }
+            }
         }
     }
-    return "";
+    charInitialCache.set(ch, result);
+    return result;
 }
 
 /**

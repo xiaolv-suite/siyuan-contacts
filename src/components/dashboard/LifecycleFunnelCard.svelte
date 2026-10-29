@@ -22,9 +22,9 @@
             case "connection":
                 return "var(--b3-theme-primary)";
             case "collaboration":
-                return "#3b82f6";
+                return "var(--lvct-group-work, var(--b3-theme-primary))";
             case "close_ally":
-                return "#f59e0b";
+                return "var(--lv-heat-cool, var(--b3-theme-primary))";
             case "dormant":
                 return "var(--b3-theme-surface-lighter)";
             default:

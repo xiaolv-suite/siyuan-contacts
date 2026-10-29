@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.57** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.57) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.58** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.58) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -45,19 +45,26 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.6.57 (2026-10-29)
+## This release: v0.6.58 (2026-10-29)
 
-This release implements Social Interaction Depth & Intensity Sort Modes in the contact roster and an Anniversaries & Milestones Hub on the home dashboard:
+This release implements comprehensive quality hardening, boundary edge-case bug fixes, and performance optimizations:
 
-- **Multi-Dimensional Roster Sort Modes (`PeopleSortMode` & `PeopleView.svelte`)**: Added "By Interaction Depth" (`frequency`) and "By Date Added" (`created`) sort modes; upgraded `loadRecentInteractions` to track total interaction count (`count`) per person; renders interaction counts and relationship temperature badges directly in roster cards.
-- **Anniversaries & Milestones Hub Console (`AnniversariesHubDialog.svelte` & `DashboardView.svelte`)**: Consolidated console for acquaintance anniversaries (🤝), wedding anniversaries (💍), work/partnership milestones (💼), and special memorials (🎗️); supports 90-day/monthly/weekly/today temporal filters and category filters; generates thoughtful personalized congratulatory greetings with 1-click clipboard copy; supports batch export of all upcoming milestones to standard RFC 5545 iCalendar (`.ics`) calendar files.
+- **Lunar Calendar 30th Day & Chinese New Year's Eve Adaptation**: Fixed validation bug rejecting Lunar 30th birthdays (such as Lunar 2/30); enhanced algorithm to automatically adjust Lunar New Year's Eve (12/30) to the 29th in 29-day short lunar month years; added full support for unknown-year `0000-MM-DD` anniversaries.
+- **Contact Duplicate Merge 10 Entity Stores Completion**: Fixed severe vulnerability where duplicate contact merging previously omitted anniversaries, promises, kinships, preferences, scratchpads, itineraries, projects, cadences, lifecycle stages, and aliases; all 16 entity stores now transfer atomically within store locks.
+- **Runtime Stability, Timezone & Memory Leak Governance**: Fixed 6 unhandled timer leaks and missing `alive` lifecycle guards across hub dialogs; unified local timezone calculations with `toLocalDateKey` instead of UTC slicing; eliminated `-Infinity` subtraction producing `NaN` in sort comparators.
+- **UI Consistency, Design Tokens & 390px Mobile Viewport**: Eliminated nested redundant dialog headers; removed raw hex colors in favor of `--lvct-*` design tokens; optimized responsive grid layouts, wrapping metric KPI cards and SVG scaling for mobile 390px screens; unified loading/empty states onto `<ViewState>`.
+- **Performance Profiling & Rendering Acceleration**: Added 250ms debouncing to graph search to prevent synchronous $O(V^3)$ CoSE force layout recalculations on keystroke; eliminated forced synchronous layout reflows during roster scrolling; added global static character LRU caching and Collator singletons for Chinese pinyin initials; decoupled heavy potential graph connection discovery into on-demand deferred loading.
 
 Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1029/1029 PASS); 3-tier browser UI regressions passing (527/527); production build and release checks passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.6.56 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.6.57 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.6.57 · 2026-10-29
+- Multi-dimensional roster sort modes: added "By Interaction Depth" (`frequency`) and "By Date Added" (`created`).
+- Anniversaries & Milestones Hub console (`AnniversariesHubDialog.svelte` & `DashboardView.svelte`) with tailored greetings and `.ics` export.
 
 ### v0.6.56 · 2026-10-29
 - Unorganized contacts detection & inference engine (`domain/unorganized-tidy.ts`) deducing suggested groups and tags.

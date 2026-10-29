@@ -65,7 +65,8 @@ test("农历生日：输入月日直接按农历解读，不再先按公历换�
 test("生日显示：农历使用农历月日，公历明确标注口径", () => {
     assert.equal(formatBirthdayDisplay("1990-01-01", true), "正月初一（农历，出生年 1990）");
     assert.equal(formatBirthdayDisplay("1990-02-03", false), "1990-02-03（公历）");
-    assert.equal(formatBirthdayDisplay("1990-02-30", true), "1990-02-30（农历，日期待核实）");
+    assert.equal(formatBirthdayDisplay("1990-02-30", true), "二月三十（农历，出生年 1990）");
+    assert.equal(formatBirthdayDisplay("1990-02-31", true), "1990-02-31（农历，日期待核实）");
     assert.equal(formatBirthdayDisplay("invalid", true), "invalid");
 });
 

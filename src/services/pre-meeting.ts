@@ -9,6 +9,7 @@ import { getRoster } from "./roster.ts";
 import { loadSocialPreferencesStore } from "../data/social-preferences.ts";
 import { loadPromisesStore } from "../data/promises.ts";
 import { loadTopicsStore } from "../data/topics.ts";
+import { toLocalDateKey } from "../domain/interactions.ts";
 import {
     buildContactPreMeetingDossier,
     type ContactPreMeetingDossier,
@@ -25,7 +26,7 @@ export async function loadAllPreMeetingDossiers(
         loadTopicsStore(plugin).catch((): import("../domain/topics.ts").PersonTopicStore => ({ schemaVersion: 1, topics: {} })),
     ]);
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = toLocalDateKey(new Date());
     const dossiers: ContactPreMeetingDossier[] = [];
 
     for (const person of roster) {

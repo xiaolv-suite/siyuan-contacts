@@ -42,10 +42,10 @@
     let errorText = $state("");
 
     const COLOR_OPTIONS: readonly { key: ScratchpadColor; label: string; bg: string }[] = [
-        { key: "warm", label: "暖黄", bg: "#fef3c7" },
-        { key: "blue", label: "天蓝", bg: "#e0f2fe" },
-        { key: "green", label: "青翠", bg: "#dcfce7" },
-        { key: "purple", label: "浅紫", bg: "#f3e8ff" },
+        { key: "warm", label: "暖黄", bg: "var(--lv-heat-cool, #f59e0b)" },
+        { key: "blue", label: "天蓝", bg: "var(--lvct-info, #0284c7)" },
+        { key: "green", label: "青翠", bg: "var(--lvct-success, #10b981)" },
+        { key: "purple", label: "浅紫", bg: "var(--lvct-accent, #8b5cf6)" },
         { key: "default", label: "默认", bg: "var(--b3-theme-surface-lighter)" },
     ];
 
@@ -329,23 +329,23 @@
     }
 
     .memo-card--warm {
-        background: rgba(245, 158, 11, 0.08);
-        border-color: rgba(245, 158, 11, 0.25);
+        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 8%, var(--b3-theme-surface));
+        border-color: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 28%, transparent);
     }
 
     .memo-card--blue {
-        background: rgba(2, 132, 199, 0.08);
-        border-color: rgba(2, 132, 199, 0.25);
+        background: color-mix(in srgb, var(--lvct-info, #0284c7) 8%, var(--b3-theme-surface));
+        border-color: color-mix(in srgb, var(--lvct-info, #0284c7) 28%, transparent);
     }
 
     .memo-card--green {
-        background: rgba(16, 185, 129, 0.08);
-        border-color: rgba(16, 185, 129, 0.25);
+        background: color-mix(in srgb, var(--lvct-success, #10b981) 8%, var(--b3-theme-surface));
+        border-color: color-mix(in srgb, var(--lvct-success, #10b981) 28%, transparent);
     }
 
     .memo-card--purple {
-        background: rgba(139, 92, 246, 0.08);
-        border-color: rgba(139, 92, 246, 0.25);
+        background: color-mix(in srgb, var(--lvct-accent, #8b5cf6) 8%, var(--b3-theme-surface));
+        border-color: color-mix(in srgb, var(--lvct-accent, #8b5cf6) 28%, transparent);
     }
 
     .memo-head {

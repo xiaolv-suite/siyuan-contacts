@@ -545,6 +545,7 @@
         cardResizeObserver?.disconnect();
         cardResizeObserver = undefined;
         observedCards.clear();
+        if (copiedMdTableTimer) clearTimeout(copiedMdTableTimer);
     });
     const guardedClose = useCloseGuard({
         busy: () => batchBusy || exportingSelected,
@@ -710,8 +711,18 @@
             : null;
         final.sort((a, b) => {
             if (effectiveSortMode === "group") return a.group.localeCompare(b.group, "zh-CN") || a.name.localeCompare(b.name, "zh-CN");
-            if (effectiveSortMode === "birthday" && birthdayDays) return (birthdayDays.get(a.itemId) ?? Infinity) - (birthdayDays.get(b.itemId) ?? Infinity) || a.name.localeCompare(b.name, "zh-CN");
-            if (effectiveSortMode === "recent") return (recent[b.docId]?.occurredAt ?? -Infinity) - (recent[a.docId]?.occurredAt ?? -Infinity) || a.name.localeCompare(b.name, "zh-CN");
+            if (effectiveSortMode === "birthday" && birthdayDays) {
+                const dayA = birthdayDays.get(a.itemId) ?? Number.MAX_SAFE_INTEGER;
+                const dayB = birthdayDays.get(b.itemId) ?? Number.MAX_SAFE_INTEGER;
+                if (dayA !== dayB) return dayA - dayB;
+                return a.name.localeCompare(b.name, "zh-CN");
+            }
+            if (effectiveSortMode === "recent") {
+                const timeA = recent[a.docId]?.occurredAt ?? 0;
+                const timeB = recent[b.docId]?.occurredAt ?? 0;
+                if (timeB !== timeA) return timeB - timeA;
+                return a.name.localeCompare(b.name, "zh-CN");
+            }
             if (effectiveSortMode === "frequency") {
                 const countA = recent[a.docId]?.count ?? 0;
                 const countB = recent[b.docId]?.count ?? 0;
@@ -867,15 +878,11 @@
                 observedCards.delete(previous);
             }
         }
-        const initialMeasurements: Array<Pick<ResizeObserverEntry, "target">> = [];
         for (const card of cards) {
             if (observedCards.has(card)) continue;
             observedCards.add(card);
             observer.observe(card);
-            const measurement = readCardMeasurement(card);
-            if (measurement) initialMeasurements.push({ target: card });
         }
-        if (initialMeasurements.length) applyCardMeasurements(initialMeasurements);
     });
 
     $effect(() => {
@@ -1733,6 +1740,7 @@
     }
 
     let copiedMdTable = $state(false);
+    let copiedMdTableTimer: ReturnType<typeof setTimeout> | null = null;
 
     function exportSelectedCsv() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
@@ -1760,7 +1768,8 @@
             const md = exportContactsToMarkdownTable(selectedPeople, activeViewName || "人脉花名册");
             await copyPlainText(md);
             copiedMdTable = true;
-            setTimeout(() => { copiedMdTable = false; }, 2000);
+            if (copiedMdTableTimer) clearTimeout(copiedMdTableTimer);
+            copiedMdTableTimer = setTimeout(() => { copiedMdTable = false; }, 2000);
         } catch (error) {
             errorText = requestErrorMessage(error);
         }

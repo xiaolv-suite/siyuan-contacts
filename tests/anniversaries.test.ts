@@ -60,6 +60,12 @@ test("E-36 anniversary: validateAnniversary 校验与防御", () => {
 
     // 提醒天数超出范围
     assert.ok(validateAnniversary({ ...valid, remindDaysBefore: 35 }).some((e) => e.includes("0 到 30 天")));
+
+    // 支持未知年份 0000-MM-DD
+    assert.deepEqual(validateAnniversary({ ...valid, date: "0000-10-25" }), []);
+
+    // 支持农历大月30日（如 1990-02-30）
+    assert.deepEqual(validateAnniversary({ ...valid, date: "1990-02-30", isLunar: true }), []);
 });
 
 test("E-36 anniversary: nextAnniversary 公历周年换算、届数与平闰年顺延", () => {
@@ -106,6 +112,17 @@ test("E-36 anniversary: nextAnniversary 农历纪念日循环换算", () => {
     assert.match(proj.displayDate, /正月初一/);
     assert.ok(proj.daysUntil >= 0);
     assert.ok(proj.yearsCount && proj.yearsCount >= 6);
+
+    // 农历腊月三十（除夕），若遇到仅有 29 天的年份自适应取廿九
+    const eveItem = mockAnniv({
+        date: "2020-12-30",
+        isLunar: true,
+        title: "除夕相聚",
+        category: "memorial",
+    });
+    const eveProj = nextAnniversary(eveItem, now);
+    assert.ok(eveProj);
+    assert.ok(eveProj.daysUntil >= 0);
 });
 
 test("E-36 anniversary: upcomingAnniversaries 窗口过滤与按到期升序", () => {

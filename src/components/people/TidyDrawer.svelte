@@ -106,12 +106,11 @@
     }
 </script>
 
-<div class="lvct-tidy-drawer" role="dialog" aria-modal="true" aria-label={text("tidyDrawerTitle", "人脉待安顿整理与智能归纳")}>
+<div class="lvct-tidy-drawer">
     <div class="tidy-header-bar">
         <div class="header-info">
             <span class="header-icon">🧹</span>
             <div class="header-text">
-                <span class="header-title">{text("tidyDrawerTitle", "人脉待安顿整理与智能归纳")}</span>
                 <span class="header-sub ft__smaller ft__on-surface">
                     {text("tidyFoundCount", "共发现 {n} 位缺少分组或画像标签的联系人", { n: plan.length })}
                 </span>
@@ -274,11 +273,6 @@
         display: flex;
         flex-direction: column;
         gap: 2px;
-    }
-
-    .header-title {
-        font-weight: 600;
-        font-size: 14px;
     }
 
     .btn-adopt-all {

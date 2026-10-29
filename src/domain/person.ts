@@ -42,8 +42,9 @@ export function validateDraft(draft: ContactDraft): string[] {
     } else if (birthday) {
         const [year, month, day] = birthday.split("-").map(Number);
         if (draft.isLunar) {
-            if (!lunarToSolar(year, month, day)) errors.push("农历生日不是有效日期");
-            else if (birthdayToMs(birthday) === null) errors.push("农历生日日期暂不支持，请重新选择");
+            if (day > 30 || (!lunarToSolar(year, month, day) && (day !== 30 || !lunarToSolar(year, month, 29)))) {
+                errors.push("农历生日不是有效日期");
+            }
         } else if (birthdayToMs(birthday) === null) {
             errors.push("生日不是有效日期");
         }
@@ -52,9 +53,15 @@ export function validateDraft(draft: ContactDraft): string[] {
 }
 
 /** "YYYY-MM-DD" → 当地时区当日零点的毫秒时间戳；无效返回 null */
-export function birthdayToMs(birthday: string): number | null {
-    if (!isValidDateKey(birthday)) return null;
+export function birthdayToMs(birthday: string, isLunar = false): number | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthday)) return null;
     const [year, month, day] = birthday.split("-").map(Number);
+    if (isLunar) {
+        if (day > 30) return null;
+        const solar = lunarToSolar(year, month, day) ?? (day === 30 ? lunarToSolar(year, month, 29) : null);
+        return solar ? solar.getTime() : null;
+    }
+    if (!isValidDateKey(birthday)) return null;
     const date = new Date(year, month - 1, day);
     return date.getTime();
 }

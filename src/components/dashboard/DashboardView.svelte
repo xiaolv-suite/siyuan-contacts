@@ -196,7 +196,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
 
     function openHeatPeople(level: RelationshipHeatLevel, label: string) {
         if (!data?.heatDistribution) return;
-        const itemIds = data.heatDistribution[level].itemIds;
+        const itemIds = data.heatDistribution[level]?.itemIds ?? [];
         if (itemIds.length === 0) {
             onOpenPeople();
             return;
@@ -595,7 +595,6 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             });
             if (alive && version === refreshVersion) {
                 data = result;
-                void loadPotentialConnections();
             }
         } catch (error) {
             if (alive && version === refreshVersion) errorText = requestErrorMessage(error);
@@ -674,7 +673,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             return;
         }
         showAllBirthdays = true;
-        const itemIds = data.birthdays.map((item) => item.person.itemId);
+        const itemIds = (data.birthdays ?? []).map((item) => item.person.itemId);
         if (itemIds.length === 0) {
             onOpenPeople();
             return;
@@ -689,7 +688,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             return;
         }
         showAllStale = true;
-        const itemIds = data.stale.map((item) => item.person.itemId);
+        const itemIds = (data.stale ?? []).map((item) => item.person.itemId);
         if (itemIds.length === 0) {
             onOpenPeople();
             return;
@@ -705,7 +704,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         }
         showAllFollowUps = true;
         const itemIds = [...new Set(
-            data.followUps
+            (data.followUps ?? [])
                 .filter((card) => card.reachable && card.person)
                 .map((card) => card.person!.itemId),
         )];

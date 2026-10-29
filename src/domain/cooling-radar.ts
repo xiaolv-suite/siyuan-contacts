@@ -137,10 +137,10 @@ export function filterCoolingRadarItems(
 
         if (!q) return true;
 
-        const nameMatch = item.person.name.toLowerCase().includes(q);
-        const orgMatch = item.primaryOrgAndTitle.toLowerCase().includes(q);
-        const tagMatch = item.person.tags.some((t) => t.toLowerCase().includes(q));
-        const groupMatch = item.person.group.toLowerCase().includes(q);
+        const nameMatch = (item.person.name ?? "").toLowerCase().includes(q);
+        const orgMatch = (item.primaryOrgAndTitle ?? "").toLowerCase().includes(q);
+        const tagMatch = (item.person.tags ?? []).some((t) => (t ?? "").toLowerCase().includes(q));
+        const groupMatch = (item.person.group ?? "").toLowerCase().includes(q);
 
         return nameMatch || orgMatch || tagMatch || groupMatch;
     });

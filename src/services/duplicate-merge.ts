@@ -25,6 +25,16 @@ import { EXCHANGE_STORAGE_KEY } from "../data/exchanges.ts";
 import { normalizeExchangeStoreForWrite } from "../domain/exchanges.ts";
 import { loadJsonStrict } from "../data/storage.ts";
 import { ORG_MEMBERSHIP_STORAGE_KEY, loadOrgMembershipStore } from "../data/org-membership.ts";
+import { ANNIVERSARIES_STORAGE_KEY, loadAnniversaryStoreStrict } from "../data/anniversaries.ts";
+import { PERSON_PROMISES_STORAGE_KEY, loadPromisesStoreStrict } from "../data/promises.ts";
+import { PERSON_KINSHIP_STORAGE_KEY, loadKinshipStoreStrict } from "../data/kinship.ts";
+import { PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, loadSocialPreferencesStoreStrict } from "../data/social-preferences.ts";
+import { PERSON_SCRATCHPAD_STORAGE_KEY, loadScratchpadStoreStrict } from "../data/person-scratchpad.ts";
+import { ITINERARIES_STORAGE_KEY, loadItinerariesStoreStrict } from "../data/itineraries.ts";
+import { PERSON_PROJECTS_STORAGE_KEY, loadPersonProjectsStoreStrict } from "../data/projects.ts";
+import { CADENCE_STORAGE_KEY, loadCadenceMapStrict } from "../data/cadences.ts";
+import { PERSON_LIFECYCLE_STORAGE_KEY, loadLifecycleStoreStrict } from "../data/lifecycle-stage.ts";
+import { PERSON_ALIAS_STORAGE_KEY, loadPersonAliasStore } from "../data/person-aliases.ts";
 
 export interface ExecuteMergeResult {
     primaryDocId: string;
@@ -38,6 +48,16 @@ export interface ExecuteMergeResult {
         giftIdeas: number;
         exchanges: number;
         memberships: number;
+        anniversaries: number;
+        promises: number;
+        kinships: number;
+        preferences: number;
+        scratchpads: number;
+        itineraries: number;
+        projects: number;
+        cadences: number;
+        lifecycle: number;
+        aliases: number;
     };
 }
 
@@ -74,6 +94,16 @@ export async function executeContactMerge(
         giftIdeas: 0,
         exchanges: 0,
         memberships: 0,
+        anniversaries: 0,
+        promises: 0,
+        kinships: 0,
+        preferences: 0,
+        scratchpads: 0,
+        itineraries: 0,
+        projects: 0,
+        cadences: 0,
+        lifecycle: 0,
+        aliases: 0,
     };
 
     // 2. 迁移互动事件（interaction-events.json）
@@ -180,7 +210,201 @@ export async function executeContactMerge(
         }
     });
 
-    // 8. 将次人物移入回收站缓冲 30 天，并从主库解绑
+    // 8. 迁移纪念日（person-anniversaries.json）
+    await withStoreLock(ANNIVERSARIES_STORAGE_KEY, async () => {
+        const store = await loadAnniversaryStoreStrict(plugin);
+        const secondaryList = store.anniversaries[secondary.docId];
+        if (secondaryList && secondaryList.length > 0) {
+            const primaryList = store.anniversaries[primary.docId] ? [...store.anniversaries[primary.docId]] : [];
+            for (const item of secondaryList) {
+                if (primaryList.length < 20 && !primaryList.some((a) => a.id === item.id || (a.title === item.title && a.date === item.date))) {
+                    primaryList.push({ ...item, personDocId: primary.docId, updatedAt: Date.now() });
+                    migrated.anniversaries += 1;
+                }
+            }
+            store.anniversaries[primary.docId] = primaryList;
+            delete store.anniversaries[secondary.docId];
+            await saveJsonVerified(plugin, ANNIVERSARIES_STORAGE_KEY, store);
+        }
+    });
+
+    // 9. 迁移信诺承诺（person-promises.json）
+    await withStoreLock(PERSON_PROMISES_STORAGE_KEY, async () => {
+        const store = await loadPromisesStoreStrict(plugin);
+        const secondaryPromises = store.promises[secondary.docId];
+        if (secondaryPromises && secondaryPromises.length > 0) {
+            const primaryList = store.promises[primary.docId] ? [...store.promises[primary.docId]] : [];
+            for (const p of secondaryPromises) {
+                if (!primaryList.some((item) => item.id === p.id || (item.title === p.title && item.promisedOn === p.promisedOn))) {
+                    primaryList.push({ ...p, personDocId: primary.docId, updatedAt: Date.now() });
+                    migrated.promises += 1;
+                }
+            }
+            store.promises[primary.docId] = primaryList;
+            delete store.promises[secondary.docId];
+            await saveJsonVerified(plugin, PERSON_PROMISES_STORAGE_KEY, store);
+        }
+    });
+
+    // 10. 迁移家庭与亲属谱系（person-kinship.json）
+    await withStoreLock(PERSON_KINSHIP_STORAGE_KEY, async () => {
+        const store = await loadKinshipStoreStrict(plugin);
+        let changed = false;
+        const secondaryKinships = store.kinships[secondary.docId];
+        if (secondaryKinships && secondaryKinships.length > 0) {
+            const primaryList = store.kinships[primary.docId] ? [...store.kinships[primary.docId]] : [];
+            for (const k of secondaryKinships) {
+                if (!primaryList.some((item) => item.id === k.id || (item.name === k.name && item.role === k.role))) {
+                    primaryList.push({ ...k, personDocId: primary.docId });
+                    migrated.kinships += 1;
+                }
+            }
+            store.kinships[primary.docId] = primaryList;
+            delete store.kinships[secondary.docId];
+            changed = true;
+        }
+        for (const list of Object.values(store.kinships)) {
+            for (const item of list) {
+                if (item.linkedDocId === secondary.docId) {
+                    item.linkedDocId = primary.docId;
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            await saveJsonVerified(plugin, PERSON_KINSHIP_STORAGE_KEY, store);
+        }
+    });
+
+    // 11. 迁移社交偏好与忌口档案（person-social-preferences.json）
+    await withStoreLock(PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, async () => {
+        const store = await loadSocialPreferencesStoreStrict(plugin);
+        const secondaryPrefs = store.preferences[secondary.docId];
+        if (secondaryPrefs && secondaryPrefs.length > 0) {
+            const primaryList = store.preferences[primary.docId] ? [...store.preferences[primary.docId]] : [];
+            for (const p of secondaryPrefs) {
+                if (!primaryList.some((item) => item.id === p.id || (item.category === p.category && item.content === p.content))) {
+                    primaryList.push({ ...p, personDocId: primary.docId, updatedAt: Date.now() });
+                    migrated.preferences += 1;
+                }
+            }
+            store.preferences[primary.docId] = primaryList;
+            delete store.preferences[secondary.docId];
+            await saveJsonVerified(plugin, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, store);
+        }
+    });
+
+    // 12. 迁移便签速记（person-scratchpads.json）
+    await withStoreLock(PERSON_SCRATCHPAD_STORAGE_KEY, async () => {
+        const store = await loadScratchpadStoreStrict(plugin);
+        const secondaryNotes = store.notes[secondary.docId];
+        if (secondaryNotes && secondaryNotes.length > 0) {
+            const primaryList = store.notes[primary.docId] ? [...store.notes[primary.docId]] : [];
+            for (const n of secondaryNotes) {
+                if (!primaryList.some((item) => item.id === n.id)) {
+                    primaryList.push({ ...n, personDocId: primary.docId, updatedAt: Date.now() });
+                    migrated.scratchpads += 1;
+                }
+            }
+            store.notes[primary.docId] = primaryList;
+            delete store.notes[secondary.docId];
+            await saveJsonVerified(plugin, PERSON_SCRATCHPAD_STORAGE_KEY, store);
+        }
+    });
+
+    // 13. 迁移行程计划（person-itineraries.json）
+    await withStoreLock(ITINERARIES_STORAGE_KEY, async () => {
+        const store = await loadItinerariesStoreStrict(plugin);
+        const secondaryItns = store.itineraries[secondary.docId];
+        if (secondaryItns && secondaryItns.length > 0) {
+            const primaryList = store.itineraries[primary.docId] ? [...store.itineraries[primary.docId]] : [];
+            for (const itn of secondaryItns) {
+                if (!primaryList.some((item) => item.id === itn.id)) {
+                    primaryList.push({ ...itn, personDocId: primary.docId, updatedAt: Date.now() });
+                    migrated.itineraries += 1;
+                }
+            }
+            store.itineraries[primary.docId] = primaryList;
+            delete store.itineraries[secondary.docId];
+            await saveJsonVerified(plugin, ITINERARIES_STORAGE_KEY, store);
+        }
+    });
+
+    // 14. 迁移项目协作（person-projects.json）
+    await withStoreLock(PERSON_PROJECTS_STORAGE_KEY, async () => {
+        const store = await loadPersonProjectsStoreStrict(plugin);
+        const secondaryProjs = store.projects[secondary.docId];
+        if (secondaryProjs && secondaryProjs.length > 0) {
+            const primaryList = store.projects[primary.docId] ? [...store.projects[primary.docId]] : [];
+            for (const proj of secondaryProjs) {
+                if (!primaryList.some((item) => item.id === proj.id || item.title === proj.title)) {
+                    primaryList.push({ ...proj, personDocId: primary.docId, updatedAt: Date.now() });
+                    migrated.projects += 1;
+                }
+            }
+            store.projects[primary.docId] = primaryList;
+            delete store.projects[secondary.docId];
+            await saveJsonVerified(plugin, PERSON_PROJECTS_STORAGE_KEY, store);
+        }
+    });
+
+    // 15. 迁移联系节奏（person-cadences.json）
+    await withStoreLock(CADENCE_STORAGE_KEY, async () => {
+        const store = await loadCadenceMapStrict(plugin);
+        if (store[secondary.docId]) {
+            if (!store[primary.docId]) {
+                store[primary.docId] = store[secondary.docId];
+                migrated.cadences += 1;
+            }
+            delete store[secondary.docId];
+            await saveJsonVerified(plugin, CADENCE_STORAGE_KEY, {
+                schemaVersion: 1,
+                cadences: Object.keys(store).length > 0 ? store : {},
+            });
+        }
+    });
+
+    // 16. 迁移交往生命周期（person-lifecycle-stage.json）
+    await withStoreLock(PERSON_LIFECYCLE_STORAGE_KEY, async () => {
+        const store = await loadLifecycleStoreStrict(plugin);
+        const secondaryRecord = store.records[secondary.docId];
+        if (secondaryRecord) {
+            const primaryRecord = store.records[primary.docId];
+            if (!primaryRecord) {
+                store.records[primary.docId] = {
+                    ...secondaryRecord,
+                    personDocId: primary.docId,
+                    updatedAt: Date.now(),
+                };
+                migrated.lifecycle += 1;
+            } else {
+                primaryRecord.history.push(...secondaryRecord.history);
+                primaryRecord.updatedAt = Date.now();
+                migrated.lifecycle += 1;
+            }
+            delete store.records[secondary.docId];
+            await saveJsonVerified(plugin, PERSON_LIFECYCLE_STORAGE_KEY, store);
+        }
+    });
+
+    // 17. 迁移别名（person-aliases.json）
+    await withStoreLock(PERSON_ALIAS_STORAGE_KEY, async () => {
+        const store = await loadPersonAliasStore(plugin);
+        let changed = false;
+        for (const alias of store.aliases) {
+            if (alias.personDocId === secondary.docId) {
+                alias.personDocId = primary.docId;
+                alias.updatedAt = Date.now();
+                migrated.aliases += 1;
+                changed = true;
+            }
+        }
+        if (changed) {
+            await saveJsonVerified(plugin, PERSON_ALIAS_STORAGE_KEY, store);
+        }
+    });
+
+    // 18. 将次人物移入回收站缓冲 30 天，并从主库解绑
     await removeContactToTrash(plugin, settings, secondary);
 
     // 9. 失效名册缓存并广播变更

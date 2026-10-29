@@ -11,6 +11,8 @@
     } from "../../domain/itineraries.ts";
     import { translateText } from "../../domain/translation";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import { toLocalDateKey } from "../../domain/interactions.ts";
+    import { onDestroy } from "svelte";
     import {
         Calendar,
         Clock,
@@ -77,7 +79,7 @@
     function startCreate() {
         editingId = null;
         formTitle = "";
-        formDate = new Date().toISOString().slice(0, 10);
+        formDate = toLocalDateKey(new Date());
         formTime = "";
         formLocation = "";
         formAttendees = "";
@@ -192,11 +194,18 @@
         }
     }
 
+    let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+    onDestroy(() => {
+        if (copyTimer) clearTimeout(copyTimer);
+    });
+
     async function handleCopyMarkdown(item: PersonItineraryItem) {
         const md = formatItineraryMarkdown(item, personName);
         await copyPlainText(md);
         copiedId = item.id;
-        setTimeout(() => {
+        if (copyTimer) clearTimeout(copyTimer);
+        copyTimer = setTimeout(() => {
             if (copiedId === item.id) copiedId = "";
         }, 2000);
     }
@@ -209,7 +218,7 @@
     }
 
     function calculateDateCountdown(targetDate: string): { label: string; isPast: boolean } {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
         if (targetDate === today) {
             return { label: text("todayMeeting", "今天"), isPast: false };
         }

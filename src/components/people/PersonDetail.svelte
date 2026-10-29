@@ -1974,6 +1974,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
         if (revealInterval) clearInterval(revealInterval);
         if (vcardCopiedTimer) clearTimeout(vcardCopiedTimer);
+        if (flashcardToastTimer) clearTimeout(flashcardToastTimer);
     });
     function openBriefingExport() {
         const now = new Date();

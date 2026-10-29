@@ -2,6 +2,7 @@
     import type { ContactAnniversaryMilestone } from "../../domain/anniversary-milestones.ts";
     import { translateText } from "../../domain/translation";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import { onDestroy } from "svelte";
     import { MessageSquareHeart, Copy, Check } from "@lucide/svelte";
 
     let {
@@ -18,14 +19,20 @@
         translateText(i18n, key, fallback, values));
 
     let copiedIndex = $state<number | null>(null);
+    let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function handleCopy(greeting: string, index: number) {
         await copyPlainText(greeting);
         copiedIndex = index;
-        setTimeout(() => {
+        if (copiedTimer) clearTimeout(copiedTimer);
+        copiedTimer = setTimeout(() => {
             if (copiedIndex === index) copiedIndex = null;
         }, 2000);
     }
+
+    onDestroy(() => {
+        if (copiedTimer) clearTimeout(copiedTimer);
+    });
 </script>
 
 {#if milestones.length > 0}

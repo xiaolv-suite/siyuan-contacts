@@ -7,7 +7,7 @@
     import LvctDialog from "../LvctDialog.svelte";
     import { useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
-    import { tick } from "svelte";
+    import { onDestroy, tick } from "svelte";
 
     let {
         i18n,
@@ -71,6 +71,10 @@
             templateCopyError = error instanceof Error ? error.message : "剪贴板不可用";
         }
     }
+
+    onDestroy(() => {
+        if (templateTimer) clearTimeout(templateTimer);
+    });
 
     function fieldLabel(item: QuickFillItem): string {
         return text(FIELD_LABELS[item.field], FIELD_FALLBACKS[item.field]);

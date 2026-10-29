@@ -1331,6 +1331,68 @@ test("E-31 merge service: executeContactMerge 完整合并主次人物，迁移�
             { id: "20261004000000-memb001", orgDocId: "20261004000000-org0001", personDocId: secondaryDocId, status: "active", title: "总监", createdAt: "2026-10-04", updatedAt: "2026-10-04" },
         ],
     });
+    state.store.set("person-anniversaries.json", {
+        schemaVersion: 1,
+        anniversaries: {
+            [secondaryDocId]: [{ id: "ann-1", personDocId: secondaryDocId, title: "相识纪念", category: "acquaintance", date: "2020-05-20", isLunar: false, createdAt: 1000, updatedAt: 1000 }],
+        },
+    });
+    state.store.set("person-promises.json", {
+        schemaVersion: 1,
+        promises: {
+            [secondaryDocId]: [
+                { id: "prm-1", personDocId: secondaryDocId, title: "寄送书籍", direction: "i_promised", status: "pending", createdAt: 1000, updatedAt: 1000 },
+            ],
+        },
+    });
+    state.store.set("person-kinship.json", {
+        schemaVersion: 1,
+        kinships: {
+            [secondaryDocId]: [{ id: "kin-1", personDocId: secondaryDocId, role: "spouse", name: "次配偶", createdAt: 1000 }],
+        },
+    });
+    state.store.set("person-social-preferences.json", {
+        schemaVersion: 1,
+        preferences: {
+            [secondaryDocId]: [{ id: "spf-1", personDocId: secondaryDocId, category: "dietary", content: "不吃香菜", isTaboo: true, createdAt: 1000, updatedAt: 1000 }],
+        },
+    });
+    state.store.set("person-scratchpads.json", {
+        schemaVersion: 1,
+        notes: {
+            [secondaryDocId]: [{ id: "scb-1", personDocId: secondaryDocId, content: "临时速记", pinned: false, color: "default", createdAt: 1000, updatedAt: 1000 }],
+        },
+    });
+    state.store.set("person-itineraries.json", {
+        schemaVersion: 1,
+        itineraries: {
+            [secondaryDocId]: [{ id: "itn-1", personDocId: secondaryDocId, title: "出差拜访", targetDate: "2026-11-01", checklists: [], status: "planned", createdAt: 1000, updatedAt: 1000 }],
+        },
+    });
+    state.store.set("person-projects.json", {
+        schemaVersion: 1,
+        projects: {
+            [secondaryDocId]: [{ id: "proj-1", personDocId: secondaryDocId, title: "联合方案", status: "active", createdAt: 1000, updatedAt: 1000 }],
+        },
+    });
+    state.store.set("person-cadences.json", {
+        schemaVersion: 1,
+        cadences: {
+            [secondaryDocId]: { days: 14, paused: false },
+        },
+    });
+    state.store.set("person-lifecycle-stage.json", {
+        schemaVersion: 1,
+        records: {
+            [secondaryDocId]: { personDocId: secondaryDocId, currentStage: "connection", history: [], updatedAt: 1000 },
+        },
+    });
+    state.store.set("person-aliases.json", {
+        schemaVersion: 1,
+        aliases: [
+            { id: "20261004000000-alias01", personDocId: secondaryDocId, alias: "小次", createdAt: 1000, updatedAt: 1000 },
+        ],
+    });
 
     const primaryContact: ContactSummary = {
         docId: personDocId,
@@ -1374,6 +1436,16 @@ test("E-31 merge service: executeContactMerge 完整合并主次人物，迁移�
     assert.equal(result.migrated.giftIdeas, 1);
     assert.equal(result.migrated.exchanges, 1);
     assert.equal(result.migrated.memberships, 1);
+    assert.equal(result.migrated.anniversaries, 1);
+    assert.equal(result.migrated.promises, 1);
+    assert.equal(result.migrated.kinships, 1);
+    assert.equal(result.migrated.preferences, 1);
+    assert.equal(result.migrated.scratchpads, 1);
+    assert.equal(result.migrated.itineraries, 1);
+    assert.equal(result.migrated.projects, 1);
+    assert.equal(result.migrated.cadences, 1);
+    assert.equal(result.migrated.lifecycle, 1);
+    assert.equal(result.migrated.aliases, 1);
 
     // 验证互动事件已迁移给 primary
     const intStore = state.store.get("interaction-events.json") as { events: { personDocId: string }[] };

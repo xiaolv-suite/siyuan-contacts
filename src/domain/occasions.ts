@@ -25,25 +25,25 @@ export interface BirthdayProjection {
  * 和导入预览统一使用此函数，明确显示农历月日和出生年份。
  */
 export function formatBirthdayDisplay(birthday: string, isLunar: boolean): string {
-    const parsed = parseLocalDate(birthday);
-    if (!parsed) {
-        // 外部编辑/旧数据可能留下形如 YYYY-MM-DD 但实际不存在的日期。
-        // 保留原值便于核对，同时明确历法，避免用户把它当成普通公历值。
-        return /^\d{4}-\d{2}-\d{2}$/.test(birthday)
-            ? `${birthday}（${isLunar ? "农历" : "公历"}，日期待核实）`
-            : birthday;
+    const parts = birthday.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parts) return birthday;
+    const [year, month, day] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
+
+    if (!isLunar) {
+        const parsed = parseLocalDate(birthday);
+        if (!parsed) return `${birthday}（公历，日期待核实）`;
+        return `${birthday}（公历）`;
     }
-    if (!isLunar) return `${birthday}（公历）`;
-    if (!lunarToSolar(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate())) {
+    if (day > 30 || (!lunarToSolar(year, month, day) && (day !== 30 || !lunarToSolar(year, month, 29)))) {
         return `${birthday}（农历，日期待核实）`;
     }
     const label = formatLunar({
-        year: parsed.getFullYear(),
-        month: parsed.getMonth() + 1,
-        day: parsed.getDate(),
+        year,
+        month,
+        day,
         leap: false,
     });
-    return `${label}（农历，出生年 ${parsed.getFullYear()}）`;
+    return `${label}（农历，出生年 ${year}）`;
 }
 
 /** YYYY-MM-DD → 本地零点 Date；非法返回 undefined */
@@ -64,9 +64,15 @@ function daysBetween(from: Date, to: Date): number {
     return Math.round((to.getTime() - from.getTime()) / 86400000);
 }
 
-/** 计算某农历月日在"目标农历年"的公历日期；目标年无效则顺延一年 */
+/** 计算某农历月日在"目标农历年"的公历日期；若遇到小建29天月份且指定为30日，自适应回退到当月第29天（除夕月末） */
 function lunarOccurrenceIn(lunarYear: number, month: number, day: number): Date | undefined {
-    return lunarToSolar(lunarYear, month, day) ?? lunarToSolar(lunarYear + 1, month, day);
+    const direct = lunarToSolar(lunarYear, month, day);
+    if (direct) return direct;
+    if (day === 30) {
+        const adjusted = lunarToSolar(lunarYear, month, 29);
+        if (adjusted) return adjusted;
+    }
+    return undefined;
 }
 
 /**
@@ -74,11 +80,14 @@ function lunarOccurrenceIn(lunarYear: number, month: number, day: number): Date 
  * 公历 2月29日生日在平年顺延到 3月1日（保守可预期）。
  */
 export function nextBirthday(birthday: string, isLunar: boolean, now: Date = new Date()): BirthdayProjection | undefined {
-    const parsed = parseLocalDate(birthday);
-    if (!parsed) return undefined;
+    const parts = birthday.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parts) return undefined;
+    const [rawYear, rawMonth, rawDay] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
     const today = startOfToday(now);
 
     if (!isLunar) {
+        const parsed = parseLocalDate(birthday);
+        if (!parsed) return undefined;
         let target = new Date(today.getFullYear(), parsed.getMonth(), parsed.getDate());
         // 2/29 → 平年自动变成 3/1（Date 规范化），保持顺延语义即可
         if (daysBetween(today, target) < 0) {
@@ -96,13 +105,16 @@ export function nextBirthday(birthday: string, isLunar: boolean, now: Date = new
     // 不能先把整个值当公历再调用 solarToLunar：例如输入 1990-01-01
     // 表示农历正月初一，而不是公历 1990-01-01 对应的腊月初五。
     const birthLunar = {
-        year: parsed.getFullYear(),
-        month: parsed.getMonth() + 1,
-        day: parsed.getDate(),
+        year: rawYear,
+        month: rawMonth,
+        day: rawDay,
         leap: false,
     } as const;
     // 出生年份用于校验月日组合；无效的农历日期不进入提醒或排序。
-    if (!lunarToSolar(birthLunar.year, birthLunar.month, birthLunar.day)) return undefined;
+    if (!lunarToSolar(birthLunar.year, birthLunar.month, birthLunar.day) &&
+        !lunarToSolar(birthLunar.year, birthLunar.month, Math.min(birthLunar.day, 29))) {
+        return undefined;
+    }
     const todayLunar = solarToLunar(today);
     if (!todayLunar) return undefined;
 

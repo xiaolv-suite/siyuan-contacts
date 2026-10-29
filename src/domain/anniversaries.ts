@@ -99,8 +99,20 @@ export function validateAnniversary(item: Partial<AnniversaryItem>): string[] {
         errors.push("未知的纪念日分类");
     }
 
-    if (!item.date || !isValidDateKey(item.date)) {
+    if (!item.date || typeof item.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) {
         errors.push("发生日期必须是有效的 YYYY-MM-DD 格式");
+    } else {
+        const [year, month, day] = item.date.split("-").map(Number);
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+            errors.push("发生日期必须是有效的 YYYY-MM-DD 格式");
+        } else if (item.isLunar) {
+            const checkYear = year > 0 ? year : 2000;
+            if (day > 30 || (!lunarToSolar(checkYear, month, day) && !lunarToSolar(checkYear, month, Math.min(day, 29)))) {
+                errors.push("农历发生日期不是有效日期");
+            }
+        } else if (year > 0 && !isValidDateKey(item.date)) {
+            errors.push("发生日期必须是有效的 YYYY-MM-DD 格式");
+        }
     }
 
     if (item.remindDaysBefore !== undefined) {
@@ -130,7 +142,13 @@ function daysBetween(from: Date, to: Date): number {
 }
 
 function lunarOccurrenceIn(lunarYear: number, month: number, day: number): Date | undefined {
-    return lunarToSolar(lunarYear, month, day) ?? lunarToSolar(lunarYear + 1, month, day);
+    const direct = lunarToSolar(lunarYear, month, day);
+    if (direct) return direct;
+    if (day === 30) {
+        const adjusted = lunarToSolar(lunarYear, month, 29);
+        if (adjusted) return adjusted;
+    }
+    return undefined;
 }
 
 /**
@@ -138,48 +156,49 @@ function lunarOccurrenceIn(lunarYear: number, month: number, day: number): Date 
  * 支持公历平闰年（2/29 顺延 3/1）与农历月日循环换算。
  */
 export function nextAnniversary(item: AnniversaryItem, now: Date = new Date()): AnniversaryProjection | undefined {
-    const parsed = parseLocalDate(item.date);
-    if (!parsed) return undefined;
+    const parts = item.date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parts) return undefined;
+    const [rawYear, rawMonth, rawDay] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
     const today = startOfToday(now);
 
     if (!item.isLunar) {
-        let target = new Date(today.getFullYear(), parsed.getMonth(), parsed.getDate());
+        const parsed = parseLocalDate(item.date);
+        if (!parsed) return undefined;
+        let target = new Date(today.getFullYear(), rawMonth - 1, rawDay);
         if (daysBetween(today, target) < 0) {
-            target = new Date(today.getFullYear() + 1, parsed.getMonth(), parsed.getDate());
+            target = new Date(today.getFullYear() + 1, rawMonth - 1, rawDay);
         }
-        const diffYears = target.getFullYear() - parsed.getFullYear();
+        const diffYears = rawYear > 0 ? target.getFullYear() - rawYear : undefined;
         return {
             item,
             nextDate: target,
             daysUntil: daysBetween(today, target),
-            yearsCount: diffYears > 0 ? diffYears : undefined,
-            displayDate: `${parsed.getMonth() + 1}月${parsed.getDate()}日`,
+            yearsCount: diffYears && diffYears > 0 ? diffYears : undefined,
+            displayDate: `${rawMonth}月${rawDay}日`,
         };
     }
 
-    const origLunar = {
-        year: parsed.getFullYear(),
-        month: parsed.getMonth() + 1,
-        day: parsed.getDate(),
-    };
-    if (!lunarToSolar(origLunar.year, origLunar.month, origLunar.day)) return undefined;
+    const checkYear = rawYear > 0 ? rawYear : 2000;
+    if (!lunarToSolar(checkYear, rawMonth, rawDay) && !lunarToSolar(checkYear, rawMonth, Math.min(rawDay, 29))) {
+        return undefined;
+    }
 
     const todayLunar = solarToLunar(today);
     if (!todayLunar) return undefined;
 
     let targetYear = todayLunar.year;
-    let target = lunarOccurrenceIn(targetYear, origLunar.month, origLunar.day);
+    let target = lunarOccurrenceIn(targetYear, rawMonth, rawDay);
     if (!target || daysBetween(today, target) < 0) {
         targetYear += 1;
-        target = lunarOccurrenceIn(targetYear, origLunar.month, origLunar.day);
+        target = lunarOccurrenceIn(targetYear, rawMonth, rawDay);
     }
     if (!target) return undefined;
 
-    const diffYears = targetYear - origLunar.year;
+    const diffYears = rawYear > 0 ? targetYear - rawYear : undefined;
     const label = formatLunar({
         year: targetYear,
-        month: origLunar.month,
-        day: origLunar.day,
+        month: rawMonth,
+        day: rawDay,
         leap: false,
     });
 
@@ -187,7 +206,7 @@ export function nextAnniversary(item: AnniversaryItem, now: Date = new Date()): 
         item,
         nextDate: target,
         daysUntil: daysBetween(today, target),
-        yearsCount: diffYears > 0 ? diffYears : undefined,
+        yearsCount: typeof diffYears === "number" && diffYears > 0 ? diffYears : undefined,
         displayDate: `${label}（农历）`,
     };
 }

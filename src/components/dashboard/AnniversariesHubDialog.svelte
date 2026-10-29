@@ -14,8 +14,11 @@
         type AnniversaryHubItem,
     } from "../../domain/anniversary-milestones.ts";
     import { serializeBatchAnniversariesToIcs } from "../../domain/ical-export.ts";
+    import { toLocalDateKey } from "../../domain/interactions.ts";
     import { translateText } from "../../domain/translation.ts";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import ViewState from "../ViewState.svelte";
+    import { onDestroy } from "svelte";
     import {
         Search,
         Copy,
@@ -45,6 +48,7 @@
     const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
         translateText(i18n, key, fallback, values));
 
+    let alive = true;
     let loading = $state(true);
     let rawProjections = $state<AnniversaryProjection[]>([]);
     let searchQuery = $state("");
@@ -59,10 +63,20 @@
             return;
         }
         void facade.listUpcomingAnniversaries(90).then((res) => {
-            rawProjections = res || [];
+            if (alive) rawProjections = res || [];
+        }).catch(() => {
+            if (alive) rawProjections = [];
         }).finally(() => {
-            loading = false;
+            if (alive) loading = false;
         });
+    });
+
+    onDestroy(() => {
+        alive = false;
+        if (copiedTimer) {
+            clearTimeout(copiedTimer);
+            copiedTimer = null;
+        }
     });
 
     const peopleByDocId = $derived(new Map(people.map((p) => [p.docId, p])));
@@ -142,7 +156,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayStr = toLocalDateKey(new Date());
         a.download = `小驴人脉_近期纪念日里程碑_${todayStr}.ics`;
         document.body.appendChild(a);
         a.click();
@@ -258,15 +272,15 @@
     <!-- 纪念日列表 -->
     <div class="anniv-content">
         {#if loading}
-            <div class="loading-state ft__smaller ft__on-surface-light">
-                {text("annivLoading", "正在读取全库重要纪念日与周年里程碑…")}
-            </div>
+            <ViewState compact loading title={text("annivLoading", "正在读取全库重要纪念日与周年里程碑…")} />
         {:else if filteredItems.length === 0}
-            <div class="empty-state ft__smaller ft__on-surface-variant">
-                {searchQuery || windowFilter !== "all" || categoryFilter !== "all"
+            <ViewState
+                compact
+                icon="calendar"
+                title={searchQuery || windowFilter !== "all" || categoryFilter !== "all"
                     ? text("annivNoMatch", "未找到符合当前筛选条件的周年纪念日。")
                     : text("annivEmptyAll", "未来 90 天内暂无即将到来的周年纪念日。可在联系人详情页添加相识、入职、结婚等重要纪念日，提前备好温情问候。")}
-            </div>
+            />
         {:else}
             <div class="anniv-grid">
                 {#each filteredItems as item (item.id)}
@@ -397,8 +411,17 @@
     }
 
     .metric-card--highlight {
-        border-color: #f59e0b;
-        background: rgba(245, 158, 11, 0.08);
+        border-color: var(--lv-heat-cool, #f59e0b);
+        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 8%, transparent);
+    }
+
+    @media (max-width: 640px) {
+        .anniv-metrics-bar {
+            flex-wrap: wrap;
+        }
+        .metric-card {
+            min-width: calc(50% - 6px);
+        }
     }
 
     .metric-title {
@@ -478,16 +501,9 @@
         padding-right: 4px;
     }
 
-    .loading-state,
-    .empty-state {
-        text-align: center;
-        padding: 32px 16px;
-        color: var(--b3-theme-on-surface-light);
-    }
-
     .anniv-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
         gap: 12px;
     }
 
@@ -508,8 +524,8 @@
     }
 
     .anniv-card--today {
-        border-color: #f59e0b;
-        background: rgba(245, 158, 11, 0.03);
+        border-color: var(--lv-heat-cool, #f59e0b);
+        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 4%, transparent);
     }
 
     .anniv-card-top {
@@ -587,9 +603,9 @@
     }
 
     .anniv-countdown-badge.is-today {
-        background: #f59e0b;
-        color: #fff;
-        border-color: #f59e0b;
+        background: var(--lv-heat-cool, #f59e0b);
+        color: var(--b3-theme-on-primary, #fff);
+        border-color: var(--lv-heat-cool, #f59e0b);
     }
 
     .anniv-countdown-badge.is-today .countdown-date {
@@ -607,8 +623,8 @@
 
     .anniv-years-badge {
         font-size: 11px;
-        color: #f59e0b;
-        background: rgba(245, 158, 11, 0.1);
+        color: var(--lv-heat-cool, #f59e0b);
+        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 12%, transparent);
         padding: 2px 8px;
         border-radius: 999px;
         align-self: flex-start;

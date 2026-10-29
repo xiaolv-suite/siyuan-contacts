@@ -66,15 +66,15 @@ export function filterPreMeetingDossiers(
         // 关键词搜索
         if (!q) return true;
 
-        const nameMatch = d.person.name.toLowerCase().includes(q);
-        const groupMatch = d.person.group.toLowerCase().includes(q);
+        const nameMatch = (d.person.name ?? "").toLowerCase().includes(q);
+        const groupMatch = (d.person.group ?? "").toLowerCase().includes(q);
         const rawComp = "company" in d.person && typeof (d.person as Record<string, unknown>).company === "string" ? (d.person as Record<string, unknown>).company as string : "";
         const companyMatch = rawComp.toLowerCase().includes(q);
-        const tagMatch = d.person.tags.some((t) => t.toLowerCase().includes(q));
-        const tabooMatch = d.taboos.some((t) => t.content.toLowerCase().includes(q));
-        const prefMatch = d.normalPreferences.some((p) => p.content.toLowerCase().includes(q));
-        const promiseMatch = d.pendingPromises.some((p) => p.title.toLowerCase().includes(q));
-        const topicMatch = d.topics.some((t) => t.text.toLowerCase().includes(q));
+        const tagMatch = (d.person.tags ?? []).some((t) => (t ?? "").toLowerCase().includes(q));
+        const tabooMatch = (d.taboos ?? []).some((t) => (t.content ?? "").toLowerCase().includes(q));
+        const prefMatch = (d.normalPreferences ?? []).some((p) => (p.content ?? "").toLowerCase().includes(q));
+        const promiseMatch = (d.pendingPromises ?? []).some((p) => (p.title ?? "").toLowerCase().includes(q));
+        const topicMatch = (d.topics ?? []).some((t) => (t.text ?? "").toLowerCase().includes(q));
 
         return nameMatch || groupMatch || companyMatch || tagMatch || tabooMatch || prefMatch || promiseMatch || topicMatch;
     });

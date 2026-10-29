@@ -6,6 +6,8 @@
     } from "../../domain/pre-meeting-hub.ts";
     import { profileText } from "../../domain/people-profiles.ts";
     import { translateText } from "../../domain/translation";
+    import ViewState from "../ViewState.svelte";
+    import { onDestroy } from "svelte";
     import {
         ShieldAlert,
         Search,
@@ -28,6 +30,7 @@
     const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
         translateText(i18n, key, fallback, values));
 
+    let alive = true;
     let loading = $state(true);
     let allDossiers = $state<ContactPreMeetingDossier[]>([]);
     let searchQuery = $state("");
@@ -39,10 +42,16 @@
             return;
         }
         void facade.loadAllPreMeetingDossiers().then((res) => {
-            allDossiers = res;
+            if (alive) allDossiers = res;
+        }).catch(() => {
+            if (alive) allDossiers = [];
         }).finally(() => {
-            loading = false;
+            if (alive) loading = false;
         });
+    });
+
+    onDestroy(() => {
+        alive = false;
     });
 
     // 默认优先展示具有实际偏好、忌口、承诺或谈资的人物
@@ -126,15 +135,15 @@
     <!-- 档案卡片列表 -->
     <div class="premeeting-content">
         {#if loading}
-            <div class="loading-state ft__smaller ft__on-surface-light">
-                {text("preMeetingLoading", "正在读取全库偏好与会前备忘…")}
-            </div>
+            <ViewState compact loading title={text("preMeetingLoading", "正在读取全库偏好与会前备忘…")} />
         {:else if filteredDossiers.length === 0}
-            <div class="empty-state ft__smaller ft__on-surface-variant">
-                {searchQuery || filterType !== "all"
+            <ViewState
+                compact
+                icon="inbox"
+                title={searchQuery || filterType !== "all"
                     ? text("preMeetingNoMatch", "未找到符合当前筛选条件的会前备忘。")
                     : text("preMeetingEmptyAll", "当前名册中尚未登记任何饮食忌口、敏感雷区或会面备忘。在联系人详情页添加偏好，外出赴约更得心应手。")}
-            </div>
+            />
         {:else}
             <div class="dossiers-grid">
                 {#each filteredDossiers as d (d.person.docId)}
@@ -257,6 +266,15 @@
         gap: 12px;
     }
 
+    @media (max-width: 640px) {
+        .premeeting-metrics-bar {
+            flex-wrap: wrap;
+        }
+        .metric-card {
+            min-width: calc(50% - 6px);
+        }
+    }
+
     .metric-card {
         flex: 1;
         padding: 8px 12px;
@@ -336,14 +354,9 @@
         max-height: 58vh;
     }
 
-    .loading-state, .empty-state {
-        text-align: center;
-        padding: 36px 12px;
-    }
-
     .dossiers-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
         gap: 12px;
     }
 

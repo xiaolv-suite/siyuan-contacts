@@ -49,10 +49,10 @@ test("validateDraft：姓名必填，邮箱与生日格式校验", () => {
     assert.ok(validateDraft({ ...emptyDraft(), name: "张三", birthday: "2026-02-30" }).includes("生日不是有效日期"));
 });
 
-test("validateDraft：农历生日按农历校验，并阻止无法写入日期列的组合", () => {
+test("validateDraft：农历生日按农历校验，支持农历大月30日合法生日", () => {
     assert.deepEqual(validateDraft({ ...emptyDraft(), name: "张三", birthday: "1990-02-28", isLunar: true }), []);
+    assert.deepEqual(validateDraft({ ...emptyDraft(), name: "张三", birthday: "1990-02-30", isLunar: true }), []);
     assert.ok(validateDraft({ ...emptyDraft(), name: "张三", birthday: "1990-02-31", isLunar: true }).includes("农历生日不是有效日期"));
-    assert.ok(validateDraft({ ...emptyDraft(), name: "张三", birthday: "1990-02-30", isLunar: true }).includes("农历生日日期暂不支持，请重新选择"));
 });
 
 test("birthdayToMs / msToBirthday：本地时区日期与毫秒互转", () => {
