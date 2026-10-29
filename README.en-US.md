@@ -47,14 +47,17 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.6.59 (2026-10-29)
+## This release: v0.6.59 (2026-10-30)
 
-This release implements the Roster Soft-Delete Trash Bin Drawer and the Group Occasions & Gatherings Hub console:
+This release delivers the systemic visual overhaul, 23-module lossless data migration bundle, and complete end-to-end usability closeout:
 
-- **Roster Soft-Delete Trash Bin Drawer (`TrashDrawer.svelte` & `PeopleView.svelte`)**: Integrated "Trash Bin" button directly in the contact roster toolbar; presents soft-deleted contacts with name, phone, group, and tag snapshots; real-time expiration countdown (`N days remaining`, with urgent badge within 3 days); 1-click restore to the database and roster; 1-click permanent purge with double-confirmation modal.
+- **Roster Soft-Delete Trash Bin Drawer (`TrashDrawer.svelte` & `PeopleView.svelte`)**: Integrated "Trash Bin" button in the contact roster toolbar; presents soft-deleted contacts with name, phone, group, and tag snapshots; real-time expiration countdown (`N days remaining`, with urgent badge within 3 days); 1-click restore to the database and roster; 1-click permanent purge with double-confirmation modal.
 - **Group Occasions & Gatherings Hub Console (`OccasionsHubDialog.svelte` & `DashboardView.svelte`)**: Dedicated console on the home dashboard and roster toolbar for multi-attendee gatherings, dinners, weddings, summits, and business trips; metrics summary of total occasions, cumulative attendees, this year's count, and linked documents; filter by occasion type and keyword search; attendee chip ribbons with 1-click "Roster Drilldown" to highlight and filter attendees in the roster.
+- **Lossless 23-Module Data Migration Bundle (`migration-bundle.ts`)**: Expanded migration coverage to all 23 self-managed modules, providing round-trip equivalence, non-destructive backup, current-first merge, and backward compatibility.
+- **Systemic Visual & Perception Modernization**: Warm alabaster base (`#FAF8F6`) with floating pure white cards (2.5% lightness difference), two-color semantic division (Hermes warm cognac orange for actions vs. sunlight amber gold for positive metrics), 16px card radii with 9999px capsules, 4x primary metric hierarchy, and dark accent milestone cards (`#1C1815`).
+- **End-to-End Usability & Lifecycle Hardening**: Added official SiYuan `openSetting` lifecycle hook, actionable retry for facts extraction failures, document strip organization and city drilldowns, and elimination of silent catch blocks.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1031/1031 PASS); 3-tier browser UI regressions passing (529/529); production build and release checks passed.
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (**1037/1037 PASS**); 3-tier browser UI regressions passing (**529/529**); production build and release checks passed.
 
 ---
 
