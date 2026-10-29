@@ -1682,5 +1682,10 @@
   "stripTripPlannerTitle": "打开小驴人脉城市与行程助手，探索同城与周边好友",
   "stripAvatarFallbackPerson": "人",
   "stripAvatarFallbackOrg": "组",
-  "stripAvatarFallbackCity": "市"
+  "stripAvatarFallbackCity": "市",
+  "settingsReminderThresholds": "提醒阈值与联系节奏",
+  "settingsResetThresholds": "恢复默认阈值",
+  "settingsBirthdayWindowHint": "请输入 0–365 的整数，默认 30 天",
+  "settingsStaleThresholdHint": "请输入 0–365 的整数，默认 30 天",
+  "settingsReminderGraceHint": "新收编联系人在此期限内不计入提醒；默认 14 天（0 为关闭）"
 }

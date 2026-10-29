@@ -1682,5 +1682,10 @@
   "stripTripPlannerTitle": "Open city and itinerary planner to explore local contacts",
   "stripAvatarFallbackPerson": "P",
   "stripAvatarFallbackOrg": "O",
-  "stripAvatarFallbackCity": "C"
+  "stripAvatarFallbackCity": "C",
+  "settingsReminderThresholds": "Reminder Thresholds & Cadence",
+  "settingsResetThresholds": "Reset to Defaults",
+  "settingsBirthdayWindowHint": "Enter an integer between 0–365, default 30 days",
+  "settingsStaleThresholdHint": "Enter an integer between 0–365, default 30 days",
+  "settingsReminderGraceHint": "Grace period for adopted contacts; default 14 days (0 = disabled)"
 }
