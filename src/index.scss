@@ -1336,10 +1336,27 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
 // F15 备份差异明细
 .lvct-settings__diff {
     margin-top: var(--lvct-sp-2);
-    padding: var(--lvct-sp-2);
+    padding: var(--lvct-sp-3);
     border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lvct-r-md, 12px);
     background: var(--lvct-bg-surface);
+    box-shadow: var(--lvct-shadow-1);
+}
+
+.lvct-anim-expand {
+    animation: lvct-expand-in var(--lvct-dur-base, 180ms) var(--lvct-ease);
+    transform-origin: top;
+}
+
+@keyframes lvct-expand-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scaleY(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+    }
 }
 
 .lvct-settings__diff-section {
@@ -4156,6 +4173,17 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     .lvct-graph__fab-btn {
         width: var(--lvct-touch-min-mobile);
         height: var(--lvct-touch-min-mobile);
+    }
+}
+
+@media (max-width: 380px) {
+    .lvct-graph-toolbar__actions {
+        .lvct-graph-timeline-toggle {
+            padding-inline: 6px;
+        }
+    }
+    .lvct-graph-mode button {
+        padding-inline: 8px;
     }
 }
 
@@ -11463,10 +11491,22 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     &__form {
         margin-top: 10px;
         padding-top: 10px;
-        border-top: 1px dashed var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+        border-top: 1px dashed var(--lvct-border-subtle);
         gap: 6px;
         flex-wrap: wrap;
         align-items: center;
+
+        @media (max-width: 640px) {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+
+            select, input {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box;
+            }
+        }
     }
 }
 

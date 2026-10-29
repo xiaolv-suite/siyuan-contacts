@@ -1652,7 +1652,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                                 {importDiffOpen ? "收起差异明细" : "查看差异明细"}
                             </button>
                             {#if importDiffOpen}
-                                <div class="lvct-settings__diff" role="region" aria-label="备份差异明细">
+                                <div class="lvct-settings__diff lvct-anim-expand" role="region" aria-label="备份差异明细">
                                     <div class="lvct-settings__diff-section">
                                         <b>将新增（{importDiff.added.length} 条）</b>
                                         {#if importDiff.added.length === 0}<p class="ft__smaller ft__on-surface">没有新增事件。</p>{/if}
