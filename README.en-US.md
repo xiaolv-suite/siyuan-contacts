@@ -7,9 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![SiYuan](https://img.shields.io/badge/SiYuan-%3E%3D%203.8.5-blue)
 
-**Manage people and relationships in SiYuan: person records are documents backed by a native SiYuan database.**
+**Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.42** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.42) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.56** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.56) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -19,708 +19,144 @@ English | [简体中文](README.md)
 
 ---
 
-Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks and sync.
+Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks, and sync.
 
-## This release: v0.6.42 (2026-10-29)
+---
 
-This release implements Pre-Meeting Check Hub & Taboo Radar on the home dashboard:
+## 💡 Key Features & Capabilities
 
-- **Comprehensive Pre-Meeting Aggregation Engine (`domain/pre-meeting-hub.ts` & `services/pre-meeting.ts`)**: Aggregates all contact taboos (`taboos`), dietary and lifestyle preferences (`normalPreferences`), pending commitments (`pendingPromises`), and talking points (`topics`), supporting full-text search and dedicated taboo/promise filtering.
-- **Dashboard 1-Click Pre-Meeting Hub Dialog (`PreMeetingHubDialog.svelte` & `DashboardView.svelte`)**: Features an instant "🛡️ Pre-Meeting" trigger in the action bar; displays total coverage, critical taboos, and pending commitments at a glance, highlighting high-priority alerts with direct access to full contact profiles.
+Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally linked** Personal Relationship Management (PRM) platform. Unlike sales-oriented corporate CRMs, Lv Contacts is built for nurturing authentic, long-term personal ties, relationship temperature tracking, mutual exchanges, and milestone memories.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (996/996 PASS); browser UI regression passing (512/512); production build and release checks passed.
+| Module | Purpose & Value | Key Capabilities |
+| :--- | :--- | :--- |
+| **📇 Person Profiles<br>(One Person, One Document)** | Each contact is an authentic SiYuan note document backed by a native Attribute View database, serving as both a structured entry and an ongoing lifetime chronicle. | • Native Attribute View database backbone<br>• Name, phone, WeChat, email, website, city, birthday (solar and lunar)<br>• Privacy Shield (one-click auto-masking of phone/email/WeChat with 5s peek timeout)<br>• Colorful squircle avatar initials and pinyin alphabet quick indexing |
+| **🌡️ Relationship Cadence & Temperature<br>(Cadence & Health)** | Replaces rigid reminders with objective cadence-based relationship temperatures, preventing valued ties from growing cold unnoticed. | • 4-tier temperature calculation: 🔥 Hot (recent) / 🍃 Warm (healthy) / 🌬️ Cool (overdue) / ❄️ Cold (distant)<br>• Customizable personal contact cadence (1–365 days) or pause reminders<br>• Dashboard "🧊 Cooling Radar & Reconnect Hub" weighting VIPs and overdue days for instant reconnection |
+| **💬 Interactions & Scenarios<br>(Timeline & Templates)** | Replaces dry memos with lively dialogue-bubble timelines, distilling ongoing facts and insights from meetings and calls. | • Bubble-styled timeline distinguishing visits, coffee, meals, calls, messages, and conferences<br>• 9 built-in featured note templates (business meeting, coffee chat, dining, conference, mentorship, greeting)<br>• Dynamic variable inserter (`{{姓名}}`, `{{日期}}`, `{{上次互动}}`, `{{公司}}`, `{{职位}}`, `{{城市}}`)<br>• On-the-fly distillation of quotes, preferences, and facts |
+| **🗓️ Meeting Itineraries & Preparation<br>(Itineraries & Visits)** | Designed for client meetings, business trips, and appointments, ensuring thoughtful preparation without post-meeting re-entry friction. | • Structured agenda, target date/time, venue, companions, and memos<br>• Interactive preparation checklist (documents/samples/contracts/gifts)<br>• Dynamic countdown tags (Today / in N days / Overdue)<br>• One-click "Complete & Log Interaction" pre-filling meeting notes; copy Markdown itinerary |
+| **🛡️ Social Preferences & Taboo Radar<br>(Preferences & Taboos)** | Structured management of dining preferences and sensitive red lines, ensuring smooth dining and business hosting. | • 4-dimension management: 🍲 Dietary & allergies, ☕ Tea/coffee/wine, 🤝 Meeting habits, 🚫 Sensitive taboos<br>• Header "Micro-Preferences Ribbon" for 1-second preference checks with red-line alert styling<br>• Dashboard "🛡️ Pre-Meeting Hub & Taboo Radar" screening all contact taboos and pending promises |
+| **🌱 Relationship Lifecycle Funnel<br>(Lifecycle Funnel)** | Mirrors the natural progression of authentic ties, offering a macroscopic strategy view of your network's maturity. | • 5-stage progression model: 🌱 Acquaintance ➔ 💬 Connection ➔ 🚀 Collaboration ➔ ⭐ Close Ally ➔ 💤 Dormant<br>• Stage transition history tracking; batch stage updates in roster<br>• Dashboard "Lifecycle Funnel Console" computing collaboration rates with 1-click roster drilldown |
+| **⚖️ Reciprocity & Balance Audit<br>(Reciprocity & Balance)** | Monitors mutual exchange equity to avoid one-sided extraction or over-giving, maintaining healthy reciprocal networks. | • Bilateral promise tracking: comparing our fulfillment rate vs theirs<br>• Exchange ledger audit: net balance perspective between receivable/given vs payable/received<br>• Dual-sided balance bar and 0–100 reciprocity index with tailored maintenance advice |
+| **🌐 Network Graph & Topologic Hubs<br>(Network Graph & Hubs)** | Visualizes complex social topologies to discover network bridges and super-connectors. | • Dual graph modes: explicit relationship graph + native SiYuan document reference graph<br>• 4 layout engines: Force-directed (CoSE), Concentric rings, Breadthfirst tree, Circle<br>• Timeline Evolution Slider animating network growth over years<br>• "🌐 Network Hubs & Bridge Connectors" identifying cross-circle brokers with canvas auto-focus |
+| **📜 Milestones Chronicle & Docs<br>(Chronicles & Documents)** | Consolidates life intersections and milestones into a permanent, readable lifetime chronicle. | • Aggregates first contact, stage advances, anniversaries, fulfilled promises, and exchanges into an illuminated timeline<br>• One-click export to native SiYuan document (`/人脉回顾/📜 人脉交往编年史 · 姓名`) and copy Markdown<br>• Header "Anniversary Milestones Banner" highlighting N-year anniversaries with 1-click congratulations pre-fill<br>• RFC 5545 iCalendar (`.ics`) export for single contacts and the entire roster |
+| **🎴 SVG Business Cards & Flashcards<br>(SVG Cards & Flashcards)** | High-fidelity vector visuals for social referrals and cognitive reinforcement. | • Pure SVG vector business cards (horizontal 600x380 / vertical 440x600 in 3 themes), 1-click copy code or download<br>• One-click generation of native SiYuan Riff Flashcards documents for spaced-repetition memory review with FSRS |
+| **👥 Organizations & Kinship Trees<br>(Orgs & Kinships)** | Contextualizes contacts within their professional organizations and familial kinship backgrounds. | • Organization profiles with multi-tenure member career history<br>• 5-generation warm kinship trees (Parents/Spouse/Siblings/Children/Relatives) with 1-click profile drilldown |
+| **🧹 Roster Filters, Tidy & Export<br>(Filters, Tidy & Export)** | Powers high-volume relationship management with seamless data interchange with mainstream office suites. | • Multi-dimensional cross filtering (cadence heat, lifecycle, city, company, profile gaps) with saved views<br>• "Batch Tidy Drawer": automated detection of unassigned contacts with smart group/tag suggestions<br>• Export RFC 4180 CSV with UTF-8 BOM (preventing Excel/WPS garbled text); 1-click copy Markdown table<br>• vCard 2.1/3.0/4.0 import and vCard 3.0 full-fidelity export (interchangeable with iOS/Android address books) |
+| **🔒 Local-First Privacy & Ownership<br>(Privacy & Local-First)** | Complete data sovereignty: zero cloud lock-in, zero telemetry, full self-managed backup. | • 100% stored in local SiYuan workspace, zero external network dependency<br>• Web Lock critical sections with strict read-after-write verification<br>• Complete data migration bundle with diff preview (export/preview/current-first import) |
 
-## Previous release: v0.6.41 (2026-10-29)
+---
 
-This release implements Personal Social Preferences & Taboo Notes in the person detail view:
+## This release: v0.6.56 (2026-10-29)
 
-- **Social Preferences & Taboos Domain Model & Storage Layer (`domain/social-preferences.ts` & `data/social-preferences.ts`)**: Structured management across four dimensions: dietary preferences & allergies (`dietary`), beverages & coffee/tea/alcohol (`beverage`), meeting and communication style (`habits`), and sensitive topics & taboos (`taboos`), with critical red-line alerts (`isTaboo`); protected by Web Lock critical sections and read-after-write verification (`person-social-preferences.json`).
-- **Detail View Preferences Board & Briefing Integration (`PersonSocialPreferences.svelte` & `PersonDetail.svelte`)**: Renders warm category cards with shield badges highlighting taboo topics, supporting instant additions, taboo toggling, and removal; automatically synthesizes a dedicated "Social Preferences & Taboos" section into generated meeting preparation documents.
+This release implements Batch Tidy & Smart Categorization Drawer in the contact roster:
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (994/994 PASS); browser UI regression passing (511/511); production build and release checks passed.
+- **Unorganized Contacts Detection & Inference Engine (`domain/unorganized-tidy.ts`)**: Pure functions automatically identifying contacts missing groups, tags, or resident cities; leverages work history keywords and existing group definitions to deduce suggested groups (`suggestedGroup`) and persona tags (`suggestedTags`), generating structured tidy plans (`TidyPlanItem`).
+- **Roster Tidy Drawer with 1-Click Batch Adoption (`TidyDrawer.svelte` & `PeopleView.svelte`)**: Integrated "Tidy Unorganized" button in the roster toolbar with dynamic count badge; presents cards with recommendations, supporting individual adoption and "⚡ Batch Adopt All Suggestions" with atomic write to Attribute View database cells.
 
-## Previous release: v0.6.40 (2026-10-29)
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1027/1027 PASS); 3-tier browser UI regressions passing (526/526); production build and release checks passed.
 
-This release implements Persona Visual Business Card & Social Poster Generator in pure SVG:
+---
 
-- **Pure SVG High-Fidelity Card Engine (`domain/business-card.ts`)**: Pure function with zero external dependencies; calculates rounded card containers, gradient initial-letter avatar badge, organization & title, contact coordinates, tags, social capital tier badges, and lifecycle stage chips across 3 themes (brand luxury, minimal white, obsidian dark) and dual orientations (classic horizontal 600x380 and vertical poster 440x600).
-- **Detail View Card Modal & Export Actions (`BusinessCardModal.svelte` & `PersonDetail.svelte`)**: Features an instant "Business Card Poster" trigger in the top action bar; supports live theme and orientation toggling, with one-click "Copy SVG Code" and "Download SVG Card" for seamless sharing and embedding.
+<details>
+<summary><b>📜 Historical Release Notes (v0.6.55 ~ v0.5.2 Click to Expand)</b></summary>
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (991/991 PASS); browser UI regression passing (510/510); production build and release checks passed.
+### v0.6.55 · 2026-10-29
+- RFC 4180 CSV export with UTF-8 BOM (`exportContactsToCsv`) and Markdown table generator (`exportContactsToMarkdownTable`).
+- Batch bar dual-channel export: 1-click `.csv` file download and 1-click Markdown table clipboard copy.
 
-## Previous release: v0.6.39 (2026-10-29)
+### v0.6.54 · 2026-10-29
+- Project progression status lifecycle tracker (`active` ➔ `completed` ➔ `archived`) and collaborator filtering.
+- Person detail project card interactive status switcher.
 
-This release implements Copy Milestones Chronicle Markdown in the person detail view:
+### v0.6.53 · 2026-10-29
+- Contact detail header "Micro-Preferences Ribbon" extracting up to 4 high-priority preferences.
+- Red-line taboos rendered with high-contrast alert styling for 1-second dining checks.
 
-- **Instant Chronicle Markdown Sharing (`PersonMilestonesTimeline.svelte`)**: Adds a dedicated "Copy All" action to the relationship milestones timeline toolbar, allowing users to copy the entire formatted chronicle Markdown to the clipboard for sharing via email, chat, or external reviews.
-- **Copy Feedback & Status Indication**: Provides a clear "Copied All ✓" confirmation state reverting after 2 seconds, pairing clipboard export with the existing "Save as Chronicle Doc" capability.
+### v0.6.52 · 2026-10-29
+- Batch update relationship lifecycle stages in roster with transition history tracking (`batchUpdatePersonLifecycleStages`).
+- Batch toolbar modal supporting instant stage selection for all selected contacts.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (509/509); production build and release checks passed.
+### v0.6.51 · 2026-10-29
+- Multi-dimensional cross-filtering by relationship heat levels (`heatLevel`) and saved custom views serialization.
+- Roster filter drawer heat selector and dynamic condition chips.
 
-## Previous release: v0.6.38 (2026-10-29)
+### v0.6.50 · 2026-10-29
+- Anniversary Milestones Banner & Congratulatory Flow extracting 14-day and today's milestones with N-year calculations.
+- Automatic generation of tailored congratulatory greetings with 1-click pre-fill into interaction notes.
 
-This release implements Export Milestones Journey to SiYuan Document:
+### v0.6.49 · 2026-10-29
+- Mutual Reciprocity & Exchange Balance Audit comparing bilateral promises fulfillment and ledger balance.
+- Dual-sided balance bar and 0–100 reciprocity index with maintenance advice.
 
-- **Chronicle Document Generation Service (`domain/timeline-milestones.ts` & `services/milestones-doc.ts`)**: Synthesizes all lifetime relationship milestones into a structured, year-by-year document archived at `/人脉回顾/📜 人脉交往编年史 · Name`, equipped with native SiYuan block attributes (`custom-lvct-milestones-person`, `custom-lvct-created`) and bidirectional document links.
-- **Milestones Timeline Document Creation & Direct Navigation (`PersonMilestonesTimeline.svelte` & `PersonDetail.svelte`)**: Embeds a "Save as Chronicle Doc" action in the timeline toolbar, with direct "Open Chronicle Doc ↗" navigation to open the created document in a new editor tab for in-depth reflection and biographical note-taking.
+### v0.6.48 · 2026-10-29
+- Home dashboard Relationship Lifecycle Funnel Console computing maturity rates across the 5 stages.
+- Interactive funnel bar with 1-click drilldown into roster filtering.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (508/508); production build and release checks passed.
+### v0.6.47 · 2026-10-29
+- Network Hubs & Bridge Connectors topologic analysis identifying super-connectors and cross-domain brokers.
+- Graph modal with community labels and 1-click canvas node centering.
 
-## Previous release: v0.6.37 (2026-10-29)
+### v0.6.46 · 2026-10-29
+- Meeting & Visit Itineraries with interactive preparation checklists (documents, samples, gifts).
+- 1-click "Complete & Log" pre-filling meeting notes; copy Markdown itinerary.
 
-This release implements Comprehensive Contact Milestones & Lifetime Timeline in the person detail view:
+### v0.6.45 · 2026-10-29
+- Relationship Cadence Cooling Radar & Reconnect Hub weighting VIPs and overdue days.
+- Dashboard cooling alert dialog for immediate reconnection.
 
-- **Relationship Milestones Extraction Engine (`domain/timeline-milestones.ts`)**: Synthesizes first contact connection (`first_contact`), relationship lifecycle stage advances (`stage_advance`), key anniversaries (`anniversary`), fulfilled commitments (`promise_fulfilled`), and significant exchanges (`exchange`), sorted chronologically with year grouping and multi-type filtering.
-- **Activity Tab Sub-Navigation & Milestones Timeline View (`PersonMilestonesTimeline.svelte` & `PersonDetail.svelte`)**: Embeds a sleek sub-navigation switcher between "Detailed Interaction Log" and "Milestones & Journey", rendering a vertical timeline rail with custom glowing node badges, highlighting life-long milestones from initial acquaintance to trusted confidant.
+### v0.6.44 · 2026-10-29
+- Reusable interaction note templates with 9 featured scenarios and dynamic variable inserter (`{{姓名}}`, `{{公司}}`, etc.).
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (507/507); production build and release checks passed.
+### v0.6.43 · 2026-10-29
+- Persona smart tag inference and quick single/batch adoption based on multi-dimensional facts.
 
-## Previous release: v0.6.36 (2026-10-29)
+### v0.6.42 · 2026-10-29
+- Pre-Meeting Check Hub & Taboo Radar on the home dashboard.
 
-This release implements Global Calendar & Anniversaries Export Panel in Settings:
+### v0.6.41 ~ v0.5.2
+For earlier release notes, please see the full [CHANGELOG](CHANGELOG.md).
 
-- **Global iCal Export & Close Guard Integration (`SettingsView.svelte` & `services/ical.ts`)**: Integrates a dedicated "All Anniversaries & Calendar iCal" export row in the Settings export center, compiling birthdays and anniversaries across all contacts into an `.ics` file; protected under `useCloseGuard` busy states to prevent accidental window closure during export.
-- **Notice Feedback & Re-export Loop (`StatusNotice`)**: Provides instant confirmation notices upon export completion and a convenient "Export Again" action, rounding out the complete backup and export matrix alongside vCard, interactions, and follow-ups.
+</details>
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (506/506); production build and release checks passed.
-
-## Previous release: v0.6.35 (2026-10-29)
-
-This release implements Anniversaries & Milestones iCalendar (.ics) Standard Export:
-
-- **RFC 5545 iCalendar Serialization Pure Function & Service (`domain/ical-export.ts` & `services/ical.ts`)**: Adheres strictly to RFC 5545 specifications (CRLF line breaks, 75-octet line folding, proper character escaping); serializes birthdays (solar & lunar) and anniversaries (wedding, acquaintance, work, memorial milestones) into standard VEVENT items with yearly recurrence (`RRULE:FREQ=YEARLY`), automatically skipping muted entries and supporting both single-contact and full-roster export.
-- **Detail View Anniversaries Section Export Trigger (`PersonDetail.svelte`)**: Features an "Export .ics Calendar" action in the header of the anniversaries card, generating and downloading standard `.ics` files ready for seamless import into Apple Calendar, Google Calendar, Outlook, and native OS calendar apps.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (985/985 PASS); browser UI regression passing (505/505); production build and release checks passed.
-
-## Previous release: v0.6.34 (2026-10-29)
-
-This release implements Quick Scratchpad & Ephemeral Memo Pinboard in the person detail view:
-
-- **Scratchpad Domain Model & Storage Layer (`domain/person-scratchpad.ts` & `data/person-scratchpad.ts`)**: Manages dedicated ephemeral memos and thought snippets per person with pin-to-top prioritization, color-coded categorization (warm, blue, green, purple, default), and modification timestamp ordering; protected by Web Lock critical sections and read-after-write verification (`person-scratchpads.json`).
-- **Interactive Pinboard Component & One-Click Interaction Bridging (`PersonScratchpad.svelte`)**: Renders warm sticky-note cards on the overview board with instant text recording, pin toggling, and deletion; clicking "To Interaction" instantly populates the interaction note draft with the scratchpad memo for smooth transition into permanent timeline records.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (981/981 PASS); browser UI regression passing (504/504); production build and release checks passed.
-
-## Previous release: v0.6.33 (2026-10-29)
-
-This release implements Roster Filtering by Relationship Lifecycle Stage in the main people view:
-
-- **Lifecycle Stage Roster Filtering Engine (`domain/people-filters.ts` & `domain/saved-views.ts`)**: Enables targeted filtering across initial acquaintance (`acquaintance`), regular connection (`connection`), close collaboration (`collaboration`), core ally/confidant (`close_ally`), and dormant maintenance (`dormant`), with intelligent fallback for unrecorded contacts and full compatibility with Saved Views.
-- **Roster Advanced Filters Integration & Active Condition Pills (`PeopleView.svelte`)**: Embeds a dedicated lifecycle stage selector into the advanced filter panel; automatically displays visual condition pills (e.g. `Stage: ⭐ Ally`, `Stage: 🚀 Co-create`) with one-click single removal and clear-all support.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (977/977 PASS); browser UI regression passing (503/503); production build and release checks passed.
-
-## Previous release: v0.6.32 (2026-10-29)
-
-This release implements Relationship Lifecycle Stages & Journey Progression in the person detail view:
-
-- **5-Stage Lifecycle Domain Model & Storage Layer (`domain/lifecycle-stage.ts` & `data/lifecycle-stage.ts`)**: Standardizes the relationship continuum across initial acquaintance (`acquaintance`), regular connection (`connection`), close collaboration (`collaboration`), core ally/confidant (`close_ally`), and dormant maintenance (`dormant`), paired with actionable contact cadence recommendations; protected by Web Lock critical sections and read-after-write verification (`person-lifecycle-stage.json`).
-- **Interactive Lifecycle Stage Tracker Component (`RelationshipStageTracker.svelte`)**: Features a 5-step visual progression stepper with current stage highlight and cadence advisory box; includes an expandable stage transition form with date and notes; provides a collapsible journey timeline recording milestones from initial acquaintance to close ally.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (976/976 PASS); browser UI regression passing (502/502); production build and release checks passed.
-
-## Previous release: v0.6.31 (2026-10-29)
-
-This release implements Comprehensive Meeting Briefing & Dossier Document Generator in SiYuan:
-
-- **Comprehensive Meeting Briefing Synthesis (`domain/briefing-export.ts` & `services/briefing-doc.ts`)**: Synthesizes 6-dimensional social capital radar assessment (`socialRadar`), family & kinship network tree (`kinships`), and mutual promises & commitments (`promises`) alongside profile, timeline, follow-ups, and backlinks into a standardized SiYuan document at `/会面简报/📝 会面准备简报 · Name (Date)`.
-- **Detail View Briefing Modal Document Creation & Direct Navigation (`PersonDetail.svelte`)**: Features a dedicated "Save as SiYuan Doc" button with custom block attributes (`custom-lvct-briefing-person`, `custom-lvct-briefing-date`), and one-click "Open in Main Editor ↗" to jump directly into the created document for notes and annotations.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (972/972 PASS); browser UI regression passing (501/501); production build and release checks passed.
-
-## Previous release: v0.6.30 (2026-10-28)
-
-This release implements the Mutual Promises & Commitments Tracker in the person detail view:
-
-- **Mutual Promises Domain Model & Storage Layer (`domain/promises.ts` & `data/promises.ts`)**: Distinguishes "I Promised Them" (`i_promised`) and "They Promised Me" (`they_promised`), managing the complete commitment lifecycle across `pending`, `fulfilled`, and `broken` statuses; protected by Web Lock critical sections and read-after-write verification (`person-promises.json`).
-- **Interactive Promises Ledger Component (`PersonPromisesLedger.svelte`)**: Overview metrics cards tracking pending counts and fulfillment rates; filter pills by direction and status; overdue deadline warnings; one-click "Mark Fulfilled" with automatic conversion into an interaction note draft for seamless history retention.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (970/970 PASS); browser UI regression passing (500/500); production build and release checks passed.
-
-## Previous release: v0.6.29 (2026-10-28)
-
-This release implements Family & Kinship Relationship Tree in the person detail view:
-
-- **Multi-Level Kinship Domain Model & Storage Layer (`domain/kinship.ts` & `data/kinship.ts`)**: Pure function categorizing family into 5 key tiers: parents, spouse, siblings, children, and other relatives; backed by Web Lock critical sections and read-after-write verification (`person-kinship.json`).
-- **Interactive Family Kinship Tree Component (`FamilyKinshipTree.svelte`)**: Renders warm family cards across tiers with role badges, birth year/age, and notes; supports clicking to open linked contact documents, along with compact quick-add form and instant removal.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (963/963 PASS); browser UI regression passing (499/499); production build and release checks passed.
-
-## Previous release: v0.6.28 (2026-10-28)
-
-This release implements the Persona Social Capital Radar & Depth Metrics:
-
-- **6-Dimensional Social Capital Assessment Engine (`domain/social-radar.ts`)**: Pure function evaluating contacts across 6 key axes: recency, connectivity, memory depth, commitment reliability, frequency, and co-occurrence; calculates overall score and classifies into 5 tiers (Core Partner, Deep Connect, Growing Tie, Light Touch, Dormant); generates normalized SVG polygon coordinates.
-- **Embedded Radar Component in Person Detail (`SocialRadar.svelte`)**: Seamlessly embedded in the overview section with native SVG grid, vertex hover tooltips, tier badge, and dark/light adaptive theming.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (961/961 PASS); browser UI regression passing (498/498); production build and release checks passed.
-
-## Previous release: v0.6.27 (2026-10-28)
-
-This release implements the Central Exchanges & Gifts Ledger Hub on the dashboard:
-
-- **Central Exchanges & Ledger Engine (`domain/exchanges-summary.ts`)**: Pure function aggregating all interaction exchanges across contacts, calculating totals for open/settled items, gifts (`item`), money (`money`) and favors (`favor`), mapping persons, and generating structured SiYuan ledger markdown with action item checkboxes `- [ ]` and block refs.
-- **Interactive Exchanges Hub Dialog (`ExchangesHubDialog.svelte`)**: Adds "Gifts & Ledger" button in dashboard header, supports status/category filtering, one-click status toggling, and generating a formal document under `/人情账本/🧧 人情礼尚往来大账簿` with direct navigation.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (959/959 PASS); browser UI regression passing (497/497); production build and release checks passed.
-
-## Previous release: v0.6.26 (2026-10-28)
-
-This release implements Batch Spaced Repetition Flashcards Deck Generation in the roster view:
-
-- **Batch Flashcard Compilation Engine (`domain/flashcards.ts`)**: Pure function extracting comprehensive cards across all selected people, organizing by person chapters (`## 👤 [Name](siyuan://blocks/docId)`), and formatting with native SiYuan `{: custom-riff-decks="人脉记忆" }\n?` syntax.
-- **One-Click Flashcard Deck in Batch Toolbar (`PeopleView.svelte`)**: Adds "Make Flashcards" in the multi-selection batch bar to generate `/人脉闪卡/🎴 人脉记忆闪卡 · Group (N people)` with status feedback and direct opening in the main editor.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (958/958 PASS); browser UI regression passing (496/496); production build and release checks passed.
-
-## Previous release: v0.6.25 (2026-10-28)
-
-This release implements the Social Graph Timeline Slider & Growth Evolution:
-
-- **Graph Time Slice & Evolution Engine (`domain/graph.ts`)**: Pure function extracting doc creation years from 14-digit IDs (`extractGraphTimeSpan`), slicing nodes and edges by maxYear (`filterGraphByMaxYear`), and dynamically recalculating subgraph degree connectivity.
-- **Interactive Floating Timeline Player Bar (`RelationGraph.svelte`)**: Adds "Evolution" toggle in toolbar and floating player bar at bottom of canvas with Play/Pause animation button, year range slider, active year badge with node/edge stats, and reset button.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (957/957 PASS); browser UI regression passing (495/495); production build and release checks passed.
-
-## Previous release: v0.6.24 (2026-10-28)
-
-This release implements Spaced Repetition Flashcards Deck Generator in the detail view:
-
-- **Persona Flashcards Extraction Engine (`flashcards.ts`)**: Pure function extracting Q&A flashcards across 6 dimensions: basic profile, birthday & calendar, leisure/dietary preferences (`preference`), background experiences (`background`), core quotes (`quote`), and upcoming meeting topics (`topics`); strictly formatted with SiYuan's native `{: custom-riff-decks="人脉记忆" }\n?` syntax.
-- **One-Click Flashcard Deck in Person Detail (`PersonDetail.svelte`)**: Adds "Flashcards ↗" in the top actions bar to generate a structured SiYuan document under `/人脉闪卡/🎴 人脉记忆闪卡 · Name` with status banner and direct navigation to main editor for spaced repetition reviews.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (955/955 PASS); browser UI regression passing (494/494); production build and release checks passed.
-
-## Previous release: v0.6.23 (2026-10-28)
-
-This release implements Potential Mutual Connections & Icebreaker Referrals in the Related tab:
-
-- **Single-Person Tie Discovery Engine (`discoverPersonTies`)**: Pure function computing co-attendance from shared events, common affiliations/organizations, and mutual friends, automatically excluding already connected contacts and self-identity, ordered by weighted affinity score.
-- **Recommended Ties Cards in Person Detail (`PersonDetail.svelte`)**: Displays potential connection cards with explainable badge reasons below the relation list/radar, enabling one-click bidirectional connection (`[+ Connect]`) and navigation to view profile cards.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (953/953 PASS); browser UI regression passing (493/493); production build and release checks passed.
-
-## Previous release: v0.6.22 (2026-10-28)
-
-This release implements the Annual Social Activity Heatmap & Streaks on the dashboard:
-
-- **52-Week Social Activity Heatmap Engine (`activity-heatmap.ts`)**: Pure function calculating a 52-week natural week matrix with 5 levels of activity intensity (Levels 0~4), calculating current streak and longest streak, and tracking contacts and events on each date.
-- **Interactive Heatmap Card in Dashboard (`ActivityHeatmap.svelte`)**: Renders a compact heatmap grid with month/weekday labels, showing "Active xx days · xx interactions · Current streak xx days · Longest streak xx days", rich tooltips on hover, and seamless adaptive theming for light and dark modes.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (952/952 PASS); browser UI regression passing (492/492); production build and release checks passed.
-
-## Previous release: v0.6.21 (2026-10-28)
-
-This release implements the Weekly Social Review & Interaction Digest Doc Generator:
-
-- **ISO Week Range & Digest Generator Engine (`weekly-digest.ts`)**: Pure function calculating ISO natural week ranges (`YYYY-Www`), summarizing interaction frequencies, contacts reached, and channel sources, detailing key contacts with bidirectional links `[Name](siyuan://blocks/docId)` and interaction notes, and generating follow-up action items with checkboxes `- [ ]` and block references `(( docId 'Name' ))`.
-- **One-Click Weekly Digest in Dashboard (`DashboardView`)**: Adds "Save Weekly Digest ↗" in the week glance strip header to generate a structured SiYuan note under `/人脉周报/2026-Wxx 人脉交往周报` with block attributes, status feedback banner, and direct opening in the main editor.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (951/951 PASS); browser UI regression passing (491/491); production build and release checks passed.
-
-## Previous release: v0.6.20 (2026-10-28)
-
-This release implements the "On This Day" Memory Capsule & Icebreaker on the dashboard:
-
-- **Global "On This Day" Memory Extraction Engine (`findGlobalOnThisDay`)**: Pure function matching interactions from previous years on the same calendar day, filtering out tombstones and same-year events, ordered by years elapsed.
-- **Dashboard Memory Capsule Card (`DashboardView`)**: Renders an elegant capsule card on days with past memories, showing the years badge, past note, one-click icebreaker quote copying (`[📋 Copy Memory]`), and instant navigation to the interaction timeline (`[💬 Say Hello ›]`).
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (949/949 PASS); browser UI regression passing (490/490); production build and release checks passed.
-
-## Previous release: v0.6.19 (2026-10-28)
-
-This release implements the Fact & Quote Extraction Engine for unstructured interaction notes:
-
-- **Multi-Category Fact Extraction Engine (`extractFactCandidates`)**: Pure local extraction for quotes (`quote`), dietary/leisure preferences (`preference`), career/background experiences (`background`), and schedule/milestone facts (`fact`).
-- **Interactive Fact Preview & Adoption in Detail View**: Adds instant "Extract Facts" below the interaction note input with structured card preview and one-click bulk adoption.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (948/948 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.18 (2026-10-28)
-
-This release implements single contact vCard 3.0 / .vcf export and copying:
-
-- **Single Contact vCard Serializer (`exportSinglePersonVcf`)**: Follows RFC 6350 / vCard 3.0 standards, serializing name, org, title, phone, wechat, city (ADR), email, website, birthday, and tags.
-- **Top Quick Bar Actions in Detail View**: Adds "Export Card (.vcf)" (downloads native `.vcf` file for instant mobile importing) and "Copy Card" to clipboard.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (945/945 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.17 (2026-10-28)
-
-This release implements Cardhop-style one-liner natural language contact creation:
-
-- **Natural Language Contact Parser (`buildDraftFromQuickInput`)**: Extracts contact attributes from a single unformatted string (e.g. `John Doe 13800000000 john@example.com wx:johndoe #friend #tech`), identifying name, phone, email, wechat, and `#tags`.
-- **Search Bar Quick Add & Enter-to-Create**: The roster search bar automatically detects multi-token inputs, presenting an instant `[⚡ Quick Create]` action, and pressing Enter on non-matching inputs directly launches the Add Contact dialog with all fields pre-populated.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (944/944 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.16 (2026-10-28)
-
-This release implements the Mini Relation Radar Topology inside contact detail views:
-
-- **Local Network Orbit Radar (`MiniRelationRadar`)**: Computed via pure function `domain/radar-topology.ts`, rendering crisp SVG radial constellation coordinates of 1st-degree connections around the current contact.
-- **Node Navigation & Dual-Mode Toggle**: Clicking any node in the radar smoothly navigates to that person's file, with a top toggle between "Radar Network" and "List" modes.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (943/943 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.15 (2026-10-28)
-
-This release implements the Persona Tag Inference Engine to solve the classification pain point for growing contact networks:
-
-- **Local Persona Tag Inference Engine (`inferPersonaTags`)**: Automatically infers hierarchical persona tags (e.g., `#industry/AI`, `#industry/finance`, `#role/tech-lead`, `#preference/tea`, `#preference/coffee`, `#region/Shenzhen`) based on occupational background, organization, city, facts, and interaction notes.
-- **Bi-directional Tag Adoption in Detail & Edit Views**: Inferred tag chips are displayed in Person Detail and can be seamlessly appended individually or in bulk via "+ Adopt All Suggested Tags" in PersonEditDialog.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (940/940 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.14 (2026-10-28)
-
-This release implements user-controlled settings for Privacy Mask Shield:
-
-- **Settings Option (`privacyShieldEnabled`)**: Added a dedicated switch in General Preferences to enable or disable the privacy mask shield. Defaults to `false`, allowing unmasked direct reading for users who do not require masking, while giving users full control to enable protection when needed.
-- **Dynamic Omni-Channel Sync**: Detail pages and graph drawers dynamically sync with the preference, while still supporting 5-second temporary reveal when shield is active.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (937/937 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.13 (2026-10-28)
-
-This release implements Privacy Mask Shield and Social Relationship Cooling Alert:
-
-- **Privacy Mask Shield**: Masks phone (`138****5678`), email (`al***r@domain.com`), and wechat (`wx****88`) in Person Detail and Graph Drawer. Includes a 5-second temporary reveal countdown with automatic re-locking to safeguard private data during screen shares or walking away.
-- **Social Relationship Cooling Alert Banner**: Prominently warns when contact cadence enters "cold" level (`❄️ Relationship Cooled`), with instant one-click ice-breaker logging.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (936/936 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.12 (2026-10-28)
-
-This release implements decentralized peer-to-peer task integration with Task Horizon (by 5kyfkr):
-
-- **Task Horizon Standard Task Sync in Daily Notes**: Automatically generates standard task blocks in daily notes when creating follow-up/visit plans (`custom-status="todo"`, `custom-priority="medium"`, `custom-completion-time`).
-- **Profile Deep Navigation via `custom-remark`**: Injects `custom-remark="(( personDocId 'Name Card' ))"` to allow one-click popup inspection of the contact card directly from Task Horizon.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (932/932 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.11 (2026-10-28)
-
-This release implements comprehensive Smart Field Mapping across all 9 core fields:
-
-- **Smart Field Mapping Engine (`isSemanticallyMatchingColumn`)**: Supports semantic matching for phone, wechat, email, website, birthday, lunar birthday, group, tags, and relations across English and Chinese variations (e.g. `Mobile/Tel`, `WeChat/WX`, `URL/Site`, `Birth`).
-- **Instant Alignment Feedback in Setup & Settings**: Workspace initialization and field health repair automatically recognize custom database column evidence with instant match count feedback.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (931/931 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.10 (2026-10-27)
-
-This release implements desktop-class keyboard shortcuts and degree jumping for the relationship graph:
-
-- **Desktop Graph Keyboard Shortcuts**: `+` / `-` to zoom, `0` to fit canvas, `F` to toggle full-screen expansion, `R` to relayout, `1` / `2` to jump between 1st and 2nd degree scope, and `Esc` to dismiss quick drawer.
-- **Enhanced Tooltips & Search Shield**: Floating FAB action buttons display shortcut indicators while inputs safely bypass keyboard shortcuts.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.9 (2026-10-27)
-
-This release upgrades Dashboard Action cards and Potential Connections Discovery navigation:
-
-- **Direct Action to Interaction Flow**: "Record Interaction" in the Action card menu directly activates the `activity` tab, allowing zero-friction logging.
-- **Bento Category Reason Icons**: Action reason chips now feature visual icons (🎂 Birthday, 💍 Anniversary, 📌 Follow-up, 💬 Touchpoint).
-- **Potential Connection Drill-Down**: Clickable person cards in the Discovery modal to inspect details, and instant "Locate in Roster" to compare potential tie candidates.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.8 (2026-10-27)
-
-This release upgrades the Relation Graph Quick Drawer with direct interaction flow and instant flashcard extraction:
-
-- **Quick Drawer to Activity Flow**: Added direct `[Record Interaction]` button in the 320px Node Quick Drawer footer to navigate seamlessly into the interaction timeline without breaking graph topology flow.
-- **Drawer Fact to Flashcards**: Added inline mini `[Flashcard]` generation button for each drawer fact/quote to effortlessly generate Q&A text for FSRS retention.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.7 (2026-10-27)
-
-This release implements inline facts & quotes archival across all interaction channels including Person Detail:
-
-- **Person Detail Record with Facts**: Added inline toggle in `PersonDetail` to simultaneously archive interaction notes into the person's `custom-lvct-facts` block across 4 categories (quotes, preferences, background, facts).
-- **Omni-Channel Fact Archival Loop**: Fact extraction is now fully unified across DocStrip (`QuickRecordDialog`), Note Capture (`CaptureDialog`), and Person Detail Peek (`PersonDetail`).
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.6 (2026-10-27)
-
-This release implements native Trip Itinerary Document generation for seamless business trip and travel planning:
-
-- **Trip Itinerary Doc Generator**: Added one-click document generation in `RegionExplorerDialog`, instantly archiving trip memos into native SiYuan documents according to 4 travel contexts (💼 Business, ✈️ Travel, 🚗 Transit, 📍 General).
-- **Interactive Checklists & Bilateral Links**: Automatically generates `- [ ]` task checkboxes, native `siyuan://blocks/{docId}` bilateral links, organizations, and contact details with direct navigation into the main editor.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (929/929 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.5 (2026-10-27)
-
-This release implements inline facts & quotes archival during Quick Record (`QuickRecordDialog`):
-
-- **Quick Record with Facts**: Added toggle in `QuickRecordDialog` to simultaneously archive the interaction note as a structured social profile fact (quote, preference, background, fact).
-- **Dual Pipeline Knowledge Consolidation**: Simultaneously commits to the timeline/daily notes and appends to the person's `custom-lvct-facts` controlled section.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (928/928 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.4 (2026-10-27)
-
-This release implements the Dialogue Bubble Timeline for warm, intuitive personal interaction histories:
-
-- **Dialogue Bubble Timeline**: Upgraded linear timeline items into modern chat-inspired speech bubble cards (`lvct-bubble-box`) featuring category-specific icon badges (`lvct-bubble-badge`).
-- **Visual Hierarchy & Micro-elevation**: Timestamps, occasion pills, source tags, and block links flow organically with `color-mix` dual-layer glows and subtle shadows, seamlessly tailored to dark/light themes.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (928/928 PASS); browser UI regression passing; production build and release checks passed.
-
-## Previous release: v0.6.3 (2026-10-27)
-
-This release implements composite slash naming support (#19938) and native location field contract (#20325):
-
-- **Composite Slash Naming**: Lifted rigid restrictions against forward slashes in contact names, enabling composite naming (e.g. `John / Lead Architect`). Path segments are safely mapped using `sanitizeHPathSegment` with full-width slashes `／` to prevent accidental file tree folder splits while preserving the original name in headings and databases.
-- **Native Location Field Contract**: Added `"location"` column type in `AvFieldType` to seamlessly align with SiYuan 3.8.8+ location attribute view columns.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.6.2 (2026-10-27)
-
-This release implements comprehensive SQL security hardening and closes Issue #146:
-
-- **SQL Security Hardening**: Every block ID, document ID, and notebook ID interpolated into SQL queries is validated strictly against `/^\d{14}-[0-9a-z]{7}$/` via `assertSafeBlockId`, with string literals safely sanitized via `escapeSqlString`.
-- **Ecosystem Fleet Directives (Issue #146)**: Added full Chinese branding keywords, desktop standalone settings window, ecosystem event bus alignment, and `visualViewport` mobile soft keyboard avoidance.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.6.1 (2026-10-27)
-
-This release upgrades "Capture From Note" with inline fact and quote archival:
-
-- **Capture with Facts**: Added inline fact recording and 4 category chips in the capture dialog, automatically appending quotes, diet preferences, backgrounds, or facts with source block links directly into participant documents.
-- **Self-Verifying Completion Wizard**: Displays participant fact archival counts directly in the wizard's final step.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.6.0 Milestone (2026-10-27)
-
-Lv Contacts officially steps into the 6.0 milestone era, delivering ecosystem federation v2, bilateral flashcard integration, and rich personal relationship insights:
-
-- **Ecosystem Super Federation Bridge v2**: Added `appendFact` and `getFacts` capabilities to `window.LvContacts`. Seamlessly integrates with siyuan-glean for viewpoint clipping and siyuan-card for FSRS memory retention.
-- **Instant Social Knowledge Flashcards**: One-click generation of Q&A flashcards for vital preferences, dietary restrictions, and milestones directly from fact cards.
-- **Full v0.6.0 Capability Suite**: Includes interactive edge filtering, 320px quick drawer, incremental city rebase, 5 theme schemes, full-fidelity vCard, potential connections discovery, and review doc generation.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.5.99 (2026-10-27)
-
-This release implements the Review Document Generator for native SiYuan workspace knowledge consolidation:
-
-- **Review Document Generation (Review Doc Generator)**: One-click export of periodic relationship reviews into native SiYuan documents (`custom-lvct-review`), consolidating interaction stats, top contacts with bilateral `siyuan://blocks/` links, and full interaction timelines.
-- **Direct Editor Navigation**: Added instant document generation button in `ReviewReportDialog` with direct "Open in Main Editor ↗" feedback.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.5.98 (2026-10-27)
-
-This release implements the Potential Connection Discovery engine and one-click bilateral relationship establishment:
-
-- **Potential Connection Discovery (connections-discovery.ts)**: Automatically detects candidates with frequent co-attendances and shared organization affiliations who lack explicit related links, computing explainable tie-strength scores.
-- **Bento Dashboard Discovery Modal**: Added action tool button and dedicated modal to inspect potential ties and establish bilateral links in seconds.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.5.97 (2026-10-27)
-
-This release implements full-fidelity vCard 3.0 / RFC 6350 export and import with native mobile contacts integration:
-
-- **Full-Fidelity vCard Interoperability**: Support serialization and round-trip parsing for WeChat (`X-WECHAT`), city addresses (`ADR;TYPE=HOME`), organizations (`ORG`), and job titles (`TITLE`).
-- **Native Smartphone Contacts Compatibility**: Exported `.vcf` files display city, WeChat, and job titles directly in Apple iOS Contacts, Huawei, and Xiaomi address books.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.5.96 (2026-10-27)
-
-This release implements a theme color switcher with 5 refined palettes and live design-token synchronization:
-
-- **Theme Color Schemes**: Choose among 🧡 Cognac Orange (default), 💚 Emerald Jade, 💙 Deep Ocean Blue, 💜 Royal Amethyst, and 💛 Amber Gold.
-- **Live Theme Palette**: Instant theme preview in the settings general tab, driven by `[data-lvct-theme]` token overrides for complete border, glow, and shadow consistency across sessions.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.5.95 (2026-10-27)
-
-This release implements controlled document sections for Quotes & Facts and live projections in the Quick Drawer:
-
-- **Quotes & Facts Controlled Section**: Added `custom-lvct-facts` block support in person documents across 4 categories (💡 quotes, ❤️ preferences/diet, 💼 backgrounds, 📌 key facts) with lossless round-trip Markdown serialization.
-- **Bi-Directional Inspection**: Added interactive facts card in PersonDetail and synchronized key facts projection in the graph Node Quick Drawer.
-
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing; production build and release checks passed.
-
-## Previous release: v0.5.94 (2026-10-27)
-
-This release closes GitHub Issue #135 directive requirements and consolidates design token scales:
-
-- **Ecosystem Fleet Directive Closure**: Formally verified all 8 requirements from Issue #135 (brand keywords, dedicated settings window, event names, checkin bridge, Raikiri widget, monochrome vector icon, SQL guards, and visualViewport handling) and closed the issue.
-- **Deep Design Token Consolidation**: Replaced discrete hex literals across avatars, switches, badges, and shadows with `_tokens.scss` variables and dynamic `color-mix` formulas for seamless dark and high-contrast theme compatibility.
-
-Validation: `pnpm check` (0 errors / 0 warnings), 918 unit tests (100% pass rate); production build and release checks passed.
-
-## Previous release: v0.5.93 (2026-10-27)
-
-This release implements the Node Quick Drawer in the relationship graph for seamless profile inspection:
-
-- **Graph Node Quick Drawer**: Click any person or organization node on the canvas to slide out a 320px quick drawer, showing avatar, group, city, affiliation, and graph degree without interrupting the topology flow.
-- **One-Click Communication Copying**: Phone, WeChat, and email entries support fast clipboard copying with emerald-green checkmark feedback.
-- **Quick Action Bar**: Direct buttons for "Full Profile ↗" and "Open Doc ↗", supporting Escape key and blank-canvas tap to dismiss smoothly.
-
-Validation: `pnpm check` (0 errors / 0 warnings), 918 unit tests (100% pass rate); production build and release checks passed.
-
-## Previous release: v0.5.92 (2026-10-27)
-
-This release implements automatic incremental controlled updates for city topic documents and consolidates city organization extraction:
-
-- **City Topic Incremental Auto-Rebase**: Automatically detects residence city deltas in the background and safely updates the `custom-lvct-city-contacts` controlled section in existing city topic documents without overwriting personal travel notes and restaurant itineraries.
-- **Unified Organization Extraction**: Extracted multi-source organization clues (work, education, affiliations) into pure function `extractCityOrganizations`.
-
-Validation: `pnpm check` (0 errors / 0 warnings), 918 unit tests (100% pass rate); production build and release checks passed.
-
-## Previous release: v0.5.91 (2026-10-27)
-
-This release implements interactive edge legend filtering in the relationship graph and refactors the test runner infrastructure:
-
-- **Interactive Graph Edge Legend & Filtering**: Added dedicated edge legends for Direct Relations (solid), Org Memberships (dashed), Co-Occurrences (dotted), and Doc References (ref dotted). Click any edge legend to filter or restore edges in Cytoscape and text views instantly.
-- **Dynamic Glob Test Suite**: Modernized package.json test script with glob pattern matching, reinforced by architecture boundary tests.
-- **Dependency Upgrades**: Upgraded @lucide/svelte (^1.61.0), vite (^8.3.5), sass (^1.106.1), and svelte-check (^4.7.7).
-
-Validation: `pnpm check` (0 errors / 0 warnings), 916 unit tests (100% pass rate); production build and release checks passed.
-
-## Previous release: v0.5.90 (2026-10-27)
-
-This release implements the core stage of the 2026-2027 Roadmap, lowering database configuration thresholds and polishing design micro-textures:
-
-- **Database Field Mapping "✨ Smart Match Columns"**: One-click semantic detection across existing SiYuan attribute view columns (Phone, WeChat, Birthday, Group, Tags), mapping field IDs in seconds.
-- **Database Health Micro-Embossing**: Self-governed card styling with soft borders, inner highlights, and semantic status tinting.
-- **Tri-Entity Doc Strip**: Live floating action banner in SiYuan main editor for Persons (warm cognac), Organizations (sky cyan), and Cities (amber gold) with instant interaction recording.
-- **Bilateral Daily Note & City Doc Sync**: Multi-participant events append bi-directional block links to Daily Notes automatically; city documents maintain controlled contacts blocks without overwriting personal travel notes and restaurant itineraries.
-- **Lv Ecosystem Federation Ready**: Full bridge support with siyuan-checkin, siyuan-speed-switch (Raikiri), and `window.LvContacts`.
-
-Validation: `pnpm check` (0 errors / 0 warnings), 915 unit tests (100% pass rate), 488/488 automated UI tests across desktop, mobile, and host styles; production build and release checks passed.
-
-## Previous release: v0.5.18 (2026-10-18)
-
-This patch closes the contact-picker and organization-affiliation workflow gaps.
-
-- Fixed the real-click outside-click race that immediately closed the “Choose contact” empty-state picker; added trusted click, Enter, Escape, outside-close, and focus-return coverage.
-- Unified work, school, and other affiliations into a searchable multi-select with independent category, current/history, department, title, dates, status, and notes.
-- Added a real create-organization path that selects the returned stable document ID; drafts, partial success, and unknown results remain recoverable.
-- Consolidated search, filtering, batch selection, and form-save boundaries, including multiple historical periods for one organization and missing candidates.
-
-Validation: local `pnpm check` (0 errors / 0 warnings), 728 unit tests, Chrome UI 473/473, and the main-branch GitHub Actions CI pass. Daily user workspaces and Android devices remain separate acceptance steps.
-
-## Previous release: v0.5.17 (2026-10-17)
-
-This patch completes the #51/#54 repeated-fields and personal-note workflow.
-
-- Person details support repeated phone, WeChat, email, and other entries, two-level groups, regrouping, ungrouping, ordering, deletion, clearing, and recreation with stable entry identity and full values.
-- Read-only details support local filtering and full-content copying; entering edit mode after filtering still saves the complete snapshot.
-- Personal-note conflicts can be reread with an explicit keep/discard draft choice; legacy notes split by blank lines can be reviewed, safely detached, and manually restored without overwriting the original text.
-- Reopen, same-name isolation, and two-page conflict behavior were verified against an isolated SiYuan Kernel and Chrome.
-
-Validation: `pnpm check`, 710 unit tests, desktop/390px/host-style UI 416/416, and E2E safety and Kernel smoke 17/17 pass.
-Issue #35 still awaits a redacted Xiaomi VCF; the candidate vCard fix is not claimed as a confirmed root-cause fix.
-
-## Previous release: v0.5.14 (2026-10-16)
-
-This patch fixes vCard imports stopping at a nameless card.
-
-- Cards with both `FN` and `N` empty are skipped individually so later named cards can still be imported.
-- A file with no valid named cards still fails clearly and creates no empty contacts.
-- Issue #35 still lacks the original Xiaomi VCF, so the candidate format root cause remains unconfirmed.
-
-Validation: `pnpm check`, 596 unit tests, and desktop/mobile UI 378/378 pass.
-
-## What's new in v0.5.12
-
-Improved vCard import fallback for blank `FN` values and added strict-import regression coverage for BOM and structured `N` names.
-
-## What's new in v0.5.10
-
-This patch release resolves vertical text compression in the stale-contacts dashboard and streamlines form wording and option hierarchies across creation, editing, and organization workflows.
-
-Fixed: stale contacts layout and text compression
-
-- Eliminated vertical single-character text squeezing caused by unconfigured profile fields in narrow flex containers; compact profile summaries now enforce single-line layout and smooth truncation.
-- Redesigned stale-contacts and upcoming-birthdays lists into modern two-tier card rows with 32px Squircle soft-gradient avatars mapped to five relationship groups.
-
-Improved: creation, edit, and organization form options
-
-- Upgraded primary save and creation buttons from text-only links to solid buttons with 1px top highlights and tactile micro-press feedback.
-- Refined form hint copy, removing internal implementation jargon in favor of natural product descriptions.
-- Reordered organization affiliation categories to match real-world frequency (Work, Education, Family, Other).
-
-Validation: `pnpm check` (0 errors / 0 warnings), 594 unit tests (100% pass), desktop/mobile UI regression 378/378 each, and release gates pass.
-
-## What's new in v0.5.9
-
-This release delivers an extensive modern design overhaul, restoring visual depth, typography hierarchy, micro-interactions, and refined physical feel across both desktop and mobile viewports.
-
-Added: modern design system and layered depth
-
-- Introduced Ambient Occlusion multi-layer soft shadows and 1px inner rim highlights, resolving pale card washout and harsh dark wireframe aesthetics.
-- Upgraded avatars, person details, wizard logos, and organization badges to smooth Squircle geometry with 135° dual-color gradients across five contact groups.
-- Dashboard stats now feature a radial ambient glow and 28px tabular-nums typography.
-
-Added: segmented sliding controls and frosted glass panels
-
-- Rebuilt card/table view toggles as iOS/Linear-grade inset sliding tracks with active floating pill indicators and micro-haptic press feedback.
-- Upgraded dialog backdrops with modern 10px frosted blur (`backdrop-filter: blur(10px)`) and a bold 22px / 700 header layout.
-- Graph controls now float as a frosted capsule island (`blur(16px)`), complemented by a central radial light field.
-- Organization cards feature 40px Squircle badge boxes and active member status breathing dots (Status Dot).
-
-Improved: sidebar, table view, timeline and details
-
-- Sidebar navigation items adopt modern floating pill selection and glowing brand iconography.
-- Contacts table introduces sticky frosted headers (`backdrop-filter: blur(8px)`) and active row accent highlights.
-- Person detail interaction history is restructured into a connected timeline track with stepped cards and dual-color exchange ledger badges.
-- Upgraded settings navigation, tactile iOS 18-grade switches, 18px Squircle welcome wizard, 6px slim frosted scrollbars, and mobile bottom bar blur.
-
-Validation: `pnpm check` (0 errors / 0 warnings), 594 unit tests (100% pass), desktop/mobile UI regression 378/378 each, and production release gates all pass.
-
-## What's new in v0.5.8
-
-This patch release fixes large imports, contact view switching and organization management, and adds batch organization membership actions.
-
-Added: batch add contacts to an organization
-
-- Select multiple contacts and register them in one organization. The selected scope is frozen, archived organizations are disabled, and empty states offer a create-organization route.
-- Loading and saving lock duplicate actions, closing and scope changes.
-
-Improved: batch feedback
-
-- Partial failures show the affected contacts and readable errors; retry only sends failed contacts and never repeats successful writes.
-- Successful writes refresh the roster and expose a clear result.
-
-Fixed: large imports, view flicker and organization layout
-
-- Attribute-view binding and document mapping use verified batches of 50, preventing 400+ imports from stopping after the first 50 contacts.
-- Card/table switching keeps the local view intent, avoids skeleton flicker and restores detail focus after refresh.
-- Organization member controls no longer collapse; desktop dialogs use a wider workspace while mobile remains full screen.
-
-Validation: `pnpm check`, 594 unit tests, desktop/mobile UI regression 378/378 each, `pnpm build` and `pnpm check:release` pass.
-
-## What's new in v0.5.7
-
-### Design tokens and component consistency
-
-- Added a three-layer Primitive → Semantic → Component token system for color, spacing, typography, radii, shadows, z-index, motion and control sizes. Light and dark themes now share the same semantic contract.
-- Unified button, field, checkbox, radio, loading and focus-ring variants so new screens can reuse the same components.
-
-### Measured consolidation
-
-- Token coverage: 38.86% → 41.19%; color literals: 202 → 196; length literals: 2,057 → 1,936; non-4px-grid lengths: 1,159 → 1,071; font-size variants: 29 → 28.
-- Reproduce the audit with pnpm audit:tokens; see [token consolidation report](docs/TOKEN-CONSOLIDATION-2026-10-14.md).
-
-This release completes isolated-kernel and real browser-desktop acceptance, fixes the authentication cleanup boundary, and continues the contact and organization workflow refinements.
-
-Added: isolated-kernel real frontend acceptance
-
-- Added evidence for real browser-desktop dual-page, organization member/archive, birthday, ledger, alias, follow-up and cross-window flows.
-- All writes, restart reads, migration checks and release artifacts use an isolated workspace.
-
-Improved: E2E authentication and cleanup
-
-- Injects the isolated kernel `api.token` before first-page and second-page navigation to avoid anonymous requests triggering the kernel failed-authentication limiter.
-- Temporary notebooks are reliably cleaned after the real frontend run.
-
-Fixed: E2E authentication race
-
-- Fixed missing `Authorization` headers with kernels that store the token under `conf.api.token`.
-- Fixed the second isolated page navigating before authentication headers were installed.
-
-Added: contact creation prerequisites
-
-- When relationship labels are entered, a new contact can create or select the self profile first. Failed prerequisites keep the current draft and do not leave a partial contact.
-
-Improved: self profile editing and async states
-
-- The self profile editor now exposes work and school organization choices, hides the inapplicable self relationship field, and keeps a stable loading state.
-- Busy actions in import, batch operations and profile editing are disabled consistently to prevent duplicate submissions.
-
-Fixed: related-person reads and self entry points
-
-- Empty relation cells that omit `relation` or `blockIDs` are treated as empty; malformed non-empty relation data still stops writes for verification.
-- Self markers are consistent across roster, search and detail entry points, so organization memberships can be edited from every route.
-
-## 🐴 Little Donkey plugin series
-
-Currently developed plugins:
-
-- [**小驴雷切**](https://github.com/ai68298100/siyuan-speed-switch)
-- [**小驴打卡**](https://github.com/ai68298100/siyuan-checkin)
-- **小驴人脉** (this project)
-- [**小驴拾遗**](https://github.com/ai68298100/siyuan-glean)
-
-Each plugin is maintained independently and can be used on its own or alongside the others.
-
-## Features
-
-| Area | What it does |
-|---|---|
-| Contact roster | Card and table views, search, groups, combined filters, saved views, profile completion, batch adoption of existing notes and suspected-duplicate hints |
-| Contact import and entry | Import vCard 2.1/3.0/4.0 files and export vCard 3.0; recognize pasted business-card or chat text, selected editor text or a whole note |
-| Person profiles | Self profile, aliases, relationship labels relative to you, a profile strip in person documents and a free-form note written back to each person document |
-| Relationships and organizations | Two-way person relations, relationship and document-reference graphs, organizations, membership history, common background and graph queries |
-| Interactions | Capture attendees from meeting notes; interaction timeline, reusable note templates, exchange ledger, review reports and meeting briefings |
-| Reminders and follow-ups | Solar and lunar birthdays, contact cadence and inactivity reminders; follow-ups can sync with native SiYuan task blocks in person documents |
-| Health and integrations | Read-only data health checks with jump-to actions; window.LvContacts lets other plugins search/create people and record shared experiences |
-| Mobile layouts | Responsive workspace and fullscreen dialogs, covered by isolated mobile-viewport regression tests |
+---
 
 ## Install
 
-Manual installation from GitHub Releases is currently recommended. The Marketplace submission has been merged, but availability in the client has not been verified on a real device.
+Manual installation from GitHub Releases is currently recommended:
 
 1. Download `package.zip` from the [latest stable Release](https://github.com/ai68298100/siyuan-contacts/releases/latest).
-2. Extract its contents into data/plugins/siyuan-contacts/ in your SiYuan workspace. plugin.json must be at that directory root.
+2. Extract its contents into `data/plugins/siyuan-contacts/` in your SiYuan workspace. `plugin.json` must be at that directory root.
 3. Restart SiYuan and enable **Lv Contacts** under **Settings → Marketplace → Installed**.
 
 Requires **SiYuan 3.8.5 or later**.
 
-## Data and privacy
+## Quick Start
 
-Person documents, per-person notes and the contact database are SiYuan workspace content. The plugin sends no telemetry. AI recognition runs only after an explicit user action and sends the relevant note content to the AI service configured in SiYuan.
+1. Click the contacts icon in the top toolbar to follow the setup wizard and create the contacts notebook and database.
+2. Add people, adopt existing notes, import `.vcf` / `.csv`, or paste text for automatic card recognition.
+3. Maintain relationships, organizations, notes, social preferences, and commitments in person details.
+4. Right-click in meeting notes and choose "Contacts: Capture people in this note" to record attendees and shared experiences.
+5. Review birthdays, relationship temperatures, lifecycle funnels, and follow-ups on the home dashboard.
 
-Plugin-managed data includes interactions, follow-ups, cadence and reminder state, adoption dates, templates, exchanges, aliases, self identity, organization memberships, organization profiles and relationship labels. It is stored in SiYuan's plugin data directory and may be lost when that data is deleted. Export the plugin data migration bundle from **Settings → Export Center** before uninstalling or deleting plugin data.
+## Data and Privacy
 
-The migration bundle is a JSON value snapshot with a preview and merge flow, not a workspace or byte-for-byte backup. It covers those 12 plugin-data modules, but excludes person and organization documents, the contact database, database anchors, UI preferences and unfinished operation checkpoints. A per-person note lives in its person document and is not exported as a separate bundle entry. To move to another workspace, migrate the SiYuan documents and database first, rebind the database in the plugin, then import the bundle. The plugin does not guess document identity by matching names.
+Person documents, notes, and the contact database are SiYuan workspace content. Data is stored 100% locally with zero telemetry. AI recognition runs only upon explicit user action and communicates only with the AI service configured in your own SiYuan.
 
-## Known limitations
+## Little Donkey Plugin Series
 
-- Isolated viewport and kernel tests do not establish acceptance in a real host. A real user workspace, Android device, keyboard/safe-area behavior and actual multi-window use have not been verified.
-- Opening SiYuan's native graph, task-manager interoperability and Marketplace availability have not been verified; use the manual installation steps above.
-- The in-app English translation is incomplete, so some interface text may appear in Chinese.
-- CardDAV address-book sync and CalDAV calendar sync are not supported. Contacts can be exchanged using vCard files.
+Each plugin is maintained independently and can be used on its own or alongside the others:
 
-See the [v0.5.14 release notes](docs/RELEASE-NOTES-v0.5.14.md) for validation scope; previous release notes remain available for v0.5.13, v0.5.12, v0.5.11, v0.5.10, v0.5.9 and v0.5.8.
-
-## Quick start
-
-1. Click the Lv Contacts toolbar icon and follow the wizard to create the contacts notebook and database.
-2. Create a person, adopt existing notes, import a .vcf, or paste text to recognize profile details.
-3. Add relationships, organization memberships, a per-person note or exchange records in the person detail.
-4. In a meeting note, right-click and choose **Lv Contacts: capture people from this note** to record attendees and a shared occasion.
-5. Review birthdays, contact reminders and follow-ups from the home view. Export the plugin data migration bundle before uninstalling.
+- [**小驴雷切 (Speed Switch)**](https://github.com/ai68298100/siyuan-speed-switch) — Unified workspace navigation and context switcher.
+- [**小驴打卡 (Checkin)**](https://github.com/ai68298100/siyuan-checkin) — Local-first habits, goals, and daily streak review.
+- **小驴人脉 (Lv Contacts)** (this project) — Personal relationship and network management.
+- [**小驴拾遗 (Glean)**](https://github.com/ai68298100/siyuan-glean) — Clippings organizer, reading management, and review.
+- [**小驴考试 (Exam)**](https://github.com/ai68298100/siyuan-exam) — Local question bank and exam practice.
+- [**小驴管家 (Home)**](https://github.com/ai68298100/siyuan-home) — Household ledger and task management.
+- [**小驴闪卡 (Cards)**](https://github.com/ai68298100/siyuan-lv-cards) — Spaced-repetition flashcards learning platform.
+- [**小驴常用 (Common)**](https://github.com/ai68298100/xiaolv-common) — Quick snippets and reusable blocks.
 
 ## Development
 
-Requires Node.js 24 or later and pnpm 12.x. Install dependencies and start SiYuan. Before the first hot-reload session, run pnpm make-link, then run pnpm dev.
-
-Common checks: pnpm check, pnpm test, pnpm test:ui, pnpm test:ui:mobile, pnpm build and pnpm check:release. Mobile viewport tests do not replace real-device acceptance.
-
-See [AGENTS.md](AGENTS.md) and the [handoff guide](docs/HANDOFF.md) for development conventions, the [data contract](docs/DATA-CONTRACT.md) for storage boundaries, and the [changelog](docs/CHANGELOG.md) for changes.
-
-## Feedback and license
-
-Report issues and request features in [GitHub Issues](https://github.com/ai68298100/siyuan-contacts/issues), including SiYuan/plugin versions, reproduction steps and redacted logs.
-
-QQ group: **871707735**
+Requires Node.js 24+ and pnpm 12.x.
+Standard checks: `pnpm check`, `pnpm test`, `pnpm test:ui`, `pnpm test:ui:mobile`, `pnpm test:ui:host`, `pnpm build`, `pnpm check:release`.
 
 [MIT License](LICENSE)
