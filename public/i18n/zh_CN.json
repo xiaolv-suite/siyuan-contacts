@@ -1623,5 +1623,6 @@
   "refreshList": "刷新列表",
   "birthdayReminder": "生日提醒",
   "cadenceReminder": "久未联系/从未互动提醒",
-  "noPendingChangesTip": "当前没有待保存的偏好修改"
+  "noPendingChangesTip": "当前没有待保存的偏好修改",
+  "reloadPreferencesBtn": "重新读取偏好"
 }

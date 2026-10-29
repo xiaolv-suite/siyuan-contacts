@@ -1623,5 +1623,6 @@
   "refreshList": "Refresh List",
   "birthdayReminder": "Birthday Reminder",
   "cadenceReminder": "Cadence Reminder",
-  "noPendingChangesTip": "No pending preference changes"
+  "noPendingChangesTip": "No pending preference changes",
+  "reloadPreferencesBtn": "Reload Preferences"
 }

@@ -668,7 +668,7 @@
         <StatusNotice message={preferencesNotice} error />
         <StatusNotice message={navigationError} error onDismiss={() => (navigationError = "")} />
         {#if preferencesNotice}
-            <button class="b3-button b3-button--outline" onclick={() => preferenceRequests.load().catch(() => {})}>重新读取偏好</button>
+            <button class="b3-button b3-button--outline" onclick={() => preferenceRequests.load().catch(() => {})}>{text("reloadPreferencesBtn", "重新读取偏好")}</button>
         {/if}
         <div class="lvct-workbench__body">
             {#if current === "home"}
