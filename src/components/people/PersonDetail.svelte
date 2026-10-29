@@ -1277,6 +1277,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
+    let vcfExported = $state(false);
+    let vcfExportedTimer: ReturnType<typeof setTimeout> | null = null;
+
     function handleExportVcf(): void {
         const vcfText = exportSinglePersonVcf(current);
         const blob = new Blob([vcfText], { type: "text/vcard;charset=utf-8" });
@@ -1286,6 +1289,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         anchor.download = `${current.name.trim() || "联系人"}.vcf`;
         anchor.click();
         URL.revokeObjectURL(url);
+        vcfExported = true;
+        if (vcfExportedTimer) clearTimeout(vcfExportedTimer);
+        vcfExportedTimer = setTimeout(() => { vcfExported = false; }, 1800);
     }
 
     async function handleCopyVcf(): Promise<void> {
@@ -1974,6 +1980,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
         if (revealInterval) clearInterval(revealInterval);
         if (vcardCopiedTimer) clearTimeout(vcardCopiedTimer);
+        if (vcfExportedTimer) clearTimeout(vcfExportedTimer);
         if (flashcardToastTimer) clearTimeout(flashcardToastTimer);
     });
     function openBriefingExport() {
@@ -2864,7 +2871,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             type="button"
             class="b3-button b3-button--outline b3-button--small"
             onclick={copySiyuanRef}
-            title="复制可在思源笔记正文中粘贴的锚文本双链引用 ((docId '姓名'))"
+            title={text("detailCopySiyuanRefTip", "复制可在思源笔记正文中粘贴的锚文本双链引用 ((docId '姓名'))")}
         >
             {#if siyuanRefCopied}
                 <Check size={13} class="lvct-text-success" /> {text("detailSiyuanRefCopied", "已复制双链引用 ✓")}
@@ -2876,19 +2883,19 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             type="button"
             class="b3-button b3-button--outline b3-button--small"
             onclick={copySiyuanUri}
-            title="复制可在外部应用（如微信、飞书、邮件）中点击直接唤起思源打开该联系人文档的 siyuan:// 链接"
+            title={text("detailSiyuanUriTip", "复制可在外部应用（如微信、飞书、邮件）中点击直接唤起思源打开该联系人文档的 siyuan:// 链接")}
         >
             {#if siyuanUriCopied}
-                <Check size={13} class="lvct-text-success" /> 已复制深度链接 ✓
+                <Check size={13} class="lvct-text-success" /> {text("detailSiyuanUriCopied", "已复制深度链接 ✓")}
             {:else}
-                <ExternalLink size={13} /> 复制深度链接
+                <ExternalLink size={13} /> {text("detailCopySiyuanUri", "复制深度链接")}
             {/if}
         </button>
         <button
             type="button"
             class="b3-button b3-button--outline b3-button--small"
             onclick={() => onOpenPersonDoc(current.docId)}
-            title="在思源中打开该联系人的独立文档"
+            title={text("detailOpenNoteDocTip", "在思源中打开该联系人的独立文档")}
         >
             <FileText size={13} /> {text("detailOpenNoteDoc", "打开笔记文档")}
         </button>
@@ -2897,13 +2904,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 type="button"
                 class="b3-button b3-button--outline b3-button--small"
                 onclick={handleSyncDocProfile}
-                title="将该联系人的基本资料与往来互动，同步写入到思源独立笔记文档正文中，实现文档即档案"
+                title={text("detailSyncDocTip", "将该联系人的基本资料与往来互动，同步写入到思源独立笔记文档正文中，实现文档即档案")}
                 disabled={docSyncing}
             >
                 {#if docSynced}
-                    <Check size={13} class="lvct-text-success" /> 已同步到正文 ✓
+                    <Check size={13} class="lvct-text-success" /> {text("detailDocSynced", "已同步到正文 ✓")}
                 {:else}
-                    <RefreshCw size={13} /> {docSyncing ? "同步中…" : "同步档案到正文"}
+                    <RefreshCw size={13} /> {docSyncing ? text("detailDocSyncing", "同步中…") : text("detailSyncDocProfile", "同步档案到正文")}
                 {/if}
             </button>
         {/if}
@@ -2912,7 +2919,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 type="button"
                 class="b3-button b3-button--outline b3-button--small"
                 onclick={() => void (async () => { if (await canLeave.requestClose()) { onClose(); onOpenGraphPerson?.(current.docId); } })()}
-                title="在关系图谱中聚焦该联系人的一度/二度网络"
+                title={text("detailOpenGraphTip", "在关系图谱中聚焦该联系人的一度/二度网络")}
             >
                 <Network size={13} /> {text("detailOpenGraph", "图谱聚焦")}
             </button>
@@ -2921,23 +2928,27 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             type="button"
             class="b3-button b3-button--outline b3-button--small"
             onclick={openBriefingExport}
-            title="一键导出会前备忘、背景资料与谈资简报"
+            title={text("detailExportBriefingTip", "一键导出会前备忘、背景资料与谈资简报")}
         >
-            <CalendarDays size={13} /> 导出会前简报
+            <CalendarDays size={13} /> {text("detailExportBriefing", "导出会前简报")}
         </button>
         <button
             type="button"
             class="b3-button b3-button--outline b3-button--small"
             onclick={handleExportVcf}
-            title="导出为标准手机通讯录 .vcf 名片文件（可直接通过微信/隔空投送发给手机导入）"
+            title={text("detailExportVcfTip", "导出为标准手机通讯录 .vcf 名片文件（可直接通过微信/隔空投送发给手机导入）")}
         >
-            <ContactRound size={13} /> 导出名片 (.vcf)
+            {#if vcfExported}
+                <Check size={13} class="lvct-text-success" /> {text("detailVcfExported", "已导出名片 ✓")}
+            {:else}
+                <ContactRound size={13} /> {text("detailExportVcf", "导出名片 (.vcf)")}
+            {/if}
         </button>
         <button
             type="button"
             class="b3-button b3-button--outline b3-button--small lvct-detail__business-card-btn"
             onclick={() => (cardModalOpen = true)}
-            title="生成高保真视觉名片海报与社交微卡片（支持复制 SVG 或下载矢量图）"
+            title={text("detailGenerateCardTip", "生成高保真视觉名片海报与社交微卡片（支持复制 SVG 或下载矢量图）")}
         >
             <Image size={13} /> {text("detailGenerateCard", "生成名片海报")}
         </button>
@@ -2945,12 +2956,12 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             type="button"
             class="b3-button b3-button--outline b3-button--small"
             onclick={handleCopyVcf}
-            title="复制该联系人的标准 vCard 3.0 名片文本到剪贴板"
+            title={text("detailCopyVcfTip", "复制该联系人的标准 vCard 3.0 名片文本到剪贴板")}
         >
             {#if vcardCopied}
-                <Check size={13} class="lvct-text-success" /> 已复制名片 ✓
+                <Check size={13} class="lvct-text-success" /> {text("detailVcfCopied", "已复制名片 ✓")}
             {:else}
-                <Copy size={13} /> 复制名片
+                <Copy size={13} /> {text("detailCopyVcf", "复制名片")}
             {/if}
         </button>
         {#if onCreateFlashcardsDoc}
@@ -2968,7 +2979,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     {#if flashcardsDocInfo}
         <div class="lvct-detail__flashcards-notice fn__flex" role="status" style="align-items: center; justify-content: space-between; margin: 4px 0 10px; padding: 6px 12px; background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)); border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent); border-radius: 6px; font-size: 12px;">
-            <span>🎴 已生成 <b>{flashcardsDocInfo.count}</b> 张人脉记忆闪卡至 <code>{flashcardsDocInfo.hpath}</code></span>
+            <span>{text("detailFlashcardsNotice", "🎴 已生成 {count} 张人脉记忆闪卡至 {hpath}", { count: flashcardsDocInfo.count, hpath: flashcardsDocInfo.hpath })}</span>
             <div class="fn__flex" style="gap: 6px;">
                 <button
                     type="button"
@@ -2976,14 +2987,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     style="padding: 0 4px; font-size: 11.5px; color: var(--b3-theme-primary);"
                     onclick={() => onOpenPersonDoc(flashcardsDocInfo!.docId)}
                 >
-                    在主编辑器打开 ↗
+                    {text("detailOpenInMainEditor", "在主编辑器打开 ↗")}
                 </button>
                 <button
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
                     style="padding: 0 4px; font-size: 11px;"
                     onclick={() => (flashcardsDocInfo = null)}
-                    title="关闭提示"
+                    title={text("detailCloseNotice", "关闭提示")}
                 >
                     ✕
                 </button>
@@ -3106,26 +3117,26 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         {/if}
     </section>
     {#if !current.phone && !current.email && !current.wechat && !current.website && current.tags.length === 0}
-        <div class="lvct-detail__empty-contact-card" role="region" aria-label="联系资料未填写">
+        <div class="lvct-detail__empty-contact-card" role="region" aria-label={text("detailEmptyContactTitle", "联系资料未填写")}>
             <div class="fn__flex" style="align-items: center; gap: 8px;">
                 <Phone size={14} class="lvct-text-muted" />
-                <span class="ft__smaller ft__on-surface"><b>联系资料还未填写</b> · 补充电话、微信、邮箱或标签，方便日常联络。</span>
+                <span class="ft__smaller ft__on-surface"><b>{text("detailEmptyContactTitle", "联系资料还未填写")}</b> · {text("detailEmptyContactDesc", "补充电话、微信、邮箱或标签，方便日常联络。")}</span>
             </div>
-            <button class="b3-button b3-button--outline b3-button--small" onclick={() => (editing = true)}>+ 补充资料</button>
+            <button class="b3-button b3-button--outline b3-button--small" onclick={() => (editing = true)}>{text("detailAddContactFields", "+ 补充资料")}</button>
         </div>
     {/if}
     <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-top: 14px; margin-bottom: 6px;">
-        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">通讯与基础资料</h4>
+        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">{text("detailBasicCommSection", "通讯与基础资料")}</h4>
         <button
             type="button"
             class="b3-button b3-button--text b3-button--small lvct-privacy-shield-btn"
             style="padding: 2px 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;"
-            title={privacyMaskActive ? (revealSeconds > 0 ? `已临时显形，将在 ${revealSeconds} 秒后重新自动掩盖` : "点击暂时显形 5 秒，或长按关闭遮罩") : "开启离席隐私保护盾（投屏/录屏或离席时对电话、微信、邮箱自动打码遮罩）"}
+            title={privacyMaskActive ? (revealSeconds > 0 ? text("detailPrivacyRevealedTip", "已临时显形，将在 {seconds} 秒后重新自动掩盖", { seconds: revealSeconds }) : text("detailPrivacyClickToReveal", "点击暂时显形 5 秒，或长按关闭遮罩")) : text("detailPrivacyMaskTip", "开启离席隐私保护盾（投屏/录屏或离席时对电话、微信、邮箱自动打码遮罩）")}
             onclick={togglePrivacyMask}
         >
             {#if privacyMaskActive && revealSeconds === 0}
                 <EyeOff size={13} style="color: var(--lv-brand, #ea580c);" />
-                <span style="color: var(--lv-brand, #ea580c); font-weight: 500;">隐私盾保护中</span>
+                <span style="color: var(--lv-brand, #ea580c); font-weight: 500;">{text("detailPrivacyShieldActive", "隐私盾保护中")}</span>
             {:else if privacyMaskActive && revealSeconds > 0}
                 <Eye size={13} style="color: var(--lvct-success, #16a34a);" />
                 <span style="color: var(--lvct-success, #16a34a); font-weight: 500;">已显形 ({revealSeconds}s)</span>

@@ -850,6 +850,13 @@ html[data-theme-mode="dark"] .lvct-wizard {
     flex: 0 0 auto;
     gap: var(--lvct-sp-2);
     flex-wrap: wrap;
+
+    > .b3-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--lvct-sp-1_5);
+    }
 }
 
 /* 桌面窄宽度下工具动作会独立换行；右对齐让“整理/导入”成为同一组次要工具，
@@ -1614,6 +1621,14 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
         color: var(--lvct-text-2);
         font-size: 12px;
         font-weight: 500;
+    }
+
+    .b3-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--lvct-sp-1);
+        white-space: nowrap;
     }
 }
 

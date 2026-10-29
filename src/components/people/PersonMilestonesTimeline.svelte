@@ -110,7 +110,12 @@
                     class="filter-pill {activeTypeFilter === tab.key ? 'is-active' : ''}"
                     onclick={() => activeTypeFilter = tab.key}
                 >
-                    {tab.label}
+                    {tab.key === "all" ? text("milestoneTabAll", tab.label)
+                        : tab.key === "stage_advance" ? text("milestoneTabStageAdvance", tab.label)
+                        : tab.key === "promise_fulfilled" ? text("milestoneTabPromiseFulfilled", tab.label)
+                        : tab.key === "anniversary" ? text("milestoneTabAnniversary", tab.label)
+                        : tab.key === "first_contact" ? text("milestoneTabFirstContact", tab.label)
+                        : text("milestoneTabExchange", tab.label)}
                 </button>
             {/each}
         </div>
@@ -257,7 +262,7 @@
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary-lightest);
+        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
         border-color: var(--b3-theme-primary);
         color: var(--b3-theme-primary);
         font-weight: 600;
@@ -340,7 +345,7 @@
 
     .rail-icon-node.stage_advance {
         border-color: var(--b3-theme-primary);
-        background: var(--b3-theme-primary-lightest);
+        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
     }
 
     .rail-icon-node.promise_fulfilled {
@@ -400,7 +405,7 @@
     }
 
     .event-badge.stage_advance {
-        background: var(--b3-theme-primary-lightest);
+        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
         border-color: var(--b3-theme-primary);
         color: var(--b3-theme-primary);
         font-weight: 600;

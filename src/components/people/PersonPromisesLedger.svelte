@@ -509,7 +509,7 @@
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary-lightest);
+        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
         border-color: var(--b3-theme-primary);
         color: var(--b3-theme-primary);
         font-weight: 600;
@@ -629,7 +629,7 @@
     }
 
     .direction-tag.i_promised {
-        background: var(--b3-theme-primary-lightest);
+        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
         color: var(--b3-theme-primary);
     }
 

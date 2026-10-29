@@ -125,7 +125,7 @@
                 <span class="form-label">{text("socialPrefsCategoryLabel", "档案分类")}:</span>
                 <select class="b3-select fn__flex-1" bind:value={newCategory}>
                     {#each SOCIAL_PREFERENCE_CATEGORIES as c (c.key)}
-                        <option value={c.key}>{c.icon} {c.label}</option>
+                        <option value={c.key}>{c.icon} {text(`socialPrefCat_${c.key}`, c.label)}</option>
                     {/each}
                 </select>
             </div>
@@ -167,7 +167,7 @@
                 </button>
                 <button
                     type="button"
-                    class="b3-button b3-button--small"
+                    class="b3-button b3-button--primary b3-button--small"
                     onclick={handleAdd}
                     disabled={saving}
                 >
@@ -190,7 +190,7 @@
                     <div class="category-block">
                         <div class="category-header">
                             <span class="cat-icon">{cat.icon}</span>
-                            <span class="cat-title">{cat.label}</span>
+                            <span class="cat-title">{text(`socialPrefCat_${cat.key}`, cat.label)}</span>
                             <span class="cat-count">({catItems.length})</span>
                         </div>
 

@@ -159,7 +159,7 @@
         /** B09-1：移动端工具栏收纳（常驻搜索/视图切换/新建，其余收进底部弹层） */
         isMobile?: boolean;
     } = $props();
-    const text = $derived.by(() => (key: string, fallback: string) => translateText(i18n, key, fallback));
+    const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) => translateText(i18n, key, fallback, values));
 
     let people: ContactSummary[] = $state([]);
     let loading: boolean = $state(true);
@@ -1704,7 +1704,7 @@
     async function handleBatchFlashcards(): Promise<void> {
         if (!onCreateBatchFlashcardsDoc || batchBusy || batchOrgBusy || batchFlashcardsBusy || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        if (hiddenSelectionCount > 0 && !window.confirm(`为选中的 ${selectedPeople.length} 人制作闪卡（含筛选外 ${hiddenSelectionCount} 人），继续吗？`)) return;
+        if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmFlashcardsHidden", "为选中的 {total} 人制作闪卡（含筛选外 {hidden} 人），继续吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
 
         batchFlashcardsBusy = true;
         batchError = "";
@@ -1733,7 +1733,7 @@
     async function exportSelected() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        if (hiddenSelectionCount > 0 && !window.confirm(`导出手动选中的 ${selectedPeople.length} 人，包含筛选外 ${hiddenSelectionCount} 人；继续导出吗？`)) return;
+        if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
         exportingSelected = true;
         try {
             const text = await exportVcfText(settings, selectedIds);
@@ -1759,7 +1759,7 @@
     function exportSelectedCsv() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        if (hiddenSelectionCount > 0 && !window.confirm(`导出手动选中的 ${selectedPeople.length} 人，包含筛选外 ${hiddenSelectionCount} 人；继续导出吗？`)) return;
+        if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
         try {
             const csvText = exportContactsToCsv(selectedPeople);
             const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
@@ -2164,15 +2164,15 @@
                     class="lvct-people__group-tab lvct-people__group-tab--starred"
                     class:lvct-people__group-tab--active={filterStarredOnly}
                     onclick={() => { filterStarredOnly = !filterStarredOnly; visibleCount = PAGE_SIZE; }}
-                    title="只看星标常用联系人"
-                ><Star size={12} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />常用 ({starredCount})</button>
+                    title={text("starredOnlyTip", "只看星标常用联系人")}
+                ><Star size={12} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />{text("starredGroupTab", "常用 ({n})", { n: starredCount })}</button>
             {/if}
             <button
                 type="button"
                 class="lvct-people__group-tab"
                 class:lvct-people__group-tab--active={groupFilter === "" && !filterStarredOnly}
                 onclick={() => { groupFilter = ""; filterStarredOnly = false; visibleCount = PAGE_SIZE; }}
-            >全部 ({people.length})</button>
+            >{text("allGroupTab", "全部 ({n})", { n: people.length })}</button>
             {#each groups as g}
                 {@const count = people.filter((p) => p.group === g).length}
                 <button
@@ -2187,13 +2187,13 @@
 
     <!-- 拼音首字母 A-Z 跳跃索引条 -->
     {#if !isMobile && people.length > 8}
-        <div class="lvct-people__alphabet-bar" role="navigation" aria-label="首字母拼音快速跳转">
+        <div class="lvct-people__alphabet-bar" role="navigation" aria-label={text("alphabetBarAria", "首字母拼音快速跳转")}>
             <button
                 type="button"
                 class="lvct-people__alphabet-btn lvct-people__alphabet-btn--all"
                 class:lvct-people__alphabet-btn--active={activeLetterFilter === ""}
                 onclick={() => { activeLetterFilter = ""; visibleCount = PAGE_SIZE; }}
-                title="全部首字母"
+                title={text("alphabetAllTip", "全部首字母")}
             >A-Z</button>
             {#each ALPHABET_LETTERS as letter}
                 {@const hasItems = alphabetData.activeLetters.has(letter)}
@@ -2206,7 +2206,7 @@
                         activeLetterFilter = activeLetterFilter === letter ? "" : letter;
                         visibleCount = PAGE_SIZE;
                     }}
-                    title={hasItems ? `只看首字母为 ${letter} 的联系人` : `暂无首字母为 ${letter} 的联系人`}
+                    title={hasItems ? text("alphabetFilterTip", "只看首字母为 {letter} 的联系人", { letter }) : text("alphabetFilterEmptyTip", "暂无首字母为 {letter} 的联系人", { letter })}
                 >{letter}</button>
             {/each}
             {#if alphabetData.activeLetters.has("#")}
@@ -2336,16 +2336,16 @@
 
     {#if selectedIds.length > 0}
         <div class="lvct-people__batchbar" role="toolbar" aria-label="批量操作">
-            <b>已选 {selectedIds.length} 人</b>
-            <span>{selectionScopeLabel}；筛选外 {hiddenSelectionCount} 人</span>
-            <button class="b3-button b3-button--outline" onclick={openBatch} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>批量编辑</button>
-            <button class="b3-button b3-button--outline" onclick={() => void openBatchOrganization()} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>加入组织</button>
+            <b>{text("batchSelectedCount", "已选 {n} 人", { n: selectedIds.length })}</b>
+            <span>{selectionScopeLabel}；{text("batchHiddenCount", "筛选外 {n} 人", { n: hiddenSelectionCount })}</span>
+            <button class="b3-button b3-button--outline" onclick={openBatch} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}>{text("batchEdit", "批量编辑")}</button>
+            <button class="b3-button b3-button--outline" onclick={() => void openBatchOrganization()} disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}>{text("batchJoinOrg", "加入组织")}</button>
             {#if onBatchUpdateLifecycleStages}
                 <button
                     class="b3-button b3-button--outline lvct-people__batch-stage-btn"
                     onclick={() => (batchStageModalOpen = true)}
                     disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
-                    title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}
+                    title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}
                 >
                     {text("peopleBatchStage", "设交往阶段")}
                 </button>
@@ -2358,10 +2358,10 @@
                         if (target) onOpenGraphPerson?.(target.docId);
                     }}
                     disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
-                    title="在关系图谱中聚焦已选联系人"
+                    title={text("peopleBatchViewInGraphTip", "在关系图谱中聚焦已选联系人")}
                 ><Network size={14}/> {text("peopleBatchViewInGraph", "在图谱中查看")}</button>
             {/if}
-            <button class="b3-button b3-button--outline" onclick={exportSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>导出 vCard</button>
+            <button class="b3-button b3-button--outline" onclick={exportSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}>{text("batchExportVcard", "导出 vCard")}</button>
             <button
                 class="b3-button b3-button--outline lvct-people__batch-csv-btn"
                 onclick={exportSelectedCsv}
@@ -2402,11 +2402,11 @@
                         onOpenPersonDoc?.(batchFlashcardsDocInfo!.docId);
                     }}
                 >
-                    打开闪卡文档 ↗
+                    {text("openFlashcardsDocBtn", "打开闪卡文档 ↗")}
                 </button>
             {/if}
-            <button class="b3-button b3-button--cancel lvct-people__remove" onclick={removeSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>从人脉移除</button>
-            <button class="b3-button b3-button--text" onclick={() => (selectedIds = [])} disabled={batchBusy || batchOrgBusy || exportingSelected} title={batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>取消选择</button>
+            <button class="b3-button b3-button--cancel lvct-people__remove" onclick={removeSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}>{text("batchRemoveFromContacts", "从人脉移除")}</button>
+            <button class="b3-button b3-button--text" onclick={() => (selectedIds = [])} disabled={batchBusy || batchOrgBusy || exportingSelected} title={batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}>{text("batchCancelSelection", "取消选择")}</button>
             {#if selectionScopePending}<span role="status">{pendingScopeMessage}</span>{/if}
         </div>
     {/if}
@@ -2447,9 +2447,11 @@
     {/if}
 
     {#if focusLabel}
+        {@const isOrgFocus = focusLabel.startsWith("组织 · ")}
+        {@const isOccasionFocus = focusLabel.startsWith("群体活动") || focusLabel.includes("Occasion")}
         <div class="lvct-people__focusbar">
-            <span>{focusLabel.startsWith("组织 · ") ? "来自组织" : "来自首页"}：{focusLabel}（{filtered.length} 人）</span>
-            <button type="button" onclick={onClearFocus}>{focusLabel.startsWith("组织 · ") ? "清除组织筛选" : "清除首页筛选"}</button>
+            <span>{isOrgFocus ? text("focusFromOrg", "来自组织") : isOccasionFocus ? text("focusFromOccasion", "来自活动") : text("focusFromDashboard", "来自首页")}：{focusLabel}（{filtered.length} 人）</span>
+            <button type="button" onclick={onClearFocus}>{isOrgFocus ? text("focusClearOrg", "清除组织筛选") : isOccasionFocus ? text("focusClearOccasion", "清除活动筛选") : text("focusClearDashboard", "清除首页筛选")}</button>
         </div>
     {/if}
 
@@ -2546,7 +2548,7 @@
                             <input
                                 type="checkbox"
                                 bind:this={visibleSelectionToggle}
-                                aria-label={allVisibleSelected ? "取消选择当前列表联系人" : "选择当前列表联系人"}
+                                aria-label={allVisibleSelected ? text("deselectVisibleContacts", "取消选择当前列表联系人") : text("selectVisibleContacts", "选择当前列表联系人")}
                                 aria-checked={someVisibleSelected ? "mixed" : allVisibleSelected ? "true" : "false"}
                                 checked={allVisibleSelected}
                                 onchange={(event) => toggleAllVisible((event.currentTarget as HTMLInputElement).checked)}
@@ -2922,7 +2924,7 @@
                     if (person) onOpenDetail(person);
                     else {
                         focusIds = [docId];
-                        focusLabel = "指定参会人";
+                        focusLabel = text("specifiedAttendee", "指定参会人");
                         visibleCount = PAGE_SIZE;
                     }
                 }}
@@ -2930,7 +2932,7 @@
                     occasionsHubOpen = false;
                     if (filter.memberDocIds) {
                         focusIds = filter.memberDocIds;
-                        focusLabel = filter.label ?? "群体活动参会人";
+                        focusLabel = filter.label ?? text("occasionAttendeesFallback", "群体活动参会人");
                         visibleCount = PAGE_SIZE;
                     }
                 }}

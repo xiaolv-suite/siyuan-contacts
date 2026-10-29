@@ -266,12 +266,12 @@
                                             type="button"
                                             class="attendee-chip"
                                             onclick={() => onOpenPerson?.(attendee.personDocId)}
-                                            title={`查看 ${attendee.name} 画像`}
+                                            title={text("viewPersonProfileTip", "查看 {name} 画像", { name: attendee.name })}
                                         >
                                             <span class="attendee-avatar">{attendee.name.slice(0, 1)}</span>
                                             <span class="attendee-name">{attendee.name}</span>
                                             {#if attendee.role === "host"}
-                                                <small class="role-badge">主客</small>
+                                                <small class="role-badge">{text("occRoleHost", "主客")}</small>
                                             {/if}
                                         </button>
                                     {/each}
@@ -448,7 +448,7 @@
     .occ-date-badge {
         font-size: 12px;
         color: var(--b3-theme-primary);
-        background: var(--b3-theme-primary-lightest);
+        background: var(--b3-theme-primary-lightest, var(--b3-theme-primary-light, rgba(66, 133, 244, 0.12)));
         padding: 2px 8px;
         border-radius: 4px;
         display: inline-flex;
@@ -487,6 +487,8 @@
         font-size: 14px;
         font-weight: 600;
         color: var(--b3-theme-on-surface);
+        word-break: break-word;
+        overflow-wrap: break-word;
     }
 
     .occ-note {

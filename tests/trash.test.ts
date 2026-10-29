@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import fs from "node:fs";
+import path from "node:path";
+import { translateText } from "../src/domain/translation.ts";
 import {
     addTrashEntry,
     createTrashEntry,
@@ -166,4 +169,15 @@ test("E-33 trash: filterTrashEntries 多维模糊匹配与空搜索", () => {
     assert.deepEqual(filterTrashEntries(list, "139").map((e) => e.name), ["李四"]);
     assert.deepEqual(filterTrashEntries(list, "技术").map((e) => e.name), ["张三", "王五"]);
     assert.deepEqual(filterTrashEntries(list, "不存在").length, 0);
+});
+
+test("E-33 trash: i18n 剩余天数与删除时间插值正确", () => {
+    const zh = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../public/i18n/zh-CN.json"), "utf8"));
+    const en = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../public/i18n/en.json"), "utf8"));
+
+    assert.equal(translateText(zh, "trashDaysRemaining", "剩余 {n} 天", { n: 15 }), "剩余 15 天");
+    assert.equal(translateText(en, "trashDaysRemaining", "{n} days remaining", { n: 15 }), "15 days remaining");
+
+    assert.equal(translateText(zh, "trashRemovedAt", "删除时间：{date}", { date: "2026-10-29" }), "删除时间：2026-10-29");
+    assert.equal(translateText(en, "trashRemovedAt", "Deleted at: {date}", { date: "2026-10-29" }), "Deleted at: 2026-10-29");
 });

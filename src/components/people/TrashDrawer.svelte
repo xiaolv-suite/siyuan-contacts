@@ -188,7 +188,7 @@
                                         <span class="lvct-chip lvct-chip--group font-size-11">{entry.snapshot.group}</span>
                                     {/if}
                                     <span class="trash-days-pill {daysRemaining <= 3 ? 'is-urgent' : ''}">
-                                        <Clock size={11} class="lvct-icon-inline" /> 剩余 {daysRemaining} 天
+                                        <Clock size={11} class="lvct-icon-inline" /> {text("trashDaysRemaining", "剩余 {n} 天", { n: daysRemaining })}
                                     </span>
                                 </div>
                                 <div class="trash-item-meta ft__smaller ft__on-surface-light">
@@ -198,7 +198,7 @@
                                         </span>
                                     {/if}
                                     <span class="trash-meta-item">
-                                        删除时间：{formatRemovedDate(entry.removedAt)}
+                                        {text("trashRemovedAt", "删除时间：{date}", { date: formatRemovedDate(entry.removedAt) })}
                                     </span>
                                 </div>
                                 {#if entry.snapshot.tags && entry.snapshot.tags.length > 0}
