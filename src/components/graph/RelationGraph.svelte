@@ -953,11 +953,15 @@
         const graph: import("../../domain/graph").PersonGraph = JSON.parse(canvasData);
         if (graph.nodes.length === 0) return;
         const palette = themeColors();
+        const nodeCount = graph.nodes.length;
 
         const instance = cytoscape({
             container,
             /* 画布撑满工作台后，小图的 fit 放大不设上限会糊脸（UX-02.13） */
             maxZoom: 2.5,
+            minZoom: 0.12,
+            textureOnViewport: nodeCount > 50,
+            pixelRatio: "auto",
             elements: [
                 ...graph.nodes.map((node) => ({
                     data: {
@@ -978,7 +982,16 @@
                 })),
             ],
             // 同步完成布局，避免筛选/切页销毁画布后动画帧继续访问 renderer。
-            layout: { name: "cose", animate: false, padding: 30, nodeDimensionsIncludeLabels: true },
+            // 大规模节点（>150）下自适应适度收缩迭代步数与斥力半径，实现秒级收敛并杜绝卡顿。
+            layout: {
+                name: "cose",
+                animate: false,
+                padding: 30,
+                nodeDimensionsIncludeLabels: true,
+                numIter: nodeCount > 200 ? 500 : 1000,
+                nodeRepulsion: nodeCount > 200 ? 2500 : 4096,
+                idealEdgeLength: nodeCount > 200 ? 60 : 80,
+            },
             style: [
                 {
                     selector: "node",
@@ -990,6 +1003,7 @@
                         "font-size": 13,
                         "font-weight": 500,
                         color: "data(themeText)",
+                        "min-zoomed-font-size": 7, // LOD：小视口缩放拉远时自动隐藏文字，大幅降低微小节点排版开销
                         "text-wrap": "ellipsis",
                         "text-max-width": "120px",
                         "text-outline-width": 2,

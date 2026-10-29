@@ -2496,6 +2496,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             void loadPersonNoteState(true);
             void loadFacts();
             void loadTopics();
+            void loadKinships();
+            void loadPromises();
+            void loadLifecycleStage();
+            void loadScratchpads();
+            void loadSocialPreferences();
+            void loadItineraries();
+            void loadAnniversaries();
+            void loadProjects();
             if (!cadenceDirty) void loadCadence();
         }
         if (orgRefreshPending && !addOrgBusy && !editingOrgMembershipId && !removingOrgMembershipId && !addOrgDocId) {

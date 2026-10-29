@@ -5,6 +5,7 @@
     import ViewState from "../ViewState.svelte";
     import { confirmDialog } from "../../libs/confirm-dialog.ts";
     import { onDestroy } from "svelte";
+    import { swipeDismiss } from "../../shared/swipe-dismiss.ts";
     import {
         Search,
         RotateCcw,
@@ -109,7 +110,7 @@
     }
 </script>
 
-<div class="lvct-trash-drawer">
+<div class="lvct-trash-drawer" use:swipeDismiss={{ onDismiss: onClose, threshold: 90 }}>
     <!-- 顶部状态栏 -->
     <div class="trash-header-bar">
         <div class="header-info">

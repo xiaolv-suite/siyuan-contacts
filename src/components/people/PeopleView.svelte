@@ -53,6 +53,7 @@
     import { isUnorganizedPerson } from "../../domain/unorganized-tidy.ts";
     import { exportContactsToCsv, exportContactsToMarkdownTable } from "../../domain/csv-contacts.ts";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import { swipeDismiss } from "../../shared/swipe-dismiss.ts";
 
     let {
         settings,
@@ -2251,8 +2252,10 @@
             aria-labelledby={mobileSheetTitleId}
             tabindex="-1"
             bind:this={mobileSheetPanel}
+            use:swipeDismiss={{ onDismiss: () => closeMobileSheet(), enabled: isMobile }}
             onkeydown={handleMobileSheetKeydown}
         >
+            <div class="lvct-sheet__handle" aria-hidden="true"></div>
             <div class="lvct-sheet__bar">
                 <b id={mobileSheetTitleId}>{text("peopleMobileTools", "筛选与整理")}</b>
                 <button type="button" class="b3-button b3-button--text" bind:this={mobileSheetCloseButton} onclick={() => closeMobileSheet()}>{text("dashCollapse", "收起")}</button>

@@ -216,6 +216,15 @@
     }
 }
 
+.lvct-sheet__handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--b3-theme-surface-lighter, rgba(125, 125, 125, 0.3));
+    margin: 0 auto var(--lvct-sp-1);
+    flex-shrink: 0;
+}
+
 .lvct-sheet__bar {
     display: flex;
     align-items: center;

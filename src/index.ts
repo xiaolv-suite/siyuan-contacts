@@ -1607,14 +1607,14 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async addPersonTopic(personDocId: string, text: string) {
         const token = this.lifecycleToken;
         const result = await addPersonTopic(this, personDocId, text);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
     async removePersonTopic(personDocId: string, topicId: string) {
         const token = this.lifecycleToken;
         const result = await removePersonTopic(this, personDocId, topicId);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
@@ -1622,7 +1622,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         const token = this.lifecycleToken;
         await removeContactToTrash(this, this.settings, person);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [person.docId] }, token);
     }
 
     async listTrash() {
@@ -1633,7 +1633,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         const token = this.lifecycleToken;
         const result = await restoreContactFromTrash(this, this.settings, entryId);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [result.docId] }, token);
         return result;
     }
 
@@ -1655,21 +1655,21 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async addPersonGiftIdea(item: import("./domain/gift-ideas").GiftIdeaItem) {
         const token = this.lifecycleToken;
         const result = await addPersonGiftIdea(this, item);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
         return result;
     }
 
     async updatePersonGiftIdea(personDocId: string, ideaId: string, patch: Partial<import("./domain/gift-ideas").GiftIdeaItem>) {
         const token = this.lifecycleToken;
         const result = await updatePersonGiftIdea(this, personDocId, ideaId, patch);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
     async removePersonGiftIdea(personDocId: string, ideaId: string) {
         const token = this.lifecycleToken;
         const result = await removePersonGiftIdea(this, personDocId, ideaId);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
@@ -1680,7 +1680,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async createOccasion(input: import("./services/occasions").CreateOccasionInput) {
         const token = this.lifecycleToken;
         const result = await createOccasion(this, input);
-        emitDataChanged({ topics: ["people"] }, token);
+        const attendeeDocIds = input.attendees.map((a) => a.personDocId).filter(Boolean);
+        emitDataChanged({ topics: ["people"], docIds: attendeeDocIds }, token);
         return result;
     }
 
@@ -1697,21 +1698,21 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async addPersonAnniversary(item: import("./domain/anniversaries").AnniversaryItem) {
         const token = this.lifecycleToken;
         const result = await addPersonAnniversary(this, item);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
         return result;
     }
 
     async updatePersonAnniversary(personDocId: string, annivId: string, patch: Partial<import("./domain/anniversaries").AnniversaryItem>) {
         const token = this.lifecycleToken;
         const result = await updatePersonAnniversary(this, personDocId, annivId, patch);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
     async removePersonAnniversary(personDocId: string, annivId: string) {
         const token = this.lifecycleToken;
         const result = await removePersonAnniversary(this, personDocId, annivId);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
@@ -1737,21 +1738,21 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async addPersonProject(item: import("./domain/projects").PersonProjectItem) {
         const token = this.lifecycleToken;
         const result = await addPersonProject(this, item);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
         return result;
     }
 
     async updatePersonProject(personDocId: string, projectId: string, patch: Partial<import("./domain/projects").PersonProjectItem>) {
         const token = this.lifecycleToken;
         const result = await updatePersonProject(this, personDocId, projectId, patch);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
     async removePersonProject(personDocId: string, projectId: string) {
         const token = this.lifecycleToken;
         const result = await removePersonProject(this, personDocId, projectId);
-        emitDataChanged({ topics: ["people"] }, token);
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return result;
     }
 
