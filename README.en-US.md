@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.59** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.59) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.0** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.0) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -27,27 +27,27 @@ Lv Contacts keeps people, relationships and shared experiences in your SiYuan wo
 
 Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally linked** Personal Relationship Management (PRM) platform. Unlike sales-oriented corporate CRMs, Lv Contacts is built for nurturing authentic, long-term personal ties, relationship temperature tracking, mutual exchanges, and milestone memories.
 
-| Module | Purpose & Value | Key Capabilities |
+| Category | Purpose & Value | Key Capabilities |
 | :--- | :--- | :--- |
-| **📇 Person Profiles<br>(One Person, One Document)** | Each contact is an authentic SiYuan note document backed by a native Attribute View database, serving as both a structured entry and an ongoing lifetime chronicle. | • Native Attribute View database backbone<br>• Name, phone, WeChat, email, website, city, birthday (solar and lunar)<br>• Privacy Shield (one-click auto-masking of phone/email/WeChat with 5s peek timeout)<br>• Colorful squircle avatar initials and pinyin alphabet quick indexing |
-| **🌡️ Relationship Cadence & Temperature<br>(Cadence & Health)** | Replaces rigid reminders with objective cadence-based relationship temperatures, preventing valued ties from growing cold unnoticed. | • 4-tier temperature calculation: 🔥 Hot (recent) / 🍃 Warm (healthy) / 🌬️ Cool (overdue) / ❄️ Cold (distant)<br>• Customizable personal contact cadence (1–365 days) or pause reminders<br>• Dashboard "🧊 Cooling Radar & Reconnect Hub" weighting VIPs and overdue days for instant reconnection |
-| **💬 Interactions & Scenarios<br>(Timeline & Templates)** | Replaces dry memos with lively dialogue-bubble timelines, distilling ongoing facts and insights from meetings and calls. | • Bubble-styled timeline distinguishing visits, coffee, meals, calls, messages, and conferences<br>• 9 built-in featured note templates (business meeting, coffee chat, dining, conference, mentorship, greeting)<br>• Dynamic variable inserter (`{{姓名}}`, `{{日期}}`, `{{上次互动}}`, `{{公司}}`, `{{职位}}`, `{{城市}}`)<br>• On-the-fly distillation of quotes, preferences, and facts |
-| **🗓️ Meeting Itineraries & Preparation<br>(Itineraries & Visits)** | Designed for client meetings, business trips, and appointments, ensuring thoughtful preparation without post-meeting re-entry friction. | • Structured agenda, target date/time, venue, companions, and memos<br>• Interactive preparation checklist (documents/samples/contracts/gifts)<br>• Dynamic countdown tags (Today / in N days / Overdue)<br>• One-click "Complete & Log Interaction" pre-filling meeting notes; copy Markdown itinerary |
-| **🛡️ Social Preferences & Taboo Radar<br>(Preferences & Taboos)** | Structured management of dining preferences and sensitive red lines, ensuring smooth dining and business hosting. | • 4-dimension management: 🍲 Dietary & allergies, ☕ Tea/coffee/wine, 🤝 Meeting habits, 🚫 Sensitive taboos<br>• Header "Micro-Preferences Ribbon" for 1-second preference checks with red-line alert styling<br>• Dashboard "🛡️ Pre-Meeting Hub & Taboo Radar" screening all contact taboos and pending promises |
-| **🌱 Relationship Lifecycle Funnel<br>(Lifecycle Funnel)** | Mirrors the natural progression of authentic ties, offering a macroscopic strategy view of your network's maturity. | • 5-stage progression model: 🌱 Acquaintance ➔ 💬 Connection ➔ 🚀 Collaboration ➔ ⭐ Close Ally ➔ 💤 Dormant<br>• Stage transition history tracking; batch stage updates in roster<br>• Dashboard "Lifecycle Funnel Console" computing collaboration rates with 1-click roster drilldown |
-| **⚖️ Reciprocity & Balance Audit<br>(Reciprocity & Balance)** | Monitors mutual exchange equity to avoid one-sided extraction or over-giving, maintaining healthy reciprocal networks. | • Bilateral promise tracking: comparing our fulfillment rate vs theirs<br>• Exchange ledger audit: net balance perspective between receivable/given vs payable/received<br>• Dual-sided balance bar and 0–100 reciprocity index with tailored maintenance advice |
-| **🌐 Network Graph & Topologic Hubs<br>(Network Graph & Hubs)** | Visualizes complex social topologies to discover network bridges and super-connectors. | • Dual graph modes: explicit relationship graph + native SiYuan document reference graph<br>• 4 layout engines: Force-directed (CoSE), Concentric rings, Breadthfirst tree, Circle<br>• Timeline Evolution Slider animating network growth over years<br>• "🌐 Network Hubs & Bridge Connectors" identifying cross-circle brokers with canvas auto-focus |
-| **📜 Milestones Chronicle & Docs<br>(Chronicles & Documents)** | Consolidates life intersections and milestones into a permanent, readable lifetime chronicle. | • Aggregates first contact, stage advances, anniversaries, fulfilled promises, and exchanges into an illuminated timeline<br>• One-click export to native SiYuan document (`/人脉回顾/📜 人脉交往编年史 · 姓名`) and copy Markdown<br>• Header "Anniversary Milestones Banner" highlighting N-year anniversaries with 1-click congratulations pre-fill<br>• RFC 5545 iCalendar (`.ics`) export for single contacts and the entire roster |
-| **🎴 SVG Business Cards & Flashcards<br>(SVG Cards & Flashcards)** | High-fidelity vector visuals for social referrals and cognitive reinforcement. | • Pure SVG vector business cards (horizontal 600x380 / vertical 440x600 in 3 themes), 1-click copy code or download<br>• One-click generation of native SiYuan Riff Flashcards documents for spaced-repetition memory review with FSRS |
-| **👥 Organizations & Kinship Trees<br>(Orgs & Kinships)** | Contextualizes contacts within their professional organizations and familial kinship backgrounds. | • Organization profiles with multi-tenure member career history<br>• 5-generation warm kinship trees (Parents/Spouse/Siblings/Children/Relatives) with 1-click profile drilldown |
-| **🎪 Group Occasions & Gatherings Hub<br>(Occasions & Gatherings)** | Records group interactions, linking multi-attendee gatherings with personal profiles. | • Reverse-chronological timeline of summits, dinners, celebrations, salons, and trips<br>• Header metrics of total events, cumulative attendees, yearly count, and linked docs<br>• Attendee avatar chips with 1-click "Roster Drilldown" to filter and highlight attendees in roster |
-| **🗑️ Roster Soft-Delete Trash Bin<br>(Trash Bin & Recovery)** | 30-day safety buffer preventing accidental data loss with seamless 1-click recovery. | • Snapshot preview of deleted contact names, phone, groups, and tags<br>• Live countdown badges with 3-day urgency highlighting<br>• 1-click database restoration and roster refresh; double-confirmation permanent purge |
-| **🧹 Roster Filters, Tidy & Export<br>(Filters, Tidy & Export)** | Powers high-volume relationship management with seamless data interchange with mainstream office suites. | • Multi-dimensional cross filtering (cadence heat, lifecycle, city, company, profile gaps) with saved views<br>• "Batch Tidy Drawer": automated detection of unassigned contacts with smart group/tag suggestions<br>• Export RFC 4180 CSV with UTF-8 BOM (preventing Excel/WPS garbled text); 1-click copy Markdown table<br>• vCard 2.1/3.0/4.0 import and vCard 3.0 full-fidelity export (interchangeable with iOS/Android address books) |
-| **🔒 Local-First Privacy & Ownership<br>(Privacy & Local-First)** | Complete data sovereignty: zero cloud lock-in, zero telemetry, full self-managed backup. | • 100% stored in local SiYuan workspace, zero external network dependency<br>• Web Lock critical sections with strict read-after-write verification<br>• Complete data migration bundle with diff preview (export/preview/current-first import) |
+| **📇 Universal Person Dossier<br>(One Person, One Document)** | Each person corresponds to a native SiYuan document backed by a native database row — both structured roster and rich personal journal. | • Native Attribute View database backbone<br>• Name, phone, WeChat, email, website, city, birthday (Gregorian/Lunar auto-conversion)<br>• Privacy Shield (1-click mask for sensitive contacts with 5-sec temporary reveal)<br>• Squircle multi-color initials avatar spectrum & Pinyin index |
+| **🌡️ Cadence & Relationship Temperature** | Moving past mechanical reminders to objectively calculated relationship temperatures, preventing connections from slipping away unnoticed. | • 4-tier dynamic temperature: 🔥 Hot (frequently contacted) / 🍃 Warm (healthy) / 🌬️ Cool (mildly overdue) / ❄️ Cold (distant)<br>• Custom cadence intervals (1–365 days) or pause snooze<br>• Home "Cooling Radar & Reconnect Hub" console with star VIP weighting and 1-click drilldown |
+| **💬 Interactions & Scene Templates** | Conversational timeline tracking with contextual variables, extracting insights directly from your discussions. | • Bubble interaction timeline distinguishing visits, coffee, meals, calls, chat, and meetings<br>• 9 curated scenario templates (business visit, coffee chat, banquet dinner, forums, consultations, etc.)<br>• Dynamic variables (`{{name}}`, `{{date}}`, `{{lastContact}}`, `{{company}}`, `{{role}}`, `{{city}}`)<br>• Automatic fact extraction: quotes, preferences, and verified facts |
+| **🗓️ Itineraries & Visit Preparation** | Designed for appointments, travel, and meetings, ensuring you arrive well-prepared and follow up without re-typing. | • Structured agenda, time, venue, companions, and checklist items<br>• Interactive preparation checklist (documents, samples, gifts) with checkmarks<br>• Countdown badges (Today / N days away / Overdue)<br>• 1-click "Fulfill and Log Interaction" to append minutes into timeline; 1-click Markdown copy |
+| **🛡️ Preferences & Dietary Taboos** | Record friends' and partners' genuine dietary habits and taboos to avoid missteps when hosting or meeting. | • 4 dimensions: 🍲 Food & Taboos, ☕ Beverages, 🤝 Meeting Habits, 🚫 Sensitive Topics & Red Lines<br>• Header "Micro-Preferences Ribbon" with high-contrast red line alert badges<br>• Home "Pre-Meeting Hub & Taboo Radar" to audit taboos across all contacts |
+| **🌱 Lifecycle Funnel & Stage Progression** | Tracking relationship depth from first acquaintance to core alliance with cohort maturity insights. | • 5 stages: 🌱 Acquaintance ➔ 💬 Connection ➔ 🚀 Collaboration ➔ ⭐ Close Ally ➔ 💤 Dormant<br>• Transition date and memo logs; batch stage progression in roster<br>• Home "Lifecycle Funnel Console" calculating collaboration & ally rates |
+| **⚖️ Reciprocity & Balance Audit** | Ensuring long-term healthy, mutual relationships through bilateral commitment and ledger balance audits. | • Bilateral commitments: track my promises vs. their promises fulfillment rates<br>• Gift & favor ledger: net balance transparency for mutual favors<br>• Dynamic balance scale ratio bar with 0–100 reciprocity index score |
+| **🌐 Network Graph & Hubs Analysis** | Visualizing complex social connections and identifying central hubs and bridge connectors across circles. | • Dual modes: explicit relations graph + native SiYuan document reference graph<br>• 4 layout engines: CoSE, Concentric, Breadthfirst, Circle<br>• Timeline growth slider replaying network evolution over the years<br>• "Network Hubs & Bridge Connectors" modal identifying degree hubs and cross-circle bridges |
+| **📜 Chronicles & Milestone Documents** | Archiving shared history and milestones into lifelong digital records. | • Longitudinal milestones chronicle tracking first acquaintance, stage shifts, and fulfilled promises<br>• 1-click export to native SiYuan document (`/人脉回顾/📜 人脉交往编年史 · Name`) and Markdown<br>• Header "Anniversary Milestones Banner" celebrating N-year milestones with ready-to-use greeting copy<br>• Standard RFC 5545 iCalendar (`.ics`) export for all anniversaries and birthdays |
+| **🎴 Business Card Posters & Riff Flashcards** | Sharable vector business cards and spaced-repetition flashcards for cognitive retention. | • Pure SVG vector business card posters (horizontal 600x380 / vertical 440x600, 3 luxury themes)<br>• 1-click generation of native SiYuan Riff Q&A flashcards for FSRS spaced-repetition review |
+| **👥 Organizations & Family Kinship Tree** | Mapping institutional coordinates and family bonds. | • Institutional rosters and multi-tenure member career history<br>• 5-generation family kinship tree (elders, spouse, siblings, children, relatives) with 1-click document links |
+| **🎪 Group Occasions & Gatherings Hub** | Connecting multi-attendee gatherings to individual dossiers. | • Reverse-chronological timeline of seminars, dinners, weddings, salons, and summits<br>• Metrics on total occasions, cumulative attendees, and linked notes<br>• Attendee avatar ribbons with 1-click "Roster Drilldown" to filter attendee contacts |
+| **🗑️ Roster Soft-Delete Trash Bin** | 30-day safety buffer preventing irreversible accidental deletions. | • Card roster displaying deleted contact name, phone, group, and tags snapshot<br>• Real-time countdown (`N days remaining`, red warning for ≤3 days)<br>• 1-click restoration to database and roster; permanent purge confirmation |
+| **🧹 Advanced Filters, Tidy Drawer & Export** | High-volume contact management and clean local interoperability. | • Multi-dimensional filters (temperature, stage, region, organization, data gaps) with saved views<br>• "Tidy Drawer" recommending groups and inferred tags for unorganized contacts<br>• UTF-8 BOM CSV export and formatted Markdown roster tables<br>• vCard 2.1/3.0/4.0 import & vCard 3.0 export |
+| **🔒 Local-First & Lossless Migration** | True data sovereignty: zero cloud dependency, zero data leaks, full backup. | • 100% stored in local SiYuan workspace, zero telemetry, zero external network requests<br>• Web Lock concurrency protection with double read-after-write verification<br>• Complete 23-module migration bundle (export, preview, current-first merge) |
 
 ---
 
-## This release: v0.6.59 (2026-10-30)
+## This release: v0.7.0 (2026-10-30)
 
 This release delivers the systemic visual overhaul, 23-module lossless data migration bundle, and complete end-to-end usability closeout:
 
@@ -147,13 +147,50 @@ Manual installation from GitHub Releases is currently recommended:
 
 Requires **SiYuan 3.8.5 or later**.
 
-## Quick Start
+## 🚀 Quick Start Guide
 
-1. Click the contacts icon in the top toolbar to follow the setup wizard and create the contacts notebook and database.
-2. Add people, adopt existing notes, import `.vcf` / `.csv`, or paste text for automatic card recognition.
-3. Maintain relationships, organizations, notes, social preferences, and commitments in person details.
-4. Right-click in meeting notes and choose "Contacts: Capture people in this note" to record attendees and shared experiences.
-5. Review birthdays, relationship temperatures, lifecycle funnels, and follow-ups on the home dashboard.
+### 3 Steps to Your First Scenario
+1. **Initialize Workspace**: Click the contacts icon in the top toolbar (or search for `openWorkbench` in the command palette) to follow the 1-second setup wizard and create your dedicated notebook, native Attribute View database, and 9 essential fields.
+2. **Add or Import Contacts**:
+   - *Manual*: Click "New Contact" at the top of the roster to enter a name, phone, WeChat, and birthday.
+   - *Batch Import*: Click "Import vCard" in the toolbar to load a phone `.vcf` export, or right-click selected card text in any note and choose "Contacts: Recognize profile".
+   - *Adopt Notes*: Click "Adopt Notes" to bind existing person documents in your workspace into the database.
+3. **Nurture Connections & Track Temperature**:
+   - Open person details, log interactions on the conversational timeline (or pick from curated scene templates).
+   - Log dietary preferences, bilateral commitments, and anniversary milestones.
+   - Monitor the home dashboard for 🔥 relationship temperatures, 🎂 birthday reminders, and action follow-ups.
+
+### ⌨️ Shortcuts & Gestures
+
+| Action / Scenario | Shortcut / Trigger | Description & Feedback |
+| :--- | :--- | :--- |
+| **Open Workbench** | Command `openWorkbench` / Topbar Icon | Opens the main PRM window, automatically restoring your last active view. |
+| **Capture from Note** | Command `captureFromNote` / Context Menu | Extracts attendees and insights from the current document. |
+| **Close / Back** | `Esc` key | Closes current dialog or drawer with unsaved draft protection. |
+| **Quick Search** | Click search box or press `Tab` | Supports full Pinyin, initials (e.g. `zs` for "张三"), phone, and tags. |
+| **Graph Navigation** | `+` / `-` / `0` / `F` / `R` | `+`/`-` zoom, `0` fit canvas, `F` expand fullscreen, `R` re-layout. |
+| **Mobile Drawer Gesture** | Swipe down (Swipe-to-Dismiss) | Pull down from top of scroll container with damped physics to dismiss drawer. |
+
+### ⚙️ Core Settings & Defaults
+
+| Setting | Section | Default | Impact & Purpose |
+| :--- | :--- | :--- | :--- |
+| **Open on Startup** | General | `Disabled (false)` | Automatically opens the contacts dashboard when SiYuan launches. |
+| **Privacy Shield** | General | `Disabled (false)` | Blurs phone, WeChat, and email by default; click to reveal for 5 seconds. |
+| **Birthday Window (days)** | Reminders | `30 days` | Lookahead window for upcoming Gregorian and Lunar birthdays (0–365). |
+| **Stale Threshold (days)** | Reminders | `30 days` | Threshold after which contacts with no interaction cool down into the radar. |
+| **Reminder Grace (days)** | Reminders | `14 days` | Grace period for newly adopted contacts before flagging as overdue. |
+| **Default Graph Mode** | General | `Relations (relations)` | Chooses between explicit relations graph or native document reference graph. |
+| **Reset Thresholds** | Reminders | `1-click reset` | Restores birthday window, stale threshold, and grace period to 30/30/14. |
+
+### ❓ Frequently Asked Questions (FAQ)
+
+- **Q: Where is my data stored and how do I back it up?**
+  - **A**: All data is stored 100% locally in your SiYuan workspace. To migrate or backup, go to **Settings → Data & Fields → Export Center** and click **Export Migration Bundle (.zip)**. On your new device, click **Import Migration Bundle** to restore all 23 modules losslessly with current-first merge.
+- **Q: Will Lunar New Year's Eve (12/30) birthdays be missed in short years?**
+  - **A**: No. Lv Contacts includes a Chinese calendar dual-track engine that automatically shifts 12/30 to 12/29 when a year only has 29 days in the 12th lunar month, ensuring celebrations are never missed.
+- **Q: Why does the exported CSV open cleanly without mojibake in Excel?**
+  - **A**: All CSV exports include an authentic UTF-8 BOM (`\uFEFF`) signature, allowing Windows Excel and WPS Office to detect the character encoding without garbled text.
 
 ## Data and Privacy
 
