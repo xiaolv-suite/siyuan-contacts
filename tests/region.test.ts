@@ -162,3 +162,30 @@ test("filterPeopleByRegion: 多维地域筛选支持城市、省份与未填写"
     assert.equal(un.length, 1);
     assert.equal(un[0].name, "赵六");
 });
+
+test("extractNormalizedRegion: 配合 focusLabel 城市筛选规则精准下钻", () => {
+    const contacts: Person[] = [
+        createMockPerson({ id: "p1", name: "张三", address: "上海市静安区南京西路" }),
+        createMockPerson({ id: "p2", name: "李四", tags: ["常驻北京"] }),
+        createMockPerson({ id: "p3", name: "王五", tags: ["广东省深圳市"] }),
+        createMockPerson({ id: "p4", name: "赵六" }),
+    ];
+
+    const matchCityFocus = (p: Person, focusLabel: string) => {
+        const isCityFocus = focusLabel.startsWith("城市 · ");
+        const targetCity = isCityFocus ? focusLabel.slice(5).trim().toLowerCase() : "";
+        if (!isCityFocus || !targetCity) return false;
+        const reg = extractNormalizedRegion(p);
+        if (targetCity === "未填写" || targetCity === "未知") {
+            return !reg.city || reg.city === "未知" || reg.city === "未填写";
+        }
+        return (reg.city && reg.city.toLowerCase().includes(targetCity)) ||
+               (reg.province && reg.province.toLowerCase().includes(targetCity));
+    };
+
+    assert.equal(contacts.filter(p => matchCityFocus(p, "城市 · 上海")).length, 1);
+    assert.equal(contacts.filter(p => matchCityFocus(p, "城市 · 北京")).length, 1);
+    assert.equal(contacts.filter(p => matchCityFocus(p, "城市 · 深圳")).length, 1);
+    assert.equal(contacts.filter(p => matchCityFocus(p, "城市 · 广东")).length, 1);
+    assert.equal(contacts.filter(p => matchCityFocus(p, "城市 · 未知")).length, 1);
+});

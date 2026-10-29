@@ -2452,9 +2452,10 @@
     {#if focusLabel}
         {@const isOrgFocus = focusLabel.startsWith("组织 · ")}
         {@const isOccasionFocus = focusLabel.startsWith("群体活动") || focusLabel.includes("Occasion")}
+        {@const isCityFocus = focusLabel.startsWith("城市 · ") || focusLabel.includes("城市")}
         <div class="lvct-people__focusbar">
-            <span>{isOrgFocus ? text("focusFromOrg", "来自组织") : isOccasionFocus ? text("focusFromOccasion", "来自活动") : text("focusFromDashboard", "来自首页")}：{focusLabel}（{filtered.length} 人）</span>
-            <button type="button" onclick={onClearFocus}>{isOrgFocus ? text("focusClearOrg", "清除组织筛选") : isOccasionFocus ? text("focusClearOccasion", "清除活动筛选") : text("focusClearDashboard", "清除首页筛选")}</button>
+            <span>{isOrgFocus ? text("focusFromOrg", "来自组织") : isOccasionFocus ? text("focusFromOccasion", "来自活动") : isCityFocus ? text("focusFromCity", "来自城市") : text("focusFromDashboard", "来自首页")}：{focusLabel}（{filtered.length} 人）</span>
+            <button type="button" onclick={onClearFocus}>{isOrgFocus ? text("focusClearOrg", "清除组织筛选") : isOccasionFocus ? text("focusClearOccasion", "清除活动筛选") : isCityFocus ? text("focusClearCity", "清除城市筛选") : text("focusClearDashboard", "清除首页筛选")}</button>
         </div>
     {/if}
 

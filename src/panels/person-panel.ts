@@ -278,7 +278,15 @@ function buildOrgStrip(
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
         openWorkbench?.call(context.plugin);
-        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "people" } }));
+        window.dispatchEvent(new CustomEvent("lvct-workbench-view", {
+            detail: {
+                view: "people",
+                focus: {
+                    workQuery: org.name,
+                    label: `组织 · ${org.name}`,
+                },
+            },
+        }));
     });
     actions.appendChild(filterMembers);
 
@@ -341,7 +349,14 @@ function buildCityStrip(
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
         openWorkbench?.call(context.plugin);
-        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "people" } }));
+        window.dispatchEvent(new CustomEvent("lvct-workbench-view", {
+            detail: {
+                view: "people",
+                focus: {
+                    label: `城市 · ${cityName}`,
+                },
+            },
+        }));
     });
     actions.appendChild(filterCityPeople);
 

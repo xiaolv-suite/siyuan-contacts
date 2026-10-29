@@ -1665,5 +1665,7 @@
   "factCatFact": "📌 关键事实",
   "captureFactPlaceholder": "记录本文提到的核心观点、独到见解或人物事实…",
   "captureFactHint": "选填。勾选的参与人员文档中将自动追加此条事实（带本文来源链接出处）。",
-  "commonClose": "关闭"
+  "commonClose": "关闭",
+  "focusFromCity": "来自城市",
+  "focusClearCity": "清除城市筛选"
 }

@@ -527,12 +527,19 @@
         lifecycleToken.onDispose(unsubscribePerson);
         const handleRequestedView = (event: Event) => {
             if (!lifecycleToken.isAlive()) return;
-            const detail = (event as CustomEvent<{ view?: string; facade?: ContactsPluginFacade; token?: LifecycleToken }>).detail;
+            const detail = (event as CustomEvent<{
+                view?: string;
+                facade?: ContactsPluginFacade;
+                token?: LifecycleToken;
+                focus?: { itemIds?: readonly string[]; label?: string; sort?: "name" | "group" | "birthday" | "recent"; workQuery?: string; memberDocIds?: readonly string[] };
+            }>).detail;
             if (detail?.facade && detail.facade !== facade) return;
             if (detail?.token && !detail.token.isAlive()) return;
             if (detail?.token && mountToken !== detail.token) return;
             const view = detail?.view;
-            if (view === "home" || view === "people" || view === "graph" || view === "orgs" || view === "settings") {
+            if (view === "people" && detail?.focus) {
+                void openPeople(detail.focus);
+            } else if (view === "home" || view === "people" || view === "graph" || view === "orgs" || view === "settings") {
                 void selectView(view);
             }
         };
