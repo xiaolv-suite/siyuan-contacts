@@ -52,7 +52,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
         /** C03：体检「查看」跳转联系人页（按人物 itemIds 聚焦筛选） */
         onOpenPeople?: (focus: { itemIds?: readonly string[]; memberDocIds?: readonly string[]; label: string }) => void;
     } = $props();
-    const text = $derived.by(() => (key: string, fallback: string) => translateText(i18n, key, fallback));
+    const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) => translateText(i18n, key, fallback, values));
 
     type SectionId = "general" | "data" | "reminder" | "ai" | "bridge" | "about";
 
@@ -1493,7 +1493,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                                     <div>
                                         <b>{entry.name}</b>
                                         {#if entry.snapshot.group} · {entry.snapshot.group}{/if}
-                                        <span class="lvct-chip font-size-10" style="padding: 1px 6px; margin-left: 6px; background: var(--lv-brand-soft); color: var(--lv-brand);">剩余 {daysUntilTrashExpiration(entry)} 天</span>
+                                        <span class="lvct-chip font-size-10" style="padding: 1px 6px; margin-left: 6px; background: var(--lv-brand-soft); color: var(--lv-brand);">{text("trashDaysRemaining", "剩余 {n} 天", { n: daysUntilTrashExpiration(entry) })}</span>
                                     </div>
                                     <div class="ft__smaller ft__on-surface">
                                         {#if entry.snapshot.phone}电话 {entry.snapshot.phone}{/if}
@@ -1504,13 +1504,13 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                                         class="b3-button b3-button--outline"
                                         disabled={trashBusy || trashLoading || !facade.restoreContactFromTrash}
                                         onclick={() => void restoreTrashEntry(entry.id)}
-                                    ><RotateCcw size={12} class="lvct-icon-inline" />恢复联系人</button>
+                                    ><RotateCcw size={12} class="lvct-icon-inline" style="margin-right: 4px;" />{text("restoreContactBtn", "恢复联系人")}</button>
                                 </li>
                             {/each}
                         </ul>
                         <div class="lvct-settings__actions">
                             <button class="b3-button b3-button--cancel" onclick={() => void emptyTrashBin()} disabled={trashBusy || trashLoading || !facade.emptyTrash}>
-                                {trashBusy ? "处理中…" : "清空回收站"}
+                                {trashBusy ? text("emptyingTrash", "处理中…") : text("emptyTrashBtn", "清空回收站")}
                             </button>
                         </div>
                     {/if}
@@ -1810,29 +1810,29 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 
                     <!-- B08：已暂缓的提醒（reminder-dismissals）一键恢复，避免"点过就找不回" -->
                     <div class="lvct-settings__sub-heading">
-                        <b>已暂缓的提醒</b>
+                        <b>{text("settingsDismissedHeading", "已暂缓的提醒")}</b>
                         <button class="b3-button b3-button--outline" onclick={loadDismissedReminders} disabled={dismissalsLoading || dismissalsBusy}>
-                            {dismissalsLoading ? "读取中…" : "刷新列表"}
+                            {dismissalsLoading ? text("commonLoading", "读取中…") : text("refreshList", "刷新列表")}
                         </button>
                     </div>
                     {#if dismissalsError}<div class="lvct-form__error" role="alert">{dismissalsError}</div>{/if}
                     {#if dismissedReminders !== null}
                         {#if dismissedReminders.length === 0}
-                            <p class="lvct-settings__inline-hint" role="status">当前没有暂缓中的提醒。生日「跳过本年」与「不再提醒」会出现在这里。</p>
+                            <p class="lvct-settings__inline-hint" role="status">{text("settingsDismissedEmpty", "当前没有暂缓中的提醒。生日「跳过本年」与「不再提醒」会出现在这里。")}</p>
                         {:else}
                             <ul class="lvct-settings__missing">
                                 {#each dismissedReminders as entry (entry.personDocId + entry.kind)}
                                     <li>
-                                        <div>{entry.kind === "birthday" ? "生日提醒" : "久未联系/从未互动提醒"} · 文档 …{entry.personDocId.slice(-6)}</div>
+                                        <div>{entry.kind === "birthday" ? text("birthdayReminder", "生日提醒") : text("cadenceReminder", "久未联系/从未互动提醒")} · {text("settingsDismissedDocHint", "文档 …{docId}", { docId: entry.personDocId.slice(-6) })}</div>
                                         <div class="ft__smaller ft__on-surface">
-                                            {entry.until === "" ? "长期暂缓（直到手动恢复）" : `暂缓至 ${entry.until}`}
+                                            {entry.until === "" ? text("settingsDismissedPerm", "长期暂缓（直到手动恢复）") : text("settingsDismissedUntil", "暂缓至 {date}", { date: entry.until })}
                                         </div>
                                         <button
                                             type="button"
                                             class="b3-button b3-button--outline"
                                             disabled={dismissalsBusy || dismissalsLoading}
                                             onclick={() => resumeOne(entry.personDocId, entry.kind)}
-                                        >恢复提醒</button>
+                                        >{text("settingsResumeReminderBtn", "恢复提醒")}</button>
                                     </li>
                                 {/each}
                             </ul>
@@ -1843,19 +1843,19 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 
                     <div class="lvct-settings__form-grid">
                         <label class="lvct-form__item">
-                            <span>生日提醒窗口（天）</span>
+                            <span>{text("settingsBirthdayWindowLabel", "生日提醒窗口（天）")}</span>
                             <input class="b3-text-field fn__block" type="number" min="0" max="365" step="1" bind:this={birthdayWindowInput} bind:value={draft.birthdayWindowDays} aria-invalid={Boolean(preferenceDayErrors.birthdayWindowDays)} aria-describedby={preferenceDayErrors.birthdayWindowDays ? "lvct-pref-birthday-window-error" : undefined} oninput={() => clearPreferenceDayError("birthdayWindowDays")} />
                             <small>请输入 0–365 的整数</small>
                             {#if preferenceDayErrors.birthdayWindowDays}<small id="lvct-pref-birthday-window-error" class="lvct-form__error" role="alert">{preferenceDayErrors.birthdayWindowDays}</small>{/if}
                         </label>
                         <label class="lvct-form__item">
-                            <span>久未联系阈值（天）</span>
+                            <span>{text("settingsStaleThresholdLabel", "久未联系阈值（天）")}</span>
                             <input class="b3-text-field fn__block" type="number" min="0" max="365" step="1" bind:this={staleThresholdInput} bind:value={draft.staleThresholdDays} aria-invalid={Boolean(preferenceDayErrors.staleThresholdDays)} aria-describedby={preferenceDayErrors.staleThresholdDays ? "lvct-pref-stale-threshold-error" : undefined} oninput={() => clearPreferenceDayError("staleThresholdDays")} />
                             <small>请输入 0–365 的整数</small>
                             {#if preferenceDayErrors.staleThresholdDays}<small id="lvct-pref-stale-threshold-error" class="lvct-form__error" role="alert">{preferenceDayErrors.staleThresholdDays}</small>{/if}
                         </label>
                         <label class="lvct-form__item">
-                            <span>收编宽限期（天）</span>
+                            <span>{text("settingsReminderGraceLabel", "收编宽限期（天）")}</span>
                             <input class="b3-text-field fn__block" type="number" min="0" max="365" step="1" bind:this={reminderGraceInput} bind:value={draft.reminderGraceDays} aria-invalid={Boolean(preferenceDayErrors.reminderGraceDays)} aria-describedby={preferenceDayErrors.reminderGraceDays ? "lvct-pref-reminder-grace-error" : undefined} oninput={() => clearPreferenceDayError("reminderGraceDays")} />
                             <small>新收编的联系人在此期限内不计入「从未互动」提醒；0 为关闭（C02）</small>
                             {#if preferenceDayErrors.reminderGraceDays}<small id="lvct-pref-reminder-grace-error" class="lvct-form__error" role="alert">{preferenceDayErrors.reminderGraceDays}</small>{/if}
@@ -1863,13 +1863,18 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                     </div>
 
                     <label class="lvct-settings__switch-row">
-                        <div><b>打开工作台时显示关注摘要</b><small>页面内卡片展示生日、久未联系与跟进到期，可设置当日不再展示；不发送宿主通知</small></div>
+                        <div><b>{text("settingsSummarySwitchLabel", "打开工作台时显示关注摘要")}</b><small>{text("settingsSummarySwitchDesc", "页面内卡片展示生日、久未联系与跟进到期，可设置当日不再展示；不发送宿主通知")}</small></div>
                         <span class="lvct-switch"><input type="checkbox" bind:checked={draft.summaryEnabled} /><span class="lvct-switch__track"><span class="lvct-switch__thumb"></span></span></span>
                     </label>
 
                     <div class="lvct-settings__actions">
-                        <button class="b3-button b3-button--outline" onclick={savePreferences} disabled={savingPreferences || !preferencesDirty} title={!preferencesDirty ? "当前没有待保存的偏好修改" : undefined}>
-                            {savingPreferences ? "保存中…" : "保存偏好"}
+                        <button
+                            class="b3-button {preferencesDirty ? 'b3-button--primary' : 'b3-button--outline'}"
+                            onclick={savePreferences}
+                            disabled={savingPreferences || !preferencesDirty}
+                            title={!preferencesDirty ? text("noPendingChangesTip", "当前没有待保存的偏好修改") : text("settingsSavePreferencesDirtyTip", "点击保存对偏好设置的修改")}
+                        >
+                            {savingPreferences ? text("commonSaving", "保存中…") : text("settingsSavePreferencesBtn", "保存偏好")}
                         </button>
                         <StatusNotice message={preferencesMessage} onDismiss={() => (preferencesMessage = "")} />
                     </div>

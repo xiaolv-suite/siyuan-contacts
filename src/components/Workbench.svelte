@@ -661,7 +661,7 @@
                 <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
                     onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
                 <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><Search size={16}/>{text("homeSearchAction", "搜索")}</button>
-                <button type="button" class="b3-button" onclick={() => void requestPeopleAction("create")}><UserPlus size={16}/>新建联系人</button>
+                <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
             </div>{/if}
         </header>
         <StatusNotice message={dataChangeNotice} onDismiss={() => (dataChangeNotice = "")} />

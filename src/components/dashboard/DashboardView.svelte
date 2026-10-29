@@ -1434,9 +1434,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                         <button
                             class="b3-button b3-button--outline lvct-dash__head-action lvct-dash__discover-btn"
                             onclick={() => { discoveryOpen = true; void loadPotentialConnections(); }}
-                            title="智能发现同场活动或同属组织但未建链的潜在人脉"
+                            title={text("dashDiscoverBtnTitle", "智能发现同场活动或同属组织但未建链的潜在人脉")}
                         >
-                            <Sparkles size={13} class="lvct-icon-inline" /> 潜在关联
+                            <Sparkles size={13} class="lvct-icon-inline" /> {text("dashDiscoverBtn", "潜在关联")}
                             {#if potentialConnections.length > 0}
                                 <span class="lvct-chip lvct-chip--tag" style="margin-left: 3px; padding: 0 4px; font-size: 10px;">{potentialConnections.length}</span>
                             {/if}
@@ -1512,7 +1512,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             {/if}
                             {#if selectedGlanceOffset !== null}
                                 <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => (selectedGlanceOffset = null)}>
-                                    查看全部行动
+                                    {text("dashViewAllActions", "查看全部行动")}
                                 </button>
                             {/if}
                         </div>
@@ -1528,7 +1528,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 onclick={() => {
                                     selectedGlanceOffset = selectedGlanceOffset === day.offset ? null : day.offset;
                                 }}
-                                title={`${day.dayName} (${day.dateKey})：${day.birthdays.length} 个生日，${day.followUps.length} 条待办`}
+                                title={text("dashDayGlanceTip", "{day} ({date})：{b} 个生日，{f} 条待办", { day: day.dayName, date: day.dateKey, b: day.birthdays.length, f: day.followUps.length })}
                             >
                                 <span class="lvct-week-glance__day">{day.dayName}</span>
                                 <span class="lvct-week-glance__num">{day.dayNum}</span>
@@ -1543,9 +1543,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                     {#if selectedGlanceDay}
                         <div class="lvct-week-glance__focus-bar fn__flex" style="flex-wrap: wrap; align-items: center; gap: 6px;">
                             <span class="lvct-week-glance__focus-label">
-                                <b>{selectedGlanceDay.dayName}（{selectedGlanceDay.dateKey}）安排：</b>
+                                <b>{text("dashDayScheduleTitle", "{day}（{date}）安排：", { day: selectedGlanceDay.dayName, date: selectedGlanceDay.dateKey })}</b>
                                 {#if selectedGlanceDay.totalEvents === 0}
-                                    当天暂无生日或待办事项
+                                    {text("dashDayScheduleEmpty", "当天暂无生日或待办事项")}
                                 {/if}
                             </span>
                             {#if selectedGlanceDay.totalEvents > 0}
@@ -1554,7 +1554,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                         type="button"
                                         class="b3-button b3-button--text b3-button--small"
                                         style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; background: var(--lv-heat-cool-soft); color: var(--lv-heat-cool); display: inline-flex; align-items: center;"
-                                        title={`查看 ${b.person.name} 详情`}
+                                        title={text("viewPersonDetailTip", "查看 {name} 详情", { name: b.person.name })}
                                         onclick={() => onOpenDetail(b.person)}
                                     ><Cake size={11} class="lvct-icon-inline" /> {b.person.name}</button>
                                 {/each}
@@ -1563,7 +1563,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                         type="button"
                                         class="b3-button b3-button--text b3-button--small"
                                         style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; background: var(--lv-brand-soft); color: var(--lv-brand); display: inline-flex; align-items: center;"
-                                        title={f.person ? `查看 ${f.person.name} 详情` : f.item.title || "跟进"}
+                                        title={f.person ? text("viewPersonDetailTip", "查看 {name} 详情", { name: f.person.name }) : f.item.title || "跟进"}
                                         onclick={() => { if (f.person) onOpenDetail(f.person); }}
                                     ><Pin size={11} class="lvct-icon-inline" /> {f.item.title || "保持联系"}{f.person ? `（${f.person.name}）` : ""}</button>
                                 {/each}
@@ -1572,7 +1572,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                     {/if}
                     {#if digestDocInfo}
                         <div class="lvct-week-glance__digest-notice fn__flex" style="align-items: center; justify-content: space-between; margin-top: 8px; padding: 6px 12px; background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)); border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent); border-radius: 6px; font-size: 12px;">
-                            <span style="color: var(--b3-theme-on-surface);">📄 <b>{digestDocInfo.weekLabel} 人脉周报</b> 已生成至 <code>{digestDocInfo.hpath}</code></span>
+                            <span style="color: var(--b3-theme-on-surface);">{text("dashDigestNotice", "📄 {week} 人脉周报 已生成至 {hpath}", { week: digestDocInfo.weekLabel, hpath: digestDocInfo.hpath })}</span>
                             <div class="fn__flex" style="gap: 6px;">
                                 <button
                                     type="button"
@@ -1582,14 +1582,14 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                         facade.openPersonDoc?.(digestDocInfo!.docId);
                                     }}
                                 >
-                                    在主编辑器打开 ↗
+                                    {text("detailOpenInMainEditor", "在主编辑器打开 ↗")}
                                 </button>
                                 <button
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small"
                                     style="padding: 0 4px; font-size: 11px;"
                                     onclick={() => (digestDocInfo = null)}
-                                    title="关闭提示"
+                                    title={text("detailCloseNotice", "关闭提示")}
                                 >
                                     ✕
                                 </button>
@@ -1637,7 +1637,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 type="button"
                                 id={`lvct-dash-action-menu-btn-${card.person.docId}`}
                                 class="b3-button b3-button--outline lvct-dash__quick-button lvct-dash__quick-button--more"
-                                aria-label={`更多处置：${card.person.name}`}
+                                aria-label={text("dashMoreActionsAria", "更多处置：{name}", { name: card.person.name })}
                                 aria-expanded={rowMenuKey === `action:${card.person.docId}`}
                                 aria-controls={rowMenuKey === `action:${card.person.docId}` ? `lvct-dash-action-menu-${card.person.docId}` : undefined}
                                 data-row-menu-trigger="true"
@@ -1647,35 +1647,35 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                         {#if rowMenuKey === `action:${card.person.docId}`}
                             <div id={`lvct-dash-action-menu-${card.person.docId}`} class="lvct-dash__quick-form lvct-dash__rowmenu" role="group" aria-labelledby={`lvct-dash-action-menu-btn-${card.person.docId}`}>
                                 {#if isNeverCard(card)}
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissNeverToday(card.person))}>今天先跳过</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissNeverToday(card.person))}>{text("dashSkipToday", "今天先跳过")}</button>
                                 {:else if card.bucket === "stale"}
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(card.person, 3))}>顺延 3 天</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(card.person, 7))}>顺延 1 周</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(card.person, 30))}>顺延 1 个月</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(card.person, 3))}>{text("dashSnooze3Days", "顺延 3 天")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(card.person, 7))}>{text("dashSnooze1Week", "顺延 1 周")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(card.person, 30))}>{text("dashSnooze1Month", "顺延 1 个月")}</button>
                                 {:else if card.reasons.some((reason) => reason.kind === "birthday")}
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(card.person))}>今天不再提醒</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>未来 7 天不再提醒</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthday(card.person))}>跳过本年</button>
-                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>不再提醒</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(card.person))}>{text("dashDismissTodayRow", "今天不再提醒")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>{text("dashDismiss7Days", "未来 7 天不再提醒")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthday(card.person))}>{text("dashSkipThisYear", "跳过本年")}</button>
+                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>{text("dashDismissForever", "不再提醒")}</button>
                                 {:else if card.reasons.some((reason) => reason.kind === "followup")}
                                     {@const fuReason = card.reasons.find((r) => r.kind === "followup" && r.followUpId)}
                                     {#if fuReason?.followUpId}
                                         {@const fuTitle = fuReason.label || card.person.name}
-                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "threeDays", "3天后", fuTitle, toLocalToday()))}>顺延 3 天</button>
-                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "nextMonday", "下周一", fuTitle, toLocalToday()))}>顺延 1 周</button>
-                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "nextMonth", "1个月后", fuTitle, toLocalToday()))}>顺延 1 个月</button>
-                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => completeFollowUp(fuReason.followUpId!, fuTitle))}>完成跟进（不再提醒）</button>
-                                        <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => skipFollowUp(fuReason.followUpId!, fuTitle))}>取消计划（不再提醒）</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "threeDays", "3天后", fuTitle, toLocalToday()))}>{text("dashSnooze3Days", "顺延 3 天")}</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "nextMonday", "下周一", fuTitle, toLocalToday()))}>{text("dashSnooze1Week", "顺延 1 周")}</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeFollowUp(fuReason.followUpId!, "nextMonth", "1个月后", fuTitle, toLocalToday()))}>{text("dashSnooze1Month", "顺延 1 个月")}</button>
+                                        <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => completeFollowUp(fuReason.followUpId!, fuTitle))}>{text("dashCompleteFollowUpNoRemind", "完成跟进（不再提醒）")}</button>
+                                        <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => skipFollowUp(fuReason.followUpId!, fuTitle))}>{text("dashSkipFollowUpNoRemind", "取消计划（不再提醒）")}</button>
                                     {/if}
                                 {:else if card.reasons.some((reason) => reason.kind === "anniversary")}
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(card.person))}>今天不再提醒</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>未来 7 天不再提醒</button>
-                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>不再提醒</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(card.person))}>{text("dashDismissTodayRow", "今天不再提醒")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(card.person))}>{text("dashDismiss7Days", "未来 7 天不再提醒")}</button>
+                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(card.person))}>{text("dashDismissForever", "不再提醒")}</button>
                                 {/if}
-                                <button class="b3-button b3-button--primary" disabled={alBusy} onclick={() => onOpenDetail(card.person, "activity")}>记一笔互动</button>
-                                <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => createFollowUpFor(card.person))}>建跟进（联系一下）</button>
+                                <button class="b3-button b3-button--primary" disabled={alBusy} onclick={() => onOpenDetail(card.person, "activity")}>{text("dashRecordInteractionRow", "记一笔互动")}</button>
+                                <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => createFollowUpFor(card.person))}>{text("dashCreateFollowUpRow", "建跟进（联系一下）")}</button>
                                 {#if card.bucket === "stale"}
-                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissStaleReminder(card.person))}>不再提醒</button>
+                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissStaleReminder(card.person))}>{text("dashDismissForever", "不再提醒")}</button>
                                 {/if}
                             </div>
                         {/if}
@@ -1700,13 +1700,13 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             {#if group.key === "never" && !isGroupCollapsed(group)}
                                 <div class="lvct-dash__settle">
                                     <button class="b3-button b3-button--outline lvct-dash__quick-button" disabled={alBusy} onclick={settleNeverGroup}>
-                                        全部顺延 30 天
+                                        {text("dashSettleAllNever30", "全部顺延 30 天")}
                                     </button>
                                     {#if settleRetry}
-                                        <button class="b3-button b3-button--text lvct-dash__quick-button" disabled={alBusy} onclick={retrySettle}>重试失败项（{settleRetry.cards.length}）</button>
+                                        <button class="b3-button b3-button--text lvct-dash__quick-button" disabled={alBusy} onclick={retrySettle}>{text("dashRetryFailedSettle", "重试失败项（{n}）", { n: settleRetry.cards.length })}</button>
                                     {/if}
                                     {#if settleUndo}
-                                        <button class="b3-button b3-button--text lvct-dash__quick-button" disabled={alBusy} onclick={undoSettle}>撤销</button>
+                                        <button class="b3-button b3-button--text lvct-dash__quick-button" disabled={alBusy} onclick={undoSettle}>{text("dashSettleUndo", "撤销")}</button>
                                     {/if}
                                 </div>
                             {/if}
@@ -1745,12 +1745,12 @@ import { copyPlainText } from "../../shared/clipboard.ts";
 
         <div class="lvct-dash__grid">
             <div class="lvct-home__card">
-                <h3>近期生日</h3>
+                <h3>{text("dashUpcomingBirthdays", "近期生日")}</h3>
                 {#if data.ordinaryScopeUnknown}
                     <ViewState compact title={text("dashSelfUnverifiedTitle", "提醒范围尚未核实")} description={text("dashSelfUnverifiedDesc", "核实本人身份后可恢复统计和提醒；原始记录保留。")} />
                 {:else if data.birthdays.length === 0}
-                    <ViewState compact icon="birthday" title="提醒窗口内没有生日" description="可以到联系人档案补充生日，或在设置中调整提醒天数。">
-                        <button class="b3-button b3-button--outline" onclick={() => onOpenPeople()}>查看联系人</button>
+                    <ViewState compact icon="birthday" title={text("dashNoBirthdaysTitle", "提醒窗口内没有生日")} description={text("dashNoBirthdaysDesc", "可以到联系人档案补充生日，或在设置中调整提醒天数。")}>
+                        <button class="b3-button b3-button--outline" onclick={() => onOpenPeople()}>{text("dashBrowsePeople", "查看联系人")}</button>
                     </ViewState>
                 {:else}
                     <div id="lvct-dash-birthdays-list" class="lvct-dash__list">
@@ -1785,14 +1785,14 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 <button
                                     type="button"
                                     class="b3-button b3-button--text lvct-dash__quick-button"
-                                    title={`跳过 ${item.person.name} 本年生日提醒`}
+                                    title={text("dashSkipBirthdayThisYearTip", "跳过 {name} 本年生日提醒", { name: item.person.name })}
                                     onclick={(event) => { event.stopPropagation(); runRowAction(() => dismissBirthday(item.person)); }}
-                                >跳过本年</button>
+                                >{text("dashSkipThisYear", "跳过本年")}</button>
                                 <button
                                     type="button"
                                     id={`lvct-dash-birthday-menu-btn-${item.person.docId}`}
                                     class="b3-button b3-button--outline lvct-dash__quick-button lvct-dash__quick-button--more"
-                                    aria-label={`更多生日处置：${item.person.name}`}
+                                    aria-label={text("dashMoreBirthdaysAria", "更多生日处置：{name}", { name: item.person.name })}
                                     aria-expanded={rowMenuKey === `birthday:${item.person.docId}`}
                                     aria-controls={rowMenuKey === `birthday:${item.person.docId}` ? `lvct-dash-birthday-menu-${item.person.docId}` : undefined}
                                     data-row-menu-trigger="true"
@@ -1801,9 +1801,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             </div>
                             {#if rowMenuKey === `birthday:${item.person.docId}`}
                                 <div id={`lvct-dash-birthday-menu-${item.person.docId}`} class="lvct-dash__quick-form lvct-dash__rowmenu" role="group" aria-labelledby={`lvct-dash-birthday-menu-btn-${item.person.docId}`}>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(item.person))}>今天不再提醒</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(item.person))}>未来 7 天不再提醒</button>
-                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(item.person))}>不再提醒</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayToday(item.person))}>{text("dashDismissTodayRow", "今天不再提醒")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayWeek(item.person))}>{text("dashDismiss7Days", "未来 7 天不再提醒")}</button>
+                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissBirthdayForever(item.person))}>{text("dashDismissForever", "不再提醒")}</button>
                                 </div>
                             {/if}
                         {/each}
@@ -1866,7 +1866,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     type="button"
                                     id={`lvct-dash-stale-menu-btn-${item.person.docId}`}
                                     class="b3-button b3-button--outline lvct-dash__quick-button lvct-dash__quick-button--more"
-                                    aria-label={`更多久未联系处置：${item.person.name}`}
+                                    aria-label={text("dashMoreStaleAria", "更多久未联系处置：{name}", { name: item.person.name })}
                                     aria-expanded={rowMenuKey === `stale:${item.person.docId}`}
                                     aria-controls={rowMenuKey === `stale:${item.person.docId}` ? `lvct-dash-stale-menu-${item.person.docId}` : undefined}
                                     data-row-menu-trigger="true"
@@ -1875,10 +1875,10 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             </div>
                             {#if rowMenuKey === `stale:${item.person.docId}`}
                                 <div id={`lvct-dash-stale-menu-${item.person.docId}`} class="lvct-dash__quick-form lvct-dash__rowmenu" role="group" aria-labelledby={`lvct-dash-stale-menu-btn-${item.person.docId}`}>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(item.person, 3))}>顺延 3 天</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(item.person, 7))}>顺延 1 周</button>
-                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(item.person, 30))}>顺延 1 个月</button>
-                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissStaleReminder(item.person))}>不再提醒</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(item.person, 3))}>{text("dashSnooze3Days", "顺延 3 天")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(item.person, 7))}>{text("dashSnooze1Week", "顺延 1 周")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={alBusy} onclick={() => runRowAction(() => snoozeStale(item.person, 30))}>{text("dashSnooze1Month", "顺延 1 个月")}</button>
+                                    <button class="b3-button b3-button--cancel" disabled={alBusy} onclick={() => runRowAction(() => dismissStaleReminder(item.person))}>{text("dashDismissForever", "不再提醒")}</button>
                                 </div>
                             {/if}
                         {/each}
@@ -2018,19 +2018,19 @@ import { copyPlainText } from "../../shared/clipboard.ts";
 {/if}
 
 {#if discoveryOpen}
-    <LvctDialog title="✨ 潜在人脉关联发现与智能建链" wide onClose={() => (discoveryOpen = false)}>
+    <LvctDialog title={text("dashDiscoveryDialogTitle", "✨ 潜在人脉关联发现与智能建链")} wide onClose={() => (discoveryOpen = false)}>
         <div class="lvct-discovery-panel">
             <p class="ft__smaller ft__on-surface" style="margin-top: 0;">
-                基于同场活动与共同从属机构的图算法智能挖掘。发现未登记为正式双向关系的好友，支持一键在双方文档追加双链并建立正式关联。
+                {text("dashDiscoveryDesc", "基于同场活动与共同从属机构的图算法智能挖掘。发现未登记为正式双向关系的好友，支持一键在双方文档追加双链并建立正式关联。")}
             </p>
 
             {#if discoveryLoading}
                 <div style="padding: 24px; text-align: center;" class="ft__smaller ft__on-surface">
-                    正在智能挖掘知识库共现事实…
+                    {text("dashDiscoveryLoading", "正在智能挖掘知识库共现事实…")}
                 </div>
             {:else if potentialConnections.length === 0}
                 <div style="padding: 24px; text-align: center;" class="ft__smaller ft__on-surface">
-                    🎉 太棒了！当前没有发现频繁同场却未建链的潜在人物，人脉网络连接紧密。
+                    {text("dashDiscoveryEmpty", "🎉 太棒了！当前没有发现频繁同场却未建链的潜在人物，人脉网络连接紧密。")}
                 </div>
             {:else}
                 <div class="lvct-discovery-list">
@@ -2041,7 +2041,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     type="button"
                                     class="b3-button b3-button--text lvct-discovery-person-btn"
                                     onclick={() => onOpenDetail(pair.personA)}
-                                    title={`查看 ${pair.personA.name} 详情`}
+                                    title={text("viewPersonDetailTip", "查看 {name} 详情", { name: pair.personA.name })}
                                 >
                                     <div class="lvct-discovery-avatar">{pair.personA.name.slice(0, 1)}</div>
                                     <b>{pair.personA.name}</b>
@@ -2051,7 +2051,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     type="button"
                                     class="b3-button b3-button--text lvct-discovery-person-btn"
                                     onclick={() => onOpenDetail(pair.personB)}
-                                    title={`查看 ${pair.personB.name} 详情`}
+                                    title={text("viewPersonDetailTip", "查看 {name} 详情", { name: pair.personB.name })}
                                 >
                                     <div class="lvct-discovery-avatar">{pair.personB.name.slice(0, 1)}</div>
                                     <b>{pair.personB.name}</b>
@@ -2068,10 +2068,10 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     class="b3-button b3-button--outline b3-button--small"
                                     onclick={() => {
                                         discoveryOpen = false;
-                                        onOpenPeople({ itemIds: [pair.personA.itemId, pair.personB.itemId], label: `潜在关联 · ${pair.personA.name} 与 ${pair.personB.name}` });
+                                        onOpenPeople({ itemIds: [pair.personA.itemId, pair.personB.itemId], label: text("dashPotentialConnectionLabel", "潜在关联 · {nameA} 与 {nameB}", { nameA: pair.personA.name, nameB: pair.personB.name }) });
                                     }}
-                                    title="在名册中筛选并对比这两人"
-                                >名册定位</button>
+                                    title={text("dashRosterCompareTip", "在名册中筛选并对比这两人")}
+                                >{text("dashRosterCompareBtn", "名册定位")}</button>
                                 <button
                                     type="button"
                                     class="b3-button b3-button--primary"
@@ -2079,7 +2079,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     disabled={Boolean(establishingKey)}
                                     onclick={() => handleEstablishConnection(pair)}
                                 >
-                                    {#if establishingKey === pair.id}建链中…{:else}一键正式建链{/if}
+                                    {#if establishingKey === pair.id}{text("establishingConnection", "建链中…")}{:else}{text("establishConnectionBtn", "一键正式建链")}{/if}
                                 </button>
                             </div>
                         </div>
