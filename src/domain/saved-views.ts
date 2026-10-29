@@ -48,7 +48,7 @@ function isTagMatchMode(value: unknown): value is TagMatchMode {
 }
 
 function isPeopleSortMode(value: unknown): value is PeopleSortMode {
-    return value === "name" || value === "group" || value === "birthday" || value === "recent";
+    return value === "name" || value === "group" || value === "birthday" || value === "recent" || value === "frequency" || value === "created";
 }
 
 function normalizeQuery(raw: unknown): SavedViewQuery | null {

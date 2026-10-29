@@ -10,7 +10,7 @@ export const BRAND_AVATAR_IMAGE_MAX_LENGTH = 1_500_000;
 const BRAND_AVATAR_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 export type DefaultView = "home" | "people" | "graph" | "orgs";
-export type PeopleSortMode = "name" | "group" | "birthday" | "recent";
+export type PeopleSortMode = "name" | "group" | "birthday" | "recent" | "frequency" | "created";
 /** 联系人默认形态（F02）：卡片 / 表格 */
 export type PeopleViewMode = "card" | "table";
 /** 表格可选列（F02）。「姓名」是固定列，不参与显隐与排序，恒为首列。
@@ -205,7 +205,7 @@ function isDefaultView(value: unknown): value is DefaultView {
 }
 
 function isPeopleSortMode(value: unknown): value is PeopleSortMode {
-    return value === "name" || value === "group" || value === "birthday" || value === "recent";
+    return value === "name" || value === "group" || value === "birthday" || value === "recent" || value === "frequency" || value === "created";
 }
 
 function isPeopleViewMode(value: unknown): value is PeopleViewMode {

@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.56** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.56) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.57** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.57) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -45,19 +45,23 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.6.56 (2026-10-29)
+## This release: v0.6.57 (2026-10-29)
 
-This release implements Batch Tidy & Smart Categorization Drawer in the contact roster:
+This release implements Social Interaction Depth & Intensity Sort Modes in the contact roster and an Anniversaries & Milestones Hub on the home dashboard:
 
-- **Unorganized Contacts Detection & Inference Engine (`domain/unorganized-tidy.ts`)**: Pure functions automatically identifying contacts missing groups, tags, or resident cities; leverages work history keywords and existing group definitions to deduce suggested groups (`suggestedGroup`) and persona tags (`suggestedTags`), generating structured tidy plans (`TidyPlanItem`).
-- **Roster Tidy Drawer with 1-Click Batch Adoption (`TidyDrawer.svelte` & `PeopleView.svelte`)**: Integrated "Tidy Unorganized" button in the roster toolbar with dynamic count badge; presents cards with recommendations, supporting individual adoption and "⚡ Batch Adopt All Suggestions" with atomic write to Attribute View database cells.
+- **Multi-Dimensional Roster Sort Modes (`PeopleSortMode` & `PeopleView.svelte`)**: Added "By Interaction Depth" (`frequency`) and "By Date Added" (`created`) sort modes; upgraded `loadRecentInteractions` to track total interaction count (`count`) per person; renders interaction counts and relationship temperature badges directly in roster cards.
+- **Anniversaries & Milestones Hub Console (`AnniversariesHubDialog.svelte` & `DashboardView.svelte`)**: Consolidated console for acquaintance anniversaries (🤝), wedding anniversaries (💍), work/partnership milestones (💼), and special memorials (🎗️); supports 90-day/monthly/weekly/today temporal filters and category filters; generates thoughtful personalized congratulatory greetings with 1-click clipboard copy; supports batch export of all upcoming milestones to standard RFC 5545 iCalendar (`.ics`) calendar files.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1027/1027 PASS); 3-tier browser UI regressions passing (526/526); production build and release checks passed.
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1029/1029 PASS); 3-tier browser UI regressions passing (527/527); production build and release checks passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.6.55 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.6.56 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.6.56 · 2026-10-29
+- Unorganized contacts detection & inference engine (`domain/unorganized-tidy.ts`) deducing suggested groups and tags.
+- Roster tidy drawer with 1-click batch adoption (`TidyDrawer.svelte` & `PeopleView.svelte`).
 
 ### v0.6.55 · 2026-10-29
 - RFC 4180 CSV export with UTF-8 BOM (`exportContactsToCsv`) and Markdown table generator (`exportContactsToMarkdownTable`).

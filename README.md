@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.6.56** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.56) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.6.57** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.57) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -45,19 +45,28 @@
 
 ---
 
-## 最新版本（v0.6.56 · 2026-10-29）
+## 最新版本（v0.6.57 · 2026-10-29）
 
-本版本推出联系人名册「待安顿联系人智能推荐与批量归纳整理抽屉」（Batch Tidy & Smart Categorization Drawer）：
+本版本重磅推出联系人名册「交往深度多维排序与交往密度热点排行」及首页仪表盘「相识相聚重要周年纪念日与里程碑大盘中枢」：
+
+- **名册交往深度多维排序（`PeopleSortMode` & `PeopleView.svelte`）**：排序方式新增「按交往密度」（`frequency`）与「按最新录入」（`created`）；`loadRecentInteractions` 升级累计各人脉总互动次数 `count`；名册与卡片直观呈现互动频次标徽与关系温度；支持按交往频次降序快速发现核心挚友，按录入时间倒序追踪最新结识人脉。
+- **首页近期周年纪念日与里程碑大盘（`AnniversariesHubDialog.svelte` & `DashboardView.svelte`）**：首页集成「近期纪念日」中枢；涵盖相识周年（🤝）、结婚纪念（💍）、入职合作（💼）与特别纪念（🎗️）；支持 90天/本月/本周/今日四维时序筛选与分类筛选；智能生成温润个性化祝贺寄语并支持一键复制；支持一键将全量周年纪念日批量导出为标准 RFC 5545 iCalendar（`.ics`）文件导入系统日历。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 1029/1029 100% 通过；三套浏览器 UI 回归全绿（527/527）；`pnpm build` 与 `pnpm check:release` 均通过。
+
+---
+
+<details>
+<summary><b>📜 历史版本更新记录（v0.6.56 ~ v0.5.2 点击展开）</b></summary>
+
+### v0.6.56 · 2026-10-29
+
+重塑：联系人名册「待安顿联系人智能推荐与批量归纳整理抽屉」（Batch Tidy & Smart Categorization Drawer）
 
 - **待安顿无序联系人挖掘与推断引擎（`domain/unorganized-tidy.ts`）**：纯函数识别全库缺少分组、无标签或常驻城市未知的人脉；结合人物组织职位经历与现有分组库，智能推断建议分组（`suggestedGroup`）与推荐画像标签（`suggestedTags`），生成结构化整理计划（`TidyPlanItem`）。
 - **名册待安顿抽屉与一键采纳批量保存闭环（`TidyDrawer.svelte` & `PeopleView.svelte`）**：在名册操作区集成「待安顿整理」入口（带动态数量标徽）；抽屉清晰列出待安顿条目与推荐卡，支持单个点选采纳与「⚡ 一键采纳全部推荐」，一键批量落盘更新至 Attribute View 数据库单元格。
 
 验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 1027/1027 100% 通过；三套浏览器 UI 回归全绿（526/526）；`pnpm build` 与 `pnpm check:release` 均通过。
-
----
-
-<details>
-<summary><b>📜 历史版本更新记录（v0.6.55 ~ v0.5.2 点击展开）</b></summary>
 
 ### v0.6.55 · 2026-10-29
 

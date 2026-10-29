@@ -10997,6 +10997,163 @@ await test("D-22 联系人详情页：协作项目状态流转与进度指示（
     fixture.remove();
 });
 
+await test("F-20 首页仪表盘：相识相聚重要周年纪念日与里程碑大盘（AnniversariesHubDialog）速查、祝贺语复制与日历导出闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let listUpcomingCalled = false;
+
+    const mockPeople = [
+        {
+            docId: "doc-anniv-1",
+            itemId: "item-anniv-1",
+            name: "林总",
+            phone: "13911112222",
+            email: "lin@example.com",
+            wechat: "lin_wx",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "重要合伙人",
+            tags: ["科技投资"],
+            relatedItemIds: [],
+        },
+        {
+            docId: "doc-anniv-2",
+            itemId: "item-anniv-2",
+            name: "赵老师",
+            phone: "13933334444",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "学术智库",
+            tags: ["AI导师"],
+            relatedItemIds: [],
+        },
+    ];
+
+    const mockProjections = [
+        {
+            item: {
+                id: "ann-item-1",
+                personDocId: "doc-anniv-1",
+                title: "相识纪念日",
+                category: "acquaintance",
+                date: "2023-10-29",
+                isLunar: false,
+                remindDisabled: false,
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+            nextDate: new Date(),
+            daysUntil: 0,
+            yearsCount: 3,
+            displayDate: "10月29日",
+        },
+        {
+            item: {
+                id: "ann-item-2",
+                personDocId: "doc-anniv-2",
+                title: "合作破冰签约",
+                category: "work",
+                date: "2021-11-05",
+                isLunar: false,
+                remindDisabled: false,
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+            nextDate: new Date(Date.now() + 7 * 86400000),
+            daysUntil: 7,
+            yearsCount: 5,
+            displayDate: "11月05日",
+        },
+    ];
+
+    const testDashboardData = {
+        people: 2,
+        relations: 1,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+        allPeople: mockPeople,
+        heatDistribution: {
+            hot: { count: 1, percentage: 50, itemIds: ["item-anniv-1"] },
+            warm: { count: 1, percentage: 50, itemIds: ["item-anniv-2"] },
+            cool: { count: 0, percentage: 0, itemIds: [] },
+            cold: { count: 0, percentage: 0, itemIds: [] },
+            paused: { count: 0, percentage: 0, itemIds: [] },
+            unknown: { count: 0, percentage: 0, itemIds: [] },
+            total: 2,
+        },
+    };
+
+    const facade = {
+        settings,
+        viewPreferences: DEFAULT_VIEW_PREFERENCES,
+        loadDashboard: async () => testDashboardData,
+        loadReminderDismissals: async () => [],
+        listUpcomingAnniversaries: async () => {
+            listUpcomingCalled = true;
+            return mockProjections;
+        },
+        openPersonDoc() {},
+    };
+
+    mount(DashboardView, {
+        target: fixture,
+        props: {
+            facade,
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            onOpenPeople() {},
+            onOpenDetail() {},
+        },
+    });
+
+    // 验证首页「近期纪念日」按钮
+    await until(() => fixture.textContent.includes("近期纪念日"), "未找到近期纪念日按钮");
+    const annivBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("近期纪念日"));
+    assert(annivBtn, "未找到近期纪念日按钮元素");
+    annivBtn.click();
+
+    // 验证弹窗打开与大盘卡片渲染
+    await until(() => fixture.querySelector(".lvct-anniv-hub"), "未打开近期纪念日与里程碑大盘弹窗");
+    assert(listUpcomingCalled, "未调用 listUpcomingAnniversaries");
+    assert(fixture.textContent.includes("近期纪念日总数"), "未渲染近期纪念日总数指标卡");
+    assert(fixture.textContent.includes("今日正值纪念日"), "未渲染今日正值纪念日指标卡");
+    assert(fixture.textContent.includes("林总"), "未渲染林总纪念日卡片");
+    assert(fixture.textContent.includes("满 3 周年纪念"), "未渲染满 3 周年纪念徽章");
+    assert(fixture.textContent.includes("赵老师"), "未渲染赵老师纪念日卡片");
+    assert(fixture.textContent.includes("满 5 周年纪念"), "未渲染满 5 周年纪念徽章");
+
+    // 验证祝贺语预览
+    assert(fixture.textContent.includes("相识3载"), "未生成林总相识3载个性化祝贺寄语");
+
+    // 测试复制寄语操作
+    const copyBtn = fixture.querySelector(".anniv-card-actions button");
+    assert(copyBtn, "未找到复制寄语按钮");
+    copyBtn.click();
+    await until(() => copyBtn.textContent.includes("已复制"), "点击复制后未切换为已复制反馈状态");
+
+    // 测试窗口筛选胶囊「今天」
+    const todayFilterBtn = Array.from(fixture.querySelectorAll(".filter-pill")).find((b) => b.textContent.includes("今天"));
+    assert(todayFilterBtn, "未找到今天筛选胶囊");
+    todayFilterBtn.click();
+
+    await until(() => fixture.querySelectorAll(".anniv-card").length === 1, "筛选今天后卡片数量不为 1");
+    assert(fixture.textContent.includes("林总"), "筛选今天后未包含林总");
+
+    fixture.remove();
+});
+
 await pause(100);
 results.push({ name: "无未处理异常及响应式循环", ok: runtimeErrors.length === 0, detail: runtimeErrors.join("\n") });
 document.querySelector("#results").textContent = JSON.stringify(results, null, 2);

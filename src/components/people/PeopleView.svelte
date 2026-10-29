@@ -13,7 +13,7 @@
     import type { WritableContactField } from "../../domain/contact-write.ts";
     import type { ContactsSettings } from "../../domain/model";
     import { DEFAULT_VIEW_PREFERENCES, normalizeTableColumns, normalizeViewPreferences, PEOPLE_TABLE_COLUMNS, isPersonStarred, togglePersonStarred } from "../../domain/preferences";
-    import type { PeopleTableColumn, ViewPreferences } from "../../domain/preferences";
+    import type { PeopleSortMode, PeopleTableColumn, ViewPreferences } from "../../domain/preferences";
     import { applyPeopleFilters, EMPTY_PEOPLE_FILTER, isExtraFilterActive, matchTags } from "../../domain/people-filters";
     import type { PeopleFilterState } from "../../domain/people-filters";
     import { DUPLICATE_PAIRS_LIMIT, findDuplicatePairs } from "../../domain/duplicate-check";
@@ -95,9 +95,9 @@
         settings: ContactsSettings;
         i18n?: Readonly<Record<string, string>>;
         preferences: ViewPreferences;
-        loadRecentInteractions: () => Promise<Record<string, { occurredAt: number; localDate: string }>>;
+        loadRecentInteractions: () => Promise<Record<string, { occurredAt: number; localDate: string; count?: number }>>;
         revision: number;
-        initialSort: "name" | "group" | "birthday" | "recent";
+        initialSort: PeopleSortMode;
         focusIds?: readonly string[];
         focusLabel?: string;
         externalSearch?: string;
@@ -304,8 +304,8 @@
     const duplicatePairs: DuplicatePair[] = $derived(findDuplicatePairs(people));
     const duplicatePairsCapped = $derived(duplicatePairs.length >= DUPLICATE_PAIRS_LIMIT);
     // svelte-ignore state_referenced_locally
-    let sortMode: "name" | "group" | "birthday" | "recent" = $state(initialSort);
-    let recent: Record<string, { occurredAt: number; localDate: string }> = $state({});
+    let sortMode: PeopleSortMode = $state(initialSort);
+    let recent: Record<string, { occurredAt: number; localDate: string; count?: number }> = $state({});
     let recentGeneration = 0;
     let recentError = $state("");
     let recentState = $state<"loading" | "ready" | "error">("loading");
@@ -350,7 +350,7 @@
     });
 
     // svelte-ignore state_referenced_locally
-    let appliedInitialSort = $state(initialSort);
+    let appliedInitialSort: PeopleSortMode = $state(initialSort);
     // 设置页修改“联系人默认排序”后，已打开的联系人页也应立即跟随。
     // 已应用的保存视图或首页深链排序拥有更具体的意图，保留它们直到用户清除。
     $effect(() => {
@@ -703,7 +703,7 @@
             ? { ...extraFilter, recentFrom: "", recentTo: "", neverContacted: false }
             : extraFilter;
         const final = applyPeopleFilters(result, recentState !== "ready" ? {} : recent, recentSafeFilter, lifecycleStages, cadences, { defaultCadenceDays: preferences.staleThresholdDays });
-        const effectiveSortMode = recentState !== "ready" && sortMode === "recent" ? "name" : sortMode;
+        const effectiveSortMode = recentState !== "ready" && (sortMode === "recent" || sortMode === "frequency") ? "name" : sortMode;
         // G-11：全员下次生日计算惰性化，仅在生日排序模式下按需计算，避免姓名/分组/最近互动排序下的农历计算开销
         const birthdayDays = effectiveSortMode === "birthday"
             ? new Map(final.map((person) => [person.itemId, nextBirthday(person.birthday, person.isLunar)?.daysUntil ?? Infinity]))
@@ -712,6 +712,14 @@
             if (effectiveSortMode === "group") return a.group.localeCompare(b.group, "zh-CN") || a.name.localeCompare(b.name, "zh-CN");
             if (effectiveSortMode === "birthday" && birthdayDays) return (birthdayDays.get(a.itemId) ?? Infinity) - (birthdayDays.get(b.itemId) ?? Infinity) || a.name.localeCompare(b.name, "zh-CN");
             if (effectiveSortMode === "recent") return (recent[b.docId]?.occurredAt ?? -Infinity) - (recent[a.docId]?.occurredAt ?? -Infinity) || a.name.localeCompare(b.name, "zh-CN");
+            if (effectiveSortMode === "frequency") {
+                const countA = recent[a.docId]?.count ?? 0;
+                const countB = recent[b.docId]?.count ?? 0;
+                return countB - countA || a.name.localeCompare(b.name, "zh-CN");
+            }
+            if (effectiveSortMode === "created") {
+                return b.docId.localeCompare(a.docId) || a.name.localeCompare(b.name, "zh-CN");
+            }
             return a.name.localeCompare(b.name, "zh-CN");
         });
         return final;
@@ -1371,7 +1379,7 @@
             if (request !== recentGeneration) return;
             recentError = requestErrorMessage(error);
             recentState = "error";
-            if (sortMode === "recent") sortMode = "name";
+            if (sortMode === "recent" || sortMode === "frequency") sortMode = "name";
         }
     }
 
@@ -1853,6 +1861,8 @@
             <option value="group">{text("peopleSortGroup", "按分组")}</option>
             <option value="birthday">{text("peopleSortBirthday", "按生日临近")}</option>
             <option value="recent" disabled={recentState !== "ready"}>{recentState === "error" ? "按最近互动（读取失败）" : recentState === "loading" ? "按最近互动（读取中）" : text("peopleSortRecent", "按最近互动")}</option>
+            <option value="frequency" disabled={recentState !== "ready"}>{recentState === "error" ? "按交往密度（读取失败）" : recentState === "loading" ? "按交往密度（读取中）" : text("peopleSortFrequency", "按交往密度")}</option>
+            <option value="created">{text("peopleSortCreated", "按最新录入")}</option>
         </select>
         <span id="lvct-people-moremenu" bind:this={moreMenuWrap} style="position:relative; display:inline-flex">
             <button

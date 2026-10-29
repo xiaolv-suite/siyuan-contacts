@@ -96,3 +96,43 @@ export function extractUpcomingMilestones(
 
     return list.sort((a, b) => a.daysUntil - b.daysUntil);
 }
+
+export type MilestoneWindowFilter = "all" | "today" | "week" | "month";
+
+export interface AnniversaryHubItem {
+    id: string;
+    personDocId: string;
+    personName: string;
+    group?: string;
+    anniversary: AnniversaryItem;
+    category: AnniversaryCategory;
+    title: string;
+    daysUntil: number;
+    yearsCount?: number;
+    displayDate: string;
+    isToday: boolean;
+    congratulatoryText: string;
+}
+
+/**
+ * 纯函数：根据关键词、纪念日分类与时间窗口（全部/今天/本周7天/本月30天）过滤即将到来的里程碑列表
+ */
+export function filterAnniversaryMilestones<T extends { title: string; personName?: string; category: AnniversaryCategory; daysUntil: number }>(
+    items: readonly T[],
+    query: string,
+    categoryFilter: AnniversaryCategory | "all" = "all",
+    windowFilter: MilestoneWindowFilter = "all",
+): T[] {
+    const q = query.trim().toLowerCase();
+    return items.filter((item) => {
+        if (windowFilter === "today" && item.daysUntil !== 0) return false;
+        if (windowFilter === "week" && item.daysUntil > 7) return false;
+        if (windowFilter === "month" && item.daysUntil > 30) return false;
+        if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
+        if (!q) return true;
+        const matchTitle = item.title.toLowerCase().includes(q);
+        const matchPerson = (item.personName ?? "").toLowerCase().includes(q);
+        return matchTitle || matchPerson;
+    });
+}
+

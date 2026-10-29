@@ -14,6 +14,8 @@ const validView = {
 test("保存视图：正常条目保留，非法条目丢弃，坏日期容错为不限制", () => {
     const result = normalizeSavedViews([
         validView,
+        { id: "view-freq", name: "交往密集", query: { ...validView.query, sort: "frequency" } },
+        { id: "view-create", name: "最新录入", query: { ...validView.query, sort: "created" } },
         { id: "", name: "缺 ID", query: validView.query },
         { id: "view-2", query: validView.query },
         { id: "view-3", name: "   ", query: validView.query },
@@ -24,10 +26,12 @@ test("保存视图：正常条目保留，非法条目丢弃，坏日期容错�
         "垃圾项",
         null,
     ]);
-    assert.deepEqual(result.map((view) => view.id), ["view-1", "view-6", "view-7"]);
+    assert.deepEqual(result.map((view) => view.id), ["view-1", "view-freq", "view-create", "view-6", "view-7"]);
     assert.deepEqual(result[0].name, "球友圈");
-    assert.equal(result[1].query.recentFrom, "");
-    assert.equal(result[2].query.recentFrom, "");
+    assert.equal(result[1].query.sort, "frequency");
+    assert.equal(result[2].query.sort, "created");
+    assert.equal(result[3].query.recentFrom, "");
+    assert.equal(result[4].query.recentFrom, "");
 });
 
 test("保存视图：name 去首尾空白，按 id 去重，截断到上限", () => {

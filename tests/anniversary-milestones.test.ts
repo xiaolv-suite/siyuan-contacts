@@ -3,7 +3,9 @@ import test from "node:test";
 import {
     generateAnniversaryGreeting,
     extractUpcomingMilestones,
+    filterAnniversaryMilestones,
     type ContactAnniversaryMilestone,
+    type AnniversaryHubItem,
 } from "../src/domain/anniversary-milestones.ts";
 import type { AnniversaryItem } from "../src/domain/anniversaries.ts";
 
@@ -67,4 +69,37 @@ test("extractUpcomingMilestones：提取窗口内纪念日并按日期升序排�
     assert.equal(list[1].isToday, false);
     assert.equal(list[1].daysUntil, 7);
     assert.equal(list[1].yearsCount, 3);
+});
+
+test("filterAnniversaryMilestones：关键词、分类与时间窗口组合筛选", () => {
+    const items = [
+        { title: "相识纪念日", personName: "张三", category: "acquaintance" as const, daysUntil: 0 },
+        { title: "银婚纪念", personName: "李四", category: "wedding" as const, daysUntil: 3 },
+        { title: "战略合作签约", personName: "王五", category: "work" as const, daysUntil: 12 },
+        { title: "母校建校纪念", personName: "赵六", category: "memorial" as const, daysUntil: 45 },
+    ];
+
+    // 1. 无过滤：全返回
+    assert.equal(filterAnniversaryMilestones(items, "").length, 4);
+
+    // 2. 窗口筛选：今天（daysUntil === 0）
+    const todayHits = filterAnniversaryMilestones(items, "", "all", "today");
+    assert.deepEqual(todayHits.map((i) => i.personName), ["张三"]);
+
+    // 3. 窗口筛选：本周（daysUntil <= 7）
+    const weekHits = filterAnniversaryMilestones(items, "", "all", "week");
+    assert.deepEqual(weekHits.map((i) => i.personName), ["张三", "李四"]);
+
+    // 4. 窗口筛选：本月（daysUntil <= 30）
+    const monthHits = filterAnniversaryMilestones(items, "", "all", "month");
+    assert.deepEqual(monthHits.map((i) => i.personName), ["张三", "李四", "王五"]);
+
+    // 5. 分类筛选：仅结婚纪念
+    const weddingHits = filterAnniversaryMilestones(items, "", "wedding", "all");
+    assert.deepEqual(weddingHits.map((i) => i.personName), ["李四"]);
+
+    // 6. 关键词搜索：按人名或标题模糊匹配
+    assert.deepEqual(filterAnniversaryMilestones(items, "战略").map((i) => i.personName), ["王五"]);
+    assert.deepEqual(filterAnniversaryMilestones(items, "李四").map((i) => i.personName), ["李四"]);
+    assert.deepEqual(filterAnniversaryMilestones(items, "不存在").length, 0);
 });

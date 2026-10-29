@@ -57,3 +57,33 @@ test("rosterPageState：总数决定是否还有后续页", () => {
     assert.throws(() => rosterPageState(0, 200, 1, 0), /页码/);
     assert.throws(() => rosterPageState(1, 200, -1, 0), /总数/);
 });
+
+test("名册排序逻辑：按交往密度（frequency）与按最新录入（created）精准排序", () => {
+    const make = (docId: string, name: string): ContactSummary => ({
+        docId, itemId: docId, name, phone: "", email: "", wechat: "", website: "",
+        birthday: "", isLunar: false, group: "默认", tags: [], relatedItemIds: [],
+    });
+    const p1 = make("20261001000000-aaaaaaa", "张三");
+    const p2 = make("20261015000000-bbbbbbb", "李四");
+    const p3 = make("20261025000000-ccccccc", "王五");
+
+    const recent: Record<string, { occurredAt: number; localDate: string; count?: number }> = {
+        "20261001000000-aaaaaaa": { occurredAt: 1000, localDate: "2026-10-01", count: 12 },
+        "20261015000000-bbbbbbb": { occurredAt: 5000, localDate: "2026-10-15", count: 3 },
+        "20261025000000-ccccccc": { occurredAt: 2000, localDate: "2026-10-25", count: 28 },
+    };
+
+    // 1. 按交往密度（总互动次数 count 降序）：王五 (28) > 张三 (12) > 李四 (3)
+    const byFreq = [p1, p2, p3].sort((a, b) => {
+        const countA = recent[a.docId]?.count ?? 0;
+        const countB = recent[b.docId]?.count ?? 0;
+        return countB - countA || a.name.localeCompare(b.name, "zh-CN");
+    });
+    assert.deepEqual(byFreq.map((p) => p.name), ["王五", "张三", "李四"]);
+
+    // 2. 按最新录入（docId 倒序）：王五 (1025) > 李四 (1015) > 张三 (1001)
+    const byCreated = [p1, p2, p3].sort((a, b) => {
+        return b.docId.localeCompare(a.docId) || a.name.localeCompare(b.name, "zh-CN");
+    });
+    assert.deepEqual(byCreated.map((p) => p.name), ["王五", "李四", "张三"]);
+});

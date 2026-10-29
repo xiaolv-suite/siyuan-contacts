@@ -44,6 +44,7 @@
     import ExchangesHubDialog from "./ExchangesHubDialog.svelte";
     import PreMeetingHubDialog from "./PreMeetingHubDialog.svelte";
     import CoolingRadarDialog from "./CoolingRadarDialog.svelte";
+    import AnniversariesHubDialog from "./AnniversariesHubDialog.svelte";
     import LifecycleFunnelCard from "./LifecycleFunnelCard.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
@@ -167,6 +168,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let exchangesHubOpen = $state(false);
     let preMeetingOpen = $state(false);
     let coolingRadarOpen = $state(false);
+    let anniversariesHubOpen = $state(false);
 
     async function handleGenerateWeeklyDigest() {
         if (!facade.createWeeklyDigestDoc || generatingDigest) return;
@@ -1066,6 +1068,11 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     <AlertTriangle size={12} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办
                                 </button>
                             {/if}
+                            {#if facade.listUpcomingAnniversaries}
+                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: inherit; text-decoration: underline; text-underline-offset: 2px;" onclick={() => (anniversariesHubOpen = true)}>
+                                    <Sparkles size={12} class="lvct-icon-inline" /> 近期周年里程碑
+                                </button>
+                            {/if}
                         </span>
                     </div>
                 </div>
@@ -1451,6 +1458,15 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             title={text("dashPreMeetingBtnTitle", "会前速查联系人饮食忌口、茶酒偏好、敏感雷区与待办约定")}
                         >
                             🛡️ {text("dashPreMeetingBtn", "会前速查")}
+                        </button>
+                    {/if}
+                    {#if facade.listUpcomingAnniversaries}
+                        <button
+                            class="b3-button b3-button--outline lvct-dash__head-action lvct-dash__anniversaries-btn"
+                            onclick={() => (anniversariesHubOpen = true)}
+                            title={text("dashAnniversariesHubTitle", "全库相识相聚重要周年纪念日与里程碑大盘，提供得体祝贺词与一键日历导出")}
+                        >
+                            🎊 {text("dashAnniversariesHub", "近期纪念日")}
                         </button>
                     {/if}
                     {#if overdueCount > 0 && !overdueRetry}
@@ -2101,6 +2117,30 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onOpenPerson={(docId) => {
                 coolingRadarOpen = false;
                 onOpenPeople({ memberDocIds: [docId] });
+            }}
+        />
+    </LvctDialog>
+{/if}
+
+{#if anniversariesHubOpen}
+    <LvctDialog title={text("dashAnniversariesDialogTitle", "🎊 相识相聚周年纪念与重要里程碑大盘")} wide onClose={() => (anniversariesHubOpen = false)}>
+        <AnniversariesHubDialog
+            {facade}
+            people={data?.allPeople ?? []}
+            {i18n}
+            onClose={() => (anniversariesHubOpen = false)}
+            onOpenPerson={(docId) => {
+                anniversariesHubOpen = false;
+                onOpenPeople({ memberDocIds: [docId] });
+            }}
+            onLogInteraction={async (person, defaultNote) => {
+                anniversariesHubOpen = false;
+                if (facade.recordInteraction) {
+                    await facade.recordInteraction(person.docId, defaultNote);
+                    void refresh();
+                } else {
+                    onOpenDetail(person);
+                }
             }}
         />
     </LvctDialog>

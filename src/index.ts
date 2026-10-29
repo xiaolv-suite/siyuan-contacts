@@ -1383,10 +1383,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         /* 人物列表的最近互动排序是严格展示读；读取失败必须让 UI
          * 进入 recentError 重试态，不能伪装成所有联系人从未互动。 */
         const store = await loadInteractionStoreStrict(this);
-        const latest: Record<string, { occurredAt: number; localDate: string }> = {};
+        const latest: Record<string, { occurredAt: number; localDate: string; count?: number }> = {};
         for (const event of store.events) {
             const current = latest[event.personDocId];
-            if (!current || event.occurredAt > current.occurredAt) latest[event.personDocId] = { occurredAt: event.occurredAt, localDate: event.localDate };
+            if (!current) {
+                latest[event.personDocId] = { occurredAt: event.occurredAt, localDate: event.localDate, count: 1 };
+            } else {
+                current.count = (current.count || 0) + 1;
+                if (event.occurredAt > current.occurredAt) {
+                    current.occurredAt = event.occurredAt;
+                    current.localDate = event.localDate;
+                }
+            }
         }
         return latest;
     }

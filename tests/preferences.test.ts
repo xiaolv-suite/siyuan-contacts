@@ -103,11 +103,14 @@ test("视图偏好：星标联系人列表归一化与切换", () => {
     assert.deepEqual(toggledOn.starredDocIds, ["doc-2", "doc-3"]);
 });
 
-test("显示偏好：旧偏好缺字段回退默认形态与全列", () => {
+test("显示偏好：旧偏好缺字段回退默认形态与全列，支持扩展排序模式", () => {
     const result = normalizeViewPreferences({ peopleSort: "recent" });
     assert.equal(result.peopleView, DEFAULT_VIEW_PREFERENCES.peopleView);
     assert.deepEqual(result.tableColumns, DEFAULT_VIEW_PREFERENCES.tableColumns);
     assert.equal(result.peopleSort, "recent");
+
+    assert.equal(normalizeViewPreferences({ peopleSort: "frequency" }).peopleSort, "frequency");
+    assert.equal(normalizeViewPreferences({ peopleSort: "created" }).peopleSort, "created");
 });
 
 test("显示偏好：非法形态回退卡片，非法键与重复键剔除且保留用户顺序", () => {

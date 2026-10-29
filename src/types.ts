@@ -62,7 +62,7 @@ export interface ContactsPluginFacade {
     /** 原生人物文档中的可重复资料条目与两层分组；不投影主联系方式。 */
     loadPersonFields(personDocId: string): Promise<import("./domain/person-fields").PersonFieldsState>;
     savePersonFields(personDocId: string, snapshot: import("./domain/person-fields").PersonFieldsSnapshot, expected: import("./domain/person-fields").PersonFieldsState): Promise<import("./domain/person-fields").PersonFieldsState>;
-    loadRecentInteractions(): Promise<Record<string, { occurredAt: number; localDate: string }>>;
+    loadRecentInteractions(): Promise<Record<string, { occurredAt: number; localDate: string; count?: number }>>;
     /** 读取全量有效互动事件列表（供图谱推断共同出席弱联系等） */
     loadInteractionEvents?(): Promise<readonly import("./domain/interactions").InteractionEvent[]>;
     /** 个人往来账本：金钱、物品、人情均按人物独立记录 */
