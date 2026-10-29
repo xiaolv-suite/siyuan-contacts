@@ -251,20 +251,20 @@
     }
 
     .filter-pill {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 12px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
-        transition: all 0.15s ease;
+        color: var(--lvct-text-2);
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft);
+        border-color: var(--lv-brand);
+        color: var(--lv-brand);
         font-weight: 600;
     }
 
@@ -294,17 +294,18 @@
 
     .year-tag {
         font-size: 12px;
-        font-weight: bold;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface);
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
+        color: var(--lvct-text-1);
+        font-variant-numeric: tabular-nums;
     }
 
     .year-line {
         flex: 1;
         height: 1px;
-        background: var(--b3-border-color);
+        background: var(--lvct-border-subtle);
     }
 
     .year-events {
@@ -368,18 +369,20 @@
 
     .event-card {
         flex: 1;
-        padding: 8px 12px;
-        border-radius: 6px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
+        padding: 10px 14px;
+        border-radius: var(--lvct-r-md, 12px);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 4px;
-        transition: border-color 0.15s ease;
-    }
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 
-    .event-card:hover {
-        border-color: var(--b3-theme-primary-light);
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .card-head {
@@ -390,32 +393,34 @@
 
     .event-date {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         display: flex;
         align-items: center;
+        font-variant-numeric: tabular-nums;
     }
 
     .event-badge {
         font-size: 10px;
-        padding: 1px 5px;
-        border-radius: 4px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
-        color: var(--b3-theme-on-surface-light);
+        padding: 2px 7px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-border-subtle);
+        color: var(--lvct-text-2);
+        font-weight: 500;
     }
 
     .event-badge.stage_advance {
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft);
+        border-color: var(--lv-brand);
+        color: var(--lv-brand);
         font-weight: 600;
     }
 
     .event-badge.promise_fulfilled {
-        background: var(--b3-theme-success-lightest, rgba(46, 204, 113, 0.1));
-        border-color: var(--b3-theme-success);
-        color: var(--b3-theme-success);
-        font-weight: 600;
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        border-color: var(--lv-data-amber, #d97706);
+        color: var(--lv-data-amber, #d97706);
+        font-weight: 700;
     }
 
     .event-title {

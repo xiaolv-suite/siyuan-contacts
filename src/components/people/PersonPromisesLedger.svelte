@@ -434,10 +434,11 @@
 <style>
     .lvct-promises-ledger {
         margin: 14px 0;
-        padding: 12px 14px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter);
-        border-radius: var(--b3-border-radius-b);
+        padding: 14px 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -456,24 +457,31 @@
 
     .metric-card {
         flex: 1;
-        padding: 8px 10px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 3px;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+        }
     }
 
     .metric-label {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
+        font-weight: 500;
     }
 
     .metric-value {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--lvct-text-1);
+        font-variant-numeric: tabular-nums;
         display: flex;
         align-items: baseline;
         gap: 4px;
@@ -498,28 +506,28 @@
     }
 
     .filter-pill {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 12px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft);
+        border-color: var(--lv-brand);
+        color: var(--lv-brand);
         font-weight: 600;
     }
 
     .lvct-promises-form {
-        padding: 10px 12px;
-        background: var(--b3-theme-background);
-        border: 1px dashed var(--b3-theme-primary-light);
-        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--lvct-bg-app);
+        border: 1px dashed color-mix(in srgb, var(--lv-brand) 36%, transparent);
+        border-radius: var(--lvct-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -582,23 +590,29 @@
     }
 
     .promise-item-card {
-        padding: 8px 10px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 6px;
-        transition: border-color 0.15s ease;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .promise-item-card.fulfilled {
-        opacity: 0.85;
-        border-left: 3px solid var(--b3-theme-success);
+        opacity: 0.9;
+        border-left: 3px solid var(--lvct-success, #16a34a);
     }
 
     .promise-item-card.pending {
-        border-left: 3px solid var(--b3-theme-primary);
+        border-left: 3px solid var(--lv-brand, #ea580c);
     }
 
     .promise-item-card.broken {

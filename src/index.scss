@@ -11345,10 +11345,11 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 /* 家庭与亲属关系树谱 */
 .lvct-kinship-tree {
     margin: 12px 0 16px;
-    padding: 12px 14px;
-    background: color-mix(in srgb, var(--lvct-group-family, #e11d48) 3%, var(--b3-theme-surface));
-    border: 1px solid color-mix(in srgb, var(--lvct-group-family, #e11d48) 25%, transparent);
-    border-radius: 8px;
+    padding: 14px 16px;
+    background: var(--lvct-bg-surface);
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-card, 16px);
+    box-shadow: var(--lvct-shadow-1);
 
     &__header {
         align-items: center;
@@ -11361,7 +11362,8 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         align-items: center;
         gap: 6px;
         font-size: 13px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-1);
+        font-weight: 600;
     }
 
     &__groups {
@@ -11380,7 +11382,7 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     &__group-label {
         font-size: 11px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        color: var(--lvct-text-3);
         min-width: 90px;
         flex-shrink: 0;
     }
@@ -11397,23 +11399,25 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 3px 8px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
-        border-radius: 6px;
+        padding: 3px 10px;
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lv-r-pill, 9999px);
         font-size: 12px;
-        transition: border-color 0.15s ease;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-1);
             border-color: var(--lvct-group-family, #e11d48);
         }
 
         &--spouse {
-            border-color: color-mix(in srgb, #e11d48 40%, transparent);
+            border-color: color-mix(in srgb, #e11d48 35%, transparent);
         }
 
         &--child {
-            border-color: color-mix(in srgb, #0284c7 40%, transparent);
+            border-color: color-mix(in srgb, #0284c7 35%, transparent);
         }
     }
 

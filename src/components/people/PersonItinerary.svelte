@@ -570,10 +570,11 @@
 <style>
     .lvct-itinerary-section {
         margin-top: 14px;
-        padding: 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 8px;
+        padding: 14px 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -598,15 +599,17 @@
     .header-title {
         font-weight: 600;
         font-size: 13px;
+        color: var(--lvct-text-1);
     }
 
     .badge-planned {
         font-size: 11px;
-        padding: 1px 6px;
-        border-radius: 10px;
-        background: color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
-        color: var(--b3-theme-primary);
-        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lv-brand-soft);
+        color: var(--lv-brand, #ea580c);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
     }
 
     .btn-add-itinerary {
@@ -626,28 +629,29 @@
     }
 
     .filter-pill {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 12px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
-        transition: all 0.15s ease;
+        color: var(--lvct-text-2);
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary);
-        color: var(--b3-theme-on-primary);
-        border-color: var(--b3-theme-primary);
+        background: var(--lv-brand);
+        color: #ffffff;
+        border-color: var(--lv-brand);
+        font-weight: 600;
     }
 
     /* 内联表单 */
     .itinerary-form-card {
-        padding: 12px;
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
-        background: var(--b3-theme-surface-lighter);
+        padding: 12px 14px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        background: var(--lvct-bg-app);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -726,27 +730,34 @@
     }
 
     .itinerary-card {
-        padding: 10px 12px;
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
-        background: var(--b3-theme-surface);
+        padding: 12px 14px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
+        background: var(--lvct-bg-surface);
         display: flex;
         flex-direction: column;
         gap: 6px;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .itinerary-card.status-planned {
-        border-left: 3px solid var(--b3-theme-primary);
+        border-left: 3px solid var(--lv-brand, #ea580c);
     }
 
     .itinerary-card.status-completed {
-        border-left: 3px solid #10b981;
-        opacity: 0.85;
+        border-left: 3px solid var(--lvct-success, #16a34a);
+        opacity: 0.9;
     }
 
     .itinerary-card.status-cancelled {
-        border-left: 3px solid var(--b3-theme-on-surface-light);
-        opacity: 0.6;
+        border-left: 3px solid var(--lvct-text-3);
+        opacity: 0.65;
     }
 
     .card-head {

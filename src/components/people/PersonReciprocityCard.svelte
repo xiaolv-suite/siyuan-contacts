@@ -106,14 +106,21 @@
 
 <style>
     .lvct-reciprocity-card {
-        padding: 10px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        padding: 12px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 8px;
         margin-top: 10px;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .card-header {
@@ -136,13 +143,15 @@
     .header-title {
         font-weight: 600;
         font-size: 13px;
+        color: var(--lvct-text-1);
     }
 
     .status-badge {
         font-size: 10px;
-        padding: 1px 6px;
-        border-radius: 10px;
-        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
     }
 
     .status-balanced {
@@ -151,13 +160,13 @@
     }
 
     .status-giver_heavy {
-        background: color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft);
+        color: var(--lv-brand, #ea580c);
     }
 
     .status-receiver_heavy {
-        background: color-mix(in srgb, var(--b3-theme-warning) 15%, transparent);
-        color: var(--b3-theme-warning);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        color: var(--lv-data-amber, #d97706);
     }
 
     .status-nascent {
@@ -194,22 +203,22 @@
 
     .balance-track {
         height: 6px;
-        border-radius: 3px;
-        background: var(--b3-theme-surface-lighter);
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
         display: flex;
         overflow: hidden;
     }
 
     .segment-me {
         height: 100%;
-        background: var(--b3-theme-primary);
-        transition: width 0.3s ease;
+        background: var(--lv-brand, #ea580c);
+        transition: width var(--lvct-dur-base) var(--lvct-ease);
     }
 
     .segment-them {
         height: 100%;
-        background: var(--b3-theme-warning);
-        transition: width 0.3s ease;
+        background: var(--lv-data-amber, #d97706);
+        transition: width var(--lvct-dur-base) var(--lvct-ease);
     }
 
     /* 三栏指标 */

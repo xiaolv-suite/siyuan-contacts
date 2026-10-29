@@ -211,23 +211,33 @@
 
     .metric-card {
         flex: 1;
-        padding: 8px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        padding: 10px 14px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 2px;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .metric-title {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
+        font-weight: 500;
     }
 
     .metric-number {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
+        color: var(--lvct-text-1);
+        font-variant-numeric: tabular-nums;
     }
 
     .hubs-toolbar {
@@ -244,28 +254,31 @@
     }
 
     .tab-btn {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 11px;
-        padding: 4px 10px;
-        border-radius: 12px;
+        padding: 4px 12px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         display: inline-flex;
         align-items: center;
-        transition: all 0.15s ease;
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .tab-btn.is-active {
-        background: var(--b3-theme-primary);
-        color: var(--b3-theme-on-primary);
-        border-color: var(--b3-theme-primary);
+        background: var(--lv-brand);
+        color: #ffffff;
+        border-color: var(--lv-brand);
+        font-weight: 600;
     }
 
     .search-box input {
         font-size: 11px;
-        padding: 3px 8px;
+        padding: 4px 12px;
         width: 180px;
+        border-radius: var(--lv-r-pill, 9999px);
+        border: 1px solid var(--lvct-border-subtle);
     }
 
     .hubs-list-wrap {
@@ -281,13 +294,20 @@
     }
 
     .hub-card {
-        padding: 10px 12px;
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
-        background: var(--b3-theme-surface);
+        padding: 12px 14px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 16px);
+        background: var(--lvct-bg-surface);
+        box-shadow: var(--lvct-shadow-1);
         display: flex;
         flex-direction: column;
         gap: 8px;
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--lvct-shadow-2);
+        }
     }
 
     .card-top {
@@ -335,39 +355,42 @@
 
     .group-tag {
         font-size: 10px;
-        padding: 1px 5px;
-        border-radius: 4px;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface-light);
+        padding: 2px 7px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
+        color: var(--lvct-text-2);
+        font-weight: 500;
     }
 
     .degree-badge {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         display: inline-flex;
         align-items: center;
         gap: 3px;
+        font-variant-numeric: tabular-nums;
     }
 
     .bridge-score-badge {
         font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 10px;
-        background: color-mix(in srgb, var(--b3-theme-warning) 15%, transparent);
-        color: var(--b3-theme-warning);
-        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        color: var(--lv-data-amber, #d97706);
+        font-weight: 700;
         white-space: nowrap;
         display: inline-flex;
         align-items: center;
         gap: 3px;
+        font-variant-numeric: tabular-nums;
     }
 
     .bridged-groups-section {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        background: var(--b3-theme-surface-lighter);
-        padding: 6px 8px;
-        border-radius: 4px;
+        background: var(--lvct-bg-app);
+        padding: 8px 10px;
+        border-radius: var(--lvct-r-md, 12px);
     }
 
     .circles-row {
