@@ -1388,5 +1388,9 @@
   "tabooAlertTip": "红线禁忌：{text}",
   "preferenceTip": "偏好：{text}",
   "toggleProjectStatusTip": "点击切换项目协作状态：进行中 ➔ 已结项 ➔ 已归档",
-  "projectRoleDefault": "协同成员"
+  "projectRoleDefault": "协同成员",
+  "peopleBatchCsv": "导出 CSV",
+  "peopleBatchCsvTitle": "将已选联系人导出为自带 BOM 的标准 CSV 表格文件（Excel/WPS 打开不乱码）",
+  "peopleBatchMdTable": "复制表格",
+  "peopleBatchMdTitle": "将已选联系人复制为排版清晰的 Markdown 宽表"
 }

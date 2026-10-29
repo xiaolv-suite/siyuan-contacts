@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.55 发布：联系人名册「多维导出带有 BOM 的 CSV 与复制 Markdown 花名册宽表」（CSV Exporter & Markdown Table Generator）
+
+- 本轮落地标准 CSV 导出模型、UTF-8 BOM 防乱码与名册批量栏双通道导出：
+  1. CSV/Markdown 导出域模型：`csv-contacts.ts` 纯函数实现符合 RFC 4180 标准且自带 BOM 的 CSV 序列化与 Markdown 宽表生成；
+  2. 名册批量栏导出联动：`PeopleView.svelte` 批量栏新增「导出 CSV」文件下载与「复制表格」剪贴板复制流转；
+- 门禁验证：`pnpm check`（0/0）、单测 1024/1024 全部通过、三套 UI 回归 525/525 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.54 发布：联系人详情页「协作项目状态流转与进度指示」（Project Progression & Status Lifecycle Tracker）
 
 - 本轮落地协作项目状态机流转纯函数与详情页项目状态切换闭环：

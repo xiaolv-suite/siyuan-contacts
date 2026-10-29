@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.55] — 2026-10-29
+
+重塑：联系人名册「多维导出带有 BOM 的 CSV 与复制 Markdown 花名册宽表」（CSV Exporter & Markdown Table Generator）
+
+- **标准 CSV 导出与 Markdown 宽表序列化**：`domain/csv-contacts.ts` 新增 `exportContactsToCsv` 与 `exportContactsToMarkdownTable`；遵循 RFC 4180 规范，字段包含逗号/换行时严格双引号转义；输出首字节自动附加 UTF-8 BOM（`\uFEFF`），彻底解决 Excel / WPS 打开中文花名册乱码痛点；提供排版规整的 Markdown 宽表生成。
+- **名册批量栏双通道导出与即时反馈**：`PeopleView.svelte` 批量操作栏新增「导出 CSV」与「复制表格」按钮；点击「导出 CSV」即刻下载 `.csv` 表格文件，点击「复制表格」一键将花名册复制至剪贴板并呈现“已复制 ✓”绿色反馈，无缝满足本地数据流通与笔记协同。
+
+验证：`pnpm check` 0/0、单测 1024/1024 绿灯、三套 E2E UI 回归各 525/525 全部通过、Release 门禁通过。
+
 ## [0.6.54] — 2026-10-29
 
 重塑：联系人详情页「协作项目状态流转与进度指示」（Project Progression & Status Lifecycle Tracker）

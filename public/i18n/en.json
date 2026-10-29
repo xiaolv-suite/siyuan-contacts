@@ -1388,5 +1388,9 @@
   "tabooAlertTip": "Critical Taboo: {text}",
   "preferenceTip": "Preference: {text}",
   "toggleProjectStatusTip": "Click to toggle project status: Active ➔ Completed ➔ Archived",
-  "projectRoleDefault": "Collaborator"
+  "projectRoleDefault": "Collaborator",
+  "peopleBatchCsv": "Export CSV",
+  "peopleBatchCsvTitle": "Export selected contacts to RFC 4180 CSV with UTF-8 BOM for Excel/WPS",
+  "peopleBatchMdTable": "Copy Table",
+  "peopleBatchMdTitle": "Copy selected contacts as formatted Markdown table"
 }

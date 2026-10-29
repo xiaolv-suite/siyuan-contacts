@@ -5,6 +5,9 @@
  */
 import type { VCardContact } from "./vcard.ts";
 import { isValidDateKey } from "./date-key.ts";
+import type { ContactSummary } from "./person.ts";
+import { profileText } from "./people-profiles.ts";
+import { extractNormalizedRegion } from "./region.ts";
 
 /** 解析标准 CSV 格式文本（处理双引号转义、逗号分隔、换行） */
 export function parseCsvRows(text: string): string[][] {
@@ -206,4 +209,65 @@ export function generateCsvTemplate(): string {
     const row1 = "张三,13800138000,zhangsan_wx,zhangsan@example.com,1992-05-20,否,同事,投资 业务,金雨茂物,投资部,副总裁,大学同学";
     const row2 = "李四,13900139000,lisi_wx,lisi@example.com,1995-08-15,是,朋友,老乡,,技术部,资深工程师,";
     return `${BOM}${header}\r\n${row1}\r\n${row2}\r\n`;
+}
+
+export function escapeCsvField(val: unknown): string {
+    if (val === undefined || val === null) return "";
+    const str = String(val);
+    if (str.includes('"') || str.includes(",") || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+}
+
+/** 导出联系人为符合 RFC 4180 标准且自带 UTF-8 BOM 的 CSV 文本 */
+export function exportContactsToCsv(people: readonly ContactSummary[]): string {
+    const BOM = "\uFEFF";
+    const header = [
+        "姓名", "电话", "微信", "邮箱", "网站", "生日", "农历", "分组", "标签", "城市", "组织与职位"
+    ].map(escapeCsvField).join(",");
+
+    const rows: string[] = [header];
+    for (const p of people) {
+        const org = profileText(p.profile, "work");
+        const cleanOrg = org !== "未填写" && org !== "尚未核实" && org !== "组织归属尚未核实" ? org : "";
+        const city = extractNormalizedRegion(p).city;
+        const cleanCity = city !== "未知" ? city : "";
+
+        const row = [
+            escapeCsvField(p.name),
+            escapeCsvField(p.phone),
+            escapeCsvField(p.wechat),
+            escapeCsvField(p.email),
+            escapeCsvField(p.website),
+            escapeCsvField(p.birthday),
+            escapeCsvField(p.isLunar ? "是" : "否"),
+            escapeCsvField(p.group),
+            escapeCsvField(p.tags.join(" ")),
+            escapeCsvField(cleanCity),
+            escapeCsvField(cleanOrg),
+        ].join(",");
+        rows.push(row);
+    }
+
+    return `${BOM}${rows.join("\r\n")}\r\n`;
+}
+
+/** 导出联系人为美观对齐的思源/GitHub Markdown 宽表 */
+export function exportContactsToMarkdownTable(people: readonly ContactSummary[], title?: string): string {
+    const lines: string[] = [];
+    if (title?.trim()) {
+        lines.push(`### 📋 ${title.trim()}（共 ${people.length} 人）\n`);
+    }
+    lines.push("| 姓名 | 分组 | 电话 | 微信 | 邮箱 | 城市 | 组织与职位 | 标签 |");
+    lines.push("| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |");
+    for (const p of people) {
+        const org = profileText(p.profile, "work");
+        const cleanOrg = org !== "未填写" && org !== "尚未核实" && org !== "组织归属尚未核实" ? org : "";
+        const city = extractNormalizedRegion(p).city;
+        const cleanCity = city !== "未知" ? city : "";
+        const escapeCell = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
+        lines.push(`| ${escapeCell(p.name)} | ${escapeCell(p.group)} | ${escapeCell(p.phone)} | ${escapeCell(p.wechat)} | ${escapeCell(p.email)} | ${escapeCell(cleanCity)} | ${escapeCell(cleanOrg)} | ${escapeCell(p.tags.join(" "))} |`);
+    }
+    return lines.join("\n");
 }

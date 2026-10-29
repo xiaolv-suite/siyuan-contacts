@@ -9290,6 +9290,53 @@ await test("B-12 联系人名册：批量操作栏扩展「批量设置交往生
     fixture.remove();
 });
 
+await test("B-13 联系人名册：批量导出带有 BOM 的 CSV 与复制 Markdown 花名册表格闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    kernel.handler = async (route) => {
+        if (route === "/api/av/renderAttributeView") return renderResult();
+        return null;
+    };
+
+    mount(PeopleView, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            loadRecentInteractions: async () => ({}),
+            revision: 0,
+            initialSort: "name",
+            isMobile: false,
+            onOpenDetail() {},
+            onOpenPersonDoc() {},
+            onPreferencesChange: async (next) => next,
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-person-card__select"), "未找到联系人选择复选框");
+    const checkbox = fixture.querySelector(".lvct-person-card__select");
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await until(() => fixture.querySelector(".lvct-people__batchbar"), "批量操作栏未展开");
+
+    // 验证导出 CSV 与复制表格按钮存在
+    const csvBtn = fixture.querySelector(".lvct-people__batch-csv-btn");
+    assert(csvBtn, "未找到批量导出 CSV 按钮");
+    assert(csvBtn.textContent.includes("导出 CSV"), "CSV 按钮文本不匹配");
+
+    const mdBtn = fixture.querySelector(".lvct-people__batch-md-btn");
+    assert(mdBtn, "未找到批量复制表格按钮");
+    assert(mdBtn.textContent.includes("复制表格"), "复制表格按钮文本不匹配");
+
+    // 点击复制表格
+    mdBtn.click();
+    await until(() => fixture.querySelector(".lvct-people__batch-md-btn")?.textContent.includes("已复制"), "点击复制表格未出现已复制反馈提示");
+
+    fixture.remove();
+});
+
 await test("D-09 联系人详情页：闪念速记便签板（PersonScratchpad）卡片渲染、置顶与一键转互动联动", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);

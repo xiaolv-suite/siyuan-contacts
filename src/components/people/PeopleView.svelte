@@ -33,7 +33,7 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
-    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers } from "@lucide/svelte";
+    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check } from "@lucide/svelte";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
@@ -47,6 +47,8 @@
     import { extractNormalizedRegion } from "../../domain/region";
     import { LIFECYCLE_STAGES, type RelationshipStageKey } from "../../domain/lifecycle-stage.ts";
     import BatchLifecycleStageModal from "./BatchLifecycleStageModal.svelte";
+    import { exportContactsToCsv, exportContactsToMarkdownTable } from "../../domain/csv-contacts.ts";
+    import { copyPlainText } from "../../shared/clipboard.ts";
 
     let {
         settings,
@@ -1718,6 +1720,40 @@
         }
     }
 
+    let copiedMdTable = $state(false);
+
+    function exportSelectedCsv() {
+        if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
+        if (selectionScopePending) { batchError = pendingScopeMessage; return; }
+        if (hiddenSelectionCount > 0 && !window.confirm(`导出手动选中的 ${selectedPeople.length} 人，包含筛选外 ${hiddenSelectionCount} 人；继续导出吗？`)) return;
+        try {
+            const csvText = exportContactsToCsv(selectedPeople);
+            const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+            const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `小驴人脉_名册_${stamp}.csv`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            errorText = requestErrorMessage(error);
+        }
+    }
+
+    async function copySelectedMarkdownTable() {
+        if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
+        if (selectionScopePending) { batchError = pendingScopeMessage; return; }
+        try {
+            const md = exportContactsToMarkdownTable(selectedPeople, activeViewName || "人脉花名册");
+            await copyPlainText(md);
+            copiedMdTable = true;
+            setTimeout(() => { copiedMdTable = false; }, 2000);
+        } catch (error) {
+            errorText = requestErrorMessage(error);
+        }
+    }
+
     async function removeSelected() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
@@ -2279,6 +2315,27 @@
                 ><Network size={14}/> {text("peopleBatchViewInGraph", "在图谱中查看")}</button>
             {/if}
             <button class="b3-button b3-button--outline" onclick={exportSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? "批量操作进行中，请稍候" : undefined}>导出 vCard</button>
+            <button
+                class="b3-button b3-button--outline lvct-people__batch-csv-btn"
+                onclick={exportSelectedCsv}
+                disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
+                title={text("peopleBatchCsvTitle", "将已选联系人导出为自带 BOM 的标准 CSV 表格文件（Excel/WPS 打开不乱码）")}
+            >
+                <FileSpreadsheet size={14} class="lvct-icon-inline" /> {text("peopleBatchCsv", "导出 CSV")}
+            </button>
+            <button
+                class="b3-button b3-button--outline lvct-people__batch-md-btn"
+                onclick={copySelectedMarkdownTable}
+                disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
+                title={text("peopleBatchMdTitle", "将已选联系人复制为排版清晰的 Markdown 宽表")}
+            >
+                {#if copiedMdTable}
+                    <Check size={14} class="lvct-icon-inline ft__primary" />
+                    <span class="ft__primary">{text("copied", "已复制 ✓")}</span>
+                {:else}
+                    <Copy size={14} class="lvct-icon-inline" /> {text("peopleBatchMdTable", "复制表格")}
+                {/if}
+            </button>
             {#if onCreateBatchFlashcardsDoc}
                 <button
                     class="b3-button b3-button--outline lvct-people__batch-flashcards-btn"
