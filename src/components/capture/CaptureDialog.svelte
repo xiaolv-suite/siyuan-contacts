@@ -758,25 +758,28 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
 
 <style>
     .lvct-capture__preflight, .lvct-capture__candidate {
-        padding: 12px;
+        padding: 12px 14px;
         margin: 8px 0;
         border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-sm);
+        border-radius: var(--lvct-r-md, 12px);
+        box-shadow: var(--lvct-shadow-1);
         overflow-wrap: anywhere;
     }
     .lvct-capture__preflight {
-        border-color: color-mix(in srgb, var(--lvct-highlight) 42%, var(--lvct-border-subtle));
-        border-radius: var(--lvct-r-md);
-        background: var(--lvct-highlight-soft);
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 35%, var(--lvct-border-subtle));
+        border-radius: var(--lvct-r-card, 16px);
+        background: var(--lv-brand-soft);
     }
     .lvct-capture__candidate {
-        background: var(--lvct-bg-elevated);
+        background: var(--lvct-bg-surface);
     }
     .lvct-capture__fields {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
         border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md, 12px);
+        padding: 8px 12px;
     }
     .lvct-capture__candidate blockquote {
         margin: 8px 0;

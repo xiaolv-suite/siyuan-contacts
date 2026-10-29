@@ -1256,7 +1256,10 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     .lvct-review__big {
         font-size: 42px;
         font-weight: 700;
-        color: var(--lv-brand, #ea580c);
+        color: var(--lv-data-amber, #d97706);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
     }
 }
 
@@ -1276,37 +1279,38 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--lvct-sp-2);
+    padding: var(--lvct-sp-3);
     border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lvct-r-md, 12px);
     background: var(--lvct-bg-surface);
-    transition: all 0.15s ease;
+    box-shadow: var(--lvct-shadow-1);
+    transition: all var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover {
-        border-color: var(--lvct-border-strong);
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
         transform: translateY(-1px);
-        box-shadow: var(--lvct-shadow-1);
+        box-shadow: var(--lvct-shadow-2);
     }
 
-    b { font-size: 20px; color: var(--lvct-text-1); }
-    span { color: var(--lvct-text-3); font-size: var(--lvct-fs-caption); }
+    b { font-size: 22px; font-weight: 700; color: var(--lvct-text-1); font-variant-numeric: tabular-nums; }
+    span { color: var(--lvct-text-3); font-size: var(--lvct-fs-caption); font-weight: 500; }
 }
 
 .lvct-review__section {
     margin-bottom: var(--lvct-sp-3);
-    padding: 14px 16px;
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-    border-radius: var(--lvct-r-md);
+    padding: 16px 18px;
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-card, 16px);
     background: var(--lvct-bg-surface);
-    box-shadow: var(--lvct-shadow-panel);
+    box-shadow: var(--lvct-shadow-card);
 
-    > b { display: block; margin-bottom: var(--lvct-sp-1); font-size: 14.5px; font-weight: 650; }
+    > b { display: block; margin-bottom: var(--lvct-sp-2); font-size: 14.5px; font-weight: 700; color: var(--lvct-text-1); }
 }
 
 .lvct-review__ratio-bar {
     display: flex;
     height: 8px;
-    border-radius: var(--lvct-r-full, 9999px);
+    border-radius: var(--lv-r-pill, 9999px);
     overflow: hidden;
     background: var(--lvct-border-subtle);
     margin-bottom: var(--lvct-sp-3);
@@ -1863,9 +1867,9 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     gap: var(--lvct-sp-3);
     padding: var(--lvct-sp-4);
     border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-lg);
+    border-radius: var(--lvct-r-card, 16px);
     background: var(--lvct-bg-surface);
-    box-shadow: var(--lvct-shadow-1);
+    box-shadow: var(--lvct-shadow-card);
 }
 
 .lvct-dash__quickstart-head,
@@ -1883,7 +1887,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
 
 .lvct-dash__quickstart-eyebrow {
     margin: 0 0 var(--lvct-sp-1);
-    color: var(--lvct-accent);
+    color: var(--lv-brand, #ea580c);
     font-size: var(--lvct-fs-caption);
     font-weight: 600;
 }
@@ -1916,21 +1920,25 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     min-height: 70px;
     padding: var(--lvct-sp-3);
     border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md);
-    background: var(--lvct-bg-elevated);
+    border-radius: var(--lvct-r-md, 12px);
+    background: var(--lvct-bg-app);
     color: var(--lvct-text-1);
     text-align: left;
     cursor: pointer;
-}
+    box-shadow: var(--lvct-shadow-1);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
 
-.lvct-dash__quickstart-item:hover,
-.lvct-dash__quickstart-item:focus-visible {
-    border-color: var(--lvct-border-strong);
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-1px);
+        box-shadow: var(--lvct-shadow-2);
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
+    }
 }
 
 .lvct-dash__quickstart-item--primary {
-    border-color: var(--lvct-accent);
-    background: var(--lvct-accent-soft);
+    border-color: color-mix(in srgb, var(--lv-brand) 35%, transparent);
+    background: var(--lv-brand-soft);
 }
 
 .lvct-dash__quickstart-item > span:nth-child(2) {
@@ -1953,9 +1961,9 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     width: 32px;
     height: 32px;
     flex: 0 0 32px;
-    border-radius: var(--lvct-r-sm);
+    border-radius: var(--lv-r-pill, 9999px);
     background: var(--lvct-bg-surface);
-    color: var(--lvct-accent);
+    color: var(--lv-brand, #ea580c);
 }
 
 .lvct-dash__quickstart-footer {
