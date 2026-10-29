@@ -1406,5 +1406,18 @@
   "adoptPersonTip": "Adopt all suggestions for this person",
   "adoptSingle": "Adopt",
   "readyToApplyCount": "Ready to update: {n}",
-  "applyAndSaveBatch": "Apply & Save ({n})"
+  "applyAndSaveBatch": "Apply & Save ({n})",
+  "dashViewPersonDetail": "View Contact Profile",
+  "copied": "Copied",
+  "occFieldSourceDoc": "Linked SiYuan Note Document ID (Optional)",
+  "occSourceDocPlaceholder": "e.g. 20261020120000-xxxxxxx, to insert linked summary block",
+  "occSyncBlockCheckbox": "Sync/insert controlled summary block in linked note",
+  "copy": "Copy",
+  "saving": "Saving…",
+  "edit": "Edit",
+  "delete": "Delete",
+  "dialogDate": "Interaction Date",
+  "dialogType": "Interaction Type",
+  "dialogNote": "Details & Notes",
+  "dialogNotePlaceholder": "Record core facts, key takeaways, or promises…"
 }

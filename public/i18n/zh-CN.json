@@ -1406,5 +1406,18 @@
   "adoptPersonTip": "采纳该联系人的全部推荐信息",
   "adoptSingle": "全部采纳",
   "readyToApplyCount": "已就绪待更新：{n} 人",
-  "applyAndSaveBatch": "应用并批量保存 ({n})"
+  "applyAndSaveBatch": "应用并批量保存 ({n})",
+  "dashViewPersonDetail": "点击查看联系人画像",
+  "copied": "已复制",
+  "occFieldSourceDoc": "关联思源笔记文档 ID（可选）",
+  "occSourceDocPlaceholder": "如 20261020120000-xxxxxxx，支持在笔记正文插入人脉双链摘要块",
+  "occSyncBlockCheckbox": "在关联思源笔记中同步插入/更新受控人脉双链摘要块",
+  "copy": "复制",
+  "saving": "保存中…",
+  "edit": "编辑",
+  "delete": "删除",
+  "dialogDate": "互动日期",
+  "dialogType": "互动类型",
+  "dialogNote": "互动详情与备注",
+  "dialogNotePlaceholder": "记录这次交流的核心事实、沟通要点或约定事项…"
 }
