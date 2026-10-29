@@ -1083,30 +1083,30 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             {@const activeRate = data.people > 0 ? Math.round((activeCount / data.people) * 100) : 0}
             <div class="lvct-dash__milestone-banner fn__flex" role="status" aria-label="人脉维护激励">
                 <div class="lvct-dash__milestone-left fn__flex">
-                    <span class="lvct-dash__milestone-emoji" style="display: inline-flex; align-items: center;"><Sparkles size={16} style="color: #f59e0b;" /></span>
+                    <span class="lvct-dash__milestone-emoji" style="display: inline-flex; align-items: center;"><Sparkles size={18} style="color: var(--lv-dark-block-data, #FBBF24);" /></span>
                     <div class="lvct-dash__milestone-content">
                         <b>{activeRate >= 80 ? "人脉连接状态极佳！" : activeRate >= 50 ? "人际网络稳步升温中！" : "开启温暖连接的新起点："}</b>
                         <span>
-                            已建立连接 {activeCount} 人（覆盖率 {activeRate}%）
+                            已建立连接 <strong class="lvct-data-hl">{activeCount}</strong> 人（覆盖率 <strong class="lvct-data-hl">{activeRate}%</strong>）
                             {#if data.birthdaysThisWeek > 0}
-                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: inherit; text-decoration: underline; text-underline-offset: 2px;" onclick={openBirthdayPeople}>
+                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: var(--lv-dark-block-sub, #D6D3D1); text-decoration: underline; text-underline-offset: 2px;" onclick={openBirthdayPeople}>
                                     <Cake size={12} class="lvct-icon-inline" /> 本周有 {data.birthdaysThisWeek} 位好友生日
                                 </button>
                             {/if}
                             {#if overdueCount > 0}
-                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: inherit; text-decoration: underline; text-underline-offset: 2px;" onclick={scrollToActionsSection}>
+                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: var(--lv-dark-block-sub, #D6D3D1); text-decoration: underline; text-underline-offset: 2px;" onclick={scrollToActionsSection}>
                                     <AlertTriangle size={12} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办
                                 </button>
                             {/if}
                             {#if facade.listUpcomingAnniversaries}
-                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: inherit; text-decoration: underline; text-underline-offset: 2px;" onclick={() => (anniversariesHubOpen = true)}>
+                                · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: var(--lv-dark-block-sub, #D6D3D1); text-decoration: underline; text-underline-offset: 2px;" onclick={() => (anniversariesHubOpen = true)}>
                                     <Sparkles size={12} class="lvct-icon-inline" /> 近期周年里程碑
                                 </button>
                             {/if}
                         </span>
                     </div>
                 </div>
-                <button type="button" class="b3-button b3-button--text b3-button--small lvct-dash__milestone-btn" onclick={() => onOpenPeople()}>
+                <button type="button" class="b3-button b3-button--small lvct-dash__milestone-btn" onclick={() => onOpenPeople()}>
                     浏览名册 &gt;
                 </button>
             </div>

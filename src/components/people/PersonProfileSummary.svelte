@@ -51,7 +51,7 @@
         padding: 12px 14px;
         background: var(--lvct-bg-surface);
         border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
-        border-radius: var(--lvct-r-lg);
+        border-radius: var(--lvct-r-md, 12px);
         color: var(--lvct-text-2);
         font-size: var(--lvct-fs-caption);
         display: grid;

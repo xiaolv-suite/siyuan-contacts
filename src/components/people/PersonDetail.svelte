@@ -4044,7 +4044,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <button
                     type="button"
                     class="b3-button b3-button--text"
-                    style="padding: 2px 8px; font-size: 11px; border-radius: 12px; {recordType === itype ? 'background: var(--b3-theme-primary); color: #fff; font-weight: 600;' : 'opacity: 0.8;'}"
+                    style="padding: 3px 10px; font-size: 11px; border-radius: var(--lv-r-pill, 9999px); {recordType === itype ? 'background: var(--b3-theme-primary); color: #fff; font-weight: 600;' : 'opacity: 0.8;'}"
                     aria-checked={recordType === itype}
                     role="radio"
                     onclick={() => { recordType = itype; }}

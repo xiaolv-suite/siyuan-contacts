@@ -3570,7 +3570,7 @@ html[data-theme-mode="dark"] .lvct-notice {
     background: var(--lvct-bg-elevated);
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
     border-radius: var(--lvct-r-xl);
-    box-shadow: var(--lvct-shadow-3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow: var(--lvct-shadow-3);
     width: min(var(--lvct-dialog-w), 92vw);
     max-height: min(90vh, 760px);
     overflow: auto;
@@ -3581,7 +3581,7 @@ html[data-theme-mode="dark"] .lvct-notice {
 
 html[data-theme-mode="dark"] .lvct-dialog-panel {
     border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: var(--lvct-shadow-3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    box-shadow: var(--lvct-shadow-3);
 }
 
 @keyframes lvct-dialog-in {
@@ -4020,18 +4020,18 @@ html[data-theme-mode="dark"] .lvct-dialog-root .lvct-graph-view__canvas {
     box-sizing: border-box;
     gap: 4px;
     padding: 4px 6px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-pill);
     background: color-mix(in srgb, var(--lvct-bg-elevated) 84%, transparent);
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 html[data-theme-mode="dark"] .lvct-graph__fab {
     background: color-mix(in srgb, var(--lvct-bg-elevated) 78%, transparent);
     border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
 }
 
 .lvct-graph__fab-btn {
@@ -4525,7 +4525,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     background: var(--lvct-bg-surface);
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-lg);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     animation: lvct-drawer-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
@@ -4826,13 +4826,13 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     background: var(--lvct-bg-surface);
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
     border-radius: var(--lvct-r-lg);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     flex-wrap: wrap;
 }
 
 html[data-theme-mode="dark"] .lvct-doc-strip {
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .lvct-strip__avatar {
@@ -6154,56 +6154,102 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: var(--lvct-sp-4);
 }
 
-/* 正向关怀里程碑激励横幅 (Milestone Encouragement Banner) */
+/* 重点深色对比块：正向关怀里程碑激励横幅 (Dark Accent Milestone Card，节奏重音) */
 .lvct-dash__milestone-banner {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--lvct-sp-3);
-    padding: 10px 16px;
-    border-radius: var(--lvct-r-lg);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface)), color-mix(in srgb, var(--lv-heat-cool, #d97706) 8%, var(--lvct-bg-surface)));
-    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 26%, var(--lvct-border-subtle));
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--lv-brand, #ea580c) 8%, transparent);
+    padding: 14px 20px;
+    border-radius: var(--lvct-r-card, 16px);
+    background: var(--lv-dark-block-gradient, linear-gradient(145deg, #1C1815 0%, #26211C 100%));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px -2px rgba(28, 24, 21, 0.25), 0 1px 3px rgba(0, 0, 0, 0.12);
+
+    /* 规则 6：少量圆润体积感的几何抽象光晕情感化点缀，面积小、位置固定、取主题色三档明度（48%、24%、8%） */
+    &::after {
+        content: "";
+        position: absolute;
+        right: -16px;
+        top: -16px;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: radial-gradient(circle, color-mix(in srgb, var(--lv-brand, #ea580c) 34%, transparent) 0%, color-mix(in srgb, var(--lv-brand, #ea580c) 14%, transparent) 45%, transparent 72%);
+        pointer-events: none;
+    }
 }
 
 .lvct-dash__milestone-left {
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     min-width: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .lvct-dash__milestone-emoji {
     font-size: 20px;
     line-height: 1;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 .lvct-dash__milestone-content {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    font-size: 12.5px;
-    color: var(--lvct-text-1);
-    line-height: 1.4;
+    gap: 3px;
+    font-size: 13px;
+    color: var(--lv-dark-block-text, #FAF8F5);
+    line-height: 1.45;
 
     b {
-        font-weight: 650;
-        color: var(--lvct-text-1);
+        font-weight: 700;
+        color: #ffffff;
+        font-size: 14px;
+        letter-spacing: -0.01em;
     }
 
     span {
-        color: var(--lvct-text-2);
+        color: var(--lv-dark-block-sub, #A8A29E);
         font-size: 12px;
+
+        .lvct-data-hl {
+            color: var(--lv-dark-block-data, #FBBF24);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
     }
 }
 
 .lvct-dash__milestone-btn {
     font-size: 12px;
     font-weight: 600;
-    color: var(--lv-brand, #ea580c);
+    color: #ffffff !important;
+    background: var(--lv-brand, #ea580c);
+    padding: 6px 14px;
+    border-radius: var(--lv-r-pill, 9999px);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lv-brand) 36%, transparent);
     white-space: nowrap;
     flex-shrink: 0;
+    border: none;
+    position: relative;
+    z-index: 1;
+    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+    &:hover {
+        background: var(--lv-brand-hover, #c2410c);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px color-mix(in srgb, var(--lv-brand) 45%, transparent);
+    }
+
+    &:active {
+        transform: translateY(1px);
+        box-shadow: none;
+    }
 }
 
 .lvct-dash__stats {
@@ -6222,15 +6268,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-dash__stat-tag {
     font-size: 10px;
     font-weight: 600;
-    padding: 1px 7px;
-    border-radius: 9999px;
+    padding: 2px 8px;
+    border-radius: var(--lv-r-pill, 9999px);
     background: color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
     color: var(--b3-theme-on-surface);
     line-height: 1.4;
 
     &--hl {
-        background: color-mix(in srgb, #f59e0b 18%, transparent);
-        color: #d97706;
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        color: var(--lv-data-amber, #d97706);
     }
 
     &--warn {
@@ -6249,38 +6295,43 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-dash__stat--birthdays {
-    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-heat-cool, #d97706) 8%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-data-amber, #d97706) 8%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
 }
 
 .lvct-dash__stat--never {
     background: linear-gradient(150deg, color-mix(in srgb, var(--lvct-danger, #e11d48) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
 }
 
-/* UX-02.3 统计卡：左对齐渐变大数字 + 图标章 + 悬停提升 + 顶部渐变发丝线 + 漫反射微光晕 */
+/* 统计卡：大圆角纯白浮起 + 4倍大字号主数据 + 图标章 + 悬停轻升 + 漫反射微光晕 */
 .lvct-dash__stat {
     position: relative;
     overflow: hidden;
     background: var(--lvct-bg-surface);
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-    border-radius: var(--lvct-r-lg);
-    padding: var(--lvct-sp-4);
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-card, 16px);
+    padding: 16px 18px;
     box-shadow: var(--lvct-shadow-card);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: 4px;
     cursor: pointer;
-    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    box-sizing: border-box;
+    transition:
+        transform var(--lvct-dur-fast) var(--lvct-ease),
+        box-shadow var(--lvct-dur-fast) var(--lvct-ease),
+        border-color var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: var(--lvct-shadow-2);
+        box-shadow: var(--lvct-shadow-card-hover);
+        border-color: color-mix(in srgb, var(--lvct-accent) 30%, var(--lvct-border-subtle));
     }
-    text-align: left;
-    transition:
-        transform var(--lvct-dur-base) var(--lvct-ease),
-        box-shadow var(--lvct-dur-base) var(--lvct-ease),
-        border-color var(--lvct-dur-fast) var(--lvct-ease);
+
+    &:active:not(:disabled) {
+        transform: translateY(1px);
+    }
 
     &::after {
         content: "";
@@ -6301,32 +6352,27 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         opacity: 1;
     }
 
-    &:hover {
-        border-color: color-mix(in srgb, var(--lvct-accent) 42%, var(--lvct-border-subtle));
-        box-shadow: var(--lvct-shadow-card-hover);
-        transform: translateY(-2px);
-    }
-
     b {
-        font-size: 28px;
+        font-size: var(--lvct-fs-metric, 34px);
         font-weight: 700;
-        line-height: 1.15;
-        letter-spacing: -0.02em;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
         font-variant-numeric: tabular-nums;
         color: var(--lvct-text-1);
-        margin: 4px 0 2px;
+        margin: 6px 0 2px;
     }
 
     > span {
-        font-size: 13px;
-        font-weight: 500;
+        font-size: 12.5px;
+        font-weight: 600;
         color: var(--lvct-text-2);
     }
 
     .lvct-dash__stat-ft {
-        font-size: var(--lvct-fs-micro);
+        font-size: 11px;
         color: var(--lvct-text-3);
         text-align: left;
+        font-weight: 400;
     }
 }
 

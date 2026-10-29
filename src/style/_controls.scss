@@ -29,9 +29,9 @@
     /* Lucide 是描边图标；宿主 svg 的 fill:currentColor 会把钟表、搜索等填成实心。 */
     svg.lucide-icon { fill: none; }
 
-    /* ---------- 按钮：公共基线（尺寸/圆角/状态过渡/焦点环） ---------- */
+    /* ---------- 按钮：公共基线（尺寸/大圆角胶囊/状态过渡/焦点环） ---------- */
     .b3-button {
-        border-radius: var(--lvct-r-control);
+        border-radius: var(--lv-r-pill, 9999px);
         font-size: var(--lvct-fs-body);
         min-height: var(--lvct-control-h);
         box-sizing: border-box;
