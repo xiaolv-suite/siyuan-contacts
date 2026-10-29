@@ -31,6 +31,14 @@ test("getPinyinInitials: 空值与异常边界", () => {
     assert.equal(getChineseCharInitial(""), "");
 });
 
+test("getPinyinInitials: 词级缓存命中与重复提取一致性", () => {
+    const text = "诸葛孔明";
+    const firstCall = getPinyinInitials(text);
+    const secondCall = getPinyinInitials(text);
+    assert.equal(firstCall, "zgkm");
+    assert.equal(secondCall, firstCall);
+});
+
 test("groupPeopleByAlphabet: 按拼音首字母聚合联系人与激活字母集", () => {
     const list = [
         { name: "白晓华" }, // B

@@ -52,12 +52,24 @@ export function getChineseCharInitial(ch: string): string {
     return result;
 }
 
+const wordInitialCache = new Map<string, string>();
+const MAX_WORD_CACHE = 2000;
+
 /**
  * 获取字符串对应的拼音首字母序列（小写）
+ * 带有高命中词级缓存，避免大数据量连续检索下频繁字符拆分与遍历。
  */
 export function getPinyinInitials(text: string): string {
     if (!text) return "";
-    return text.split("").map(getChineseCharInitial).join("");
+    const cached = wordInitialCache.get(text);
+    if (cached !== undefined) return cached;
+    const result = text.split("").map(getChineseCharInitial).join("");
+    if (wordInitialCache.size >= MAX_WORD_CACHE) {
+        const firstKey = wordInitialCache.keys().next().value;
+        if (firstKey !== undefined) wordInitialCache.delete(firstKey);
+    }
+    wordInitialCache.set(text, result);
+    return result;
 }
 
 export interface PinyinInitialGroup<T> {
