@@ -103,9 +103,17 @@ export function attachPopover(
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("pointerdown", onPointerDown, true);
-    window.addEventListener("click", onClick);
+
+    let active = true;
+    const bindTimer = setTimeout(() => {
+        if (!active) return;
+        window.addEventListener("pointerdown", onPointerDown, true);
+        window.addEventListener("click", onClick);
+    }, 0);
+
     return () => {
+        active = false;
+        clearTimeout(bindTimer);
         resizeObserver?.disconnect();
         if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame);
         window.removeEventListener("scroll", onScroll, true);

@@ -513,8 +513,9 @@
     /** cytoscape 无法用 CSS 变量，挂载时从主题运行时取值 */
     function normalizeGraphColor(value: string, fallback: string): string {
         const normalized = value.trim();
+        if (!normalized || normalized === "currentColor") return fallback;
         const match = normalized.match(/^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)$/i);
-        if (!match) return normalized || fallback;
+        if (!match) return normalized;
         const channels = match.slice(1, 4).map((channel) => Math.round(Math.max(0, Math.min(1, Number(channel))) * 255));
         const alpha = match[4] === undefined ? 1 : Math.max(0, Math.min(1, Number(match[4])));
         return `rgba(${channels.join(", ")}, ${alpha})`;
@@ -523,6 +524,12 @@
     function themeColors(): { text: string; edge: string; surface: string; focus: string } {
         const probe = container ?? document.body;
         const style = getComputedStyle(probe);
+        const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme-mode") === "dark" || document.body.classList.contains("body--dark"));
+        const defaultText = isDark ? "#e2e8f0" : "#1e293b";
+        const defaultEdge = isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.18)";
+        const defaultSurface = isDark ? "#1e293b" : "#ffffff";
+        const defaultFocus = "#ea580c";
+
         const resolve = (name: string, fallback: string): string => {
             const value = style.getPropertyValue(name).trim();
             if (!value || (!value.includes("color-mix") && !value.includes("var("))) return normalizeGraphColor(value, fallback);
@@ -534,10 +541,10 @@
             return normalizeGraphColor(resolved, fallback);
         };
         return {
-            text: resolve("--lvct-graph-text", "currentColor"),
-            edge: resolve("--lvct-graph-edge", "currentColor"),
-            surface: resolve("--lvct-graph-surface", "transparent"),
-            focus: resolve("--lvct-accent", "currentColor"),
+            text: resolve("--lvct-graph-text", defaultText),
+            edge: resolve("--lvct-graph-edge", defaultEdge),
+            surface: resolve("--lvct-graph-surface", defaultSurface),
+            focus: resolve("--lvct-accent", defaultFocus),
         };
     }
 
@@ -550,8 +557,11 @@
             "组织": "--lvct-group-org",
             "其他": "--lvct-group-other",
         };
-        const value = getComputedStyle(container ?? document.body).getPropertyValue(key[group] ?? "--lvct-group-other").trim();
-        return normalizeGraphColor(value || getComputedStyle(container ?? document.body).getPropertyValue("--lvct-accent"), "currentColor");
+        const probe = container ?? document.body;
+        const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme-mode") === "dark" || document.body.classList.contains("body--dark"));
+        const defaultColor = isDark ? "#94a3b8" : "#64748b";
+        const value = getComputedStyle(probe).getPropertyValue(key[group] ?? "--lvct-group-other").trim();
+        return normalizeGraphColor(value || getComputedStyle(probe).getPropertyValue("--lvct-accent"), defaultColor);
     }
 
     onMount(() => {
@@ -997,43 +1007,75 @@
                     selector: "node",
                     style: {
                         label: "data(label)",
-                        "background-color": "data(color)",
+                        "background-color": palette.surface,
                         width: "mapData(degree, 0, 6, 24, 48)",
                         height: "mapData(degree, 0, 6, 24, 48)",
                         "font-size": 13,
                         "font-weight": 500,
-                        color: "data(themeText)",
+                        color: palette.text,
                         "min-zoomed-font-size": 7, // LOD：小视口缩放拉远时自动隐藏文字，大幅降低微小节点排版开销
                         "text-wrap": "ellipsis",
                         "text-max-width": "120px",
                         "text-outline-width": 2,
-                        "text-outline-color": "data(themeSurface)",
+                        "text-outline-color": palette.surface,
                         "text-valign": "bottom",
                         "text-margin-y": 4,
                         /* UX-02.4 表面色描边环 + 同色 underlay 光晕 */
                         "border-width": 2,
-                        "border-color": "data(themeSurface)",
-                        "underlay-color": "data(color)",
+                        "border-color": palette.surface,
+                        "underlay-color": palette.focus,
                         "underlay-opacity": 0.16,
                         "underlay-padding": 6,
                         "underlay-shape": "ellipse",
                     },
                 },
                 {
+                    selector: "node[color]",
+                    style: {
+                        "background-color": "data(color)",
+                        "underlay-color": "data(color)",
+                    },
+                },
+                {
+                    selector: "node[themeText]",
+                    style: {
+                        color: "data(themeText)",
+                    },
+                },
+                {
+                    selector: "node[themeSurface]",
+                    style: {
+                        "text-outline-color": "data(themeSurface)",
+                        "border-color": "data(themeSurface)",
+                    },
+                },
+                {
                     selector: ".lvct-graph-hit",
                     style: {
-                        "border-color": "data(themeFocus)",
+                        "border-color": palette.focus,
                         "border-width": 3,
                         "underlay-opacity": 0.3,
                         "underlay-padding": 10,
                     },
                 },
                 {
+                    selector: ".lvct-graph-hit[themeFocus]",
+                    style: {
+                        "border-color": "data(themeFocus)",
+                    },
+                },
+                {
                     selector: "edge",
                     style: {
                         width: 2,
-                        "line-color": "data(themeEdge)",
+                        "line-color": palette.edge,
                         "curve-style": "bezier",
+                    },
+                },
+                {
+                    selector: "edge[themeEdge]",
+                    style: {
+                        "line-color": "data(themeEdge)",
                     },
                 },
                 { selector: ".lvct-graph-muted", style: { opacity: 0.18 } },
