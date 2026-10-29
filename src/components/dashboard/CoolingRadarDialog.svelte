@@ -283,23 +283,24 @@
 
     .metric-card {
         flex: 1;
-        padding: 8px 12px;
+        padding: var(--lvct-sp-2, 8px) var(--lvct-sp-3, 12px);
         background: var(--b3-theme-surface);
         border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        border-radius: var(--lv-r-sm, 8px);
         display: flex;
         flex-direction: column;
         gap: 2px;
     }
 
     .metric-title {
-        font-size: 11px;
+        font-size: var(--lvct-fs-micro, 12px);
         color: var(--b3-theme-on-surface-light);
     }
 
     .metric-number {
         font-size: 18px;
         font-weight: 700;
+        font-variant-numeric: tabular-nums;
     }
 
     .cooling-toolbar {

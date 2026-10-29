@@ -2873,116 +2873,121 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         </div>
     </div>
 
-    <!-- 顶部思源笔记与外部快捷联动操作条 -->
+    <!-- 顶部思源笔记与外部快捷联动操作条：分组双胶囊规范化（B档） -->
     <div class="lvct-detail__quick-bar" role="toolbar" aria-label="快捷操作">
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small"
-            onclick={copySiyuanRef}
-            title={text("detailCopySiyuanRefTip", "复制可在思源笔记正文中粘贴的锚文本双链引用 ((docId '姓名'))")}
-        >
-            {#if siyuanRefCopied}
-                <Check size={13} class="lvct-text-success" /> {text("detailSiyuanRefCopied", "已复制双链引用 ✓")}
-            {:else}
-                <Link size={13} /> {text("detailCopySiyuanRef", "复制双链引用")}
-            {/if}
-        </button>
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small"
-            onclick={copySiyuanUri}
-            title={text("detailSiyuanUriTip", "复制可在外部应用（如微信、飞书、邮件）中点击直接唤起思源打开该联系人文档的 siyuan:// 链接")}
-        >
-            {#if siyuanUriCopied}
-                <Check size={13} class="lvct-text-success" /> {text("detailSiyuanUriCopied", "已复制深度链接 ✓")}
-            {:else}
-                <ExternalLink size={13} /> {text("detailCopySiyuanUri", "复制深度链接")}
-            {/if}
-        </button>
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small"
-            onclick={() => onOpenPersonDoc(current.docId)}
-            title={text("detailOpenNoteDocTip", "在思源中打开该联系人的独立文档")}
-        >
-            <FileText size={13} /> {text("detailOpenNoteDoc", "打开笔记文档")}
-        </button>
-        {#if onSyncDocProfile}
+        <div class="lvct-detail__quick-group" role="group" aria-label="思源与网络连接">
             <button
                 type="button"
                 class="b3-button b3-button--outline b3-button--small"
-                onclick={handleSyncDocProfile}
-                title={text("detailSyncDocTip", "将该联系人的基本资料与往来互动，同步写入到思源独立笔记文档正文中，实现文档即档案")}
-                disabled={docSyncing}
+                onclick={copySiyuanRef}
+                title={text("detailCopySiyuanRefTip", "复制可在思源笔记正文中粘贴的锚文本双链引用 ((docId '姓名'))")}
             >
-                {#if docSynced}
-                    <Check size={13} class="lvct-text-success" /> {text("detailDocSynced", "已同步到正文 ✓")}
+                {#if siyuanRefCopied}
+                    <Check size={13} class="lvct-text-success" /> {text("detailSiyuanRefCopied", "已复制双链引用 ✓")}
                 {:else}
-                    <RefreshCw size={13} /> {docSyncing ? text("detailDocSyncing", "同步中…") : text("detailSyncDocProfile", "同步档案到正文")}
+                    <Link size={13} /> {text("detailCopySiyuanRef", "复制双链引用")}
                 {/if}
             </button>
-        {/if}
-        {#if onOpenGraphPerson}
             <button
                 type="button"
                 class="b3-button b3-button--outline b3-button--small"
-                onclick={() => void (async () => { if (await canLeave.requestClose()) { onClose(); onOpenGraphPerson?.(current.docId); } })()}
-                title={text("detailOpenGraphTip", "在关系图谱中聚焦该联系人的一度/二度网络")}
+                onclick={copySiyuanUri}
+                title={text("detailSiyuanUriTip", "复制可在外部应用（如微信、飞书、邮件）中点击直接唤起思源打开该联系人文档的 siyuan:// 链接")}
             >
-                <Network size={13} /> {text("detailOpenGraph", "图谱聚焦")}
+                {#if siyuanUriCopied}
+                    <Check size={13} class="lvct-text-success" /> {text("detailSiyuanUriCopied", "已复制深度链接 ✓")}
+                {:else}
+                    <ExternalLink size={13} /> {text("detailCopySiyuanUri", "复制深度链接")}
+                {/if}
             </button>
-        {/if}
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small"
-            onclick={openBriefingExport}
-            title={text("detailExportBriefingTip", "一键导出会前备忘、背景资料与谈资简报")}
-        >
-            <CalendarDays size={13} /> {text("detailExportBriefing", "导出会前简报")}
-        </button>
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small"
-            onclick={handleExportVcf}
-            title={text("detailExportVcfTip", "导出为标准手机通讯录 .vcf 名片文件（可直接通过微信/隔空投送发给手机导入）")}
-        >
-            {#if vcfExported}
-                <Check size={13} class="lvct-text-success" /> {text("detailVcfExported", "已导出名片 ✓")}
-            {:else}
-                <ContactRound size={13} /> {text("detailExportVcf", "导出名片 (.vcf)")}
-            {/if}
-        </button>
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small lvct-detail__business-card-btn"
-            onclick={() => (cardModalOpen = true)}
-            title={text("detailGenerateCardTip", "生成高保真视觉名片海报与社交微卡片（支持复制 SVG 或下载矢量图）")}
-        >
-            <Image size={13} /> {text("detailGenerateCard", "生成名片海报")}
-        </button>
-        <button
-            type="button"
-            class="b3-button b3-button--outline b3-button--small"
-            onclick={handleCopyVcf}
-            title={text("detailCopyVcfTip", "复制该联系人的标准 vCard 3.0 名片文本到剪贴板")}
-        >
-            {#if vcardCopied}
-                <Check size={13} class="lvct-text-success" /> {text("detailVcfCopied", "已复制名片 ✓")}
-            {:else}
-                <Copy size={13} /> {text("detailCopyVcf", "复制名片")}
-            {/if}
-        </button>
-        {#if onCreateFlashcardsDoc}
             <button
                 type="button"
-                class="b3-button b3-button--outline b3-button--small lvct-detail__flashcard-btn"
-                onclick={handleGenerateFlashcards}
-                disabled={generatingFlashcards}
-                title={text("detailFlashcardsBtnTitle", "将该联系人的基本资料、画像事实与谈资一键生成为思源复习闪卡（Riff Cards）")}
+                class="b3-button b3-button--outline b3-button--small"
+                onclick={() => onOpenPersonDoc(current.docId)}
+                title={text("detailOpenNoteDocTip", "在思源中打开该联系人的独立文档")}
             >
-                <Layers size={13} /> {generatingFlashcards ? text("detailFlashcardsGenerating", "闪卡生成中…") : text("detailFlashcardsBtn", "复习闪卡 ↗")}
+                <FileText size={13} /> {text("detailOpenNoteDoc", "打开笔记文档")}
             </button>
-        {/if}
+            {#if onOpenGraphPerson}
+                <button
+                    type="button"
+                    class="b3-button b3-button--outline b3-button--small"
+                    onclick={() => void (async () => { if (await canLeave.requestClose()) { onClose(); onOpenGraphPerson?.(current.docId); } })()}
+                    title={text("detailOpenGraphTip", "在关系图谱中聚焦该联系人的一度/二度网络")}
+                >
+                    <Network size={13} /> {text("detailOpenGraph", "图谱聚焦")}
+                </button>
+            {/if}
+        </div>
+
+        <div class="lvct-detail__quick-group" role="group" aria-label="名片与沉淀工具">
+            <button
+                type="button"
+                class="b3-button b3-button--outline b3-button--small lvct-detail__business-card-btn"
+                onclick={() => (cardModalOpen = true)}
+                title={text("detailGenerateCardTip", "生成高保真视觉名片海报与社交微卡片（支持复制 SVG 或下载矢量图）")}
+            >
+                <Image size={13} /> {text("detailGenerateCard", "生成名片海报")}
+            </button>
+            <button
+                type="button"
+                class="b3-button b3-button--outline b3-button--small"
+                onclick={handleExportVcf}
+                title={text("detailExportVcfTip", "导出为标准手机通讯录 .vcf 名片文件（可直接通过微信/隔空投送发给手机导入）")}
+            >
+                {#if vcfExported}
+                    <Check size={13} class="lvct-text-success" /> {text("detailVcfExported", "已导出名片 ✓")}
+                {:else}
+                    <ContactRound size={13} /> {text("detailExportVcf", "导出名片 (.vcf)")}
+                {/if}
+            </button>
+            <button
+                type="button"
+                class="b3-button b3-button--outline b3-button--small"
+                onclick={handleCopyVcf}
+                title={text("detailCopyVcfTip", "复制该联系人的标准 vCard 3.0 名片文本到剪贴板")}
+            >
+                {#if vcardCopied}
+                    <Check size={13} class="lvct-text-success" /> {text("detailVcfCopied", "已复制名片 ✓")}
+                {:else}
+                    <Copy size={13} /> {text("detailCopyVcf", "复制名片")}
+                {/if}
+            </button>
+            <button
+                type="button"
+                class="b3-button b3-button--outline b3-button--small"
+                onclick={openBriefingExport}
+                title={text("detailExportBriefingTip", "一键导出会前备忘、背景资料与谈资简报")}
+            >
+                <CalendarDays size={13} /> {text("detailExportBriefing", "导出会前简报")}
+            </button>
+            {#if onCreateFlashcardsDoc}
+                <button
+                    type="button"
+                    class="b3-button b3-button--outline b3-button--small lvct-detail__flashcard-btn"
+                    onclick={handleGenerateFlashcards}
+                    disabled={generatingFlashcards}
+                    title={text("detailFlashcardsBtnTitle", "将该联系人的基本资料、画像事实与谈资一键生成为思源复习闪卡（Riff Cards）")}
+                >
+                    <Layers size={13} /> {generatingFlashcards ? text("detailFlashcardsGenerating", "闪卡生成中…") : text("detailFlashcardsBtn", "复习闪卡 ↗")}
+                </button>
+            {/if}
+            {#if onSyncDocProfile}
+                <button
+                    type="button"
+                    class="b3-button b3-button--outline b3-button--small"
+                    onclick={handleSyncDocProfile}
+                    title={text("detailSyncDocTip", "将该联系人的基本资料与往来互动，同步写入到思源独立笔记文档正文中，实现文档即档案")}
+                    disabled={docSyncing}
+                >
+                    {#if docSynced}
+                        <Check size={13} class="lvct-text-success" /> {text("detailDocSynced", "已同步到正文 ✓")}
+                    {:else}
+                        <RefreshCw size={13} /> {docSyncing ? text("detailDocSyncing", "同步中…") : text("detailSyncDocProfile", "同步档案到正文")}
+                    {/if}
+                </button>
+            {/if}
+        </div>
     </div>
 
     {#if flashcardsDocInfo}

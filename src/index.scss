@@ -1610,12 +1610,12 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     flex-wrap: wrap;
     gap: 8px 12px;
     padding: 8px 16px;
-    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-elevated));
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 25%, var(--lvct-border-subtle));
+    border-radius: var(--lv-r-md, 12px);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 6%, var(--lvct-bg-elevated));
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--lv-brand, #ea580c) 14%, transparent), 0 2px 6px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: var(--lvct-shadow-2);
     animation: lvct-pop-in var(--lvct-dur-base) var(--lvct-ease-spring);
 
     b {
@@ -1642,9 +1642,9 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
 }
 
 html[data-theme-mode="dark"] .lvct-people__batchbar {
-    background: color-mix(in srgb, var(--lvct-accent) 12%, var(--lvct-bg-elevated));
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--lvct-accent) 10%, var(--lvct-bg-elevated));
+    border-color: var(--lvct-border-subtle);
+    box-shadow: var(--lvct-shadow-2);
 }
 
 .lvct-people__remove {
@@ -5330,19 +5330,36 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--lvct-sp-2);
-    padding: var(--lvct-sp-2) var(--lvct-sp-3);
-    background: var(--b3-theme-surface);
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
-    border-radius: var(--lvct-r-md);
-    margin-bottom: var(--lvct-sp-2);
+    gap: var(--lvct-sp-2, 8px);
+    padding: var(--lvct-sp-2, 8px) 0;
+    margin-bottom: var(--lvct-sp-2, 8px);
+    border-bottom: 1px solid var(--lvct-border-hairline, rgba(223, 231, 243, 0.6));
 
-    .b3-button {
+    .lvct-detail__quick-group {
         display: inline-flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 4px;
-        font-size: 11.5px;
-        padding: 3px 9px;
+        padding: 3px 6px;
+        background: var(--lvct-bg-app);
+        border-radius: var(--lv-r-sm, 8px);
+        border: 1px solid var(--lvct-border-subtle);
+
+        .b3-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            padding: 3px 8px;
+            background: var(--lvct-bg-surface);
+            border-color: transparent;
+            box-shadow: none;
+
+            &:hover:not(:disabled) {
+                background: var(--lvct-bg-hover);
+                border-color: var(--lvct-border-strong);
+            }
+        }
     }
 }
 
@@ -10073,17 +10090,30 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         flex-wrap: wrap;
         justify-content: flex-end;
         align-items: center;
-        gap: var(--lvct-sp-1);
+        gap: 3px;
+        background: var(--lvct-bg-app);
+        padding: 3px 6px;
+        border-radius: var(--lv-r-sm, 8px);
+        border: 1px solid var(--lvct-border-subtle);
         min-width: 0;
 
         .b3-button {
-            white-space: normal;
-            text-align: left;
+            white-space: nowrap;
+            font-size: 11.5px;
+            padding: 3px 8px;
+            min-height: 26px;
+            border-radius: 6px;
             color: var(--lvct-text-2);
             border-color: transparent;
             background: transparent;
+            box-shadow: none;
 
-            &:hover:not(:disabled) { color: var(--lvct-text-1); background: var(--lvct-bg-hover); border-color: transparent; }
+            &:hover:not(:disabled) {
+                color: var(--lvct-text-1);
+                background: var(--lvct-bg-surface);
+                border-color: transparent;
+                box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+            }
         }
     }
 

@@ -139,7 +139,7 @@
                     {#if person.group}<span class="lvct-chip lvct-chip--group font-size-11">{person.group}</span>{/if}
                     {#if birthday}<span class="lvct-person-card__bday font-size-11" style="display: inline-flex; align-items: center;"><Cake size={11} class="lvct-icon-inline" /> {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天后`}</span>{/if}
                     {#if recent && health.level !== "unknown"}
-                        <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-11`} style="font-size: 10px; padding: 0 4px; border-radius: 999px;" title={`关系温度 ${health.score}%${recent.count ? ` · 共交往 ${recent.count} 次` : ""}`}>
+                        <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-11 lvct-person-card__heat-pill`} title={`关系温度 ${health.score}%${recent.count ? ` · 共交往 ${recent.count} 次` : ""}`}>
                             {health.level === "hot" ? "温热" : health.level === "warm" ? "常温" : health.level === "cool" ? "微凉" : health.level === "cold" ? "渐冻" : "暂停"}
                         </span>
                     {/if}
@@ -272,7 +272,7 @@
                     <span class="lvct-text-muted font-size-11" style="margin-left: 2px;">({recent.count}次)</span>
                 {/if}
                 {#if recent && health.level !== "unknown"}
-                    <span class={`lvct-heat ${heatLevelColorClass(health.level)}`} style="font-size: 10px; padding: 1px 5px; margin-left: 4px;" title={`关系温度 ${health.score}%${recent.count ? ` · 共交往 ${recent.count} 次` : ""}`}>
+                    <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-11 lvct-person-card__heat-pill`} title={`关系温度 ${health.score}%${recent.count ? ` · 共交往 ${recent.count} 次` : ""}`}>
                         {health.level === "hot" ? "温热" : health.level === "warm" ? "常温" : health.level === "cool" ? "微凉" : health.level === "cold" ? "渐冻" : "已暂停"}
                     </span>
                 {/if}
