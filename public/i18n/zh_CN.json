@@ -1667,5 +1667,20 @@
   "captureFactHint": "选填。勾选的参与人员文档中将自动追加此条事实（带本文来源链接出处）。",
   "commonClose": "关闭",
   "focusFromCity": "来自城市",
-  "focusClearCity": "清除城市筛选"
+  "focusClearCity": "清除城市筛选",
+  "stripRecordDialogTitle": "记一笔互动 · {name}",
+  "stripOrgBadge": "🏢 组织",
+  "stripOrgMembers": "名册成员",
+  "stripOrgMembersTitle": "在名册中筛选属于「{name}」的联系人",
+  "stripOrgsPanorama": "组织全景",
+  "stripOrgsPanoramaTitle": "打开小驴人脉组织全貌看板",
+  "stripCityBadge": "📍 城市人脉",
+  "stripCityContactsBadge": "常驻好友 {count} 人",
+  "stripCityFriends": "同城好友",
+  "stripCityFriendsTitle": "在名册中筛选常驻「{name}」的联系人",
+  "stripTripPlanner": "行程规划",
+  "stripTripPlannerTitle": "打开小驴人脉城市与行程助手，探索同城与周边好友",
+  "stripAvatarFallbackPerson": "人",
+  "stripAvatarFallbackOrg": "组",
+  "stripAvatarFallbackCity": "市"
 }

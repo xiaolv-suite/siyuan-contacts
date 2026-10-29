@@ -166,7 +166,7 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
             person,
             roster,
             interactionStore.events,
-            orgLine ? [{ label: "单位", value: orgLine }] : [],
+            orgLine ? [{ label: t(context, "peopleColumnOrg", "单位"), value: orgLine }] : [],
         );
         const openFollowUps = followUpStore.items.filter(
             (item) => item.personDocId === person.docId && item.status === "open",
@@ -247,7 +247,7 @@ function buildOrgStrip(
 
     const avatar = document.createElement("span");
     avatar.className = "lvct-strip__avatar lvct-strip__avatar--org";
-    avatar.textContent = org.name.slice(0, 1) || "组";
+    avatar.textContent = org.name.slice(0, 1) || t(context, "stripAvatarFallbackOrg", "组");
 
     const main = document.createElement("div");
     main.className = "lvct-strip__main";
@@ -260,9 +260,9 @@ function buildOrgStrip(
 
     const badges = document.createElement("div");
     badges.className = "lvct-strip__badges";
-    badges.appendChild(makeBadge("🏢 组织", "lvct-strip__badge--group"));
+    badges.appendChild(makeBadge(t(context, "stripOrgBadge", "🏢 组织"), "lvct-strip__badge--group"));
     if (org.archived) {
-        badges.appendChild(makeBadge("已归档", "lvct-strip__badge--muted"));
+        badges.appendChild(makeBadge(t(context, "orgArchivedTag", "已归档"), "lvct-strip__badge--muted"));
     }
     identity.appendChild(badges);
     main.appendChild(identity);
@@ -272,8 +272,8 @@ function buildOrgStrip(
 
     const filterMembers = document.createElement("button");
     filterMembers.className = "b3-button b3-button--small b3-button--primary";
-    filterMembers.textContent = "名册成员";
-    filterMembers.title = `在名册中筛选属于「${org.name}」的联系人`;
+    filterMembers.textContent = t(context, "stripOrgMembers", "名册成员");
+    filterMembers.title = t(context, "stripOrgMembersTitle", "在名册中筛选属于「{name}」的联系人", { name: org.name });
     filterMembers.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
@@ -292,8 +292,8 @@ function buildOrgStrip(
 
     const openOrgsView = document.createElement("button");
     openOrgsView.className = "b3-button b3-button--small b3-button--outline";
-    openOrgsView.textContent = "组织全景";
-    openOrgsView.title = "打开小驴人脉组织全貌看板";
+    openOrgsView.textContent = t(context, "stripOrgsPanorama", "组织全景");
+    openOrgsView.title = t(context, "stripOrgsPanoramaTitle", "打开小驴人脉组织全貌看板");
     openOrgsView.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
@@ -320,7 +320,7 @@ function buildCityStrip(
 
     const avatar = document.createElement("span");
     avatar.className = "lvct-strip__avatar lvct-strip__avatar--city";
-    avatar.textContent = cityName.slice(0, 1) || "市";
+    avatar.textContent = cityName.slice(0, 1) || t(context, "stripAvatarFallbackCity", "市");
 
     const main = document.createElement("div");
     main.className = "lvct-strip__main";
@@ -333,8 +333,8 @@ function buildCityStrip(
 
     const badges = document.createElement("div");
     badges.className = "lvct-strip__badges";
-    badges.appendChild(makeBadge("📍 城市人脉", "lvct-strip__badge--city"));
-    badges.appendChild(makeBadge(`常驻好友 ${contactCount} 人`, "lvct-strip__badge--activity"));
+    badges.appendChild(makeBadge(t(context, "stripCityBadge", "📍 城市人脉"), "lvct-strip__badge--city"));
+    badges.appendChild(makeBadge(t(context, "stripCityContactsBadge", "常驻好友 {count} 人", { count: contactCount }), "lvct-strip__badge--activity"));
     identity.appendChild(badges);
     main.appendChild(identity);
 
@@ -343,8 +343,8 @@ function buildCityStrip(
 
     const filterCityPeople = document.createElement("button");
     filterCityPeople.className = "b3-button b3-button--small b3-button--primary";
-    filterCityPeople.textContent = "同城好友";
-    filterCityPeople.title = `在名册中筛选常驻「${cityName}」的联系人`;
+    filterCityPeople.textContent = t(context, "stripCityFriends", "同城好友");
+    filterCityPeople.title = t(context, "stripCityFriendsTitle", "在名册中筛选常驻「{name}」的联系人", { name: cityName });
     filterCityPeople.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
@@ -362,8 +362,8 @@ function buildCityStrip(
 
     const openTripPlanner = document.createElement("button");
     openTripPlanner.className = "b3-button b3-button--small b3-button--outline";
-    openTripPlanner.textContent = "行程规划";
-    openTripPlanner.title = "打开小驴人脉城市与行程助手，探索同城与周边好友";
+    openTripPlanner.textContent = t(context, "stripTripPlanner", "行程规划");
+    openTripPlanner.title = t(context, "stripTripPlannerTitle", "打开小驴人脉城市与行程助手，探索同城与周边好友");
     openTripPlanner.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
@@ -393,7 +393,7 @@ function buildStrip(
 
     const avatar = document.createElement("span");
     avatar.className = "lvct-strip__avatar";
-    avatar.textContent = person.name.slice(0, 1) || "人";
+    avatar.textContent = person.name.slice(0, 1) || t(context, "stripAvatarFallbackPerson", "人");
 
     const main = document.createElement("div");
     main.className = "lvct-strip__main";
@@ -582,7 +582,7 @@ function makeBadge(text: string, className: string): HTMLSpanElement {
 function openRecordDialog(context: PanelContext, protyle: ProtyleLike, person: ContactSummary): void {
     if (!context.settings || context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
     svelteDialog({
-        title: `记一笔互动 · ${person.name}`,
+        title: t(context, "stripRecordDialogTitle", "记一笔互动 · {name}", { name: person.name }),
         width: "500px",
         component: QuickRecordDialog,
         props: {
@@ -599,7 +599,7 @@ function openRecordDialog(context: PanelContext, protyle: ProtyleLike, person: C
 function openEditDialog(context: PanelContext, protyle: ProtyleLike, person: ContactSummary): void {
     if (!context.settings || context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
     svelteDialog({
-        title: `编辑资料 · ${person.name}`,
+        title: t(context, "stripEditDialogTitle", "编辑资料 · {name}", { name: person.name }),
         width: "620px",
         component: PersonEditDialog,
         props: {

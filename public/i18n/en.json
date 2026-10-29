@@ -1667,5 +1667,20 @@
   "captureFactHint": "Optional. Automatically appends this fact into selected attendee documents with source block links.",
   "commonClose": "Close",
   "focusFromCity": "From City",
-  "focusClearCity": "Clear City Filter"
+  "focusClearCity": "Clear City Filter",
+  "stripRecordDialogTitle": "Log Interaction · {name}",
+  "stripOrgBadge": "🏢 Organization",
+  "stripOrgMembers": "Roster Members",
+  "stripOrgMembersTitle": "Filter contacts belonging to \"{name}\" in roster",
+  "stripOrgsPanorama": "Organizations Panorama",
+  "stripOrgsPanoramaTitle": "Open organization overview dashboard",
+  "stripCityBadge": "📍 City Network",
+  "stripCityContactsBadge": "{count} Local Friends",
+  "stripCityFriends": "City Friends",
+  "stripCityFriendsTitle": "Filter contacts residing in \"{name}\" in roster",
+  "stripTripPlanner": "Trip Planner",
+  "stripTripPlannerTitle": "Open city and itinerary planner to explore local contacts",
+  "stripAvatarFallbackPerson": "P",
+  "stripAvatarFallbackOrg": "O",
+  "stripAvatarFallbackCity": "C"
 }
