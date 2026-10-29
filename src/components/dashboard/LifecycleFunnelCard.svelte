@@ -100,18 +100,22 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 4px 6px;
+        padding: 5px 8px;
         background: transparent;
         border: 1px solid transparent;
-        border-radius: 4px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         text-align: left;
-        transition: all 0.15s ease;
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .lifecycle-funnel-row:not(:disabled):hover {
-        background: var(--b3-theme-surface-lighter);
-        border-color: var(--b3-border-color);
+        background: var(--lvct-bg-hover, #f5f3f0);
+        transform: translateY(-1px);
+    }
+
+    .lifecycle-funnel-row:not(:disabled):active {
+        transform: translateY(1px);
     }
 
     .lifecycle-funnel-row.is-empty {
@@ -123,7 +127,7 @@
         display: flex;
         align-items: center;
         gap: 5px;
-        width: 82px;
+        width: 84px;
         flex-shrink: 0;
         font-size: 12px;
     }
@@ -135,33 +139,36 @@
 
     .stage-name {
         font-weight: 500;
+        color: var(--lvct-text-1);
     }
 
     .stage-count {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         font-size: 11px;
+        font-variant-numeric: tabular-nums;
     }
 
     .row-bar-wrap {
         flex: 1;
-        height: 8px;
-        background: var(--b3-theme-surface-lighter);
-        border-radius: 4px;
+        height: 7px;
+        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
+        border-radius: var(--lv-r-pill, 9999px);
         overflow: hidden;
     }
 
     .row-bar-fill {
         height: 100%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
+        border-radius: var(--lv-r-pill, 9999px);
+        transition: width var(--lvct-dur-base) var(--lvct-ease);
     }
 
     .row-pct {
         width: 38px;
         text-align: right;
-        font-size: 11px;
+        font-size: 11.5px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-2);
+        font-variant-numeric: tabular-nums;
         flex-shrink: 0;
     }
 
