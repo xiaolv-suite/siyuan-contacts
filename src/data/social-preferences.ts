@@ -77,3 +77,36 @@ export async function removePersonSocialPreference(
         return updated.preferences[personDocId] ? [...updated.preferences[personDocId]] : [];
     });
 }
+
+/** 迁移恢复合并：现状优先合并社交偏好与忌口 */
+export async function mergeSocialPreferencesStore(
+    plugin: Plugin,
+    incoming: PersonSocialPreferencesStore,
+): Promise<{ merged: number; skipped: number }> {
+    return withStoreLock(PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, async () => {
+        const current = normalizeSocialPreferencesStoreForWrite(await loadJsonStrict(plugin, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY));
+        let merged = 0;
+        let skipped = 0;
+        const mergedMap: Record<string, PersonSocialPreferenceItem[]> = { ...current.preferences };
+        for (const [docId, incomingList] of Object.entries(incoming.preferences ?? {})) {
+            if (!Array.isArray(incomingList)) continue;
+            const currentList = mergedMap[docId] ? [...mergedMap[docId]] : [];
+            for (const item of incomingList) {
+                if (!currentList.some((existing) => existing.id === item.id || existing.content === item.content)) {
+                    currentList.push(item);
+                    merged += 1;
+                } else {
+                    skipped += 1;
+                }
+            }
+            mergedMap[docId] = currentList;
+        }
+        if (merged > 0) {
+            await saveJsonVerified(plugin, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, {
+                schemaVersion: 1,
+                preferences: mergedMap,
+            });
+        }
+        return { merged, skipped };
+    });
+}

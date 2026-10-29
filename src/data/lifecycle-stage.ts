@@ -84,3 +84,46 @@ export async function batchUpdatePersonLifecycleStages(
         return { updatedCount, currentStages };
     });
 }
+
+/** 迁移恢复合并：现状优先合并交往生命周期阶段与变迁历史 */
+export async function mergeLifecycleStore(
+    plugin: Plugin,
+    incoming: PersonLifecycleStore,
+): Promise<{ merged: number; skipped: number }> {
+    return withStoreLock(PERSON_LIFECYCLE_STORAGE_KEY, async () => {
+        const current = normalizeLifecycleStoreForWrite(await loadJsonStrict(plugin, PERSON_LIFECYCLE_STORAGE_KEY));
+        let merged = 0;
+        let skipped = 0;
+        const mergedRecords = { ...current.records };
+        for (const [docId, incomingRec] of Object.entries(incoming.records ?? {})) {
+            if (!incomingRec || !incomingRec.currentStage) continue;
+            const existing = mergedRecords[docId];
+            if (!existing || !existing.currentStage) {
+                mergedRecords[docId] = incomingRec;
+                merged += 1;
+            } else {
+                const existingHistSet = new Set(existing.history.map((h) => `${h.stage}_${h.timestamp}`));
+                const combinedHist = [...existing.history];
+                for (const h of incomingRec.history ?? []) {
+                    const key = `${h.stage}_${h.timestamp}`;
+                    if (!existingHistSet.has(key)) {
+                        combinedHist.push(h);
+                        existingHistSet.add(key);
+                    }
+                }
+                mergedRecords[docId] = {
+                    ...existing,
+                    history: combinedHist.sort((a, b) => b.timestamp - a.timestamp),
+                };
+                skipped += 1;
+            }
+        }
+        if (merged > 0) {
+            await saveJsonVerified(plugin, PERSON_LIFECYCLE_STORAGE_KEY, {
+                schemaVersion: 1,
+                records: mergedRecords,
+            });
+        }
+        return { merged, skipped };
+    });
+}

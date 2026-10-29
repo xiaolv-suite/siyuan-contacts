@@ -45,7 +45,7 @@ export async function runMigrationRegression({ test, assert, person, settings, k
         await deletePersonAlias(source.plugin, removed.id);
         const exported = await exportMigrationBundle(source.plugin);
         const parsed = JSON.parse(exported);
-        assert(Object.keys(parsed.modules).length === 15 && parsed.coverage.length === 21, "覆盖矩阵或模块遗漏");
+        assert(Object.keys(parsed.modules).length === 23 && parsed.coverage.length === 29, "覆盖矩阵或模块遗漏");
         assert(parsed.coverage.some((entry) => entry.key === "org-projection-checkpoints.json" && entry.status === "excluded")
             && parsed.coverage.some((entry) => entry.key === "organization-operations.json" && entry.status === "excluded")
             && !Object.values(parsed.modules).some((module) => module?.operations), "本工作区投影请求被跨库重放");
@@ -62,6 +62,14 @@ export async function runMigrationRegression({ test, assert, person, settings, k
         assert((await loadPersonAliasStore(target.plugin)).tombstones.includes(removed.id), "墓碑丢失");
         const again = await importMigrationBundle(target.plugin, exported);
         assert(again.modules.filter((module) => ["exchanges", "aliases"].includes(module.key)).every((module) => module.merged === 0), "重复恢复新增事实");
+        delete parsed.modules.anniversaries;
+        delete parsed.modules.promises;
+        delete parsed.modules.kinships;
+        delete parsed.modules.projects;
+        delete parsed.modules.itineraries;
+        delete parsed.modules.scratchpads;
+        delete parsed.modules.socialPreferences;
+        delete parsed.modules.lifecycleStage;
         delete parsed.modules.occasions;
         delete parsed.modules.giftIdeas;
         delete parsed.modules.topics;

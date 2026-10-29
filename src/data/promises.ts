@@ -74,3 +74,36 @@ export async function removePersonPromise(
         return updated.promises[personDocId] ? [...updated.promises[personDocId]] : [];
     });
 }
+
+/** 迁移恢复合并：现状优先合并双向信诺承诺 */
+export async function mergePromisesStore(
+    plugin: Plugin,
+    incoming: PersonPromisesStore,
+): Promise<{ merged: number; skipped: number }> {
+    return withStoreLock(PERSON_PROMISES_STORAGE_KEY, async () => {
+        const current = normalizePromisesStoreForWrite(await loadJsonStrict(plugin, PERSON_PROMISES_STORAGE_KEY));
+        let merged = 0;
+        let skipped = 0;
+        const mergedMap: Record<string, PersonPromiseItem[]> = { ...current.promises };
+        for (const [docId, incomingList] of Object.entries(incoming.promises ?? {})) {
+            if (!Array.isArray(incomingList)) continue;
+            const currentList = mergedMap[docId] ? [...mergedMap[docId]] : [];
+            for (const item of incomingList) {
+                if (!currentList.some((existing) => existing.id === item.id || (existing.title === item.title && existing.promisedOn === item.promisedOn))) {
+                    currentList.push(item);
+                    merged += 1;
+                } else {
+                    skipped += 1;
+                }
+            }
+            mergedMap[docId] = currentList;
+        }
+        if (merged > 0) {
+            await saveJsonVerified(plugin, PERSON_PROMISES_STORAGE_KEY, {
+                schemaVersion: 1,
+                promises: mergedMap,
+            });
+        }
+        return { merged, skipped };
+    });
+}

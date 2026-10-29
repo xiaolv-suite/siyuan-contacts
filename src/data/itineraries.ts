@@ -73,3 +73,36 @@ export async function togglePersonItineraryChecklist(
         return updated.itineraries[personDocId] ? [...updated.itineraries[personDocId]] : [];
     });
 }
+
+/** 迁移恢复合并：现状优先合并会客行程备忘与准备清单 */
+export async function mergeItinerariesStore(
+    plugin: Plugin,
+    incoming: PersonItineraryStore,
+): Promise<{ merged: number; skipped: number }> {
+    return withStoreLock(ITINERARIES_STORAGE_KEY, async () => {
+        const current = normalizeItineraryStoreForWrite(await loadJsonStrict(plugin, ITINERARIES_STORAGE_KEY));
+        let merged = 0;
+        let skipped = 0;
+        const mergedMap: Record<string, PersonItineraryItem[]> = { ...current.itineraries };
+        for (const [docId, incomingList] of Object.entries(incoming.itineraries ?? {})) {
+            if (!Array.isArray(incomingList)) continue;
+            const currentList = mergedMap[docId] ? [...mergedMap[docId]] : [];
+            for (const item of incomingList) {
+                if (!currentList.some((existing) => existing.id === item.id || (existing.title === item.title && existing.targetDate === item.targetDate))) {
+                    currentList.push(item);
+                    merged += 1;
+                } else {
+                    skipped += 1;
+                }
+            }
+            mergedMap[docId] = currentList;
+        }
+        if (merged > 0) {
+            await saveJsonVerified(plugin, ITINERARIES_STORAGE_KEY, {
+                schemaVersion: 1,
+                itineraries: mergedMap,
+            });
+        }
+        return { merged, skipped };
+    });
+}

@@ -47,6 +47,22 @@ import { loadGiftIdeaStoreStrict, mergeGiftIdeasStore, GIFT_IDEAS_STORAGE_KEY } 
 import { normalizeGiftIdeaStoreForWrite, type GiftIdeaStore } from "../domain/gift-ideas";
 import { loadOccasionStoreStrict, mergeOccasionsStore, OCCASIONS_STORAGE_KEY } from "../data/occasions";
 import { normalizeOccasionStoreForWrite, type OccasionStore } from "../domain/occasion-cluster";
+import { loadAnniversaryStoreStrict, mergeAnniversariesStore, ANNIVERSARIES_STORAGE_KEY } from "../data/anniversaries";
+import { normalizeAnniversaryStoreForWrite, type AnniversaryStore } from "../domain/anniversaries";
+import { loadPromisesStoreStrict, mergePromisesStore, PERSON_PROMISES_STORAGE_KEY } from "../data/promises";
+import { normalizePromisesStoreForWrite, type PersonPromisesStore } from "../domain/promises";
+import { loadKinshipStoreStrict, mergeKinshipStore, PERSON_KINSHIP_STORAGE_KEY } from "../data/kinship";
+import { normalizeKinshipStoreForWrite, type PersonKinshipStore } from "../domain/kinship";
+import { loadPersonProjectsStoreStrict, mergePersonProjectsStore, PERSON_PROJECTS_STORAGE_KEY } from "../data/projects";
+import { normalizePersonProjectsStoreForWrite, type PersonProjectsStore } from "../domain/projects";
+import { loadItinerariesStoreStrict, mergeItinerariesStore, ITINERARIES_STORAGE_KEY } from "../data/itineraries";
+import { normalizeItineraryStoreForWrite, type PersonItineraryStore } from "../domain/itineraries";
+import { loadScratchpadStoreStrict, mergeScratchpadsStore, PERSON_SCRATCHPAD_STORAGE_KEY } from "../data/person-scratchpad";
+import { normalizeScratchpadStoreForWrite, type PersonScratchpadStore } from "../domain/person-scratchpad";
+import { loadSocialPreferencesStoreStrict, mergeSocialPreferencesStore, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY } from "../data/social-preferences";
+import { normalizeSocialPreferencesStoreForWrite, type PersonSocialPreferencesStore } from "../domain/social-preferences";
+import { loadLifecycleStoreStrict, mergeLifecycleStore, PERSON_LIFECYCLE_STORAGE_KEY } from "../data/lifecycle-stage";
+import { normalizeLifecycleStoreForWrite, type PersonLifecycleStore } from "../domain/lifecycle-stage";
 import { TRASH_STORAGE_KEY } from "../data/trash";
 import { parseTopicStore } from "../domain/topics";
 import type { PersonTopicStore } from "../domain/topics";
@@ -55,7 +71,8 @@ const BUNDLE_SCHEMA_VERSION = 1;
 export const MIGRATION_BUNDLE_STORAGE_KEY = "lvct-migration-bundle";
 
 export interface MigrationModulePreview {
-    key: "interactions" | "followUps" | "cadences" | "reminderDismissals" | "registry" | "templates" | "exchanges" | "aliases" | "selfIdentity" | "orgMemberships" | "organizationProfiles" | "relationshipLabels" | "topics" | "giftIdeas" | "occasions";
+    key: "interactions" | "followUps" | "cadences" | "reminderDismissals" | "registry" | "templates" | "exchanges" | "aliases" | "selfIdentity" | "orgMemberships" | "organizationProfiles" | "relationshipLabels" | "topics" | "giftIdeas" | "occasions"
+        | "anniversaries" | "promises" | "kinships" | "projects" | "itineraries" | "scratchpads" | "socialPreferences" | "lifecycleStage";
     label: string;
     count: number;
     tombstones?: number;
@@ -77,6 +94,14 @@ export const MIGRATION_COVERAGE = [
     { key: TOPICS_STORAGE_KEY, status: "included", module: "topics" },
     { key: GIFT_IDEAS_STORAGE_KEY, status: "included", module: "giftIdeas" },
     { key: OCCASIONS_STORAGE_KEY, status: "included", module: "occasions" },
+    { key: ANNIVERSARIES_STORAGE_KEY, status: "included", module: "anniversaries" },
+    { key: PERSON_PROMISES_STORAGE_KEY, status: "included", module: "promises" },
+    { key: PERSON_KINSHIP_STORAGE_KEY, status: "included", module: "kinships" },
+    { key: PERSON_PROJECTS_STORAGE_KEY, status: "included", module: "projects" },
+    { key: ITINERARIES_STORAGE_KEY, status: "included", module: "itineraries" },
+    { key: PERSON_SCRATCHPAD_STORAGE_KEY, status: "included", module: "scratchpads" },
+    { key: PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, status: "included", module: "socialPreferences" },
+    { key: PERSON_LIFECYCLE_STORAGE_KEY, status: "included", module: "lifecycleStage" },
     { key: "org-projection-checkpoints.json", status: "excluded", reason: "本工作区未完成文档投影请求，不跨库重放" },
     { key: "organization-operations.json", status: "excluded", reason: "本工作区组织创建/改名操作断点，不跨库重放" },
     { key: "bridge-requests.json", status: "excluded", reason: "本工作区外部桥请求断点，不跨库重放" },
@@ -101,6 +126,14 @@ interface BundleModules {
     topics?: PersonTopicStore;
     giftIdeas?: GiftIdeaStore;
     occasions?: OccasionStore;
+    anniversaries?: AnniversaryStore;
+    promises?: PersonPromisesStore;
+    kinships?: PersonKinshipStore;
+    projects?: PersonProjectsStore;
+    itineraries?: PersonItineraryStore;
+    scratchpads?: PersonScratchpadStore;
+    socialPreferences?: PersonSocialPreferencesStore;
+    lifecycleStage?: PersonLifecycleStore;
 }
 
 interface MigrationBundle {
@@ -112,6 +145,7 @@ interface MigrationBundle {
 
 const MIGRATION_MODULE_KEYS = new Set<MigrationModulePreview["key"]>([
     "interactions", "followUps", "cadences", "reminderDismissals", "registry", "templates", "exchanges", "aliases", "selfIdentity", "orgMemberships", "organizationProfiles", "relationshipLabels", "topics", "giftIdeas", "occasions",
+    "anniversaries", "promises", "kinships", "projects", "itineraries", "scratchpads", "socialPreferences", "lifecycleStage",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -180,6 +214,14 @@ function validateBundleModules(value: unknown): asserts value is BundleModules {
     if (value.topics !== undefined) parseTopicStore(requireModuleEnvelope(value.topics, "谈资备忘"));
     if (value.giftIdeas !== undefined) normalizeGiftIdeaStoreForWrite(requireModuleEnvelope(value.giftIdeas, "礼物点子与偏好"));
     if (value.occasions !== undefined) normalizeOccasionStoreForWrite(requireModuleEnvelope(value.occasions, "群体活动与场合"));
+    if (value.anniversaries !== undefined) normalizeAnniversaryStoreForWrite(requireModuleEnvelope(value.anniversaries, "重要纪念日"));
+    if (value.promises !== undefined) normalizePromisesStoreForWrite(requireModuleEnvelope(value.promises, "双向承诺"));
+    if (value.kinships !== undefined) normalizeKinshipStoreForWrite(requireModuleEnvelope(value.kinships, "亲属谱系"));
+    if (value.projects !== undefined) normalizePersonProjectsStoreForWrite(requireModuleEnvelope(value.projects, "协作项目"));
+    if (value.itineraries !== undefined) normalizeItineraryStoreForWrite(requireModuleEnvelope(value.itineraries, "会客行程"));
+    if (value.scratchpads !== undefined) normalizeScratchpadStoreForWrite(requireModuleEnvelope(value.scratchpads, "闪念便签"));
+    if (value.socialPreferences !== undefined) normalizeSocialPreferencesStoreForWrite(requireModuleEnvelope(value.socialPreferences, "社交偏好与忌口"));
+    if (value.lifecycleStage !== undefined) normalizeLifecycleStoreForWrite(requireModuleEnvelope(value.lifecycleStage, "交往生命周期阶段"));
     if (value.selfIdentity !== undefined) {
         const module = requireModuleEnvelope(value.selfIdentity, "本人身份");
         if (!("identity" in module)) throw new Error("本人身份模块缺少 identity，拒绝导入");
@@ -207,7 +249,8 @@ function parseBundle(text: string): MigrationBundle {
 }
 
 export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
-    const [interactions, followUps, cadences, reminderDismissals, registry, templatesStore, exchanges, aliases, identity, orgMemberships, organizationProfiles, relationshipLabels, topics, giftIdeas, occasions] = await Promise.all([
+    const [interactions, followUps, cadences, reminderDismissals, registry, templatesStore, exchanges, aliases, identity, orgMemberships, organizationProfiles, relationshipLabels, topics, giftIdeas, occasions,
+        anniversaries, promises, kinships, projects, itineraries, scratchpads, socialPreferences, lifecycleStage] = await Promise.all([
         JSON.parse(await exportInteractionJson(plugin)) as BundleModules["interactions"],
         JSON.parse(await exportFollowUpsJson(plugin)) as BundleModules["followUps"],
         loadCadenceMapStrict(plugin),
@@ -223,6 +266,14 @@ export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
         withStoreLock(TOPICS_STORAGE_KEY, () => loadTopicsStoreStrict(plugin)),
         withStoreLock(GIFT_IDEAS_STORAGE_KEY, () => loadGiftIdeaStoreStrict(plugin)),
         withStoreLock(OCCASIONS_STORAGE_KEY, () => loadOccasionStoreStrict(plugin)),
+        withStoreLock(ANNIVERSARIES_STORAGE_KEY, () => loadAnniversaryStoreStrict(plugin)),
+        withStoreLock(PERSON_PROMISES_STORAGE_KEY, () => loadPromisesStoreStrict(plugin)),
+        withStoreLock(PERSON_KINSHIP_STORAGE_KEY, () => loadKinshipStoreStrict(plugin)),
+        withStoreLock(PERSON_PROJECTS_STORAGE_KEY, () => loadPersonProjectsStoreStrict(plugin)),
+        withStoreLock(ITINERARIES_STORAGE_KEY, () => loadItinerariesStoreStrict(plugin)),
+        withStoreLock(PERSON_SCRATCHPAD_STORAGE_KEY, () => loadScratchpadStoreStrict(plugin)),
+        withStoreLock(PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, () => loadSocialPreferencesStoreStrict(plugin)),
+        withStoreLock(PERSON_LIFECYCLE_STORAGE_KEY, () => loadLifecycleStoreStrict(plugin)),
     ]);
     return JSON.stringify({
         schemaVersion: BUNDLE_SCHEMA_VERSION,
@@ -245,6 +296,14 @@ export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
             topics,
             giftIdeas,
             occasions,
+            anniversaries,
+            promises,
+            kinships,
+            projects,
+            itineraries,
+            scratchpads,
+            socialPreferences,
+            lifecycleStage,
         },
     }, null, 2);
 }
@@ -295,6 +354,38 @@ export function previewMigrationImport(text: string): MigrationModulePreview[] {
     if (modules.occasions) {
         const totalCount = Array.isArray(modules.occasions.occasions) ? modules.occasions.occasions.length : 0;
         push("occasions", "群体活动与场合", totalCount);
+    }
+    if (modules.anniversaries) {
+        const totalCount = Object.values(modules.anniversaries.anniversaries ?? {}).reduce((acc: number, list) => acc + (Array.isArray(list) ? list.length : 0), 0);
+        push("anniversaries", "重要纪念日", totalCount);
+    }
+    if (modules.promises) {
+        const count = Object.values(modules.promises.promises ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("promises", "双向信诺约定", count);
+    }
+    if (modules.kinships) {
+        const count = Object.values(modules.kinships.kinships ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("kinships", "家庭亲属谱系", count);
+    }
+    if (modules.projects) {
+        const count = Object.values(modules.projects.projects ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("projects", "协作项目记录", count);
+    }
+    if (modules.itineraries) {
+        const count = Object.values(modules.itineraries.itineraries ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("itineraries", "会客行程备忘", count);
+    }
+    if (modules.scratchpads) {
+        const count = Object.values(modules.scratchpads.notes ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("scratchpads", "闪念速记便签", count);
+    }
+    if (modules.socialPreferences) {
+        const count = Object.values(modules.socialPreferences.preferences ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("socialPreferences", "社交偏好与忌口", count);
+    }
+    if (modules.lifecycleStage) {
+        const count = Object.keys(modules.lifecycleStage.records ?? {}).length;
+        push("lifecycleStage", "交往生命周期阶段", count);
     }
     return previews;
 }
@@ -538,6 +629,62 @@ export async function importMigrationBundle(plugin: Plugin, text: string): Promi
             const incoming = normalizeOccasionStoreForWrite(modules.occasions);
             const summary = await mergeOccasionsStore(plugin, incoming);
             result.modules.push({ key: "occasions", label: "群体活动与场合", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.anniversaries) {
+        await runModule("anniversaries", "重要纪念日", async () => {
+            const incoming = normalizeAnniversaryStoreForWrite(modules.anniversaries!);
+            const summary = await mergeAnniversariesStore(plugin, incoming);
+            result.modules.push({ key: "anniversaries", label: "重要纪念日", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.promises) {
+        await runModule("promises", "双向信诺约定", async () => {
+            const incoming = normalizePromisesStoreForWrite(modules.promises!);
+            const summary = await mergePromisesStore(plugin, incoming);
+            result.modules.push({ key: "promises", label: "双向信诺约定", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.kinships) {
+        await runModule("kinships", "家庭亲属谱系", async () => {
+            const incoming = normalizeKinshipStoreForWrite(modules.kinships!);
+            const summary = await mergeKinshipStore(plugin, incoming);
+            result.modules.push({ key: "kinships", label: "家庭亲属谱系", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.projects) {
+        await runModule("projects", "协作项目记录", async () => {
+            const incoming = normalizePersonProjectsStoreForWrite(modules.projects!);
+            const summary = await mergePersonProjectsStore(plugin, incoming);
+            result.modules.push({ key: "projects", label: "协作项目记录", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.itineraries) {
+        await runModule("itineraries", "会客行程备忘", async () => {
+            const incoming = normalizeItineraryStoreForWrite(modules.itineraries!);
+            const summary = await mergeItinerariesStore(plugin, incoming);
+            result.modules.push({ key: "itineraries", label: "会客行程备忘", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.scratchpads) {
+        await runModule("scratchpads", "闪念速记便签", async () => {
+            const incoming = normalizeScratchpadStoreForWrite(modules.scratchpads!);
+            const summary = await mergeScratchpadsStore(plugin, incoming);
+            result.modules.push({ key: "scratchpads", label: "闪念速记便签", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.socialPreferences) {
+        await runModule("socialPreferences", "社交偏好与忌口", async () => {
+            const incoming = normalizeSocialPreferencesStoreForWrite(modules.socialPreferences!);
+            const summary = await mergeSocialPreferencesStore(plugin, incoming);
+            result.modules.push({ key: "socialPreferences", label: "社交偏好与忌口", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.lifecycleStage) {
+        await runModule("lifecycleStage", "交往生命周期阶段", async () => {
+            const incoming = normalizeLifecycleStoreForWrite(modules.lifecycleStage!);
+            const summary = await mergeLifecycleStore(plugin, incoming);
+            result.modules.push({ key: "lifecycleStage", label: "交往生命周期阶段", merged: summary.merged, skipped: summary.skipped });
         });
     }
     const pending = new Set([...result.failed.map((module) => module.key), ...result.issues.map((entry) => entry.key)]);

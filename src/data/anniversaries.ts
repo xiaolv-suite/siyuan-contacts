@@ -90,3 +90,36 @@ export async function listUpcomingAnniversaries(
     }
     return upcomingAnniversaries(allItems, windowDays, now);
 }
+
+/** 迁移恢复合并：现状优先合并纪念日 */
+export async function mergeAnniversariesStore(
+    plugin: Plugin,
+    incoming: AnniversaryStore,
+): Promise<{ merged: number; skipped: number }> {
+    return withStoreLock(ANNIVERSARIES_STORAGE_KEY, async () => {
+        const current = normalizeAnniversaryStoreForWrite(await loadJsonStrict(plugin, ANNIVERSARIES_STORAGE_KEY));
+        let merged = 0;
+        let skipped = 0;
+        const mergedMap: Record<string, AnniversaryItem[]> = { ...current.anniversaries };
+        for (const [docId, incomingList] of Object.entries(incoming.anniversaries ?? {})) {
+            if (!Array.isArray(incomingList)) continue;
+            const currentList = mergedMap[docId] ? [...mergedMap[docId]] : [];
+            for (const item of incomingList) {
+                if (!currentList.some((existing) => existing.id === item.id || (existing.title === item.title && existing.date === item.date))) {
+                    currentList.push(item);
+                    merged += 1;
+                } else {
+                    skipped += 1;
+                }
+            }
+            mergedMap[docId] = currentList;
+        }
+        if (merged > 0) {
+            await saveJsonVerified(plugin, ANNIVERSARIES_STORAGE_KEY, {
+                schemaVersion: 1,
+                anniversaries: mergedMap,
+            });
+        }
+        return { merged, skipped };
+    });
+}

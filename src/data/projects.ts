@@ -85,3 +85,36 @@ export async function findCollaboratorsByProject(
     const store = await loadPersonProjectsStore(plugin);
     return findPeopleByProject(store, matcher);
 }
+
+/** 迁移恢复合并：现状优先合并协作项目记录 */
+export async function mergePersonProjectsStore(
+    plugin: Plugin,
+    incoming: PersonProjectsStore,
+): Promise<{ merged: number; skipped: number }> {
+    return withStoreLock(PERSON_PROJECTS_STORAGE_KEY, async () => {
+        const current = normalizePersonProjectsStoreForWrite(await loadJsonStrict(plugin, PERSON_PROJECTS_STORAGE_KEY));
+        let merged = 0;
+        let skipped = 0;
+        const mergedMap: Record<string, PersonProjectItem[]> = { ...current.projects };
+        for (const [docId, incomingList] of Object.entries(incoming.projects ?? {})) {
+            if (!Array.isArray(incomingList)) continue;
+            const currentList = mergedMap[docId] ? [...mergedMap[docId]] : [];
+            for (const item of incomingList) {
+                if (!currentList.some((existing) => existing.id === item.id || (existing.title === item.title && existing.role === item.role))) {
+                    currentList.push(item);
+                    merged += 1;
+                } else {
+                    skipped += 1;
+                }
+            }
+            mergedMap[docId] = currentList;
+        }
+        if (merged > 0) {
+            await saveJsonVerified(plugin, PERSON_PROJECTS_STORAGE_KEY, {
+                schemaVersion: 1,
+                projects: mergedMap,
+            });
+        }
+        return { merged, skipped };
+    });
+}
