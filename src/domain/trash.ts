@@ -119,6 +119,19 @@ export function daysUntilTrashExpiration(entry: TrashContactEntry, nowTime: numb
     return Math.max(0, Math.min(TRASH_RETENTION_DAYS, Math.ceil(remainingMs / (86400 * 1000))));
 }
 
+/** 纯函数：根据关键词过滤回收站条目（匹配姓名、电话、分组或标签） */
+export function filterTrashEntries(entries: readonly TrashContactEntry[], query: string): TrashContactEntry[] {
+    const q = query.trim().toLowerCase();
+    if (!q) return [...entries];
+    return entries.filter((entry) => {
+        const matchName = entry.name.toLowerCase().includes(q);
+        const matchPhone = (entry.snapshot.phone ?? "").toLowerCase().includes(q);
+        const matchGroup = (entry.snapshot.group ?? "").toLowerCase().includes(q);
+        const matchTag = entry.snapshot.tags.some((t) => t.toLowerCase().includes(q));
+        return matchName || matchPhone || matchGroup || matchTag;
+    });
+}
+
 /** 容错读取归一化（坏条目过滤，安全展示） */
 export function normalizeTrashStore(raw: unknown): TrashStore {
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return emptyTrashStore();

@@ -34,6 +34,8 @@ const {
     removeOccasionFromStore,
     updateOccasionInStore,
     validateOccasion,
+    filterOccasions,
+    OCCASION_TYPE_LABELS,
     MAX_OCCASIONS,
 } = await import("../src/domain/occasion-cluster.ts");
 type OccasionEntity = import("../src/domain/occasion-cluster.ts").OccasionEntity;
@@ -246,6 +248,29 @@ test("E-30 occasion 数据层：saveOccasionEntity、listOccasionEntities、upda
 
     memory.set(OCCASIONS_STORAGE_KEY, { schemaVersion: 999, occasions: [] });
     await assert.rejects(() => loadOccasionStoreStrict(plugin), StoreIntegrityError);
+});
+
+test("E-30 occasion: filterOccasions 组合过滤与 OCCASION_TYPE_LABELS 标签元数据", () => {
+    const o1 = mockOccasion({ id: "o1", title: "年度战略复盘会", type: "meeting", place: "总部一号会议室", attendees: [{ personDocId: doc1, name: "张三" }] });
+    const o2 = mockOccasion({ id: "o2", title: "华东技术峰会", type: "conference", place: "上海国际博览中心", attendees: [{ personDocId: doc2, name: "李四" }] });
+    const o3 = mockOccasion({ id: "o3", title: "新老团队聚餐宴请", type: "meal", place: "西湖楼", attendees: [{ personDocId: doc1, name: "张三" }, { personDocId: doc2, name: "李四" }] });
+
+    const list = [o1, o2, o3];
+
+    // 1. 无搜索全返回
+    assert.equal(filterOccasions(list, "").length, 3);
+
+    // 2. 分类筛选
+    assert.deepEqual(filterOccasions(list, "", "conference").map((o) => o.id), ["o2"]);
+    assert.deepEqual(filterOccasions(list, "", "meeting").map((o) => o.id), ["o1"]);
+
+    // 3. 关键词搜索：标题、地点、参与人姓名
+    assert.deepEqual(filterOccasions(list, "博览中心").map((o) => o.id), ["o2"]);
+    assert.deepEqual(filterOccasions(list, "李四").map((o) => o.id), ["o2", "o3"]);
+
+    // 4. 元数据标签覆盖完整
+    assert.equal(OCCASION_TYPE_LABELS.meeting.label, "会议研讨");
+    assert.equal(OCCASION_TYPE_LABELS.conference.icon, "🎙️");
 });
 
 test("E-30 occasion 服务层：createOccasion 自动派生互动事件，deleteOccasion 清理", async () => {

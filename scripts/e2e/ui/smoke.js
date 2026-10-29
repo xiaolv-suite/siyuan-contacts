@@ -11,6 +11,7 @@ import PeopleView from "../../../src/components/people/PeopleView.svelte";
 import SettingsView from "../../../src/components/SettingsView.svelte";
 import ContactMergeWizard from "../../../src/components/people/ContactMergeWizard.svelte";
 import OccasionDialog from "../../../src/components/OccasionDialog.svelte";
+import TrashDrawer from "../../../src/components/people/TrashDrawer.svelte";
 import FollowUpGroupList from "../../../src/components/FollowUpGroupList.svelte";
 import { svelteDialog } from "../../../src/libs/dialog";
 import { getRoster, invalidateRoster } from "../../../src/services/roster";
@@ -11150,6 +11151,178 @@ await test("F-20 首页仪表盘：相识相聚重要周年纪念日与里程碑
 
     await until(() => fixture.querySelectorAll(".anniv-card").length === 1, "筛选今天后卡片数量不为 1");
     assert(fixture.textContent.includes("林总"), "筛选今天后未包含林总");
+
+    fixture.remove();
+});
+
+await test("F-21 首页仪表盘与名册：群体活动大事记大盘（OccasionsHubDialog）全景呈现、参会人员名册下钻与删除闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let listOccasionsCalled = false;
+    let openedPeopleFilter = null;
+
+    const mockOccasions = [
+        {
+            id: "occ-item-1",
+            title: "季度战略复盘会",
+            type: "meeting",
+            date: "2026-10-25",
+            place: "一号会议室",
+            attendees: [
+                { personDocId: "doc-p1", name: "张三", role: "host" },
+                { personDocId: "doc-p2", name: "李四", role: "guest" },
+            ],
+            note: "确认了下一阶段的重构重心",
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+        {
+            id: "occ-item-2",
+            title: "行业开发者大会",
+            type: "conference",
+            date: "2026-10-20",
+            place: "会展中心",
+            attendees: [
+                { personDocId: "doc-p1", name: "张三", role: "guest" },
+            ],
+            createdAt: 1000,
+            updatedAt: 1000,
+        },
+    ];
+
+    const testDashboardData = {
+        people: 2,
+        relations: 1,
+        birthdays: [],
+        birthdaysThisWeek: 0,
+        stale: [],
+        staleTotal: 0,
+        neverContacted: 0,
+        neverContactedItemIds: [],
+        followUps: [],
+        actions: [],
+        neverOrder: {},
+        allPeople: [
+            { docId: "doc-p1", itemId: "i-p1", name: "张三", phone: "", email: "", wechat: "", website: "", birthday: "", isLunar: false, group: "", tags: [], relatedItemIds: [] },
+            { docId: "doc-p2", itemId: "i-p2", name: "李四", phone: "", email: "", wechat: "", website: "", birthday: "", isLunar: false, group: "", tags: [], relatedItemIds: [] },
+        ],
+        heatDistribution: {
+            hot: { count: 1, percentage: 50, itemIds: ["i-p1"] },
+            warm: { count: 1, percentage: 50, itemIds: ["i-p2"] },
+            cool: { count: 0, percentage: 0, itemIds: [] },
+            cold: { count: 0, percentage: 0, itemIds: [] },
+            paused: { count: 0, percentage: 0, itemIds: [] },
+            unknown: { count: 0, percentage: 0, itemIds: [] },
+            total: 2,
+        },
+    };
+
+    const facade = {
+        settings,
+        viewPreferences: DEFAULT_VIEW_PREFERENCES,
+        loadDashboard: async () => testDashboardData,
+        loadReminderDismissals: async () => [],
+        listOccasions: async () => {
+            listOccasionsCalled = true;
+            return mockOccasions;
+        },
+        openPersonDoc() {},
+    };
+
+    mount(DashboardView, {
+        target: fixture,
+        props: {
+            facade,
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            onOpenPeople: (filter) => {
+                openedPeopleFilter = filter;
+            },
+            onOpenDetail() {},
+        },
+    });
+
+    // 验证首页「群体活动」按钮
+    await until(() => fixture.textContent.includes("群体活动"), "未找到群体活动按钮");
+    const occBtn = Array.from(fixture.querySelectorAll("button")).find((b) => b.textContent.includes("群体活动"));
+    assert(occBtn, "未找到群体活动按钮元素");
+    occBtn.click();
+
+    // 验证大盘弹窗渲染
+    await until(() => fixture.querySelector(".lvct-occasions-hub"), "未打开群体活动大盘弹窗");
+    assert(listOccasionsCalled, "未调用 listOccasions");
+    assert(fixture.textContent.includes("群体活动总数"), "未渲染群体活动总数指标卡");
+    assert(fixture.textContent.includes("季度战略复盘会"), "未渲染活动标题");
+    assert(fixture.textContent.includes("行业开发者大会"), "未渲染峰会标题");
+    assert(fixture.textContent.includes("一号会议室"), "未渲染地点");
+    assert(fixture.textContent.includes("张三"), "未渲染参会人员张三");
+    assert(fixture.textContent.includes("李四"), "未渲染参会人员李四");
+
+    // 点击「名册下钻」
+    const drilldownBtn = fixture.querySelector(".btn-highlight-people");
+    assert(drilldownBtn, "未找到名册下钻按钮");
+    drilldownBtn.click();
+    assert(openedPeopleFilter?.memberDocIds?.length === 2, "点击名册下钻未传递正确的参会人 ID 列表");
+
+    fixture.remove();
+});
+
+await test("B-15 联系人名册：软删除回收站抽屉（TrashDrawer）30天安全缓冲、列表呈现与一键恢复名册闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    let restoredId = "";
+    let refreshed = false;
+
+    const mockTrash = [
+        {
+            id: "trash-1",
+            docId: "doc-t1",
+            itemId: "row-t1",
+            name: "误删王工",
+            removedAt: Date.now() - 2 * 86400000,
+            expiresAt: Date.now() + 28 * 86400000,
+            snapshot: {
+                phone: "13800009999",
+                email: "wang@example.com",
+                wechat: "wx-wang",
+                group: "研发部",
+                tags: ["全栈架构"],
+                isLunar: false,
+            },
+        },
+    ];
+
+    mount(TrashDrawer, {
+        target: fixture,
+        props: {
+            onListTrash: async () => mockTrash,
+            onRestoreContact: async (id) => {
+                restoredId = id;
+                return { docId: "doc-t1", itemId: "row-t1", name: "误删王工" };
+            },
+            onEmptyTrash: async () => {},
+            onRestored: () => {
+                refreshed = true;
+            },
+            onClose: () => {},
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-trash-drawer"), "未渲染回收站抽屉");
+    await until(() => fixture.textContent.includes("误删王工"), "未渲染已删除联系人王工");
+    assert(fixture.textContent.includes("剩余 28 天"), "未正确计算剩余天数");
+    assert(fixture.textContent.includes("13800009999"), "未渲染联系人电话快照");
+    assert(fixture.textContent.includes("全栈架构"), "未渲染联系人标签快照");
+
+    // 点击恢复联系人
+    const restoreBtn = fixture.querySelector(".btn-restore-contact");
+    assert(restoreBtn, "未找到恢复联系人按钮");
+    restoreBtn.click();
+
+    await until(() => restoredId === "trash-1", "未触发 onRestoreContact 回调");
+    await until(() => refreshed, "未触发 onRestored 回调");
 
     fixture.remove();
 });

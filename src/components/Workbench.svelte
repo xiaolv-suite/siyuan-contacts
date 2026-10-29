@@ -726,8 +726,13 @@
 			                    onCreateBatchFlashcardsDoc={facade.createBatchFlashcardsDoc ? (people, options) => facade.createBatchFlashcardsDoc!(people, options) : undefined}
 			                    onLoadLifecycleStages={facade.loadAllLifecycleStages ? () => facade.loadAllLifecycleStages!() : undefined}
 			                    onBatchUpdateLifecycleStages={facade.batchUpdatePersonLifecycleStages ? (docIds, stage, date, note) => facade.batchUpdatePersonLifecycleStages!(docIds, stage, date, note) : undefined}
-			                    onLoadCadences={facade.loadAllCadences ? () => facade.loadAllCadences!() : undefined}
-		                    onPreviewSelfIdentityChange={(personItemId) => facade.previewSelfIdentityChange(personItemId)}
+                    onLoadCadences={facade.loadAllCadences ? () => facade.loadAllCadences!() : undefined}
+                    onListTrash={facade.listTrash ? () => facade.listTrash!() : undefined}
+                    onRestoreContactFromTrash={facade.restoreContactFromTrash ? (id) => facade.restoreContactFromTrash!(id) : undefined}
+                    onEmptyTrash={facade.emptyTrash ? () => facade.emptyTrash!() : undefined}
+                    onListOccasions={facade.listOccasions ? () => facade.listOccasions!() : undefined}
+                    onDeleteOccasion={facade.deleteOccasion ? (id) => facade.deleteOccasion!(id) : undefined}
+                    onPreviewSelfIdentityChange={(personItemId) => facade.previewSelfIdentityChange(personItemId)}
                     onApplySelfIdentityChange={(preview) => facade.applySelfIdentityChange(preview)}
                     onValidateExtended={async (details) => {
                         if (details.orgMemberships.length) {

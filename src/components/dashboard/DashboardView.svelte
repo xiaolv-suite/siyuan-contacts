@@ -45,6 +45,7 @@
     import PreMeetingHubDialog from "./PreMeetingHubDialog.svelte";
     import CoolingRadarDialog from "./CoolingRadarDialog.svelte";
     import AnniversariesHubDialog from "./AnniversariesHubDialog.svelte";
+    import OccasionsHubDialog from "../people/OccasionsHubDialog.svelte";
     import LifecycleFunnelCard from "./LifecycleFunnelCard.svelte";
     import { translateText } from "../../domain/translation";
     import { useCloseGuard } from "../close-guard";
@@ -169,6 +170,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let preMeetingOpen = $state(false);
     let coolingRadarOpen = $state(false);
     let anniversariesHubOpen = $state(false);
+    let occasionsHubOpen = $state(false);
 
     async function handleGenerateWeeklyDigest() {
         if (!facade.createWeeklyDigestDoc || generatingDigest) return;
@@ -1468,6 +1470,15 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             🎊 {text("dashAnniversariesHub", "近期纪念日")}
                         </button>
                     {/if}
+                    {#if facade.listOccasions}
+                        <button
+                            class="b3-button b3-button--outline lvct-dash__head-action lvct-dash__occasions-btn"
+                            onclick={() => (occasionsHubOpen = true)}
+                            title={text("dashOccasionsHubTitle", "全库群体活动与聚会大事记大盘，查看参会人脉并一键下钻")}
+                        >
+                            🎪 {text("dashOccasionsHub", "群体活动")}
+                        </button>
+                    {/if}
                     {#if overdueCount > 0 && !overdueRetry}
                         <button class="b3-button b3-button--outline lvct-dash__head-action" onclick={postponeOverdueToToday} disabled={alBusy}
                             aria-label={text("dashPostponeOverdue", "把 {n} 条逾期跟进顺延到今天", { n: overdueCount })}>
@@ -2141,6 +2152,30 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                     onOpenDetail(person);
                 }
             }}
+        />
+    </LvctDialog>
+{/if}
+
+{#if occasionsHubOpen}
+    <LvctDialog title={text("occasionsHubDialogTitle", "🎪 群体活动与场合大事记大盘")} wide onClose={() => (occasionsHubOpen = false)}>
+        <OccasionsHubDialog
+            people={data?.allPeople ?? []}
+            onListOccasions={facade.listOccasions ? () => facade.listOccasions!() : undefined}
+            onDeleteOccasion={facade.deleteOccasion ? (id) => facade.deleteOccasion!(id) : undefined}
+            onOpenOccasionDialog={() => {
+                occasionsHubOpen = false;
+                onOpenPeople();
+            }}
+            onOpenPerson={(docId) => {
+                occasionsHubOpen = false;
+                onOpenPeople({ memberDocIds: [docId] });
+            }}
+            onOpenPeople={(filter) => {
+                occasionsHubOpen = false;
+                onOpenPeople(filter);
+            }}
+            onClose={() => (occasionsHubOpen = false)}
+            {i18n}
         />
     </LvctDialog>
 {/if}

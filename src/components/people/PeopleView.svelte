@@ -30,6 +30,8 @@
     import ContactMergeWizard from "./ContactMergeWizard.svelte";
     import OccasionDialog from "../OccasionDialog.svelte";
     import RegionExplorerDialog from "./RegionExplorerDialog.svelte";
+    import TrashDrawer from "./TrashDrawer.svelte";
+    import OccasionsHubDialog from "./OccasionsHubDialog.svelte";
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
@@ -85,6 +87,11 @@
         onLoadLifecycleStages,
         onBatchUpdateLifecycleStages,
         onLoadCadences,
+        onListTrash,
+        onRestoreContactFromTrash,
+        onEmptyTrash,
+        onListOccasions,
+        onDeleteOccasion,
         onPreviewSelfIdentityChange,
         onApplySelfIdentityChange,
         onValidateExtended,
@@ -144,6 +151,11 @@
         ) => Promise<{ updatedCount: number; currentStages: Record<string, RelationshipStageKey> }>;
         /** E-59：批量获取全量联系人节奏配置表（可选） */
         onLoadCadences?: () => Promise<Record<string, import("../../domain/cadence").PersonCadence>>;
+        onListTrash?: () => Promise<import("../../domain/trash").TrashContactEntry[]>;
+        onRestoreContactFromTrash?: (entryId: string) => Promise<{ docId: string; itemId: string; name: string }>;
+        onEmptyTrash?: () => Promise<void>;
+        onListOccasions?: () => Promise<import("../../domain/occasion-cluster").OccasionEntity[]>;
+        onDeleteOccasion?: (occasionId: string) => Promise<void>;
         /** B09-1：移动端工具栏收纳（常驻搜索/视图切换/新建，其余收进底部弹层） */
         isMobile?: boolean;
     } = $props();
@@ -218,6 +230,8 @@
     let dupOpen = $state(false);
     let mergeTarget: DuplicatePair | null = $state(null);
     let occasioning = $state(false);
+    let occasionsHubOpen = $state(false);
+    let trashDrawerOpen = $state(false);
     let regionExploring = $state(false);
     let cardDensity: "comfortable" | "compact" = $state("comfortable");
     let activeLetterFilter = $state("");
@@ -1987,8 +2001,11 @@
         </button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16}/>{text("peopleImportDocs", "导入已有文档")}</button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16}/>{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); occasioning = true; }}><Calendar size={16}/>{text("peopleOccasion", "记录活动")}</button>
+        <button class="b3-button b3-button--outline lvct-people__occasions-btn" onclick={() => { if (isMobile) closeMobileSheet(false); occasionsHubOpen = true; }} title={text("peopleOccasionsHubTip", "查看群体活动大事记与聚会记录大盘")}><Calendar size={16}/>{text("peopleOccasion", "活动大盘")}</button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16}/>{text("peopleRegionExplorer", "城市与行程")}</button>
+        {#if onListTrash}
+            <button class="b3-button b3-button--outline lvct-people__trash-btn" onclick={() => { if (isMobile) closeMobileSheet(false); trashDrawerOpen = true; }} title={text("peopleTrashBtnTip", "查看回收站与近期软删除联系人，支持一键恢复")}><Trash2 size={16}/>{text("peopleTrashBtn", "回收站")}</button>
+        {/if}
     {/snippet}
     <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
         {#if isMobile}
@@ -2869,6 +2886,56 @@
                     await refresh();
                 }}
                 onClose={() => (tidyDrawerOpen = false)}
+                {i18n}
+            />
+        </LvctDialog>
+    {/if}
+
+    {#if trashDrawerOpen}
+        <LvctDialog title={text("peopleTrashDialogTitle", "🗑️ 联系人回收站（30天安全缓冲）")} wide onClose={() => (trashDrawerOpen = false)}>
+            <TrashDrawer
+                {onListTrash}
+                onRestoreContact={onRestoreContactFromTrash}
+                {onEmptyTrash}
+                onClose={() => (trashDrawerOpen = false)}
+                onRestored={() => {
+                    void refresh();
+                }}
+                {i18n}
+            />
+        </LvctDialog>
+    {/if}
+
+    {#if occasionsHubOpen}
+        <LvctDialog title={text("occasionsHubDialogTitle", "🎪 群体活动与场合大事记大盘")} wide onClose={() => (occasionsHubOpen = false)}>
+            <OccasionsHubDialog
+                {people}
+                {onListOccasions}
+                {onDeleteOccasion}
+                onOpenOccasionDialog={() => {
+                    occasionsHubOpen = false;
+                    occasioning = true;
+                }}
+                onOpenPerson={(docId) => {
+                    occasionsHubOpen = false;
+                    const person = people.find((p) => p.docId === docId);
+                    if (person) onOpenDetail(person);
+                    else {
+                        focusIds = [docId];
+                        focusLabel = "指定参会人";
+                        visibleCount = PAGE_SIZE;
+                    }
+                }}
+                onOpenPeople={(filter) => {
+                    occasionsHubOpen = false;
+                    if (filter.memberDocIds) {
+                        focusIds = filter.memberDocIds;
+                        focusLabel = filter.label ?? "群体活动参会人";
+                        visibleCount = PAGE_SIZE;
+                    }
+                }}
+                onOpenDoc={(docId) => onOpenPersonDoc?.(docId)}
+                onClose={() => (occasionsHubOpen = false)}
                 {i18n}
             />
         </LvctDialog>

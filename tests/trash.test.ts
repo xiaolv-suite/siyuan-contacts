@@ -5,6 +5,7 @@ import {
     createTrashEntry,
     daysUntilTrashExpiration,
     emptyTrashStore,
+    filterTrashEntries,
     normalizeTrashStore,
     normalizeTrashStoreForWrite,
     pruneExpiredTrash,
@@ -152,4 +153,17 @@ test("E-33 trash 数据层：pushTrashEntry、listTrashEntries、dropTrashEntry 
     // 验证严格读取遇到损坏数据抛错
     memory.set(TRASH_STORAGE_KEY, { schemaVersion: 999, entries: [] });
     await assert.rejects(() => loadTrashStoreStrict(plugin), StoreIntegrityError);
+});
+
+test("E-33 trash: filterTrashEntries 多维模糊匹配与空搜索", () => {
+    const e1 = createTrashEntry(mockPerson("20261019000000-doc0001", "张三"));
+    const e2 = createTrashEntry({ ...mockPerson("20261019000000-doc0002", "李四"), phone: "13912345678", group: "设计部", tags: ["UI"] });
+    const e3 = createTrashEntry({ ...mockPerson("20261019000000-doc0003", "王五"), phone: "18888888888", group: "技术组", tags: ["架构"] });
+
+    const list = [e1, e2, e3];
+    assert.equal(filterTrashEntries(list, "").length, 3);
+    assert.deepEqual(filterTrashEntries(list, "张三").map((e) => e.name), ["张三"]);
+    assert.deepEqual(filterTrashEntries(list, "139").map((e) => e.name), ["李四"]);
+    assert.deepEqual(filterTrashEntries(list, "技术").map((e) => e.name), ["张三", "王五"]);
+    assert.deepEqual(filterTrashEntries(list, "不存在").length, 0);
 });

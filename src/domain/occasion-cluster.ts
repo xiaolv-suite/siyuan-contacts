@@ -21,6 +21,16 @@ export const OCCASION_TYPES: readonly OccasionType[] = [
     "other",
 ];
 
+export const OCCASION_TYPE_LABELS: Record<OccasionType, { label: string; icon: string }> = {
+    meeting: { label: "会议研讨", icon: "💼" },
+    meal: { label: "餐饮宴请", icon: "🍲" },
+    wedding: { label: "婚礼庆典", icon: "💍" },
+    party: { label: "聚会沙龙", icon: "🍻" },
+    trip: { label: "差旅行程", icon: "✈️" },
+    conference: { label: "行业峰会", icon: "🎙️" },
+    other: { label: "其他活动", icon: "🎉" },
+};
+
 const DOC_ID_RE = /^\d{14}-[0-9a-z]{7}$/;
 
 export interface OccasionAttendee {
@@ -339,4 +349,22 @@ export function normalizeOccasionStoreForWrite(raw: unknown): OccasionStore {
     }
 
     return normalizeOccasionStore(raw);
+}
+
+/** 纯函数：根据关键词与分类过滤群体活动 */
+export function filterOccasions(
+    occasions: readonly OccasionEntity[],
+    query: string,
+    typeFilter: OccasionType | "all" = "all",
+): OccasionEntity[] {
+    const q = query.trim().toLowerCase();
+    return occasions.filter((item) => {
+        if (typeFilter !== "all" && item.type !== typeFilter) return false;
+        if (!q) return true;
+        const matchTitle = (item.title ?? "").toLowerCase().includes(q);
+        const matchPlace = (item.place ?? "").toLowerCase().includes(q);
+        const matchAttendee = item.attendees.some((a) => (a.name ?? "").toLowerCase().includes(q));
+        const matchNote = (item.note ?? "").toLowerCase().includes(q);
+        return matchTitle || matchPlace || matchAttendee || matchNote;
+    });
 }

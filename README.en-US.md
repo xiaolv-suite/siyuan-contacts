@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.6.58** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.58) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.6.59** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.6.59) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -45,22 +45,24 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.6.58 (2026-10-29)
+## This release: v0.6.59 (2026-10-29)
 
-This release implements comprehensive quality hardening, boundary edge-case bug fixes, and performance optimizations:
+This release implements the Roster Soft-Delete Trash Bin Drawer and the Group Occasions & Gatherings Hub console:
 
-- **Lunar Calendar 30th Day & Chinese New Year's Eve Adaptation**: Fixed validation bug rejecting Lunar 30th birthdays (such as Lunar 2/30); enhanced algorithm to automatically adjust Lunar New Year's Eve (12/30) to the 29th in 29-day short lunar month years; added full support for unknown-year `0000-MM-DD` anniversaries.
-- **Contact Duplicate Merge 10 Entity Stores Completion**: Fixed severe vulnerability where duplicate contact merging previously omitted anniversaries, promises, kinships, preferences, scratchpads, itineraries, projects, cadences, lifecycle stages, and aliases; all 16 entity stores now transfer atomically within store locks.
-- **Runtime Stability, Timezone & Memory Leak Governance**: Fixed 6 unhandled timer leaks and missing `alive` lifecycle guards across hub dialogs; unified local timezone calculations with `toLocalDateKey` instead of UTC slicing; eliminated `-Infinity` subtraction producing `NaN` in sort comparators.
-- **UI Consistency, Design Tokens & 390px Mobile Viewport**: Eliminated nested redundant dialog headers; removed raw hex colors in favor of `--lvct-*` design tokens; optimized responsive grid layouts, wrapping metric KPI cards and SVG scaling for mobile 390px screens; unified loading/empty states onto `<ViewState>`.
-- **Performance Profiling & Rendering Acceleration**: Added 250ms debouncing to graph search to prevent synchronous $O(V^3)$ CoSE force layout recalculations on keystroke; eliminated forced synchronous layout reflows during roster scrolling; added global static character LRU caching and Collator singletons for Chinese pinyin initials; decoupled heavy potential graph connection discovery into on-demand deferred loading.
+- **Roster Soft-Delete Trash Bin Drawer (`TrashDrawer.svelte` & `PeopleView.svelte`)**: Integrated "Trash Bin" button directly in the contact roster toolbar; presents soft-deleted contacts with name, phone, group, and tag snapshots; real-time expiration countdown (`N days remaining`, with urgent badge within 3 days); 1-click restore to the database and roster; 1-click permanent purge with double-confirmation modal.
+- **Group Occasions & Gatherings Hub Console (`OccasionsHubDialog.svelte` & `DashboardView.svelte`)**: Dedicated console on the home dashboard and roster toolbar for multi-attendee gatherings, dinners, weddings, summits, and business trips; metrics summary of total occasions, cumulative attendees, this year's count, and linked documents; filter by occasion type and keyword search; attendee chip ribbons with 1-click "Roster Drilldown" to highlight and filter attendees in the roster.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1029/1029 PASS); 3-tier browser UI regressions passing (527/527); production build and release checks passed.
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (1031/1031 PASS); 3-tier browser UI regressions passing (529/529); production build and release checks passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.6.57 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.6.58 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.6.58 · 2026-10-29
+- Lunar calendar 30th day and Chinese New Year's Eve (12/30) adaptation to 29th; support for unknown-year `0000-MM-DD` anniversaries.
+- Contact duplicate merge 10 entity stores completion (anniversaries, promises, kinships, preferences, scratchpads, itineraries, projects, cadences, lifecycle stages, aliases).
+- Memory leak and timer cleanup governance; local timezone alignment; graph force-layout debouncing.
 
 ### v0.6.57 · 2026-10-29
 - Multi-dimensional roster sort modes: added "By Interaction Depth" (`frequency`) and "By Date Added" (`created`).
