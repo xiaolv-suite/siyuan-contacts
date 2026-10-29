@@ -1,3 +1,10 @@
+## 2026-10-29 v0.6.56 发布：联系人名册「待安顿联系人智能推荐与批量归纳整理抽屉」（Batch Tidy & Smart Categorization Drawer）
+
+- 本轮落地待安顿无序联系人整理模型与智能归纳抽屉：
+  1. 待安顿整理域模型：`unorganized-tidy.ts` 纯函数识别缺分组/无标签联系人，结合履历关键词与现有分组推断推荐组与画像标签；
+  2. 待安顿整理抽屉：`TidyDrawer.svelte` 与 `PeopleView.svelte` 呈现待安顿卡片、推荐胶囊与一键全量采纳，批量落盘更新名册；
+- 门禁验证：`pnpm check`（0/0）、单测 1027/1027 全部通过、三套 UI 回归 526/526 全部通过、`pnpm build` 与 `pnpm check:release` 均通过。
+
 ## 2026-10-29 v0.6.55 发布：联系人名册「多维导出带有 BOM 的 CSV 与复制 Markdown 花名册宽表」（CSV Exporter & Markdown Table Generator）
 
 - 本轮落地标准 CSV 导出模型、UTF-8 BOM 防乱码与名册批量栏双通道导出：

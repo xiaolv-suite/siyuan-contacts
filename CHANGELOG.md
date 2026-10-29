@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.6.56] — 2026-10-29
+
+重塑：联系人名册「待安顿联系人智能推荐与批量归纳整理抽屉」（Batch Tidy & Smart Categorization Drawer）
+
+- **待安顿无序联系人挖掘与推断引擎**：`domain/unorganized-tidy.ts` 纯函数识别全库缺少分组、无标签或常驻城市未知的人脉；结合人物组织职位经历与现有分组库，智能推断建议分组（`suggestedGroup`）与推荐画像标签（`suggestedTags`），生成结构化整理计划（`TidyPlanItem`）。
+- **名册待安顿抽屉与一键采纳批量保存闭环**：`TidyDrawer.svelte` 与 `PeopleView.svelte` 在操作区集成「待安顿整理」入口（带动态数量标徽）；抽屉清晰列出待安顿条目与推荐卡，支持单个点选采纳与「⚡ 一键采纳全部推荐」，一键批量落盘更新至 Attribute View 数据库单元格。
+
+验证：`pnpm check` 0/0、单测 1027/1027 绿灯、三套 E2E UI 回归各 526/526 全部通过、Release 门禁通过。
+
 ## [0.6.55] — 2026-10-29
 
 重塑：联系人名册「多维导出带有 BOM 的 CSV 与复制 Markdown 花名册宽表」（CSV Exporter & Markdown Table Generator）

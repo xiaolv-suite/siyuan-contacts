@@ -1392,5 +1392,19 @@
   "peopleBatchCsv": "Export CSV",
   "peopleBatchCsvTitle": "Export selected contacts to RFC 4180 CSV with UTF-8 BOM for Excel/WPS",
   "peopleBatchMdTable": "Copy Table",
-  "peopleBatchMdTitle": "Copy selected contacts as formatted Markdown table"
+  "peopleBatchMdTitle": "Copy selected contacts as formatted Markdown table",
+  "peopleTidy": "Tidy Unorganized",
+  "peopleTidyTitle": "Smart tidy for contacts missing groups or tags",
+  "tidyDrawerTitle": "Tidy & Categorize Contacts",
+  "tidyFoundCount": "Found {n} contacts missing groups or tags",
+  "adoptAllBatchBtn": "⚡ Batch Adopt All Suggestions",
+  "tidyAllClear": "Great! All contacts are well-organized with groups and tags.",
+  "noGroup": "Unassigned",
+  "noWorkAffiliation": "No work background yet",
+  "suggGroupLabel": "Suggested Group: ",
+  "suggTagsLabel": "Suggested Tags: ",
+  "adoptPersonTip": "Adopt all suggestions for this person",
+  "adoptSingle": "Adopt",
+  "readyToApplyCount": "Ready to update: {n}",
+  "applyAndSaveBatch": "Apply & Save ({n})"
 }

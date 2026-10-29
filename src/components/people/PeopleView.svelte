@@ -1,6 +1,6 @@
 <script lang="ts">
     /** 联系人视图：未过滤名册渐进读取，搜索与筛选共用本地投影；详情弹窗由 Workbench 统一承载 */
-    import { batchUpdateContacts, createContactListProjection, listContactPage, PAGE_SIZE, removeContacts } from "../../services/contacts";
+    import { batchUpdateContacts, createContactListProjection, listContactPage, PAGE_SIZE, removeContacts, updateContactFields } from "../../services/contacts";
     import type { ContactPage } from "../../services/contacts";
     import { filterContactSearch } from "../../domain/contact-search";
     import { GROUP_CLEAR_OPTION, GROUP_KEEP_OPTION } from "../../domain/contact-group";
@@ -33,7 +33,7 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
-    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check } from "@lucide/svelte";
+    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check, Sparkles } from "@lucide/svelte";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
@@ -47,6 +47,8 @@
     import { extractNormalizedRegion } from "../../domain/region";
     import { LIFECYCLE_STAGES, type RelationshipStageKey } from "../../domain/lifecycle-stage.ts";
     import BatchLifecycleStageModal from "./BatchLifecycleStageModal.svelte";
+    import TidyDrawer from "./TidyDrawer.svelte";
+    import { isUnorganizedPerson } from "../../domain/unorganized-tidy.ts";
     import { exportContactsToCsv, exportContactsToMarkdownTable } from "../../domain/csv-contacts.ts";
     import { copyPlainText } from "../../shared/clipboard.ts";
 
@@ -245,6 +247,8 @@
     });
 
     const starredCount = $derived(people.filter((p) => isPersonStarred(preferences, p.docId)).length);
+    let tidyDrawerOpen = $state(false);
+    const unorganizedCount = $derived(people.filter(isUnorganizedPerson).length);
 
     async function handleToggleStarred(docId: string) {
         if (onPreferencesChange) {
@@ -1955,6 +1959,13 @@
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); dupOpen = true; }}>
             {text("peopleCleanup", "整理")}{duplicatePairs.length > 0 ? ` ·${duplicatePairs.length}${duplicatePairsCapped ? "（上限）" : ""}` : ""}
         </button>
+        <button
+            class="b3-button b3-button--outline lvct-people__tidy-btn"
+            onclick={() => { if (isMobile) closeMobileSheet(false); tidyDrawerOpen = true; }}
+            title={text("peopleTidyTitle", "智能识别并归纳缺少分组或标签的待安顿无序联系人")}
+        >
+            <Sparkles size={16} />{text("peopleTidy", "待安顿整理")}{unorganizedCount > 0 ? ` ·${unorganizedCount}` : ""}
+        </button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16}/>{text("peopleImportDocs", "导入已有文档")}</button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16}/>{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
         <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); occasioning = true; }}><Calendar size={16}/>{text("peopleOccasion", "记录活动")}</button>
@@ -2814,6 +2825,31 @@
                     }
                 }}
                 onClose={() => (batchStageModalOpen = false)}
+                {i18n}
+            />
+        </LvctDialog>
+    {/if}
+
+    {#if tidyDrawerOpen}
+        <LvctDialog title={text("tidyDrawerTitle", "人脉待安顿整理与智能归纳")} wide onClose={() => (tidyDrawerOpen = false)}>
+            <TidyDrawer
+                {people}
+                availableGroups={groups}
+                onSaveBatch={async (updates) => {
+                    for (const u of updates) {
+                        const target = people.find((p) => p.itemId === u.itemId);
+                        if (target) {
+                            const draft = {
+                                ...target,
+                                group: u.group !== undefined ? u.group : target.group,
+                                tags: u.tags !== undefined ? u.tags : target.tags,
+                            };
+                            await updateContactFields(settings, u.itemId, draft, { onlyFields: ["group", "tags"] });
+                        }
+                    }
+                    await refresh();
+                }}
+                onClose={() => (tidyDrawerOpen = false)}
                 {i18n}
             />
         </LvctDialog>

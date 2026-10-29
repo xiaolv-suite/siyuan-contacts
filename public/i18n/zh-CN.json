@@ -1392,5 +1392,19 @@
   "peopleBatchCsv": "导出 CSV",
   "peopleBatchCsvTitle": "将已选联系人导出为自带 BOM 的标准 CSV 表格文件（Excel/WPS 打开不乱码）",
   "peopleBatchMdTable": "复制表格",
-  "peopleBatchMdTitle": "将已选联系人复制为排版清晰的 Markdown 宽表"
+  "peopleBatchMdTitle": "将已选联系人复制为排版清晰的 Markdown 宽表",
+  "peopleTidy": "待安顿整理",
+  "peopleTidyTitle": "智能识别并归纳缺少分组或标签的待安顿无序联系人",
+  "tidyDrawerTitle": "人脉待安顿整理与智能归纳",
+  "tidyFoundCount": "共发现 {n} 位缺少分组或画像标签的联系人",
+  "adoptAllBatchBtn": "⚡ 一键采纳全部推荐",
+  "tidyAllClear": "太棒了！全库人脉已全部安顿完毕，无任何缺少分组或标签的混乱条目。",
+  "noGroup": "待定分组",
+  "noWorkAffiliation": "暂无履历背景",
+  "suggGroupLabel": "推荐分组：",
+  "suggTagsLabel": "推荐标签：",
+  "adoptPersonTip": "采纳该联系人的全部推荐信息",
+  "adoptSingle": "全部采纳",
+  "readyToApplyCount": "已就绪待更新：{n} 人",
+  "applyAndSaveBatch": "应用并批量保存 ({n})"
 }

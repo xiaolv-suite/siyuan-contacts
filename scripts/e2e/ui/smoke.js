@@ -9337,6 +9337,86 @@ await test("B-13 联系人名册：批量导出带有 BOM 的 CSV 与复制 Mark
     fixture.remove();
 });
 
+await test("B-14 联系人名册：待安顿联系人智能推荐与批量归纳抽屉（TidyDrawer）交互闭环", async () => {
+    const fixture = document.createElement("div");
+    document.body.appendChild(fixture);
+
+    const testTidyPeople = [
+        {
+            docId: "doc-tidy-1",
+            itemId: "item-tidy-1",
+            name: "待安顿小王（高瓴资本）",
+            phone: "",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "",
+            tags: [],
+            relatedItemIds: [],
+            company: "高瓴资本",
+            profile: {
+                readAt: 1000,
+                affiliations: { state: "known", value: { work: [{ orgName: "高瓴资本", title: "合伙人" }], education: [], family: [], unspecified: [] } },
+                relationship: { state: "unknown", message: "" },
+            },
+        },
+    ];
+
+    kernel.handler = async (route) => {
+        if (route === "/api/av/renderAttributeView") return {
+            view: {
+                columns: FIELD_SPECS.map((field) => ({ id: field.key, name: field.nameZh, type: field.type })),
+                rows: testTidyPeople.map((p) => ({
+                    id: p.itemId,
+                    cells: [
+                        { valueType: "block", value: { type: "block", keyID: "name", block: { id: p.docId, content: p.name } } },
+                        { valueType: "select", value: { type: "select", keyID: "group", select: { content: p.group } } },
+                    ],
+                })),
+            },
+        };
+        return null;
+    };
+
+    mount(PeopleView, {
+        target: fixture,
+        props: {
+            settings,
+            preferences: DEFAULT_VIEW_PREFERENCES,
+            loadRecentInteractions: async () => ({}),
+            revision: 0,
+            initialSort: "name",
+            isMobile: false,
+            onOpenDetail() {},
+            onOpenPersonDoc() {},
+            onPreferencesChange: async (next) => next,
+        },
+    });
+
+    await until(() => fixture.querySelector(".lvct-people__tidy-btn"), "未找到待安顿整理按钮");
+    assert(fixture.querySelector(".lvct-people__tidy-btn")?.textContent.includes("待安顿整理"), "按钮文本不匹配");
+
+    // 点击打开待安顿整理抽屉
+    const tidyBtn = fixture.querySelector(".lvct-people__tidy-btn");
+    tidyBtn.click();
+
+    await until(() => fixture.querySelector(".lvct-tidy-drawer"), "未展开待安顿整理抽屉");
+    assert(fixture.textContent.includes("人脉待安顿整理与智能归纳"), "未渲染整理标题");
+    assert(fixture.textContent.includes("待安顿小王"), "未渲染待安顿人物");
+    assert(fixture.textContent.includes("高瓴资本"), "未渲染工作经历");
+
+    // 点击「⚡ 一键采纳全部推荐」
+    const adoptAllBtn = fixture.querySelector(".btn-adopt-all");
+    assert(adoptAllBtn, "未找到一键采纳全部推荐按钮");
+    adoptAllBtn.click();
+
+    await until(() => fixture.textContent.includes("已就绪待更新：1 人"), "一键采纳后待更新计数不为 1");
+
+    fixture.remove();
+});
+
 await test("D-09 联系人详情页：闪念速记便签板（PersonScratchpad）卡片渲染、置顶与一键转互动联动", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);
