@@ -164,6 +164,14 @@
                         <span class="lvct-context-card__bday"><Cake size={12} class="lvct-icon-inline" /> {person.birthday}</span>
                     {/if}
                 </div>
+
+                {#if person.tags && person.tags.length > 0}
+                    <div class="lvct-context-card__tags">
+                        {#each person.tags.slice(0, 4) as tag}
+                            <span class="lvct-chip font-size-11">#{tag}</span>
+                        {/each}
+                    </div>
+                {/if}
             </div>
 
             <!-- 快捷互动记录 -->
@@ -401,6 +409,14 @@
     .lvct-context-card__bday {
         font-size: 11px;
         color: var(--lv-data-amber, #D97706);
+    }
+
+    .lvct-context-card__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+        padding-top: 6px;
     }
 
     .lvct-context-quick__input-box {

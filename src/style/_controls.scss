@@ -26,8 +26,46 @@
     font-family: var(--lvct-font-family);
     color: var(--lvct-text-1);
 
-    /* Lucide 是描边图标；宿主 svg 的 fill:currentColor 会把钟表、搜索等填成实心。 */
-    svg.lucide-icon { fill: none; }
+    /* Lucide 细线描边图标：全站统一为 1.6 描边线宽，端点与转折圆润一致 */
+    svg.lucide-icon,
+    svg.lucide {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* 数据表达柔和（Soft Visuals）：粗圆头进度条、半透明散点、深色胶囊提示 */
+    .lvct-progress-bar,
+    .lvct-reciprocity-card__scale-fill,
+    .lvct-funnel__bar-fill,
+    progress {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        stroke-linecap: round !important;
+    }
+
+    /* 散点与图表元素半透明自然过渡 */
+    .lvct-chart-bubble,
+    .lvct-chart-scatter,
+    .lvct-funnel__stage-badge {
+        border-radius: var(--lv-r-pill, 9999px);
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
+    }
+
+    /* 工具提示深色胶囊化（Dark Capsule Tooltip） */
+    .lvct-tooltip,
+    .b3-tooltips::after {
+        background: var(--lv-dark-block-bg, #1C1815) !important;
+        color: var(--lv-dark-block-text, #FAF8F5) !important;
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        padding: 4px 10px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+        border: none !important;
+        letter-spacing: 0.01em;
+    }
 
     /* ---------- 按钮：公共基线（尺寸/大圆角胶囊/状态过渡/焦点环） ---------- */
     .b3-button {
