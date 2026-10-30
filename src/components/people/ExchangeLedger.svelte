@@ -44,6 +44,7 @@
     let errorText = $state("");
     let readFailed = $state(false);
     let saveUnknown = $state(false);
+    let updatingRecordId = $state<string | null>(null);
     let requestId = newExchangeRequestId();
     let loadGeneration = 0;
     let personGeneration = 0;
@@ -63,6 +64,24 @@
         return JSON.stringify({ kind, direction, description, amount: String(amountText ?? ""), currency, occurredOn, dueOn, note });
     }
     const formDisabled = $derived(busy || saveUnknown);
+    const stats = $derived.by(() => {
+        let receivable = 0;
+        let payable = 0;
+        let openCount = 0;
+        let settledCount = 0;
+        for (const r of records) {
+            if (r.status === "open") {
+                openCount += 1;
+                if (r.kind === "money" && typeof r.amount === "number") {
+                    if (r.direction === "receivable") receivable += r.amount;
+                    else payable += r.amount;
+                }
+            } else if (r.status === "settled") {
+                settledCount += 1;
+            }
+        }
+        return { receivable, payable, net: receivable - payable, openCount, settledCount };
+    });
     useCloseGuard({
         busy: () => busy,
         dirty: () => saveUnknown || formSignature() !== formBaseline,
@@ -186,34 +205,48 @@
     }
 
     async function changeStatus(record: ExchangeRecord, status: ExchangeStatus): Promise<void> {
-        if (busy || loading || readFailed || saveUnknown) return;
-        if (status === "cancelled") {
-            const confirmed = await confirmDialog({
-                title: "取消往来记录",
-                message: `确定取消「${recordLabel(record)}」吗？取消后仍保留历史记录。`,
-                confirmLabel: "确认取消",
-                cancelLabel: "保留",
-                danger: true,
-            });
-            if (!confirmed) return;
-        }
-        busy = true;
-        errorText = "";
-        const docId = personDocId;
-        const generation = personGeneration;
+        if (busy || loading || readFailed || saveUnknown || updatingRecordId) return;
+        updatingRecordId = record.id;
         try {
-            const updated = await onChangeStatus(record.id, status, status === "settled" ? toLocalDateKey(new Date()) : undefined, { updatedAt: record.updatedAt });
-            if (!alive || docId !== personDocId || generation !== personGeneration) return;
-            if (updated.id !== record.id || updated.personDocId !== docId) throw new Error("往来状态写入返回了其他记录，未自动显示");
-            rememberConfirmedRecord(updated);
-            await load(docId);
-            if (!alive || docId !== personDocId || generation !== personGeneration) return;
-            onChanged?.();
-        } catch (error) {
-            if (!alive || docId !== personDocId || generation !== personGeneration) return;
-            errorText = requestErrorMessage(error);
+            if (status === "cancelled") {
+                const confirmed = await confirmDialog({
+                    title: "取消往来记录",
+                    message: `确定取消「${recordLabel(record)}」吗？取消后仍保留历史记录。`,
+                    confirmLabel: "确认取消",
+                    cancelLabel: "保留",
+                    danger: true,
+                });
+                if (!confirmed || !alive) return;
+            }
+            busy = true;
+            errorText = "";
+            const docId = personDocId;
+            const generation = personGeneration;
+            try {
+                const updated = await onChangeStatus(record.id, status, status === "settled" ? toLocalDateKey(new Date()) : undefined, { updatedAt: record.updatedAt });
+                if (!alive || docId !== personDocId || generation !== personGeneration) return;
+                if (updated.id !== record.id || updated.personDocId !== docId) throw new Error("往来状态写入返回了其他记录，未自动显示");
+                rememberConfirmedRecord(updated);
+                await load(docId);
+                if (!alive || docId !== personDocId || generation !== personGeneration) return;
+                onChanged?.();
+            } catch (error) {
+                if (!alive || docId !== personDocId || generation !== personGeneration) return;
+                errorText = requestErrorMessage(error);
+            } finally {
+                if (alive && docId === personDocId && generation === personGeneration) busy = false;
+            }
         } finally {
-            if (alive && docId === personDocId && generation === personGeneration) busy = false;
+            if (alive) updatingRecordId = null;
+        }
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (!busy && !loading && !readFailed && description.trim()) {
+                void submit();
+            }
         }
     }
 
@@ -223,14 +256,38 @@
     }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <section class="lvct-detail__section" aria-label={text("exchangeSection", "往来账本")}>
     <h4>{text("exchangeTitle", "往来账本")}{records.length ? `（${records.length}）` : ""}</h4>
     <p class="ft__smaller ft__on-surface">{text("exchangeHint", "记录金钱、物品和人情往来；结清后仍保留历史事实。")}</p>
+
+    {#if records.length > 0}
+        <div class="lvct-exchange-stats" role="region" aria-label="往来关键指标">
+            <div class="lvct-exchange-stat">
+                <span class="lvct-exchange-stat__label">待收回</span>
+                <span class="lvct-exchange-stat__val lvct-val--receivable">¥{stats.receivable.toFixed(2)}</span>
+            </div>
+            <div class="lvct-exchange-stat">
+                <span class="lvct-exchange-stat__label">待偿还</span>
+                <span class="lvct-exchange-stat__val lvct-val--payable">¥{stats.payable.toFixed(2)}</span>
+            </div>
+            <div class="lvct-exchange-stat">
+                <span class="lvct-exchange-stat__label">净往来</span>
+                <span class="lvct-exchange-stat__val">{stats.net >= 0 ? `+¥${stats.net.toFixed(2)}` : `-¥${Math.abs(stats.net).toFixed(2)}`}</span>
+            </div>
+            <div class="lvct-exchange-stat">
+                <span class="lvct-exchange-stat__label">待办 / 已结</span>
+                <span class="lvct-exchange-stat__val">{stats.openCount} / {stats.settledCount} 笔</span>
+            </div>
+        </div>
+    {/if}
+
     {#if errorText}<div class="lvct-form__error" role="alert">{errorText}</div>{/if}
     <div class="lvct-form__grid">
         <label class="lvct-form__item">
             <span>{text("exchangeKind", "类型")}</span>
-            <select class="b3-select fn__block" bind:value={kind} disabled={formDisabled}>
+            <select class="b3-select fn__block" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={kind} disabled={formDisabled}>
                 <option value="money">{text("exchangeMoney", "金钱")}</option>
                 <option value="item">{text("exchangeItem", "物品")}</option>
                 <option value="favor">{text("exchangeFavor", "人情")}</option>
@@ -238,40 +295,40 @@
         </label>
         <label class="lvct-form__item">
             <span>{text("exchangeDirection", "方向")}</span>
-            <select class="b3-select fn__block" bind:value={direction} disabled={formDisabled}>
+            <select class="b3-select fn__block" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={direction} disabled={formDisabled}>
                 <option value="receivable">{text("exchangeReceivable", "对方欠我")}</option>
                 <option value="payable">{text("exchangePayable", "我欠对方")}</option>
             </select>
         </label>
         <label class="lvct-form__item">
             <span>{text("exchangeDescription", "内容")}</span>
-            <input class="b3-text-field fn__block" type="text" bind:value={description} disabled={formDisabled} placeholder={text("exchangeDescriptionPlaceholder", "如：代购机票 / 借出工具 / 帮忙介绍客户")} />
+            <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="text" bind:value={description} disabled={formDisabled} placeholder={text("exchangeDescriptionPlaceholder", "如：代购机票 / 借出工具 / 帮忙介绍客户")} />
         </label>
         {#if kind === "money"}
             <label class="lvct-form__item">
                 <span>{text("exchangeAmount", "金额")}</span>
-                <input class="b3-text-field fn__block" type="number" min="0" step="0.01" bind:value={amountText} disabled={formDisabled} />
+                <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="number" min="0" step="0.01" bind:value={amountText} disabled={formDisabled} />
             </label>
             <label class="lvct-form__item">
                 <span>{text("exchangeCurrency", "币种")}</span>
-                <input class="b3-text-field fn__block" type="text" bind:value={currency} disabled={formDisabled} />
+                <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="text" bind:value={currency} disabled={formDisabled} />
             </label>
         {/if}
         <label class="lvct-form__item">
             <span>{text("exchangeOccurredOn", "发生日期")}</span>
-            <input class="b3-text-field fn__block" type="date" bind:value={occurredOn} disabled={formDisabled} />
+            <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="date" bind:value={occurredOn} disabled={formDisabled} />
         </label>
         <label class="lvct-form__item">
             <span>{text("exchangeDueOn", "到期日期（可选）")}</span>
-            <input class="b3-text-field fn__block" type="date" bind:value={dueOn} disabled={formDisabled} />
+            <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="date" bind:value={dueOn} disabled={formDisabled} />
         </label>
     </div>
     <label class="lvct-form__item">
         <span>{text("exchangeNote", "备注（可选）")}</span>
-        <input class="b3-text-field fn__block" type="text" bind:value={note} disabled={formDisabled} />
+        <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="text" bind:value={note} disabled={formDisabled} />
     </label>
     <div class="lvct-form__actions">
-        <button class="b3-button b3-button--text" onclick={submit} disabled={busy || loading || readFailed || !description.trim()}>
+        <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={submit} disabled={busy || loading || readFailed || !description.trim()}>
             {busy ? text("exchangeSaving", "保存中…") : saveUnknown ? text("exchangeVerifyRetry", "核实并重试本笔往来") : text("exchangeAdd", "记一笔往来")}
         </button>
     </div>
@@ -279,7 +336,7 @@
     {#if loading}
         <p class="ft__smaller ft__on-surface">{text("exchangeLoading", "正在读取往来记录…")}</p>
     {:else if readFailed}
-        <button type="button" class="b3-button b3-button--outline" onclick={() => void load()} disabled={busy}>{text("retryLoad", "重新读取")}</button>
+        <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void load()} disabled={busy}>{text("retryLoad", "重新读取")}</button>
     {:else if records.length === 0}
         <p class="ft__smaller ft__on-surface">{text("exchangeEmpty", "还没有记录。")}</p>
     {:else}
@@ -292,15 +349,109 @@
                         {kindLabel(record.kind)} · {directionLabel(record.direction)}
                     </span>
                     {#if record.dueOn}<span class="ft__smaller ft__on-surface">到期 {record.dueOn}</span>{/if}
-                    <span class="lvct-exchange-status ft__smaller ft__on-surface">{record.status === "open" ? "待处理" : record.status === "settled" ? `已结清${record.settledOn ? ` · ${record.settledOn}` : ""}` : "已取消"}</span>
+                    <span class="lvct-exchange-status ft__smaller" class:lvct-exchange-status--open={record.status === "open"} class:lvct-exchange-status--settled={record.status === "settled"}>{record.status === "open" ? "待处理" : record.status === "settled" ? `已结清${record.settledOn ? ` · ${record.settledOn}` : ""}` : "已取消"}</span>
                     {#if record.status === "open"}
-                        <button class="b3-button b3-button--text" disabled={formDisabled || loading || readFailed} onclick={() => changeStatus(record, "settled")}>结清</button>
-                        <button class="b3-button b3-button--cancel" disabled={formDisabled || loading || readFailed} onclick={() => changeStatus(record, "cancelled")}>取消</button>
+                        <button class="b3-button b3-button--text lvct-exchange-btn" style="border-radius: var(--lv-r-pill, 9999px);" disabled={formDisabled || loading || readFailed || updatingRecordId === record.id} onclick={() => changeStatus(record, "settled")}>结清</button>
+                        <button class="b3-button b3-button--cancel lvct-exchange-btn" style="border-radius: var(--lv-r-pill, 9999px);" disabled={formDisabled || loading || readFailed || updatingRecordId === record.id} onclick={() => changeStatus(record, "cancelled")}>取消</button>
                     {:else if record.status === "settled"}
-                        <button class="b3-button b3-button--text" disabled={formDisabled || loading || readFailed} onclick={() => changeStatus(record, "open")}>重新打开</button>
+                        <button class="b3-button b3-button--text lvct-exchange-btn" style="border-radius: var(--lv-r-pill, 9999px);" disabled={formDisabled || loading || readFailed || updatingRecordId === record.id} onclick={() => changeStatus(record, "open")}>重新打开</button>
                     {/if}
                 </div>
             {/each}
         </div>
     {/if}
 </section>
+
+<style>
+    .lvct-exchange-stats {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0;
+        margin: 10px 0 14px;
+        padding: 6px 0;
+        background: transparent;
+        border-bottom: 1px solid var(--lvct-border-subtle);
+    }
+    .lvct-exchange-stat {
+        flex: 1 1 auto;
+        min-width: 90px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 0 12px;
+        position: relative;
+    }
+    .lvct-exchange-stat:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 20%;
+        bottom: 20%;
+        width: 1px;
+        background: color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
+    }
+    .lvct-exchange-stat__label {
+        font-size: 11px;
+        color: var(--lvct-text-2);
+        font-weight: 500;
+    }
+    .lvct-exchange-stat__val {
+        font-size: 15px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--lvct-text-1);
+    }
+    .lvct-val--receivable {
+        color: var(--lvct-success, #10b981);
+    }
+    .lvct-val--payable {
+        color: var(--lvct-accent, #ea580c);
+    }
+    .lvct-exchange-row {
+        border-radius: var(--lvct-r-card, 12px);
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+        padding: 8px 12px;
+        margin-bottom: 6px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+    }
+    .lvct-exchange-chip {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+    }
+    .lvct-exchange-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--lvct-text-2);
+        font-weight: 500;
+    }
+    .lvct-exchange-status::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        forced-color-adjust: none;
+    }
+    .lvct-exchange-status--open {
+        color: var(--lv-brand, #ea580c);
+    }
+    .lvct-exchange-status--settled {
+        color: var(--lvct-success, #10b981);
+    }
+    .lvct-exchange-btn {
+        opacity: 0.6;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease);
+    }
+    .lvct-exchange-btn:hover,
+    .lvct-exchange-btn:focus-visible {
+        opacity: 1;
+    }
+    @media (hover: none) {
+        .lvct-exchange-btn {
+            opacity: 1;
+        }
+    }
+</style>

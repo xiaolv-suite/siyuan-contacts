@@ -299,6 +299,26 @@ test("小驴人脉 · 通讯录导入导出与文档收编对齐细线图标、�
     assert.match(importSvelte, /\.lvct-import__queue-item\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
 });
 
+test("小驴人脉 · 往来账本与补充资料编辑器对齐空气感指标条、全胶囊体系、12px大圆角与并发锁", () => {
+    // 1. 往来账本
+    const ledgerSvelte = fs.readFileSync(path.join(SRC, "components", "people", "ExchangeLedger.svelte"), "utf8");
+    assert.match(ledgerSvelte, /updatingRecordId/);
+    assert.match(ledgerSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(ledgerSvelte, /\.lvct-exchange-stats\s*\{[\s\S]*border-bottom:\s*1px solid var\(--lvct-border-subtle\)/);
+    assert.match(ledgerSvelte, /\.lvct-exchange-stat:not\(:last-child\)::after\s*\{/);
+    assert.match(ledgerSvelte, /\.lvct-exchange-stat__val\s*\{[\s\S]*font-variant-numeric:\s*tabular-nums/);
+    assert.match(ledgerSvelte, /\.lvct-exchange-row\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(ledgerSvelte, /\.lvct-exchange-status::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(ledgerSvelte, /\.lvct-exchange-btn\s*\{[\s\S]*opacity:\s*0\.6;/);
+
+    // 2. 补充资料编辑器
+    const fieldsSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonFieldsEditor.svelte"), "utf8");
+    assert.match(fieldsSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(fieldsSvelte, /\.lvct-person-fields__item,\s*\.lvct-person-fields__group\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(fieldsSvelte, /\.lvct-person-fields__confirm\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
+});
+
+
 
 
 
