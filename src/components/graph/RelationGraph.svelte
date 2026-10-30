@@ -2028,10 +2028,10 @@
                         <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
                             已在人脉数据库中登记为正式双向关系。
                             {#if activeEvidence.commonOrgNames && activeEvidence.commonOrgNames.length > 0}
-                                <div style="display: flex; align-items: center; gap: 4px;"><Building2 size={13} class="lvct-icon-inline" /> 共同组织：{activeEvidence.commonOrgNames.join("、")}</div>
+                                <div style="display: flex; align-items: center; gap: 4px;"><Building2 size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 共同组织：{activeEvidence.commonOrgNames.join("、")}</div>
                             {/if}
                             {#if activeEvidence.coAttendanceCount && activeEvidence.coAttendanceCount > 0}
-                                <div style="display: flex; align-items: center; gap: 4px;"><Users size={13} class="lvct-icon-inline" /> 同场活动：{activeEvidence.coAttendanceCount} 次</div>
+                                <div style="display: flex; align-items: center; gap: 4px;"><Users size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 同场活动：{activeEvidence.coAttendanceCount} 次</div>
                             {/if}
                         </div>
                     {:else if activeEvidence.kind === "member"}

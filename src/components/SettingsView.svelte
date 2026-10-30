@@ -1123,12 +1123,12 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                     onclick={() => switchSection(section.id)}
                 >
                     <span aria-hidden="true">
-                        {#if section.id === "general"}<SlidersHorizontal size={16}/>
-                        {:else if section.id === "data"}<Database size={16}/>
-                        {:else if section.id === "reminder"}<Bell size={16}/>
-                        {:else if section.id === "ai"}<Sparkles size={16}/>
-                        {:else if section.id === "bridge"}<Plug size={16}/>
-                        {:else}<Info size={16}/>{/if}
+                        {#if section.id === "general"}<SlidersHorizontal size={16} strokeWidth={1.6} />
+                        {:else if section.id === "data"}<Database size={16} strokeWidth={1.6} />
+                        {:else if section.id === "reminder"}<Bell size={16} strokeWidth={1.6} />
+                        {:else if section.id === "ai"}<Sparkles size={16} strokeWidth={1.6} />
+                        {:else if section.id === "bridge"}<Plug size={16} strokeWidth={1.6} />
+                        {:else}<Info size={16} strokeWidth={1.6} />{/if}
                     </span>{section.label}
                 </button>
             {/each}
@@ -1176,7 +1176,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                                 >
                                     <span class="lvct-theme-picker__swatch" style={`background: linear-gradient(135deg, ${scheme.brandColor} 60%, ${scheme.accentColor} 100%);`}>
                                         {#if draft.themeScheme === scheme.id}
-                                            <Check size={12} color="#ffffff" />
+                                            <Check size={12} color="#ffffff" strokeWidth={1.6} />
                                         {/if}
                                     </span>
                                     <span class="lvct-theme-picker__label">{scheme.label}</span>
@@ -1504,7 +1504,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                                         class="b3-button b3-button--outline"
                                         disabled={trashBusy || trashLoading || !facade.restoreContactFromTrash}
                                         onclick={() => void restoreTrashEntry(entry.id)}
-                                    ><RotateCcw size={12} class="lvct-icon-inline" style="margin-right: 4px;" />{text("restoreContactBtn", "恢复联系人")}</button>
+                                    ><RotateCcw size={12} strokeWidth={1.6} class="lvct-icon-inline" style="margin-right: 4px;" />{text("restoreContactBtn", "恢复联系人")}</button>
                                 </li>
                             {/each}
                         </ul>
@@ -1748,7 +1748,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
                                             class="b3-button b3-button--text b3-button--small"
                                             onclick={autoMatchColumns}
                                             title="根据字段中文、拼音或英文语义自动匹配并填入建议列"
-                                        ><Sparkles size={13} class="lvct-icon-inline" /> 智能匹配列</button>
+                                        ><Sparkles size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 智能匹配列</button>
                                     </div>
                                 </div>
                                 {#each health.missing as item (item.key)}
