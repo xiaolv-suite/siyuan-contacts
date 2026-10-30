@@ -14,9 +14,11 @@ export interface SwipeDismissOptions {
 
 export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
     let startY = 0;
+    let startTime = 0;
     let currentDeltaY = 0;
     let isTracking = false;
     let isDragging = false;
+    let isDismissing = false;
     let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
     function getTouch(event: TouchEvent): Touch | null {
@@ -24,6 +26,7 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
     }
 
     function onTouchStart(event: TouchEvent) {
+        if (isDismissing) return;
         if (!options.enabled && options.enabled !== undefined) return;
         const touch = getTouch(event);
         if (!touch) return;
@@ -38,6 +41,7 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
         }
 
         startY = touch.clientY;
+        startTime = Date.now();
         currentDeltaY = 0;
         isTracking = true;
         isDragging = false;
@@ -45,7 +49,7 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
     }
 
     function onTouchMove(event: TouchEvent) {
-        if (!isTracking) return;
+        if (!isTracking || isDismissing) return;
         const touch = getTouch(event);
         if (!touch) return;
 
@@ -66,18 +70,25 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
     }
 
     function onTouchEnd() {
-        if (!isTracking) return;
+        if (!isTracking || isDismissing) return;
         isTracking = false;
 
         const threshold = options.threshold ?? 80;
+        const elapsed = Math.max(1, Date.now() - startTime);
+        const velocity = currentDeltaY / elapsed;
+        const isFlick = currentDeltaY >= 40 && velocity >= 0.38 && elapsed <= 260;
+        const shouldDismiss = isDragging && (currentDeltaY >= threshold || isFlick);
+
         node.style.transition = "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)";
 
-        if (isDragging && currentDeltaY >= threshold) {
+        if (shouldDismiss) {
+            isDismissing = true;
             // 滑出并触发关闭
             node.style.transform = "translateY(100%)";
             if (dismissTimer) clearTimeout(dismissTimer);
             dismissTimer = setTimeout(() => {
                 dismissTimer = null;
+                isDismissing = false;
                 options.onDismiss();
             }, 180);
         } else {
@@ -89,24 +100,40 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
         currentDeltaY = 0;
     }
 
+    function onTouchCancel() {
+        if (!isTracking || isDismissing) return;
+        isTracking = false;
+        isDragging = false;
+        currentDeltaY = 0;
+        node.style.transition = "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)";
+        node.style.transform = "";
+    }
+
     node.addEventListener("touchstart", onTouchStart, { passive: true });
     node.addEventListener("touchmove", onTouchMove, { passive: false });
     node.addEventListener("touchend", onTouchEnd, { passive: true });
-    node.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    node.addEventListener("touchcancel", onTouchCancel, { passive: true });
 
     return {
         update(newOptions: SwipeDismissOptions) {
             options = newOptions;
+            if (options.enabled === false && (isTracking || isDragging)) {
+                isTracking = false;
+                isDragging = false;
+                currentDeltaY = 0;
+                node.style.transform = "";
+            }
         },
         destroy() {
             if (dismissTimer) {
                 clearTimeout(dismissTimer);
                 dismissTimer = null;
             }
+            isDismissing = false;
             node.removeEventListener("touchstart", onTouchStart);
             node.removeEventListener("touchmove", onTouchMove);
             node.removeEventListener("touchend", onTouchEnd);
-            node.removeEventListener("touchcancel", onTouchEnd);
+            node.removeEventListener("touchcancel", onTouchCancel);
         },
     };
 }
