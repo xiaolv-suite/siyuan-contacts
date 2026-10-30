@@ -58,18 +58,20 @@
     box-sizing: border-box;
     color: var(--lvct-text-1);
     font-family: var(--lvct-font-family);
-    display: grid;
-    grid-template-columns: var(--lvct-sidebar-w) minmax(0, 1fr);
+    display: flex;
     overflow: hidden;
     background: var(--lvct-bg-base);
 }
 
 .lvct-workbench__sidebar {
+    width: var(--lvct-sidebar-w);
+    flex: 0 0 var(--lvct-sidebar-w);
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: var(--lvct-sp-4);
+    gap: var(--lvct-sp-3);
     padding: var(--lvct-sp-4) var(--lvct-sp-2);
-    border-right: 1px solid var(--lvct-border-subtle);
+    border-right: 1px solid var(--lvct-color-border-200);
     background: var(--lvct-bg-app);
 }
 
@@ -274,17 +276,16 @@
     align-items: center;
     gap: var(--lvct-sp-2);
     color: var(--lvct-text-2);
-    padding: 7px 10px;
+    padding: 8px 12px;
     min-height: 38px;
-    border-radius: 9px;
+    border-radius: var(--lv-r-pill, 9999px);
     cursor: pointer;
     font-size: var(--lvct-fs-body);
     font-weight: 500;
     transition:
         background var(--lvct-dur-fast) var(--lvct-ease),
         color var(--lvct-dur-fast) var(--lvct-ease),
-        transform var(--lvct-dur-micro) var(--lvct-ease),
-        box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+        transform var(--lvct-dur-micro) var(--lvct-ease);
 
     /* UX-01.3：图标与文字分开定位——此前 `> span` 把文字 span 也压进 18px 盒子导致逐字竖排 */
     .lvct-workbench__nav-icon {
@@ -293,7 +294,7 @@
         justify-content: center;
         width: 18px;
         flex: 0 0 18px;
-        transition: color var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
+        transition: color var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .lvct-workbench__nav-text {
@@ -326,22 +327,26 @@
 
     &--active {
         position: relative;
-        background: var(--lvct-bg-surface);
-        color: var(--lvct-accent-text);
+        background: var(--lv-brand-soft, color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent));
+        color: var(--lv-brand, #ea580c);
         font-weight: 650;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        box-shadow: none;
 
         .lvct-workbench__nav-icon {
-            color: var(--lvct-accent-fill);
+            color: var(--lv-brand, #ea580c);
             transform: scale(1.05);
         }
     }
 }
 
 html[data-theme-mode="dark"] .lvct-workbench__nav-item--active {
-    background: color-mix(in srgb, var(--lvct-accent) 14%, var(--lvct-bg-surface));
-    color: var(--lvct-accent-text);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 18%, transparent);
+    color: #fb923c;
+    box-shadow: none;
+
+    .lvct-workbench__nav-icon {
+        color: #fb923c;
+    }
 }
 .lvct-workbench__nav-item--mobile-settings { display: none; }
 
@@ -6291,9 +6296,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-dash__stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--lvct-sp-4);
+    display: flex;
+    align-items: stretch;
+    background: var(--lvct-bg-surface);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
+    box-shadow: 0 4px 18px -2px rgba(28, 24, 21, 0.04);
+    padding: 16px 12px;
+    gap: 0;
+    box-sizing: border-box;
 }
 
 .lvct-dash__stat-top {
@@ -6323,32 +6334,17 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 }
 
-/* Bento 色调微背景 */
-.lvct-dash__stat--people {
-    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-brand, #ea580c) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
-}
-
-.lvct-dash__stat--relations {
-    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
-}
-
-.lvct-dash__stat--birthdays {
-    background: linear-gradient(150deg, color-mix(in srgb, var(--lv-data-amber, #d97706) 8%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
-}
-
-.lvct-dash__stat--never {
-    background: linear-gradient(150deg, color-mix(in srgb, var(--lvct-danger, #e11d48) 7%, var(--lvct-bg-surface)), var(--lvct-bg-surface));
-}
-
-/* 统计卡：大圆角纯白浮起 + 4倍大字号主数据 + 图标章 + 悬停轻升 + 漫反射微光晕 */
+/* 统计优先：指标之间用竖分隔而不是卡片包裹 */
 .lvct-dash__stat {
+    flex: 1;
+    min-width: 0;
     position: relative;
     overflow: hidden;
-    background: var(--lvct-bg-surface);
-    border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-card, 16px);
-    padding: 16px 18px;
-    box-shadow: var(--lvct-shadow-card);
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 8px 20px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -6356,15 +6352,45 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     cursor: pointer;
     text-align: left;
     box-sizing: border-box;
-    transition:
-        transform var(--lvct-dur-fast) var(--lvct-ease),
-        box-shadow var(--lvct-dur-fast) var(--lvct-ease),
-        border-color var(--lvct-dur-fast) var(--lvct-ease);
+    transition: background var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: var(--lvct-shadow-card-hover);
-        border-color: color-mix(in srgb, var(--lvct-accent) 30%, var(--lvct-border-subtle));
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 4%, transparent) !important;
+        border-radius: 10px !important;
+    }
+
+    &:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 14%;
+        bottom: 14%;
+        width: 1px;
+        background: var(--lvct-border-subtle);
+    }
+
+    b {
+        font-size: 32px;
+        font-weight: 750;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+        margin: 4px 0 2px;
+        color: var(--lvct-text-1);
+    }
+
+    span {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--lvct-text-3);
+    }
+
+    .lvct-dash__stat-ft {
+        font-size: 11px;
+        color: var(--lvct-text-3);
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &:active:not(:disabled) {

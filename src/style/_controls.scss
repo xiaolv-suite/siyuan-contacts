@@ -111,6 +111,58 @@
         }
     }
 
+    /* 胶囊体系贯穿（两档尺寸：标准 32px / 紧凑小档 24px） */
+    .b3-button--small {
+        min-height: 24px;
+        height: 24px;
+        padding: 0 10px;
+        font-size: 11px;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+
+    /* 状态小圆点胶囊体系 */
+    .lvct-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 24px;
+        padding: 0 10px;
+        border-radius: var(--lv-r-pill, 9999px);
+        font-size: 11px;
+        font-weight: 500;
+        background: color-mix(in srgb, var(--lvct-border-subtle) 40%, transparent);
+        color: var(--lvct-text-2);
+        line-height: 1;
+
+        &::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        &--success::before,
+        &--active::before {
+            background: var(--lvct-success, #16A34A);
+        }
+
+        &--warning::before,
+        &--amber::before {
+            background: var(--lv-data-amber, #D97706);
+        }
+
+        &--danger::before,
+        &--cold::before {
+            background: var(--lvct-danger, #E11D48);
+        }
+
+        &--info::before {
+            background: var(--lv-accent-cyan, #0284C7);
+        }
+    }
+
     /* 文字/幽灵按钮 */
     .b3-button--text {
         background: transparent;

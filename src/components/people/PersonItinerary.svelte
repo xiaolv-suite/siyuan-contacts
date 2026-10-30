@@ -128,6 +128,7 @@
     }
 
     async function handleSave() {
+        if (busy) return;
         const itemToValidate: Partial<PersonItineraryItem> = {
             title: formTitle,
             targetDate: formDate,
@@ -172,6 +173,7 @@
     }
 
     async function handleDelete(id: string) {
+        if (busy) return;
         if (!window.confirm(text("confirmDeleteItinerary", "确定删除这条会面行程备忘吗？"))) return;
         busy = true;
         try {
@@ -184,6 +186,7 @@
     }
 
     async function handleStatusChange(item: PersonItineraryItem, newStatus: ItineraryStatus) {
+        if (busy) return;
         busy = true;
         try {
             await onSave({ ...item, status: newStatus, updatedAt: Date.now() });
@@ -211,6 +214,7 @@
     }
 
     async function handleCompleteAndLog(item: PersonItineraryItem) {
+        if (busy) return;
         if (onConvertItineraryToInteraction) {
             onConvertItineraryToInteraction(item);
         }

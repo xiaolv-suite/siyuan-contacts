@@ -772,12 +772,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadKinships() {
         if (!onLoadKinships || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const list = await onLoadKinships(current.docId);
-            if (detailAlive) kinships = list;
+            const list = await onLoadKinships(targetDocId);
+            if (detailAlive && current.docId === targetDocId) kinships = list;
         } catch (err) {
             console.warn("[LvContacts] 读取亲属成员失败：", err);
-            kinships = [];
+            if (detailAlive && current.docId === targetDocId) kinships = [];
         }
     }
 
@@ -785,12 +786,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadPromises() {
         if (!onLoadPromises || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const list = await onLoadPromises(current.docId);
-            if (detailAlive) promises = list;
+            const list = await onLoadPromises(targetDocId);
+            if (detailAlive && current.docId === targetDocId) promises = list;
         } catch (err) {
             console.warn("[LvContacts] 读取双向承诺失败：", err);
-            promises = [];
+            if (detailAlive && current.docId === targetDocId) promises = [];
         }
     }
 
@@ -798,12 +800,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadLifecycleStage() {
         if (!onLoadLifecycleStage || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const res = await onLoadLifecycleStage(current.docId);
-            if (detailAlive) lifecycleRecord = res;
+            const res = await onLoadLifecycleStage(targetDocId);
+            if (detailAlive && current.docId === targetDocId) lifecycleRecord = res;
         } catch (err) {
             console.warn("[LvContacts] 读取交往阶段失败：", err);
-            lifecycleRecord = null;
+            if (detailAlive && current.docId === targetDocId) lifecycleRecord = null;
         }
     }
 
@@ -811,12 +814,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadScratchpads() {
         if (!onLoadScratchpads || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const list = await onLoadScratchpads(current.docId);
-            if (detailAlive) scratchpads = list;
+            const list = await onLoadScratchpads(targetDocId);
+            if (detailAlive && current.docId === targetDocId) scratchpads = list;
         } catch (err) {
             console.warn("[LvContacts] 读取闪念便签失败：", err);
-            scratchpads = [];
+            if (detailAlive && current.docId === targetDocId) scratchpads = [];
         }
     }
 
@@ -824,12 +828,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadSocialPreferences() {
         if (!onLoadSocialPreferences || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const list = await onLoadSocialPreferences(current.docId);
-            if (detailAlive) socialPreferences = list;
+            const list = await onLoadSocialPreferences(targetDocId);
+            if (detailAlive && current.docId === targetDocId) socialPreferences = list;
         } catch (err) {
             console.warn("[LvContacts] 读取社交偏好失败：", err);
-            socialPreferences = [];
+            if (detailAlive && current.docId === targetDocId) socialPreferences = [];
         }
     }
 
@@ -837,12 +842,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadItineraries() {
         if (!onLoadItineraries || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const list = await onLoadItineraries(current.docId);
-            if (detailAlive) itineraries = list;
+            const list = await onLoadItineraries(targetDocId);
+            if (detailAlive && current.docId === targetDocId) itineraries = list;
         } catch (err) {
             console.warn("[LvContacts] 读取拜访行程失败：", err);
-            itineraries = [];
+            if (detailAlive && current.docId === targetDocId) itineraries = [];
         }
     }
 
@@ -850,12 +856,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadPersonExchanges() {
         if (!onLoadExchanges || !current?.docId) return;
+        const targetDocId = current.docId;
         try {
-            const list = await onLoadExchanges(current.docId);
-            if (detailAlive) personExchanges = list;
+            const list = await onLoadExchanges(targetDocId);
+            if (detailAlive && current.docId === targetDocId) personExchanges = list;
         } catch (err) {
             console.warn("[LvContacts] 读取往来账目失败：", err);
-            personExchanges = [];
+            if (detailAlive && current.docId === targetDocId) personExchanges = [];
         }
     }
 
@@ -922,15 +929,19 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function loadFacts(): Promise<void> {
         if (!onLoadPersonFacts || !current?.docId) return;
+        const targetDocId = current.docId;
         factsLoading = true;
         factsError = "";
         try {
-            facts = await onLoadPersonFacts(current.docId);
+            const list = await onLoadPersonFacts(targetDocId);
+            if (detailAlive && current.docId === targetDocId) facts = list;
         } catch (err) {
-            facts = [];
-            factsError = `读取事实画像失败：${err instanceof Error ? err.message : String(err)}`;
+            if (detailAlive && current.docId === targetDocId) {
+                facts = [];
+                factsError = `读取事实画像失败：${err instanceof Error ? err.message : String(err)}`;
+            }
         } finally {
-            factsLoading = false;
+            if (detailAlive && current.docId === targetDocId) factsLoading = false;
         }
     }
 
@@ -2759,6 +2770,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     function handleDetailGlobalKeydown(event: KeyboardEvent) {
+        if (editing || deleting || (typeof document !== "undefined" && document.querySelector(".lvct-dialog-mask:not(.lvct-detail)"))) return;
         if (event.altKey && (event.key === "ArrowLeft" || event.key === "Left")) {
             if (previousPerson && !busy) {
                 event.preventDefault();
@@ -3062,7 +3074,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         {#if !current.isSelf && upcomingAnniversaryMilestones.length > 0}
             <AnniversaryMilestoneBanner
                 milestones={upcomingAnniversaryMilestones}
-                onApplyGreeting={(greeting) => {
+                onApplyGreeting={async (greeting) => {
+                    if (noteText.trim() && noteText.trim() !== greeting) {
+                        const ok = await confirmDialog({
+                            title: text("topicsConvertConfirmTitle", "替换互动备注草稿"),
+                            message: "当前已有未记录的互动备注草稿，填入祝贺词将替换当前草稿。确定继续吗？",
+                            confirmLabel: text("topicsConvertConfirmBtn", "确认替换"),
+                            cancelLabel: text("topicsConvertCancelBtn", "取消"),
+                        });
+                        if (!ok) return;
+                    }
                     noteText = greeting;
                 }}
                 {i18n}
@@ -3366,7 +3387,17 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }}
             onConvertPromiseToInteraction={async (prm) => {
                 const prefix = prm.direction === "i_promised" ? "【履约兑现-我承诺】" : "【履约兑现-对方承诺】";
-                noteText = `${prefix}${prm.title}${prm.detail ? `：${prm.detail}` : ""}`;
+                const draft = `${prefix}${prm.title}${prm.detail ? `：${prm.detail}` : ""}`;
+                if (noteText.trim() && noteText.trim() !== draft) {
+                    const ok = await confirmDialog({
+                        title: text("topicsConvertConfirmTitle", "替换互动备注草稿"),
+                        message: "当前已有未记录的互动备注草稿，填入信诺履约将替换当前草稿。确定继续吗？",
+                        confirmLabel: text("topicsConvertConfirmBtn", "确认替换"),
+                        cancelLabel: text("topicsConvertCancelBtn", "取消"),
+                    });
+                    if (!ok) return;
+                }
+                noteText = draft;
             }}
             {i18n}
         />
@@ -3409,9 +3440,19 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 const res = await onToggleItineraryChecklist!(current.docId, itineraryId, checklistId);
                 itineraries = res;
             }}
-            onConvertItineraryToInteraction={(item) => {
+            onConvertItineraryToInteraction={async (item) => {
                 const loc = item.location ? `在 ${item.location} ` : "";
-                noteText = `【会面拜访】${loc}与 ${current.name} 会见交流。\n主题：${item.title}${item.attendees ? `\n参会人员：${item.attendees}` : ""}${item.note ? `\n备忘：${item.note}` : ""}`;
+                const draft = `【会面拜访】${loc}与 ${current.name} 会见交流。\n主题：${item.title}${item.attendees ? `\n参会人员：${item.attendees}` : ""}${item.note ? `\n备忘：${item.note}` : ""}`;
+                if (noteText.trim() && noteText.trim() !== draft) {
+                    const ok = await confirmDialog({
+                        title: text("topicsConvertConfirmTitle", "替换互动备注草稿"),
+                        message: "当前已有未记录的互动备注草稿，转为交往记录将替换当前草稿。确定继续吗？",
+                        confirmLabel: text("topicsConvertConfirmBtn", "确认替换"),
+                        cancelLabel: text("topicsConvertCancelBtn", "取消"),
+                    });
+                    if (!ok) return;
+                }
+                noteText = draft;
             }}
             {i18n}
         />
@@ -3433,7 +3474,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 const res = await onRemoveScratchpad!(current.docId, noteId);
                 scratchpads = res;
             }}
-            onConvertToInteraction={(content) => {
+            onConvertToInteraction={async (content) => {
+                if (noteText.trim() && noteText.trim() !== content) {
+                    const ok = await confirmDialog({
+                        title: text("topicsConvertConfirmTitle", "替换互动备注草稿"),
+                        message: "当前已有未记录的互动备注草稿，转为互动记录将替换当前草稿。确定继续吗？",
+                        confirmLabel: text("topicsConvertConfirmBtn", "确认替换"),
+                        cancelLabel: text("topicsConvertCancelBtn", "取消"),
+                    });
+                    if (!ok) return;
+                }
                 noteText = content;
             }}
             {i18n}

@@ -68,7 +68,7 @@
     const filteredEntries = $derived(filterTrashEntries(entries, searchQuery));
 
     async function handleRestore(entry: TrashContactEntry) {
-        if (!onRestoreContact || restoringId) return;
+        if (!onRestoreContact || restoringId || emptying) return;
         restoringId = entry.id;
         errorText = "";
         try {
@@ -83,7 +83,7 @@
     }
 
     async function handleEmpty() {
-        if (!onEmptyTrash || emptying || entries.length === 0) return;
+        if (!onEmptyTrash || emptying || Boolean(restoringId) || entries.length === 0) return;
         const confirmed = await confirmDialog({
             title: text("confirmEmptyTrashTitle", "清空回收站"),
             message: text("confirmEmptyTrashDesc", "确认清空回收站吗？回收站中所有联系人将被永久清除，此操作不可撤销。"),

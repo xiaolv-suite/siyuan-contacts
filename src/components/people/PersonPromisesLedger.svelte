@@ -49,6 +49,7 @@
     let newPromisedOn = $state(new Date().toISOString().slice(0, 10));
     let newDueOn = $state("");
     let saving = $state(false);
+    let busyActionId = $state<string | null>(null);
     let errorText = $state("");
 
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -92,6 +93,7 @@
     });
 
     async function handleAdd() {
+        if (saving || Boolean(busyActionId)) return;
         const titleTrimmed = newTitle.trim();
         if (!titleTrimmed) {
             errorText = text("promisesTitleRequired", "承诺事项标题不能为空");
@@ -126,6 +128,9 @@
     }
 
     async function handleMarkFulfilled(item: PersonPromiseItem) {
+        if (saving || Boolean(busyActionId)) return;
+        busyActionId = item.id;
+        errorText = "";
         try {
             await onUpdatePromise(item.id, {
                 status: "fulfilled",
@@ -136,20 +141,30 @@
             }
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            busyActionId = null;
         }
     }
 
     async function handleMarkBroken(item: PersonPromiseItem) {
+        if (saving || Boolean(busyActionId)) return;
+        busyActionId = item.id;
+        errorText = "";
         try {
             await onUpdatePromise(item.id, {
                 status: "broken",
             });
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            busyActionId = null;
         }
     }
 
     async function handleReopen(item: PersonPromiseItem) {
+        if (saving || Boolean(busyActionId)) return;
+        busyActionId = item.id;
+        errorText = "";
         try {
             await onUpdatePromise(item.id, {
                 status: "pending",
@@ -157,14 +172,21 @@
             });
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            busyActionId = null;
         }
     }
 
     async function handleRemove(promiseId: string) {
+        if (saving || Boolean(busyActionId)) return;
+        busyActionId = promiseId;
+        errorText = "";
         try {
             await onRemovePromise(promiseId);
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            busyActionId = null;
         }
     }
 </script>
@@ -393,14 +415,16 @@
                             {#if item.status === "pending"}
                                 <button
                                     class="b3-button b3-button--text b3-button--small ft__success action-btn"
+                                    disabled={Boolean(busyActionId) || saving}
                                     onclick={() => handleMarkFulfilled(item)}
                                     title={text("promisesMarkFulfilledTip", "兑现履约")}
                                 >
                                     <CircleCheck size={14} style="margin-right: 2px;" />
-                                    {text("promisesMarkFulfilled", "兑现")}
+                                    {busyActionId === item.id ? "…" : text("promisesMarkFulfilled", "兑现")}
                                 </button>
                                 <button
                                     class="b3-button b3-button--text b3-button--small ft__secondary action-btn"
+                                    disabled={Boolean(busyActionId) || saving}
                                     onclick={() => handleMarkBroken(item)}
                                     title={text("promisesMarkBrokenTip", "取消/落空")}
                                 >
@@ -409,15 +433,17 @@
                             {:else}
                                 <button
                                     class="b3-button b3-button--text b3-button--small ft__secondary action-btn"
+                                    disabled={Boolean(busyActionId) || saving}
                                     onclick={() => handleReopen(item)}
                                     title={text("promisesReopenTip", "重开履约")}
                                 >
                                     <RotateCcw size={12} style="margin-right: 2px;" />
-                                    {text("promisesReopen", "重开")}
+                                    {busyActionId === item.id ? "…" : text("promisesReopen", "重开")}
                                 </button>
                             {/if}
                             <button
                                 class="b3-button b3-button--text b3-button--small ft__error action-btn"
+                                disabled={Boolean(busyActionId) || saving}
                                 onclick={() => handleRemove(item.id)}
                                 title={text("common.delete", "删除")}
                             >
