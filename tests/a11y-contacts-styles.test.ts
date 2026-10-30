@@ -374,6 +374,36 @@ test("小驴人脉 · 组织操作续做、双链修复与写入反馈对齐空�
     assert.match(resultSvelte, /\.lvct-org-membership-result__status-tag::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
 });
 
+test("小驴人脉 · 全局通知条与关系图谱控制岛对齐细线图标、全胶囊体系、悬停保护与高对比度规范", () => {
+    // 1. 全局通知条
+    const noticeSvelte = fs.readFileSync(path.join(SRC, "components", "StatusNotice.svelte"), "utf8");
+    assert.match(noticeSvelte, /isHovered/);
+    assert.match(noticeSvelte, /CircleAlert size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(noticeSvelte, /CheckCircle2 size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(noticeSvelte, /X size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(noticeSvelte, /lvct-notice__dismiss-btn/);
+
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.lvct-notice__dismiss-btn\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 关系图谱画布控制与全屏防重入
+    const graphSvelte = fs.readFileSync(path.join(SRC, "components", "graph", "RelationGraph.svelte"), "utf8");
+    assert.match(graphSvelte, /expanding/);
+    assert.match(graphSvelte, /Share2 size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /Scan size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /ZoomIn size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /ZoomOut size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /Minimize2 size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /Maximize2 size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /RefreshCw size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /RotateCcw size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /Pause size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /Play size=\{14\}\s*strokeWidth=\{1\.6\}/);
+
+    // 3. 图例小圆点高对比度防擦除
+    assert.match(indexScss, /\.lvct-graph-legend__item\s*\{[\s\S]*forced-color-adjust:\s*none;/);
+});
+
 
 
 

@@ -2996,6 +2996,32 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     &:disabled { opacity: .58; cursor: wait; }
 }
 
+.lvct-notice__dismiss-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: currentColor;
+    opacity: 0.6;
+    padding: 2px;
+    margin-left: 4px;
+    border-radius: var(--lv-r-pill, 9999px);
+    cursor: pointer;
+    transition: opacity var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease);
+
+    &:hover {
+        opacity: 1;
+        background: color-mix(in srgb, currentColor 14%, transparent);
+    }
+
+    &:focus-visible {
+        opacity: 1;
+        outline: 2px solid currentColor;
+        outline-offset: 1px;
+    }
+}
+
 html[data-theme-mode="dark"] .lvct-notice {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
@@ -4339,6 +4365,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         border-radius: 50%;
         display: inline-block;
         flex-shrink: 0;
+        forced-color-adjust: none;
     }
 
     &--family i { background: var(--lvct-group-family); }
