@@ -10,3 +10,4 @@ package-*.zip
 scripts/e2e/shots/
 output/
 .jeikcode/codegraph/
+.tasks/

@@ -318,6 +318,24 @@ test("小驴人脉 · 往来账本与补充资料编辑器对齐空气感指标�
     assert.match(fieldsSvelte, /\.lvct-person-fields__confirm\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
 });
 
+test("小驴人脉 · 组织管理与组织资料编辑器对齐细线图标、全胶囊体系、12px大圆角与实体状态点", () => {
+    // 1. 组织管理大盘
+    const orgSvelte = fs.readFileSync(path.join(SRC, "components", "org", "OrgManagerDialog.svelte"), "utf8");
+    assert.match(orgSvelte, /\.lvct-org-manager__member\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(orgSvelte, /\.lvct-org-manager__member-status::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(orgSvelte, /border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 组织资料编辑器
+    const profSvelte = fs.readFileSync(path.join(SRC, "components", "org", "OrganizationProfileEditor.svelte"), "utf8");
+    assert.match(profSvelte, /Plus size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(profSvelte, /Upload size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(profSvelte, /Trash2 size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(profSvelte, /X size=\{15\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(profSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(profSvelte, /border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+});
+
+
 
 
 

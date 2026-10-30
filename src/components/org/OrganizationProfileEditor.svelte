@@ -329,7 +329,18 @@
         if (!onCancel) return;
         void guardedClose(onCancel);
     }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (!saving && !readOnly && !logoReading) {
+                void submit();
+            }
+        }
+    }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="lvct-org-profile-editor" data-org-profile-mode={mode}>
     <div class="lvct-org-profile-editor__intro">
@@ -338,7 +349,7 @@
             <h3>{mode === "create" ? "建立一个清晰的组织档案" : "完善组织档案"}</h3>
             <p class="ft__smaller ft__on-surface">记录组织的基本信息、架构和自定义内容，方便在联系人、图谱和详情页中统一使用。</p>
         </div>
-        {#if onCancel}<button type="button" class="b3-button b3-button--cancel" onclick={requestCancel} disabled={saving}><X size={15} />取消</button>{/if}
+        {#if onCancel}<button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={requestCancel} disabled={saving}><X size={15} strokeWidth={1.6} />取消</button>{/if}
     </div>
 
     {#if mode === "create"}
@@ -356,9 +367,9 @@
                     <strong>预览“{PRESETS.find((item) => item.id === pendingPresetId)?.label ?? "组织"}”模板</strong>
                     <p>当前草稿已有内容。模板将提供：{templateSummary(pendingPresetId)}。请选择如何合并，草稿只在保存时写入。</p>
                     <div class="lvct-org-profile-editor__confirm-actions">
-                        <button type="button" class="b3-button b3-button--outline" disabled={saving || readOnly} onclick={() => applyPresetValues(pendingPresetId, "fill")}>仅填空白</button>
-                        <button type="button" class="b3-button b3-button--cancel" disabled={saving || readOnly} onclick={() => applyPresetValues(pendingPresetId, "overwrite")}>覆盖模板字段</button>
-                        <button type="button" class="b3-button b3-button--text" disabled={saving} onclick={cancelPresetPreview}>取消</button>
+                        <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving || readOnly} onclick={() => applyPresetValues(pendingPresetId, "fill")}>仅填空白</button>
+                        <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving || readOnly} onclick={() => applyPresetValues(pendingPresetId, "overwrite")}>覆盖模板字段</button>
+                        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving} onclick={cancelPresetPreview}>取消</button>
                     </div>
                 </div>
             {/if}
@@ -381,9 +392,9 @@
             <div class="lvct-org-profile-editor__logo-preview">{#if logoPreview() && !logoPreviewError}<img src={logoPreview()} alt="组织 Logo 预览" width="48" height="48" decoding="async" onerror={handleLogoPreviewError} />{:else}<span aria-hidden="true">{draft.shortName?.slice(0, 2) || draft.name?.slice(0, 2) || "组"}</span>{/if}</div>
             <div class="lvct-org-profile-editor__logo-actions">
                 <input bind:this={logoInput} class="lvct-org-profile-editor__file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange={handleLogoFile} disabled={saving || readOnly} aria-label="上传组织 Logo" />
-                <button type="button" class="b3-button b3-button--outline" onclick={() => logoInput?.click()} disabled={saving || readOnly}><Upload size={15} />上传图片</button>
-                <label class="lvct-org-profile-editor__field">Logo 链接<input id="lvct-org-logo-url" class="b3-text-field" type="url" bind:this={logoUrlInput} bind:value={draft.logoUrl} placeholder="https://.../logo.png" aria-label="Logo 链接" aria-invalid={validationErrorField === "logoUrl"} aria-describedby={validationErrorField === "logoUrl" ? "lvct-org-profile-error" : undefined} oninput={() => clearFieldError("logoUrl")} disabled={saving || readOnly} /></label>
-                {#if logoPreview()}<button type="button" class="b3-button b3-button--text" onclick={clearLogo} disabled={saving || readOnly}>移除 Logo</button>{/if}
+                <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => logoInput?.click()} disabled={saving || readOnly}><Upload size={15} strokeWidth={1.6} />上传图片</button>
+                <label class="lvct-org-profile-editor__field">Logo 链接<input id="lvct-org-logo-url" class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" type="url" bind:this={logoUrlInput} bind:value={draft.logoUrl} placeholder="https://.../logo.png" aria-label="Logo 链接" aria-invalid={validationErrorField === "logoUrl"} aria-describedby={validationErrorField === "logoUrl" ? "lvct-org-profile-error" : undefined} oninput={() => clearFieldError("logoUrl")} disabled={saving || readOnly} /></label>
+                {#if logoPreview()}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={clearLogo} disabled={saving || readOnly}>移除 Logo</button>{/if}
                 {#if logoReading}<p class="ft__smaller ft__on-surface" role="status" aria-live="polite">正在读取 Logo…</p>{/if}
                 {#if logoError}<p class="lvct-form__error" role="alert">{logoError}</p>{/if}
                 {#if logoPreviewError}<p class="ft__smaller ft__on-surface" role="status">{logoPreviewError}</p>{/if}
@@ -392,11 +403,11 @@
     </section>
 
     <section class="lvct-org-profile-editor__section" aria-labelledby="org-dept-title">
-        <div class="lvct-org-profile-editor__section-head"><div><h4 id="org-dept-title">部门设置</h4><span class="ft__smaller ft__on-surface">可先搭建常用部门，成员归属时可直接选择。</span></div><button type="button" class="b3-button b3-button--text" onclick={addDepartment} disabled={saving || readOnly}><Plus size={15} />添加部门</button></div>
+        <div class="lvct-org-profile-editor__section-head"><div><h4 id="org-dept-title">部门设置</h4><span class="ft__smaller ft__on-surface">可先搭建常用部门，成员归属时可直接选择。</span></div><button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={addDepartment} disabled={saving || readOnly}><Plus size={15} strokeWidth={1.6} />添加部门</button></div>
         {#if draft.departments.length === 0}<p class="lvct-org-profile-editor__empty">暂未设置部门，稍后可在组织详情中继续添加。</p>{/if}
         <div class="lvct-org-profile-editor__repeat-list">
             {#each draft.departments as item, index (item.id)}
-                <div class="lvct-org-profile-editor__repeat-row"><span class="lvct-org-profile-editor__index">{index + 1}</span><input class="b3-text-field" bind:value={item.name} placeholder="部门名称，如产品部" aria-label={`部门 ${index + 1} 名称`} disabled={saving || readOnly} /><select class="b3-select" bind:value={item.parentId} aria-label={`部门 ${index + 1} 上级部门`} disabled={saving || readOnly}><option value="">无上级部门</option>{#each draft.departments.filter((candidate) => candidate.id !== item.id && candidate.name.trim()) as candidate (candidate.id)}<option value={candidate.id}>{candidate.name}</option>{/each}</select><input class="b3-text-field" bind:value={item.description} placeholder="部门说明（可选）" aria-label={`部门 ${index + 1} 说明`} disabled={saving || readOnly} /><button type="button" class="b3-button b3-button--text" aria-label={`删除部门 ${index + 1}`} onclick={() => void requestRemoveDepartment(item.id)} disabled={saving || readOnly}><Trash2 size={15} /></button></div>
+                <div class="lvct-org-profile-editor__repeat-row"><span class="lvct-org-profile-editor__index">{index + 1}</span><input class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={item.name} placeholder="部门名称，如产品部" aria-label={`部门 ${index + 1} 名称`} disabled={saving || readOnly} /><select class="b3-select" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={item.parentId} aria-label={`部门 ${index + 1} 上级部门`} disabled={saving || readOnly}><option value="">无上级部门</option>{#each draft.departments.filter((candidate) => candidate.id !== item.id && candidate.name.trim()) as candidate (candidate.id)}<option value={candidate.id}>{candidate.name}</option>{/each}</select><input class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={item.description} placeholder="部门说明（可选）" aria-label={`部门 ${index + 1} 说明`} disabled={saving || readOnly} /><button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={`删除部门 ${index + 1}`} onclick={() => void requestRemoveDepartment(item.id)} disabled={saving || readOnly}><Trash2 size={15} strokeWidth={1.6} /></button></div>
             {/each}
         </div>
         {#if pendingDepartmentDelete}
@@ -404,28 +415,28 @@
                 <strong>确认删除“{pendingDepartmentDelete.department.name || "未命名部门"}”？</strong>
                 <p>{Object.keys(pendingDepartmentDelete.childParentIds).length > 0 ? `该部门有 ${Object.keys(pendingDepartmentDelete.childParentIds).length} 个下级部门。删除后下级会保留，并解除上级归属。` : "删除只影响当前草稿，保存前仍可撤销。"}</p>
                 <div class="lvct-org-profile-editor__confirm-actions">
-                    <button type="button" class="b3-button b3-button--cancel" disabled={saving || readOnly} onclick={confirmDepartmentDelete}>确认删除部门</button>
-                    <button type="button" class="b3-button b3-button--text" disabled={saving} onclick={cancelDepartmentDelete}>取消</button>
+                    <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving || readOnly} onclick={confirmDepartmentDelete}>确认删除部门</button>
+                    <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving} onclick={cancelDepartmentDelete}>取消</button>
                 </div>
             </div>
         {/if}
         {#if removedDepartments.length > 0}
-            <div class="lvct-org-profile-editor__undo" role="status" aria-live="polite"><span>部门删除记录仍在草稿中：</span>{#each removedDepartments as removed, removedIndex (removed.department.id)}<button type="button" class="b3-button b3-button--text" disabled={saving || readOnly} onclick={() => undoDepartmentDelete(removedIndex)}>撤销“{removed.department.name || "未命名部门"}”</button>{/each}</div>
+            <div class="lvct-org-profile-editor__undo" role="status" aria-live="polite"><span>部门删除记录仍在草稿中：</span>{#each removedDepartments as removed, removedIndex (removed.department.id)}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving || readOnly} onclick={() => undoDepartmentDelete(removedIndex)}>撤销“{removed.department.name || "未命名部门"}”</button>{/each}</div>
         {/if}
     </section>
 
     <section class="lvct-org-profile-editor__section" aria-labelledby="org-custom-title">
-        <div class="lvct-org-profile-editor__section-head"><div><h4 id="org-custom-title">自定义内容</h4><span class="ft__smaller ft__on-surface">用键值对记录行业、地址、官网、成立时间等信息。</span></div><button type="button" class="b3-button b3-button--text" onclick={addCustomField} disabled={saving || readOnly}><Plus size={15} />添加字段</button></div>
+        <div class="lvct-org-profile-editor__section-head"><div><h4 id="org-custom-title">自定义内容</h4><span class="ft__smaller ft__on-surface">用键值对记录行业、地址、官网、成立时间等信息。</span></div><button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={addCustomField} disabled={saving || readOnly}><Plus size={15} strokeWidth={1.6} />添加字段</button></div>
         {#if draft.customFields.length === 0}<p class="lvct-org-profile-editor__empty">还没有自定义字段。</p>{/if}
         <div class="lvct-org-profile-editor__repeat-list">
-            {#each draft.customFields as item, index (item.id)}<div class="lvct-org-profile-editor__repeat-row"><input class="b3-text-field" bind:value={item.label} placeholder="字段名称，如官网" aria-label={`自定义字段 ${index + 1} 名称`} disabled={saving || readOnly} /><input class="b3-text-field" bind:value={item.value} placeholder="字段内容" aria-label={`自定义字段 ${index + 1} 内容`} disabled={saving || readOnly} /><button type="button" class="b3-button b3-button--text" aria-label={`删除自定义字段 ${index + 1}`} onclick={() => removeCustomField(item.id)} disabled={saving || readOnly}><Trash2 size={15} /></button></div>{/each}
+            {#each draft.customFields as item, index (item.id)}<div class="lvct-org-profile-editor__repeat-row"><input class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={item.label} placeholder="字段名称，如官网" aria-label={`自定义字段 ${index + 1} 名称`} disabled={saving || readOnly} /><input class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={item.value} placeholder="字段内容" aria-label={`自定义字段 ${index + 1} 内容`} disabled={saving || readOnly} /><button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={`删除自定义字段 ${index + 1}`} onclick={() => removeCustomField(item.id)} disabled={saving || readOnly}><Trash2 size={15} strokeWidth={1.6} /></button></div>{/each}
         </div>
         {#if removedCustomFields.length > 0}
-            <div class="lvct-org-profile-editor__undo" role="status" aria-live="polite"><span>字段删除记录仍在草稿中：</span>{#each removedCustomFields as removed, removedIndex (removed.field.id)}<button type="button" class="b3-button b3-button--text" disabled={saving || readOnly} onclick={() => undoCustomField(removedIndex)}>撤销“{removed.field.label || "未命名字段"}”</button>{/each}</div>
+            <div class="lvct-org-profile-editor__undo" role="status" aria-live="polite"><span>字段删除记录仍在草稿中：</span>{#each removedCustomFields as removed, removedIndex (removed.field.id)}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={saving || readOnly} onclick={() => undoCustomField(removedIndex)}>撤销“{removed.field.label || "未命名字段"}”</button>{/each}</div>
         {/if}
     </section>
 
     {#if editNotice}<p class="lvct-org-profile-editor__notice" role="status" aria-live="polite">{editNotice}</p>{/if}
-    {#if validationError || error}<p id="lvct-org-profile-error" class="lvct-form__error" role="alert" tabindex="-1" bind:this={validationSummary}>{validationError || error}{#if readOnly && onRetry}<button type="button" class="b3-button b3-button--outline" onclick={onRetry} disabled={saving}>重新读取组织资料</button>{/if}</p>{/if}
-    <div class="lvct-org-profile-editor__footer"><span class="ft__smaller ft__on-surface">保存后可在组织列表、联系人归属和关系图中使用。</span><span class="fn__flex-1"></span>{#if onCancel}<button type="button" class="b3-button b3-button--cancel" onclick={requestCancel} disabled={saving}>取消</button>{/if}<button type="button" class="b3-button b3-button--primary" onclick={submit} disabled={saving || readOnly || logoReading}>{saving ? "保存中…" : logoReading ? "正在读取 Logo…" : readOnly ? "等待读取" : mode === "create" ? "创建组织" : "保存资料"}</button></div>
+    {#if validationError || error}<p id="lvct-org-profile-error" class="lvct-form__error" role="alert" tabindex="-1" bind:this={validationSummary}>{validationError || error}{#if readOnly && onRetry}<button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={onRetry} disabled={saving}>重新读取组织资料</button>{/if}</p>{/if}
+    <div class="lvct-org-profile-editor__footer"><span class="ft__smaller ft__on-surface">保存后可在组织列表、联系人归属和关系图中使用。</span><span class="fn__flex-1"></span>{#if onCancel}<button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={requestCancel} disabled={saving}>取消</button>{/if}<button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={submit} disabled={saving || readOnly || logoReading}>{saving ? "保存中…" : logoReading ? "正在读取 Logo…" : readOnly ? "等待读取" : mode === "create" ? "创建组织" : "保存资料"}</button></div>
 </div>
