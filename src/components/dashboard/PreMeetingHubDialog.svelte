@@ -263,37 +263,65 @@
 
     .premeeting-metrics-bar {
         display: flex;
-        gap: 12px;
+        align-items: stretch;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
+        padding: 12px 16px;
+        gap: 0;
     }
 
     @media (max-width: 640px) {
         .premeeting-metrics-bar {
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            padding: 8px;
+            gap: 8px;
         }
         .metric-card {
-            min-width: calc(50% - 6px);
+            padding: 6px 10px;
+            &:not(:last-child)::after {
+                display: none;
+            }
         }
     }
 
     .metric-card {
         flex: 1;
-        padding: 8px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        padding: 4px 16px;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         gap: 2px;
+        position: relative;
+
+        &:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 1px;
+            background: var(--lvct-border-subtle);
+        }
     }
 
     .metric-title {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
+        font-weight: 500;
     }
 
     .metric-number {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 24px;
+        font-weight: 750;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
     }
 
     .premeeting-toolbar {

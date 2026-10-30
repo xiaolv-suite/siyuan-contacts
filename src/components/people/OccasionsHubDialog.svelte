@@ -329,46 +329,65 @@
 
     .occ-metrics-bar {
         display: flex;
-        gap: 12px;
+        align-items: stretch;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
+        padding: 12px 16px;
+        gap: 0;
     }
 
     @media (max-width: 640px) {
         .occ-metrics-bar {
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            padding: 8px;
+            gap: 8px;
         }
         .metric-card {
-            min-width: calc(50% - 6px);
+            padding: 6px 10px;
+            &:not(:last-child)::after {
+                display: none;
+            }
         }
     }
 
     .metric-card {
         flex: 1;
-        padding: var(--lvct-sp-2, 8px) var(--lvct-sp-3, 12px);
-        background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md, 12px);
-        box-shadow: var(--lvct-shadow-1);
+        padding: 4px 16px;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         gap: 2px;
-        transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+        position: relative;
 
-        &:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--lvct-shadow-2);
+        &:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 1px;
+            background: var(--lvct-border-subtle);
         }
     }
 
     .metric-title {
-        font-size: var(--lvct-fs-micro, 12px);
+        font-size: 11px;
         color: var(--lvct-text-3);
         font-weight: 500;
     }
 
     .metric-number {
-        font-size: 20px;
-        font-weight: 700;
+        font-size: 24px;
+        font-weight: 750;
         font-variant-numeric: tabular-nums;
+        line-height: 1.1;
         color: var(--lvct-text-1);
     }
 
