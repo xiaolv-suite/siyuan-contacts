@@ -43,6 +43,7 @@
     let orientation: CardOrientation = $state("horizontal");
 
     let copied = $state(false);
+    let copying = $state(false);
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
     let errorText = $state("");
 
@@ -64,6 +65,8 @@
     );
 
     async function handleCopySvg() {
+        if (copying) return;
+        copying = true;
         try {
             await copyPlainText(cardSvg);
             copied = true;
@@ -73,6 +76,8 @@
             }, 2000);
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            copying = false;
         }
     }
 
@@ -93,7 +98,7 @@
     <div class="card-controls-toolbar">
         <div class="control-segment">
             <span class="control-label">
-                <Palette size={13} style="margin-right: 4px;" />
+                <Palette size={13} strokeWidth={1.6} style="margin-right: 4px;" />
                 {text("cardThemeLabel", "主题风格：")}
             </span>
             <button
@@ -121,7 +126,7 @@
 
         <div class="control-segment">
             <span class="control-label">
-                <LayoutTemplate size={13} style="margin-right: 4px;" />
+                <LayoutTemplate size={13} strokeWidth={1.6} style="margin-right: 4px;" />
                 {text("cardLayoutLabel", "名片版式：")}
             </span>
             <button
@@ -166,15 +171,16 @@
         <button
             type="button"
             class="b3-button b3-button--outline"
+            disabled={copying}
             onclick={handleCopySvg}
             title={text("cardCopySvgTip", "复制标准 SVG 矢量代码")}
         >
             {#if copied}
-                <Check size={14} class="ft__success" style="margin-right: 4px;" />
+                <Check size={14} strokeWidth={1.6} class="ft__success" style="margin-right: 4px;" />
                 <span class="ft__success">{text("cardSvgCopied", "已复制 SVG 代码 ✓")}</span>
             {:else}
-                <Copy size={14} style="margin-right: 4px;" />
-                <span>{text("cardCopySvgBtn", "复制 SVG 代码")}</span>
+                <Copy size={14} strokeWidth={1.6} style="margin-right: 4px;" />
+                <span>{copying ? "复制中…" : text("cardCopySvgBtn", "复制 SVG 代码")}</span>
             {/if}
         </button>
         <button
@@ -183,7 +189,7 @@
             onclick={handleDownloadSvg}
             title={text("cardDownloadTip", "下载高保真 SVG 矢量图文件")}
         >
-            <Download size={14} style="margin-right: 4px;" />
+            <Download size={14} strokeWidth={1.6} style="margin-right: 4px;" />
             <span>{text("cardDownloadBtn", "下载 SVG 名片")}</span>
         </button>
     </div>
@@ -232,7 +238,7 @@
     }
 
     .segment-pill.is-active {
-        background: var(--lv-brand-soft, color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent));
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.1));
         border-color: var(--lv-brand, #ea580c);
         color: var(--lv-brand, #ea580c);
         font-weight: 600;
@@ -284,5 +290,9 @@
         justify-content: flex-end;
         gap: 10px;
         padding-top: 6px;
+
+        button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 </style>

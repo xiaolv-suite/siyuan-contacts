@@ -10,7 +10,6 @@
         Handshake,
         Plus,
         CircleCheck,
-        Clock,
         Calendar,
         Trash2,
         RotateCcw,
@@ -194,7 +193,7 @@
 <div class="lvct-promises-ledger b3-card">
     <div class="lvct-promises-ledger__header">
         <div class="fn__flex" style="align-items: center; gap: 8px;">
-            <Handshake size={18} class="ft__primary" />
+            <Handshake size={18} strokeWidth={1.6} class="ft__primary" />
             <span class="ft__on-surface font-weight-bold" style="font-size: 14px;">
                 {text("promisesTitle", "双向承诺与信诺履约本")}
             </span>
@@ -207,7 +206,7 @@
                 class="b3-button b3-button--text b3-button--small"
                 onclick={() => { adding = true; errorText = ""; }}
             >
-                <Plus size={14} style="margin-right: 4px;" />
+                <Plus size={14} strokeWidth={1.6} style="margin-right: 4px;" />
                 {text("promisesAddBtn", "记录新信诺")}
             </button>
         {/if}
@@ -378,10 +377,8 @@
                         </div>
                         <div class="item-status-tag {item.status} {isOverdue ? 'overdue' : ''}">
                             {#if item.status === "pending"}
-                                <Clock size={12} style="margin-right: 3px;" />
                                 {isOverdue ? text("promisesStatusOverdue", "已逾期") : text("promisesStatusPending", "待履约")}
                             {:else if item.status === "fulfilled"}
-                                <CircleCheck size={12} style="margin-right: 3px;" />
                                 {text("promisesStatusFulfilled", "已兑现")}
                             {:else}
                                 {text("promisesStatusBroken", "已失效")}
@@ -396,7 +393,7 @@
                     <div class="item-foot">
                         <div class="item-dates">
                             <span class="date-chunk" title={text("promisesPromisedOn", "许诺日")}>
-                                <Calendar size={12} style="margin-right: 2px;" />
+                                <Calendar size={12} strokeWidth={1.6} style="margin-right: 2px;" />
                                 {item.promisedOn}
                             </span>
                             {#if item.dueOn}
@@ -419,7 +416,7 @@
                                     onclick={() => handleMarkFulfilled(item)}
                                     title={text("promisesMarkFulfilledTip", "兑现履约")}
                                 >
-                                    <CircleCheck size={14} style="margin-right: 2px;" />
+                                    <CircleCheck size={14} strokeWidth={1.6} style="margin-right: 2px;" />
                                     {busyActionId === item.id ? "…" : text("promisesMarkFulfilled", "兑现")}
                                 </button>
                                 <button
@@ -437,7 +434,7 @@
                                     onclick={() => handleReopen(item)}
                                     title={text("promisesReopenTip", "重开履约")}
                                 >
-                                    <RotateCcw size={12} style="margin-right: 2px;" />
+                                    <RotateCcw size={12} strokeWidth={1.6} style="margin-right: 2px;" />
                                     {busyActionId === item.id ? "…" : text("promisesReopen", "重开")}
                                 </button>
                             {/if}
@@ -447,7 +444,7 @@
                                 onclick={() => handleRemove(item.id)}
                                 title={text("common.delete", "删除")}
                             >
-                                <Trash2 size={12} />
+                                <Trash2 size={12} strokeWidth={1.6} />
                             </button>
                         </div>
                     </div>
@@ -478,22 +475,33 @@
 
     .lvct-promises-ledger__metrics {
         display: flex;
-        gap: 10px;
+        align-items: stretch;
+        padding: 10px 14px;
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 14px);
+        gap: 0;
     }
 
     .metric-card {
         flex: 1;
-        padding: 10px 14px;
-        background: var(--lvct-bg-app);
-        border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md, 12px);
+        padding: 4px 12px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
         display: flex;
         flex-direction: column;
-        gap: 3px;
-        transition: transform var(--lvct-dur-fast) var(--lvct-ease);
+        gap: 2px;
+        position: relative;
 
-        &:hover {
-            transform: translateY(-1px);
+        &:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 15%;
+            height: 70%;
+            width: 1px;
+            background: color-mix(in srgb, var(--lvct-color-border-200) 80%, transparent);
         }
     }
 
@@ -602,6 +610,14 @@
         justify-content: flex-end;
         gap: 8px;
         margin-top: 4px;
+
+        button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+
+    .action-btn {
+        border-radius: var(--lv-r-pill, 9999px) !important;
     }
 
     .lvct-promises-list {
@@ -663,8 +679,8 @@
     .direction-tag {
         font-size: 10px;
         font-weight: 600;
-        padding: 1px 5px;
-        border-radius: 4px;
+        padding: 1px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
         flex-shrink: 0;
     }
 
@@ -689,32 +705,45 @@
 
     .item-status-tag {
         font-size: 11px;
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        padding: 1px 6px;
-        border-radius: 4px;
+        gap: 4px;
+        padding: 1px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: transparent;
+        border: 1px solid var(--lvct-color-border-200);
         flex-shrink: 0;
-    }
 
-    .item-status-tag.pending {
-        background: var(--b3-theme-warning-lightest, rgba(255, 170, 0, 0.1));
-        color: var(--b3-theme-warning, #e6a23c);
-    }
+        &::before {
+            content: "";
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            forced-color-adjust: none;
+        }
 
-    .item-status-tag.pending.overdue {
-        background: var(--b3-theme-error-lightest, rgba(235, 77, 75, 0.1));
-        color: var(--b3-theme-error, #eb4d4b);
-        font-weight: 600;
-    }
+        &.pending {
+            color: var(--lv-brand, #ea580c);
+            border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
+        }
 
-    .item-status-tag.fulfilled {
-        background: var(--b3-theme-success-lightest, rgba(46, 204, 113, 0.1));
-        color: var(--b3-theme-success, #2ecc71);
-    }
+        &.pending.overdue {
+            color: var(--lvct-danger, #eb4d4b);
+            border-color: color-mix(in srgb, var(--lvct-danger) 32%, transparent);
+            font-weight: 600;
+        }
 
-    .item-status-tag.broken {
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface-light);
+        &.fulfilled {
+            color: #059669;
+            border-color: color-mix(in srgb, #059669 30%, transparent);
+        }
+
+        &.broken {
+            color: var(--lvct-text-3);
+            border-color: var(--lvct-border-subtle);
+        }
     }
 
     .item-detail {
