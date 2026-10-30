@@ -35,7 +35,8 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
-    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check, Sparkles } from "@lucide/svelte";
+    import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check, Sparkles, Clock } from "@lucide/svelte";
+    import { computeRelationshipHealth } from "../../domain/cadence.ts";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
@@ -262,6 +263,24 @@
     });
 
     const starredCount = $derived(people.filter((p) => isPersonStarred(preferences, p.docId)).length);
+    const overduePeopleCount = $derived.by(() => {
+        if (recentState !== "ready") return 0;
+        let count = 0;
+        for (const p of people) {
+            const cadence = cadences[p.docId];
+            if (cadence?.paused) continue;
+            const last = recent[p.docId];
+            const health = computeRelationshipHealth({
+                cadenceDays: cadence?.days ?? preferences.staleThresholdDays ?? 30,
+                lastInteractionTime: last?.occurredAt,
+                paused: cadence?.paused,
+            });
+            if (health.overdue || health.level === "cold" || health.level === "unknown") {
+                count += 1;
+            }
+        }
+        return count;
+    });
     let tidyDrawerOpen = $state(false);
     const unorganizedCount = $derived(people.filter(isUnorganizedPerson).length);
 
@@ -997,6 +1016,8 @@
                 cold: "❄️ 渐冻",
                 unknown: "⚪ 从未联系",
                 paused: "⏸️ 已暂停",
+                overdue: "⌛ 待问候/逾期",
+                cooling: "❄️ 渐冷人脉",
             };
             chips.push({ key: "heatLevel", label: `温度：${hLabels[extraFilter.heatLevel] || extraFilter.heatLevel}` });
         }
@@ -1954,6 +1975,8 @@
                             }}
                         >
                             <option value="">{text("peopleFilterHeatAll", "全部温度（不限）")}</option>
+                            <option value="overdue">⌛ 待问候（超期未联系）</option>
+                            <option value="cooling">❄️ 渐冷（需破冰重联）</option>
                             <option value="hot">🔥 温热（近期常联系）</option>
                             <option value="warm">🍃 常温（状态良好）</option>
                             <option value="cool">🌬️ 微凉（轻度逾期）</option>
@@ -2171,11 +2194,27 @@
                     title={text("starredOnlyTip", "只看星标常用联系人")}
                 ><Star size={12} strokeWidth={1.6} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />{text("starredGroupTab", "常用 ({n})", { n: starredCount })}</button>
             {/if}
+            {#if overduePeopleCount > 0}
+                <button
+                    type="button"
+                    class="lvct-people__group-tab lvct-people__group-tab--overdue"
+                    class:lvct-people__group-tab--active={extraFilter.heatLevel === "overdue"}
+                    onclick={() => {
+                        extraFilter = {
+                            ...extraFilter,
+                            heatLevel: extraFilter.heatLevel === "overdue" ? "" : "overdue",
+                        };
+                        filterStarredOnly = false;
+                        visibleCount = PAGE_SIZE;
+                    }}
+                    title={text("overdueHeatTip", "只看超过联络周期或需要破冰问候的联系人")}
+                ><Clock size={12} strokeWidth={1.6} class="lvct-icon-inline" />{text("overdueGroupTab", "待问候 ({n})", { n: overduePeopleCount })}</button>
+            {/if}
             <button
                 type="button"
                 class="lvct-people__group-tab"
-                class:lvct-people__group-tab--active={groupFilter === "" && !filterStarredOnly}
-                onclick={() => { groupFilter = ""; filterStarredOnly = false; visibleCount = PAGE_SIZE; }}
+                class:lvct-people__group-tab--active={groupFilter === "" && !filterStarredOnly && extraFilter.heatLevel !== "overdue"}
+                onclick={() => { groupFilter = ""; filterStarredOnly = false; if (extraFilter.heatLevel === "overdue") extraFilter = { ...extraFilter, heatLevel: "" }; visibleCount = PAGE_SIZE; }}
             >{text("allGroupTab", "全部 ({n})", { n: people.length })}</button>
             {#each groups as g}
                 {@const count = people.filter((p) => p.group === g).length}

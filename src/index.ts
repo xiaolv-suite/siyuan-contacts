@@ -117,6 +117,9 @@ import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePerson
 import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages, batchUpdatePersonLifecycleStages } from "./data/lifecycle-stage.ts";
 import { loadPersonScratchpads, savePersonScratchpad, updatePersonScratchpad, removePersonScratchpad } from "./data/person-scratchpad.ts";
 import { loadPersonSocialPreferences, addPersonSocialPreference, updatePersonSocialPreference, removePersonSocialPreference } from "./data/social-preferences.ts";
+import { loadPersonOrigin, savePersonOrigin, loadAllPersonOrigins } from "./data/person-origins.ts";
+import type { PersonOrigin } from "./domain/person-origin.ts";
+import { callBridge, type HomeBridgeApi } from "./libs/ecosystem-bridge-kit.ts";
 import { buildReview, exportReviewReportToDoc } from "./services/review-report";
 import { createWeeklyDigestDoc } from "./services/weekly-digest";
 import { createPersonFlashcardsDoc, createBatchFlashcardsDoc } from "./services/flashcards";
@@ -1913,6 +1916,36 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const res = await removePersonSocialPreference(this, personDocId, prefId);
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
+    }
+
+    /** Monica 对标：初识溯源与引荐人档案（How We Met / Introduced by） */
+    async loadPersonOrigin(personDocId: string) {
+        return loadPersonOrigin(this, personDocId);
+    }
+
+    async savePersonOrigin(origin: PersonOrigin) {
+        const token = this.lifecycleToken;
+        const res = await savePersonOrigin(this, origin);
+        emitDataChanged({ topics: ["people"], docIds: [origin.personDocId] }, token);
+        return res;
+    }
+
+    async loadAllPersonOrigins() {
+        return loadAllPersonOrigins(this);
+    }
+
+    /** Simple-PRM / Monica 对标：向小驴管家输出到期问候提醒 */
+    async sendGreetingReminderToHome(personName: string, daysOverdue: number): Promise<boolean> {
+        const today = new Date().toISOString().slice(0, 10);
+        return callBridge<HomeBridgeApi, boolean>(
+            "home",
+            "memo",
+            async (home) => {
+                await home.addMemo(`问候联系人：${personName}（已逾期 ${daysOverdue} 天未联络）`, today);
+                return true;
+            },
+            () => false,
+        );
     }
 
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */

@@ -24,7 +24,7 @@ export interface SavedViewQuery {
     relationshipLabel?: string;
     region?: string;
     lifecycleStage?: import("./lifecycle-stage.ts").RelationshipStageKey | "";
-    heatLevel?: import("./cadence.ts").RelationshipHeatLevel | "";
+    heatLevel?: import("./cadence.ts").RelationshipHeatLevel | "cooling" | "overdue" | "";
 }
 
 export interface SavedView {

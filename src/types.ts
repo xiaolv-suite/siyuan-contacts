@@ -190,6 +190,12 @@ export interface ContactsPluginFacade {
     addPersonSocialPreference?(item: import("./domain/social-preferences").PersonSocialPreferenceItem): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
     updatePersonSocialPreference?(personDocId: string, prefId: string, patch: Partial<import("./domain/social-preferences").PersonSocialPreferenceItem>): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
     removePersonSocialPreference?(personDocId: string, prefId: string): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    /** Monica 对标：初识溯源与引荐人档案（How We Met / Introduced by） */
+    loadPersonOrigin?(personDocId: string): Promise<import("./domain/person-origin").PersonOrigin | null>;
+    savePersonOrigin?(origin: import("./domain/person-origin").PersonOrigin): Promise<import("./domain/person-origin").PersonOrigin>;
+    loadAllPersonOrigins?(): Promise<Record<string, import("./domain/person-origin").PersonOrigin>>;
+    /** Simple-PRM / Monica 对标：向小驴管家输出到期问候提醒 */
+    sendGreetingReminderToHome?(personName: string, daysOverdue: number): Promise<boolean>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;
