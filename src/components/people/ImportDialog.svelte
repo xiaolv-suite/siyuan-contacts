@@ -253,7 +253,7 @@
     {:else}
     {#if importedCount === null}
     <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
-        <select class="b3-select" aria-label={text("importPickNotebook", "选择待收编文档的笔记本")} bind:value={notebookId} onchange={() => search()} disabled={importing || !loaded}>
+        <select class="b3-select" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={text("importPickNotebook", "选择待收编文档的笔记本")} bind:value={notebookId} onchange={() => search()} disabled={importing || !loaded}>
             <option value="" disabled>{text("importPickNotebook", "选择待收编文档的笔记本")}</option>
             {#each notebooks as notebook (notebook.id)}
                 <option value={notebook.id}>{notebook.name}</option>
@@ -261,6 +261,7 @@
         </select>
         <input
             class="b3-text-field fn__flex-1"
+            style="border-radius: var(--lv-r-pill, 9999px);"
             type="text"
             placeholder={text("importFilterName", "按文档名过滤…")}
             aria-label={text("importFilterNameAria", "按文档名过滤")}
@@ -270,6 +271,7 @@
         />
         <input
             class="b3-text-field"
+            style="border-radius: var(--lv-r-pill, 9999px);"
             type="text"
             placeholder={text("importFilterFolder", "按文件夹前缀过滤…")}
             aria-label={text("importFilterFolderAria", "按文件夹前缀过滤")}
@@ -343,10 +345,10 @@
 
     <div class="lvct-form__actions">
         {#if importedCount !== null}
-            <button class="b3-button b3-button--text" onclick={onClose}>{text("importDone", "完成")}</button>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={onClose}>{text("importDone", "完成")}</button>
         {:else}
-            <button class="b3-button b3-button--cancel" onclick={() => guardedClose(onClose)} disabled={importing}>{text("importCancel", "取消")}</button>
-            <button class="b3-button b3-button--text" onclick={runImport} disabled={importing || loading || !!errorText || !groupValid || !notebookId || selectedIds.length === 0}>
+            <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={importing}>{text("importCancel", "取消")}</button>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={runImport} disabled={importing || loading || !!errorText || !groupValid || !notebookId || selectedIds.length === 0}>
                 {importing ? text("importAdopting", "收编中…") : text("importAdoptAs", "收编为联系人（{n}）", { n: selectedIds.length })}
             </button>
         {/if}

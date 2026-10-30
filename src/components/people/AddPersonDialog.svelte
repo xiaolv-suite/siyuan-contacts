@@ -422,7 +422,7 @@
 
 <div class="lvct-form">
     <div class="lvct-form__toolbar">
-        <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" disabled={baseFieldsLocked} onclick={() => (quickFillOpen = true)}>
+        <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" style="border-radius: var(--lv-r-pill, 9999px);" disabled={baseFieldsLocked} onclick={() => (quickFillOpen = true)}>
             <ClipboardPaste size={14}/>{text("qfOpen", "粘贴并识别")}
         </button>
     </div>
@@ -599,8 +599,8 @@
         {#if selfSetupNotice}<p class="lvct-form__hint" role="status">{selfSetupNotice}</p>{/if}
 
     <div class="lvct-form__actions">
-        <button class="b3-button b3-button--cancel" onclick={() => guardedClose(onClose)} disabled={running}>{text("formCancel", "取消")}</button>
-        <button class="b3-button b3-button--primary" onclick={submit} disabled={running || creatingOrganization || extraLoading || Boolean(removingOrganization) || removingOrgEntryKey !== null || !groupValid || !!currentPreview && !creationRequest && !creationChoice}>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={running}>{text("formCancel", "取消")}</button>
+        <button class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={submit} disabled={running || creatingOrganization || extraLoading || Boolean(removingOrganization) || removingOrgEntryKey !== null || !groupValid || !!currentPreview && !creationRequest && !creationChoice}>
             {running ? text("formCreating", "创建中…") : createdPerson ? "继续保存补充资料" : creationRequest ? text("contactContinueCreation", "核实并继续原请求") : text("formCreate", "创建联系人")}
         </button>
     </div>

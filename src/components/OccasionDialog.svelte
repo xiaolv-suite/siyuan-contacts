@@ -58,6 +58,7 @@
     }
 
     async function handleSave() {
+        if (submitting) return;
         if (!title.trim()) {
             errorText = text("occErrNoTitle", "请输入活动标题");
             return;
@@ -245,8 +246,8 @@
     </div>
 
     <footer class="lvct-occ-dialog__footer">
-        <button type="button" class="b3-button b3-button--outline" onclick={onClose} disabled={submitting}>{text("cancel", "取消")}</button>
-        <button type="button" class="b3-button b3-button--cancel" onclick={handleSave} disabled={submitting}>
+        <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={onClose} disabled={submitting}>{text("cancel", "取消")}</button>
+        <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={handleSave} disabled={submitting}>
             {submitting ? text("occSaving", "保存中…") : text("occSaveBtn", "保存活动")}
         </button>
     </footer>
