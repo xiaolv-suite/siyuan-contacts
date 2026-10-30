@@ -1274,40 +1274,64 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
 }
 
 .lvct-review__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-    gap: var(--lvct-sp-2);
+    display: flex;
+    align-items: stretch;
+    background: var(--lvct-bg-surface);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
+    box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
+    padding: 12px 14px;
+    gap: 0;
     margin-bottom: var(--lvct-sp-3);
+
+    @media (max-width: 600px) {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        padding: 8px;
+        gap: 8px;
+    }
 }
 
 .lvct-review__cell {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--lvct-sp-3);
-    border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md, 12px);
-    background: var(--lvct-bg-surface);
-    box-shadow: var(--lvct-shadow-1);
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    justify-content: center;
+    padding: 4px 10px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: relative;
 
-    &:hover {
-        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
-        transform: translateY(-1px);
-        box-shadow: var(--lvct-shadow-2);
+    &:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 15%;
+        bottom: 15%;
+        width: 1px;
+        background: var(--lvct-border-subtle);
     }
 
-    b { font-size: 22px; font-weight: 700; color: var(--lvct-text-1); font-variant-numeric: tabular-nums; }
-    span { color: var(--lvct-text-3); font-size: var(--lvct-fs-caption); font-weight: 500; }
+    @media (max-width: 600px) {
+        &:not(:last-child)::after {
+            display: none;
+        }
+    }
+
+    b { font-size: 22px; font-weight: 750; color: var(--lvct-text-1); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    span { color: var(--lvct-text-3); font-size: 11px; font-weight: 500; margin-top: 2px; }
 }
 
 .lvct-review__section {
     margin-bottom: var(--lvct-sp-3);
     padding: 16px 18px;
-    border: 1px solid var(--lvct-border-subtle);
+    border: 1px solid var(--lvct-color-border-200);
     border-radius: var(--lvct-r-card, 16px);
     background: var(--lvct-bg-surface);
-    box-shadow: var(--lvct-shadow-card);
+    box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
 
     > b { display: block; margin-bottom: var(--lvct-sp-2); font-size: 14.5px; font-weight: 700; color: var(--lvct-text-1); }
 }
@@ -1894,10 +1918,10 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     flex-direction: column;
     gap: var(--lvct-sp-3);
     padding: var(--lvct-sp-4);
-    border: 1px solid var(--lvct-border-subtle);
+    border: 1px solid var(--lvct-color-border-200);
     border-radius: var(--lvct-r-card, 16px);
     background: var(--lvct-bg-surface);
-    box-shadow: var(--lvct-shadow-card);
+    box-shadow: 0 4px 20px -2px rgba(28, 24, 21, 0.05);
 }
 
 .lvct-dash__quickstart-head,
@@ -1947,20 +1971,20 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     min-width: 0;
     min-height: 70px;
     padding: var(--lvct-sp-3);
-    border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md, 12px);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lv-r-md, 12px);
     background: var(--lvct-bg-app);
     color: var(--lvct-text-1);
     text-align: left;
     cursor: pointer;
-    box-shadow: var(--lvct-shadow-1);
+    box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
     transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover,
     &:focus-visible {
         transform: translateY(-1px);
-        box-shadow: var(--lvct-shadow-2);
-        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
+        box-shadow: 0 4px 12px rgba(28, 24, 21, 0.06);
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-color-border-200));
     }
 }
 
