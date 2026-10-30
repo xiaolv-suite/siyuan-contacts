@@ -1269,14 +1269,17 @@
                         <b>{text("orgMembersTitle", "成员")}</b>
                         <span class="ft__smaller ft__on-surface">{memberSummary.people} 人 · {memberSummary.active} 条当前 · {memberSummary.former} 条历史</span>
                         <button type="button" class="b3-button b3-button--outline"
+                            style="border-radius: var(--lv-r-pill, 9999px);"
                             disabled={busy || loading || organizationsRefreshing || memberLoading || selectionGuardBusy || !!memberError || memberTotal === 0}
                             title={memberTotal === 0 ? "当前筛选没有可导出的成员" : undefined}
                             onclick={() => void exportFilteredMembers("csv")}>{memberExporting ? "准备导出…" : "下载 CSV"}</button>
                         <button type="button" class="b3-button b3-button--outline"
+                            style="border-radius: var(--lv-r-pill, 9999px);"
                             disabled={busy || loading || organizationsRefreshing || memberLoading || selectionGuardBusy || !!memberError || memberTotal === 0}
                             title={memberTotal === 0 ? "当前筛选没有可复制的成员" : undefined}
                             onclick={() => void exportFilteredMembers("copy-tsv")}>{memberExporting ? "处理中…" : "复制 TSV"}</button>
                         <button type="button" class="b3-button b3-button--primary lvct-org-manager__add-toggle"
+                            style="border-radius: var(--lv-r-pill, 9999px);"
                             disabled={busy || loading || memberError !== "" || selectionGuardBusy || !!editingMemberId || !!replacingMemberId || !!movingMemberId || !!removingMemberId}
                             onclick={toggleAddMember}>
                             {showAddMember ? text("orgMemberAddCollapse", "收起添加") : text("orgMemberAdd", "添加成员")}</button>
@@ -1291,11 +1294,11 @@
                             />
                             <span class="ft__smaller">全选本页</span>
                         </label>
-                        <input class="b3-text-field fn__flex-1" type="search" bind:value={memberQuery}
+                        <input class="b3-text-field fn__flex-1" style="border-radius: var(--lv-r-pill, 9999px);" type="search" bind:value={memberQuery}
                             placeholder={text("orgMemberSearch", "搜索姓名、部门、职位、状态或备注")}
                             aria-label={text("orgMemberSearch", "搜索姓名、部门、职位、状态或备注")}
                             oninput={() => reloadMembers(true)} disabled={busy || hasDraft || selectionGuardBusy} />
-                        <select class="b3-select" bind:value={memberStatus} onchange={() => reloadMembers()} disabled={busy || hasDraft || selectionGuardBusy}
+                        <select class="b3-select" style="border-radius: var(--lv-r-pill, 9999px);" bind:value={memberStatus} onchange={() => reloadMembers()} disabled={busy || hasDraft || selectionGuardBusy}
                             aria-label={text("orgMemberStatusFilter", "成员状态") }>
                             <option value="all">{text("orgMemberStatusAll", "全部状态")}</option>
                             <option value="active">{text("orgStatusActive", "在职/在读")}</option>
@@ -1326,6 +1329,7 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--outline b3-button--small"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 disabled={busy || batchOperating || currentOrg?.archived}
                                 onclick={() => void batchUpdateStatus("active")}
                                 title="批量设为在职/在读状态"
@@ -1333,6 +1337,7 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--outline b3-button--small"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 disabled={busy || batchOperating}
                                 onclick={() => void batchUpdateStatus("former")}
                                 title="批量设为已离开状态"
@@ -1340,6 +1345,7 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--outline b3-button--small"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 disabled={busy || batchOperating}
                                 onclick={exportSelectedMembersTsv}
                                 title="复制选中成员的 TSV 格式表格"
@@ -1347,12 +1353,14 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--cancel b3-button--small"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 disabled={busy || batchOperating}
                                 onclick={() => (batchRemoveConfirm = !batchRemoveConfirm)}
                             >批量移除</button>
                             <button
                                 type="button"
                                 class="b3-button b3-button--text b3-button--small"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 disabled={busy || batchOperating}
                                 onclick={() => { selectedMemberIds = []; batchRemoveConfirm = false; }}
                             >取消选择</button>
@@ -1608,6 +1616,28 @@
             await loadOrgs(true);
         }} />
     <div class="lvct-org-manager__footer">
-        <button class="b3-button b3-button--cancel" onclick={() => void guardedClose(onClose)} disabled={busy || selectionGuardBusy}>{text("orgClose", "关闭")}</button>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void guardedClose(onClose)} disabled={busy || selectionGuardBusy}>{text("orgClose", "关闭")}</button>
     </div>
 </div>
+
+<style>
+    .lvct-org-manager__member {
+        border-radius: var(--lvct-r-card, 12px) !important;
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+    }
+    .lvct-org-manager__member-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+    .lvct-org-manager__member-status::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        forced-color-adjust: none;
+    }
+</style>
