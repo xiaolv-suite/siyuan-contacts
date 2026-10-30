@@ -404,6 +404,30 @@ test("小驴人脉 · 全局通知条与关系图谱控制岛对齐细线图标�
     assert.match(indexScss, /\.lvct-graph-legend__item\s*\{[\s\S]*forced-color-adjust:\s*none;/);
 });
 
+test("小驴人脉 · 设置大盘与图谱证据悬停卡对齐全胶囊体系与1.6细线图标规范", () => {
+    // 1. 设置大盘导航与功能图标
+    const settingsSvelte = fs.readFileSync(path.join(SRC, "components", "SettingsView.svelte"), "utf8");
+    assert.match(settingsSvelte, /SlidersHorizontal size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Database size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Bell size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Sparkles size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Plug size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Info size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Check size=\{12\}\s*color="#ffffff"\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /RotateCcw size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(settingsSvelte, /Sparkles size=\{13\}\s*strokeWidth=\{1\.6\}/);
+
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.lvct-settings__nav-item\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 图谱证据悬停卡微交互与细线
+    const graphSvelte = fs.readFileSync(path.join(SRC, "components", "graph", "RelationGraph.svelte"), "utf8");
+    assert.match(graphSvelte, /Building2 size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(graphSvelte, /Users size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(indexScss, /\.lvct-graph-view__hover-card\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*16px\)/);
+    assert.match(indexScss, /\.lvct-graph-view__hover-card[\s\S]*\.b3-button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)\s*!important/);
+});
+
 
 
 
