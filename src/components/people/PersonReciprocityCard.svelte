@@ -106,20 +106,20 @@
 
 <style>
     .lvct-reciprocity-card {
-        padding: 12px 14px;
+        padding: 14px 16px;
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md, 12px);
-        box-shadow: var(--lvct-shadow-1);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 10px;
         margin-top: 10px;
         transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
             transform: translateY(-1px);
-            box-shadow: var(--lvct-shadow-2);
+            box-shadow: 0 4px 14px rgba(28, 24, 21, 0.06);
         }
     }
 
@@ -180,29 +180,29 @@
         gap: 4px;
         font-size: 11px;
         font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: color-mix(in srgb, var(--b3-theme-primary) 10%, transparent);
-        color: var(--b3-theme-primary);
+        padding: 3px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        color: var(--lv-data-amber, #d97706);
     }
 
     /* 天平比例条 */
     .balance-bar-wrap {
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        gap: 4px;
     }
 
     .balance-labels {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 10px;
-        color: var(--b3-theme-on-surface-light);
+        font-size: 10.5px;
+        color: var(--lvct-text-3);
     }
 
     .balance-track {
-        height: 6px;
+        height: 7px;
         border-radius: var(--lv-r-pill, 9999px);
         background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
         display: flex;
@@ -235,9 +235,10 @@
     }
 
     .metric-box {
-        padding: 6px 8px;
-        background: var(--b3-theme-surface-lighter);
-        border-radius: 4px;
+        padding: 8px 10px;
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lv-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 4px;

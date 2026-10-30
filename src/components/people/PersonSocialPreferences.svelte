@@ -241,9 +241,9 @@
         margin: 14px 0;
         padding: 14px 16px;
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-color-border-200);
         border-radius: var(--lvct-r-card, 16px);
-        box-shadow: var(--lvct-shadow-1);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -258,8 +258,8 @@
     .social-prefs-form {
         padding: 10px 14px;
         background: var(--lvct-bg-app);
-        border: 1px dashed color-mix(in srgb, var(--lv-brand) 36%, transparent);
-        border-radius: var(--lvct-r-md, 12px);
+        border: 1px dashed var(--lvct-color-border-200);
+        border-radius: var(--lv-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -336,10 +336,10 @@
 
     .pref-card {
         padding: 8px 12px;
-        border-radius: var(--lvct-r-md, 12px);
+        border-radius: var(--lv-r-md, 12px);
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
-        box-shadow: var(--lvct-shadow-1);
+        border: 1px solid var(--lvct-color-border-200);
+        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -348,7 +348,7 @@
 
         &:hover {
             transform: translateY(-1px);
-            box-shadow: var(--lvct-shadow-2);
+            box-shadow: 0 4px 12px rgba(28, 24, 21, 0.06);
         }
     }
 
@@ -367,11 +367,11 @@
 
     .taboo-badge {
         font-size: 10px;
-        font-weight: 700;
         padding: 2px 7px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--lvct-danger, #e11d48);
-        color: #ffffff;
+        background: var(--lvct-danger-soft, rgba(225, 29, 72, 0.12));
+        color: var(--lvct-danger, #e11d48);
+        font-weight: 600;
         display: inline-flex;
         align-items: center;
         flex-shrink: 0;
