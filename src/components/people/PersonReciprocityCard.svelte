@@ -18,14 +18,14 @@
 <div class="lvct-reciprocity-card" role="region" aria-label={text("reciprocityCardTitle", "交往互惠与双向平衡")}>
     <div class="card-header">
         <div class="header-left">
-            <span class="header-icon">⚖️</span>
+            <Scale size={14} strokeWidth={1.6} class="lvct-icon-inline header-icon" style="color: var(--lvct-accent, var(--b3-theme-primary));" />
             <span class="header-title">{text("reciprocityCardTitle", "交往互惠与双向平衡")}</span>
             <span class="status-badge status-{audit.balanceStatus}">{audit.statusLabel}</span>
         </div>
 
         <div class="header-right">
             <span class="score-pill">
-                <HeartHandshake size={13} class="lvct-icon-inline" />
+                <HeartHandshake size={13} strokeWidth={1.6} class="lvct-icon-inline" />
                 {text("reciprocityScoreLabel", "互惠指数 {n} 分", { n: audit.reciprocityScore })}
             </span>
         </div>
@@ -56,7 +56,7 @@
         <!-- 1. 信诺双向履约 -->
         <div class="metric-box">
             <div class="metric-box-title">
-                <CheckCircle2 size={12} class="lvct-icon-inline" />
+                <CheckCircle2 size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                 {text("promisesFulfillTitle", "双向信诺履约")}
             </div>
             <div class="metric-box-content">
@@ -74,7 +74,7 @@
         <!-- 2. 人情往来差额 -->
         <div class="metric-box">
             <div class="metric-box-title">
-                <ArrowRightLeft size={12} class="lvct-icon-inline" />
+                <ArrowRightLeft size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                 {text("exchangesBalanceTitle", "往来对账透视")}
             </div>
             <div class="metric-box-content">
@@ -94,7 +94,7 @@
         <!-- 3. 行动建议 -->
         <div class="metric-box insight-box">
             <div class="metric-box-title">
-                <Scale size={12} class="lvct-icon-inline" />
+                <Scale size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                 {text("reciprocityAdviceTitle", "关系互惠建议")}
             </div>
             <div class="advice-content ft__smaller">
@@ -148,30 +148,45 @@
 
     .status-badge {
         font-size: 10px;
-        padding: 2px 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 8px;
         border-radius: var(--lv-r-pill, 9999px);
+        background: transparent;
+        border: 1px solid var(--lvct-color-border-200);
         font-weight: 600;
         font-variant-numeric: tabular-nums;
-    }
 
-    .status-balanced {
-        background: color-mix(in srgb, #10b981 15%, transparent);
-        color: #10b981;
-    }
+        &::before {
+            content: "";
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            forced-color-adjust: none;
+        }
 
-    .status-giver_heavy {
-        background: var(--lv-brand-soft);
-        color: var(--lv-brand, #ea580c);
-    }
+        &.status-balanced {
+            color: #10b981;
+            border-color: color-mix(in srgb, #10b981 30%, transparent);
+        }
 
-    .status-receiver_heavy {
-        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
-        color: var(--lv-data-amber, #d97706);
-    }
+        &.status-giver_heavy {
+            color: var(--lv-brand, #ea580c);
+            border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
+        }
 
-    .status-nascent {
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface-light);
+        &.status-receiver_heavy {
+            color: var(--lv-data-amber, #d97706);
+            border-color: color-mix(in srgb, var(--lv-data-amber) 30%, transparent);
+        }
+
+        &.status-nascent {
+            color: var(--lvct-text-3);
+            border-color: var(--lvct-border-subtle);
+        }
     }
 
     .score-pill {
@@ -180,10 +195,12 @@
         gap: 4px;
         font-size: 11px;
         font-weight: 600;
-        padding: 3px 9px;
+        padding: 2px 10px;
         border-radius: var(--lv-r-pill, 9999px);
         background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
         color: var(--lv-data-amber, #d97706);
+        border: 1px solid color-mix(in srgb, var(--lv-data-amber) 25%, transparent);
+        font-variant-numeric: tabular-nums;
     }
 
     /* 天平比例条 */
@@ -199,6 +216,7 @@
         justify-content: space-between;
         font-size: 10.5px;
         color: var(--lvct-text-3);
+        font-variant-numeric: tabular-nums;
     }
 
     .balance-track {
@@ -238,7 +256,7 @@
         padding: 8px 10px;
         background: var(--lvct-bg-app);
         border: 1px solid var(--lvct-color-border-200);
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lvct-r-card, 12px);
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -268,6 +286,7 @@
 
     .metric-val {
         font-weight: 600;
+        font-variant-numeric: tabular-nums;
     }
 
     .advice-content {
