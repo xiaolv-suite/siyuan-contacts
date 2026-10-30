@@ -241,7 +241,7 @@
         gap: 10px;
         flex-wrap: wrap;
         padding-bottom: 8px;
-        border-bottom: 1px solid var(--b3-border-color);
+        border-bottom: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
     }
 
     .filter-pills-group {
@@ -251,7 +251,7 @@
     }
 
     .filter-pill {
-        border: 1px solid var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         background: transparent;
         font-size: 11px;
         padding: 3px 10px;
@@ -297,15 +297,15 @@
         font-weight: 700;
         padding: 2px 10px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
-        color: var(--lvct-text-1);
+        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+        color: var(--lv-data-amber, #d97706);
         font-variant-numeric: tabular-nums;
     }
 
     .year-line {
         flex: 1;
         height: 1px;
-        background: var(--lvct-border-subtle);
+        background: var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
     }
 
     .year-events {
@@ -339,7 +339,7 @@
         justify-content: center;
         font-size: 12px;
         background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         z-index: 1;
     }
@@ -363,17 +363,17 @@
         flex: 1;
         width: 2px;
         min-height: 16px;
-        background: var(--b3-border-color);
+        background: var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         margin-top: 2px;
     }
 
     .event-card {
         flex: 1;
         padding: 10px 14px;
-        border-radius: var(--lvct-r-md, 12px);
+        border-radius: var(--lv-r-md, 12px);
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
-        box-shadow: var(--lvct-shadow-1);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
+        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -381,7 +381,7 @@
 
         &:hover {
             transform: translateY(-1px);
-            box-shadow: var(--lvct-shadow-2);
+            box-shadow: 0 4px 12px rgba(28, 24, 21, 0.06);
         }
     }
 
