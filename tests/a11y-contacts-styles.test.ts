@@ -214,6 +214,28 @@ test("小驴人脉 · 重复合并向导与快捷记互动弹窗对齐细线图�
     assert.match(quickRecordSvelte, /\.b3-button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
 });
 
+test("小驴人脉 · 主资料编辑弹窗与新建联系人弹窗对齐细线图标、全胶囊体系、12px大圆角与防连发快捷键", () => {
+    // 1. 主资料编辑弹窗
+    const editSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonEditDialog.svelte"), "utf8");
+    assert.match(editSvelte, /ClipboardPaste size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(editSvelte, /Sparkles size=\{11\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(editSvelte, /removingMembershipId/);
+    assert.match(editSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(editSvelte, /\.lvct-person-edit__profile\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(editSvelte, /\.lvct-person-edit__org-draft\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(editSvelte, /\.lvct-person-edit__org-confirm\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(editSvelte, /\.lvct-person-edit__org-item\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
+
+    // 2. 新建联系人弹窗
+    const addSvelte = fs.readFileSync(path.join(SRC, "components", "people", "AddPersonDialog.svelte"), "utf8");
+    assert.match(addSvelte, /ClipboardPaste size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(addSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(addSvelte, /\.lvct-add-person__org-draft\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(addSvelte, /\.lvct-add-person__org-confirm\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(addSvelte, /\.lvct-add-person__org-head button\[aria-label\^="移除这条"\]\s*\{[\s\S]*opacity:\s*0\.6;/);
+});
+
+
 
 
 
