@@ -30,6 +30,7 @@
     let kindFilter = $state<"all" | "item" | "money" | "favor">("all");
     let creatingDoc = $state(false);
     let createdDocInfo = $state<{ docId: string; hpath: string; count: number } | null>(null);
+    let busyRecordId = $state("");
     let alive = true;
 
     onDestroy(() => { alive = false; });
@@ -62,7 +63,8 @@
     });
 
     async function toggleRecordStatus(record: ExchangeRecordWithPerson) {
-        if (!facade.changePersonExchangeStatus) return;
+        if (!facade.changePersonExchangeStatus || Boolean(busyRecordId)) return;
+        busyRecordId = record.id;
         const nextStatus = record.status === "open" ? "settled" : "open";
         const today = toLocalDateKey(new Date());
         try {
@@ -75,6 +77,8 @@
             await loadData();
         } catch (err) {
             errorText = requestErrorMessage(err);
+        } finally {
+            busyRecordId = "";
         }
     }
 
@@ -226,8 +230,10 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--small"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 class:b3-button--outline={r.status === "open"}
                                 class:b3-button--text={r.status === "settled"}
+                                disabled={Boolean(busyRecordId)}
                                 onclick={() => void toggleRecordStatus(r)}
                                 title={r.status === "open" ? "标记为已结清/已答谢" : "重新设为待处理"}
                             >
