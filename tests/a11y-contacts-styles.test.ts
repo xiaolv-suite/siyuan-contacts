@@ -196,6 +196,25 @@ test("小驴人脉 · 群体活动大盘、补录弹窗与关系雷达对齐细�
     assert.match(radarSvelte, /\.lvct-radar-container\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*16px\)/);
 });
 
+test("小驴人脉 · 重复合并向导与快捷记互动弹窗对齐细线图标、全胶囊体系与大圆角规范", () => {
+    // 1. 重复合并向导
+    const mergeSvelte = fs.readFileSync(path.join(SRC, "components", "people", "ContactMergeWizard.svelte"), "utf8");
+    assert.match(mergeSvelte, /ChevronLeft size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(mergeSvelte, /ChevronRight size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(mergeSvelte, /ShieldAlert size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(mergeSvelte, /\.lvct-merge__switch\s*\{[\s\S]*button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(mergeSvelte, /\.lvct-merge__headrow\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-md,\s*12px\)/);
+    assert.match(mergeSvelte, /\.lvct-merge__footer\s*\{[\s\S]*button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 快捷记互动弹窗
+    const quickRecordSvelte = fs.readFileSync(path.join(SRC, "components", "people", "QuickRecordDialog.svelte"), "utf8");
+    assert.match(quickRecordSvelte, /\.lvct-quick-record-dialog\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*16px\)/);
+    assert.match(quickRecordSvelte, /input\[type="date"\]\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(quickRecordSvelte, /\.b3-chip\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(quickRecordSvelte, /\.b3-button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+});
+
+
 
 
 
