@@ -9492,9 +9492,9 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-empty {
     min-height: 280px;
     padding: 36px 24px;
-    border: 1px dashed color-mix(in srgb, var(--lvct-border-subtle) 86%, transparent);
-    border-radius: var(--lvct-r-panel);
-    background: var(--lvct-surface-muted);
+    border: 1px dashed var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
+    background: var(--lvct-bg-app);
 }
 
 @media (max-width: 640px) {
