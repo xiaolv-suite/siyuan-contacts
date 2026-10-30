@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+    buildBatchIcsFilename,
     buildContactEventsForIcs,
     buildIcsFilename,
     escapeIcsText,
@@ -128,4 +129,7 @@ test("ical-export domain: 单人物与批量序列化及文件名生成", () => 
 
     const filename = buildIcsFilename("王五/总监", "2026-10-29");
     assert.equal(filename, "小驴人脉_纪念日_王五_总监_2026-10-29.ics");
+
+    const batchFilename = buildBatchIcsFilename("全量纪念日/导出", "2026-10-30");
+    assert.equal(batchFilename, "小驴人脉_全量纪念日_导出_2026-10-30.ics");
 });
