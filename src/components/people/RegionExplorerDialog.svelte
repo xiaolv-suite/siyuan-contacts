@@ -32,11 +32,14 @@
         onOpenDoc?: (docId: string) => void;
     } = $props();
 
+    let alive = true;
+
     // 搜索关键词
     let citySearch = $state("");
     // 当前选中的城市（默认为人数最多的城市或首个城市）
     let selectedCity = $state<string>("");
-    // 复制成功的提示状态
+    // 复制成功的提示状态与并发防连发锁
+    let copyingVisitList = $state(false);
     let copySuccess = $state(false);
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
     let syncingDoc = $state(false);
@@ -46,6 +49,19 @@
     let creatingTripDoc = $state(false);
     let lastTripDocId = $state("");
     let lastTripDocPath = $state("");
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (currentContacts.length > 0) {
+                if (notebookId && !creatingTripDoc) {
+                    void handleCreateTripDoc();
+                } else if (!copyingVisitList) {
+                    void handleCopyVisitList();
+                }
+            }
+        }
+    }
 
     async function handleCreateTripDoc() {
         if (!notebookId || !selectedCity || currentContacts.length === 0 || creatingTripDoc) return;
@@ -57,12 +73,15 @@
                 contacts: currentContacts,
                 date: toLocalDateKey(),
             });
+            if (!alive) return;
             if (res?.docId) {
                 lastTripDocId = res.docId;
                 lastTripDocPath = res.hpath;
             }
         } finally {
-            creatingTripDoc = false;
+            if (alive) {
+                creatingTripDoc = false;
+            }
         }
     }
 
@@ -78,14 +97,19 @@
                 contacts: currentContacts,
                 organizations,
             });
+            if (!alive) return;
             if (res?.docId) {
                 lastSyncedDocId = res.docId;
                 syncDocSuccess = true;
                 if (syncDocTimer) clearTimeout(syncDocTimer);
-                syncDocTimer = setTimeout(() => { syncDocSuccess = false; }, 3000);
+                syncDocTimer = setTimeout(() => {
+                    if (alive) syncDocSuccess = false;
+                }, 3000);
             }
         } finally {
-            syncingDoc = false;
+            if (alive) {
+                syncingDoc = false;
+            }
         }
     }
 
@@ -152,41 +176,50 @@
 
     // 复制行程探访备忘录为 Markdown 格式
     async function handleCopyVisitList() {
-        if (currentContacts.length === 0) return;
-        const cityName = selectedCity || "未知地区";
-        const currentCtx = TRIP_CONTEXTS.find((c) => c.id === tripContext) ?? TRIP_CONTEXTS[0];
-        const lines: string[] = [
-            `# ${currentCtx.icon} ${currentCtx.titlePrefix} - ${cityName} (共 ${currentContacts.length} 人)`,
-            `> 行程类型：${currentCtx.label} · 生成日期：${toLocalDateKey()}`,
-            "",
-        ];
+        if (copyingVisitList || currentContacts.length === 0) return;
+        copyingVisitList = true;
+        try {
+            const cityName = selectedCity || "未知地区";
+            const currentCtx = TRIP_CONTEXTS.find((c) => c.id === tripContext) ?? TRIP_CONTEXTS[0];
+            const lines: string[] = [
+                `# ${currentCtx.icon} ${currentCtx.titlePrefix} - ${cityName} (共 ${currentContacts.length} 人)`,
+                `> 行程类型：${currentCtx.label} · 生成日期：${toLocalDateKey()}`,
+                "",
+            ];
 
-        for (const person of currentContacts) {
-            const workText = profileText(person.profile, "work");
-            const orgStr = workText && workText !== "未填写" && workText !== "尚未核实" ? ` | ${workText}` : "";
+            for (const person of currentContacts) {
+                const workText = profileText(person.profile, "work");
+                const orgStr = workText && workText !== "未填写" && workText !== "尚未核实" ? ` | ${workText}` : "";
 
-            const contactParts: string[] = [];
-            if (person.phone) contactParts.push(`电话: ${person.phone}`);
-            if (person.wechat) contactParts.push(`微信: ${person.wechat}`);
-            if (person.email) contactParts.push(`邮箱: ${person.email}`);
-            const contactStr = contactParts.length > 0 ? ` (${contactParts.join(", ")})` : "";
+                const contactParts: string[] = [];
+                if (person.phone) contactParts.push(`电话: ${person.phone}`);
+                if (person.wechat) contactParts.push(`微信: ${person.wechat}`);
+                if (person.email) contactParts.push(`邮箱: ${person.email}`);
+                const contactStr = contactParts.length > 0 ? ` (${contactParts.join(", ")})` : "";
 
-            const rel = profileText(person.profile, "relationship");
-            const relStr = rel && rel !== "未填写" && rel !== "尚未核实" ? ` [${rel}]` : "";
+                const rel = profileText(person.profile, "relationship");
+                const relStr = rel && rel !== "未填写" && rel !== "尚未核实" ? ` [${rel}]` : "";
 
-            lines.push(`- **${person.name}**${relStr}${orgStr}${contactStr}`);
+                lines.push(`- **${person.name}**${relStr}${orgStr}${contactStr}`);
+            }
+
+            const textContent = lines.join("\n");
+            await copyPlainText(textContent);
+            if (!alive) return;
+            copySuccess = true;
+            if (copyTimer) clearTimeout(copyTimer);
+            copyTimer = setTimeout(() => {
+                if (alive) copySuccess = false;
+            }, 2000);
+        } finally {
+            if (alive) {
+                copyingVisitList = false;
+            }
         }
-
-        const textContent = lines.join("\n");
-        await copyPlainText(textContent);
-        copySuccess = true;
-        if (copyTimer) clearTimeout(copyTimer);
-        copyTimer = setTimeout(() => {
-            copySuccess = false;
-        }, 2000);
     }
 
     onDestroy(() => {
+        alive = false;
         if (copyTimer) clearTimeout(copyTimer);
         if (syncDocTimer) clearTimeout(syncDocTimer);
     });
@@ -197,18 +230,19 @@
     }
 </script>
 
-<div class="lvct-region-dialog">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="lvct-region-dialog" onkeydown={handleKeydown}>
     <!-- 顶部状态栏与目的地速搜 -->
     <div class="lvct-region-dialog__header">
         <div class="lvct-region-dialog__header-left">
-            <Compass size={18} class="lvct-region-dialog__header-icon" />
+            <Compass size={18} strokeWidth={1.6} class="lvct-region-dialog__header-icon" />
             <div>
-                <p class="lvct-region-dialog__subtitle" style="margin: 0;">出差出游、假期旅行、顺路途经，随时发现同城与周边好友，一键生成探访备忘录</p>
+                <p class="lvct-region-dialog__subtitle">出差出游、假期旅行、顺路途经，随时发现同城与周边好友，一键生成探访备忘录</p>
             </div>
         </div>
         <div class="lvct-region-dialog__header-search">
             <div class="b3-form__icon">
-                <Search size={14} class="b3-form__icon-icon" />
+                <Search size={14} strokeWidth={1.6} class="b3-form__icon-icon" />
                 <input
                     type="search"
                     class="b3-text-field b3-text-field--small"
@@ -226,7 +260,7 @@
             {@const group = regionGroups.find((g) => g.city === hot)}
             <button
                 type="button"
-                class="b3-chip"
+                class="b3-chip lvct-region-dialog__chip-pill"
                 class:b3-chip--primary={selectedCity === hot}
                 onclick={() => (selectedCity = hot)}
             >
@@ -236,7 +270,7 @@
         {#if unknownCount > 0}
             <button
                 type="button"
-                class="b3-chip b3-chip--dashed"
+                class="b3-chip b3-chip--dashed lvct-region-dialog__chip-pill"
                 class:b3-chip--primary={selectedCity === "未知"}
                 onclick={() => (selectedCity = "未知")}
                 title="查看尚未录入地址或城市的联系人"
@@ -271,7 +305,7 @@
                                     <span class="lvct-region-dialog__city-meta">{group.province}</span>
                                 {/if}
                             </div>
-                            <span class="lvct-chip font-size-10" style="padding: 1px 6px;">{group.count} 人</span>
+                            <span class="lvct-chip font-size-10 lvct-region-dialog__city-count">{group.count} 人</span>
                         </button>
                     {/each}
                 {/if}
@@ -282,7 +316,7 @@
         <div class="lvct-region-dialog__main">
             {#if !selectedCity}
                 <div class="lvct-empty-state">
-                    <MapPin size={40} class="lvct-empty-state__icon" />
+                    <MapPin size={40} strokeWidth={1.6} class="lvct-empty-state__icon" />
                     <p>请在左侧选择一个城市查看联系人</p>
                 </div>
             {:else}
@@ -290,9 +324,9 @@
                 <div class="lvct-region-dialog__target-header">
                     <div>
                         <div class="lvct-region-dialog__target-title">
-                            <MapPin size={18} class="lvct-text-primary" />
+                            <MapPin size={18} strokeWidth={1.6} class="lvct-text-primary" />
                             <h4>{selectedCity}</h4>
-                            <span class="b3-badge b3-badge--primary">{currentContacts.length} 位联系人</span>
+                            <span class="b3-badge b3-badge--primary lvct-region-dialog__count-badge">{currentContacts.length} 位联系人</span>
                             {#if currentGroup?.province && currentGroup.province !== selectedCity}
                                 <span class="lvct-text-muted font-size-12">（所属省份：{currentGroup.province}）</span>
                             {/if}
@@ -300,11 +334,11 @@
                         <!-- 周边联动提示 -->
                         {#if nearbyCities.length > 0}
                             <div class="lvct-region-dialog__nearby">
-                                <span class="lvct-region-dialog__nearby-label" style="display: inline-flex; align-items: center;"><MapPin size={12} class="lvct-icon-inline" /> 同省及周边人脉：</span>
+                                <span class="lvct-region-dialog__nearby-label" style="display: inline-flex; align-items: center;"><MapPin size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 同省及周边人脉：</span>
                                 {#each nearbyCities as near (near.city)}
                                     <button
                                         type="button"
-                                        class="b3-chip font-size-11"
+                                        class="b3-chip font-size-11 lvct-region-dialog__chip-pill"
                                         onclick={() => (selectedCity = near.city)}
                                         title={`切换到周边城市 ${near.city}`}
                                     >
@@ -326,9 +360,9 @@
                                 title={`在思源中生成或受控更新《${selectedCity}》文档（仅更新人脉受控区，保留手写攻略与生活记录）`}
                             >
                                 {#if syncDocSuccess}
-                                    <Check size={14} class="lvct-text-success" /> 已同步《{selectedCity}》文档
+                                    <Check size={14} strokeWidth={1.6} class="lvct-text-success" /> 已同步《{selectedCity}》文档
                                 {:else}
-                                    <FileText size={14} /> {syncingDoc ? "正在同步…" : `同步《${selectedCity}》文档`}
+                                    <FileText size={14} strokeWidth={1.6} /> {syncingDoc ? "正在同步…" : `同步《${selectedCity}》文档`}
                                 {/if}
                             </button>
                         {/if}
@@ -339,7 +373,7 @@
                                 onclick={() => onOpenDoc?.(lastSyncedDocId)}
                                 title="在思源主编辑器中打开该城市实体文档，撰写美食攻略与出行随笔"
                             >
-                                <ExternalLink size={13} class="lvct-icon-inline" /> 打开《{selectedCity}》文档 ↗
+                                <ExternalLink size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 打开《{selectedCity}》文档 ↗
                             </button>
                         {/if}
                         <button
@@ -348,18 +382,18 @@
                             onclick={() => handleApplyAndClose(selectedCity === "未知" ? "未填写" : selectedCity)}
                             title="在名册主视图中应用此地域筛选"
                         >
-                            <Filter size={14} /> 在名册中筛选
+                            <Filter size={14} strokeWidth={1.6} /> 在名册中筛选
                         </button>
                         <button
                             type="button"
                             class="b3-button b3-button--outline b3-button--small"
                             onclick={handleCopyVisitList}
-                            disabled={currentContacts.length === 0}
+                            disabled={currentContacts.length === 0 || copyingVisitList}
                         >
                             {#if copySuccess}
-                                <Check size={14} /> 已复制探访备忘
+                                <Check size={14} strokeWidth={1.6} /> 已复制探访备忘
                             {:else}
-                                <Copy size={14} /> 复制探访备忘
+                                <Copy size={14} strokeWidth={1.6} /> {copyingVisitList ? "正在复制…" : "复制探访备忘"}
                             {/if}
                         </button>
                         <button
@@ -369,7 +403,7 @@
                             disabled={currentContacts.length === 0 || !notebookId || creatingTripDoc}
                             title="在当前笔记本创建出差/行程拜访实体文档"
                         >
-                            <Sparkles size={14} /> {creatingTripDoc ? "正在沉淀…" : "沉淀为行程文档 ↗"}
+                            <Sparkles size={14} strokeWidth={1.6} /> {creatingTripDoc ? "正在沉淀…" : "沉淀为行程文档 ↗"}
                         </button>
                         {#if lastTripDocId}
                             <button
@@ -379,19 +413,19 @@
                                 onclick={() => onOpenDoc?.(lastTripDocId)}
                                 title={`打开《${lastTripDocPath.split("/").pop()}》`}
                             >
-                                <ExternalLink size={13} class="lvct-icon-inline" /> 打开行程文档 ↗
+                                <ExternalLink size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 打开行程文档 ↗
                             </button>
                         {/if}
                     </div>
                 </div>
 
                 <!-- 行程类型快速切换胶囊栏 -->
-                <div style="display: flex; gap: 6px; align-items: center; padding: 0 0 10px 0; border-bottom: 1px solid var(--lvct-border-hairline, rgba(0,0,0,0.06)); margin-bottom: 12px; flex-wrap: wrap;">
-                    <span class="ft__smaller ft__on-surface font-size-11" style="color: var(--lvct-text-3);">行程类型：</span>
+                <div class="lvct-region-dialog__trip-contexts">
+                    <span class="lvct-region-dialog__trip-contexts-label">行程类型：</span>
                     {#each TRIP_CONTEXTS as ctx}
                         <button
                             type="button"
-                            class="b3-chip font-size-11"
+                            class="b3-chip font-size-11 lvct-region-dialog__context-chip"
                             class:b3-chip--primary={tripContext === ctx.id}
                             onclick={() => (tripContext = ctx.id)}
                             title={`切换为${ctx.label}模式`}
@@ -419,12 +453,12 @@
                                             <div class="lvct-region-dialog__person-name-row">
                                                 <strong class="lvct-region-dialog__person-name">{person.name}</strong>
                                                 {#if relText && relText !== "未填写" && relText !== "尚未核实"}
-                                                    <span class="b3-badge b3-badge--secondary font-size-11">{relText}</span>
+                                                    <span class="b3-badge b3-badge--secondary font-size-11 lvct-region-dialog__person-rel">{relText}</span>
                                                 {/if}
                                             </div>
                                             {#if workText && workText !== "未填写" && workText !== "尚未核实"}
                                                 <div class="lvct-region-dialog__person-job" title={workText}>
-                                                    <Briefcase size={12} class="lvct-text-muted" />
+                                                    <Briefcase size={12} strokeWidth={1.6} class="lvct-text-muted" />
                                                     <span>{workText}</span>
                                                 </div>
                                             {/if}
@@ -435,7 +469,7 @@
                                     <div class="lvct-region-dialog__person-details">
                                         {#if person.phone || person.wechat}
                                             <div class="lvct-region-dialog__person-detail-row">
-                                                <Phone size={12} class="lvct-text-muted" />
+                                                <Phone size={12} strokeWidth={1.6} class="lvct-text-muted" />
                                                 <span>{person.phone || person.wechat}</span>
                                             </div>
                                         {/if}
@@ -458,6 +492,7 @@
         max-height: 80vh;
         gap: 12px;
         color: var(--b3-theme-on-background);
+        outline: none;
     }
     .lvct-region-dialog__header {
         display: flex;
@@ -465,7 +500,7 @@
         justify-content: space-between;
         gap: 16px;
         padding-bottom: 8px;
-        border-bottom: 1px solid var(--b3-theme-surface-lighter);
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
     }
     .lvct-region-dialog__header-left {
         display: flex;
@@ -497,7 +532,12 @@
 
         .b3-chip {
             border-radius: var(--lv-r-pill, 9999px);
+            font-variant-numeric: tabular-nums;
         }
+    }
+    .lvct-region-dialog__chip-pill {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        font-variant-numeric: tabular-nums;
     }
     .lvct-region-dialog__chips-label {
         color: var(--b3-theme-on-surface);
@@ -506,17 +546,19 @@
         display: flex;
         flex: 1;
         min-height: 0;
-        gap: 16px;
-        border: 1px solid var(--b3-theme-surface-lighter);
+        gap: 0;
+        border: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
         border-radius: var(--lvct-r-card, 16px);
         overflow: hidden;
+        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+        box-shadow: var(--lvct-shadow-card, 0 1px 4px rgba(0, 0, 0, 0.04));
     }
     /* 左侧城市列表 */
     .lvct-region-dialog__sidebar {
         width: 230px;
         display: flex;
         flex-direction: column;
-        border-right: 1px solid var(--b3-theme-surface-lighter);
+        border-right: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
         background: var(--b3-theme-surface);
     }
     .lvct-region-dialog__sidebar-header {
@@ -526,22 +568,23 @@
         display: flex;
         justify-content: space-between;
         background: var(--b3-theme-background);
-        border-bottom: 1px solid var(--b3-theme-surface-lighter);
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        font-variant-numeric: tabular-nums;
     }
     .lvct-region-dialog__city-list {
         flex: 1;
         overflow-y: auto;
-        padding: 4px;
+        padding: 6px;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 3px;
     }
     .lvct-region-dialog__city-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 8px 10px;
-        border-radius: var(--lvct-r-sm, 6px);
+        border-radius: var(--lvct-r-card, 10px);
         background: transparent;
         border: none;
         cursor: pointer;
@@ -550,8 +593,8 @@
         transition: all 0.15s ease;
     }
     .lvct-region-dialog__city-item:hover {
-        background: var(--lvct-bg-hover);
-        color: var(--lvct-text-1);
+        background: var(--lvct-bg-hover, rgba(0, 0, 0, 0.04));
+        color: var(--lvct-text-1, var(--b3-theme-on-background));
     }
     .lvct-region-dialog__city-item--active {
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface));
@@ -566,11 +609,16 @@
     .lvct-region-dialog__city-name {
         font-size: 13px;
         font-weight: 600;
-        color: var(--lvct-text-1);
+        color: var(--lvct-text-1, var(--b3-theme-on-background));
     }
     .lvct-region-dialog__city-meta {
         font-size: 11px;
-        color: var(--lvct-text-3);
+        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+    }
+    .lvct-region-dialog__city-count {
+        padding: 1px 6px;
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        font-variant-numeric: tabular-nums;
     }
     /* 右侧主区域 */
     .lvct-region-dialog__main {
@@ -579,14 +627,14 @@
         flex-direction: column;
         min-height: 0;
         background: var(--b3-theme-background);
-        padding: 12px;
+        padding: 14px;
     }
     .lvct-region-dialog__target-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         padding-bottom: 12px;
-        border-bottom: 1px solid var(--b3-theme-surface-lighter);
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
         margin-bottom: 12px;
         gap: 12px;
     }
@@ -600,6 +648,10 @@
         font-size: 16px;
         font-weight: 600;
     }
+    .lvct-region-dialog__count-badge {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        font-variant-numeric: tabular-nums;
+    }
     .lvct-region-dialog__nearby {
         display: flex;
         align-items: center;
@@ -610,6 +662,7 @@
 
         .b3-chip {
             border-radius: var(--lv-r-pill, 9999px);
+            font-variant-numeric: tabular-nums;
         }
     }
     .lvct-region-dialog__nearby-label {
@@ -619,10 +672,27 @@
         display: flex;
         gap: 8px;
         flex-shrink: 0;
+        flex-wrap: wrap;
 
         .b3-button {
             border-radius: var(--lv-r-pill, 9999px);
         }
+    }
+    .lvct-region-dialog__trip-contexts {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding: 0 0 10px 0;
+        border-bottom: 1px solid var(--lvct-border-hairline, rgba(0,0,0,0.06));
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    .lvct-region-dialog__trip-contexts-label {
+        font-size: 11px;
+        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+    }
+    .lvct-region-dialog__context-chip {
+        border-radius: var(--lv-r-pill, 9999px) !important;
     }
     .lvct-region-dialog__contacts-wrap {
         flex: 1;
@@ -637,18 +707,18 @@
     .lvct-region-dialog__person-card {
         padding: 10px 12px;
         border-radius: var(--lvct-r-card, 14px);
-        background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
-        box-shadow: var(--lvct-shadow-card);
+        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+        border: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        box-shadow: var(--lvct-shadow-card, 0 1px 3px rgba(0,0,0,0.04));
         display: flex;
         flex-direction: column;
         gap: 8px;
         transition: all 0.15s ease;
     }
     .lvct-region-dialog__person-card:hover {
-        border-color: var(--lvct-border-strong);
+        border-color: var(--lvct-border-strong, var(--b3-theme-primary-lighter));
         transform: translateY(-1px);
-        box-shadow: var(--lvct-shadow-2);
+        box-shadow: var(--lvct-shadow-2, 0 4px 12px rgba(0,0,0,0.06));
     }
     .lvct-region-dialog__person-top {
         display: flex;
@@ -658,7 +728,7 @@
     .lvct-region-dialog__person-avatar {
         width: 32px;
         height: 32px;
-        border-radius: 8px;
+        border-radius: 9px;
         background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand, #ea580c) 78%, #ffffff), var(--lv-brand, #ea580c));
         color: #ffffff;
         display: flex;
@@ -683,6 +753,9 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    .lvct-region-dialog__person-rel {
+        border-radius: var(--lv-r-pill, 9999px) !important;
     }
     .lvct-region-dialog__person-job {
         display: flex;
@@ -721,6 +794,7 @@
     :global(.lvct-empty-state__icon) {
         opacity: 0.4;
     }
+    .font-size-10 { font-size: 10px; }
     .font-size-11 { font-size: 11px; }
     .font-size-12 { font-size: 12px; }
     :global(.lvct-text-primary) { color: var(--b3-theme-primary); }

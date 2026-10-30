@@ -498,6 +498,33 @@ test("小驴人脉 · 群体活动弹窗对齐12px大圆角分层、全胶囊药
     assert.match(occSvelte, /\.lvct-occ-dialog__footer[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
 });
 
+test("小驴人脉 · 城市行程助手与足迹大盘对齐1.6细线图标、全胶囊体系、14px/16px大圆角与并发防连击锁", () => {
+    const regionSvelte = fs.readFileSync(path.join(SRC, "components", "people", "RegionExplorerDialog.svelte"), "utf8");
+    assert.match(regionSvelte, /copyingVisitList/);
+    assert.match(regionSvelte, /creatingTripDoc/);
+    assert.match(regionSvelte, /syncingDoc/);
+    assert.match(regionSvelte, /\(event\.ctrlKey \|\| event\.metaKey\) && event\.key === "Enter"/);
+    assert.match(regionSvelte, /Compass size=\{18\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Search size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /MapPin size=\{40\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /MapPin size=\{18\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /MapPin size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Check size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /FileText size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /ExternalLink size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Filter size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Copy size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Sparkles size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Briefcase size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /Phone size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(regionSvelte, /\.lvct-region-dialog__body\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*16px\)/);
+    assert.match(regionSvelte, /\.lvct-region-dialog__city-item\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
+    assert.match(regionSvelte, /\.lvct-region-dialog__person-card\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*14px\)/);
+    assert.match(regionSvelte, /\.lvct-region-dialog__context-chip\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(regionSvelte, /\.b3-button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(regionSvelte, /font-variant-numeric:\s*tabular-nums;/);
+});
+
 
 
 
