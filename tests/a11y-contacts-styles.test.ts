@@ -235,6 +235,30 @@ test("小驴人脉 · 主资料编辑弹窗与新建联系人弹窗对齐细线�
     assert.match(addSvelte, /\.lvct-add-person__org-head button\[aria-label\^="移除这条"\]\s*\{[\s\S]*opacity:\s*0\.6;/);
 });
 
+test("小驴人脉 · 粘贴并识别弹窗与会面简报导出版面对齐细线图标、全胶囊体系、12px大圆角与复制/应用防连发锁", () => {
+    // 1. 粘贴并识别弹窗
+    const qfSvelte = fs.readFileSync(path.join(SRC, "components", "people", "QuickFillDialog.svelte"), "utf8");
+    assert.match(qfSvelte, /copyingTemplate/);
+    assert.match(qfSvelte, /applying/);
+    assert.match(qfSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(qfSvelte, /Copy size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(qfSvelte, /Check size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(qfSvelte, /\.lvct-qf__item\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
+    assert.match(qfSvelte, /\.lvct-qf__unrecognized\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+
+    // 2. 会面简报导出与样式表
+    const detailSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonDetail.svelte"), "utf8");
+    assert.match(detailSvelte, /briefingCopying/);
+    assert.match(detailSvelte, /ExternalLink size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(detailSvelte, /FileText size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(detailSvelte, /Check size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(detailSvelte, /Copy size=\{14\}\s*strokeWidth=\{1\.6\}/);
+
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.lvct-briefing-preview\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+});
+
+
 
 
 

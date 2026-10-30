@@ -7,6 +7,7 @@
     import LvctDialog from "../LvctDialog.svelte";
     import { useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
+    import { Copy, Check } from "@lucide/svelte";
     import { onDestroy, tick } from "svelte";
 
     let {
@@ -59,8 +60,11 @@
     /* FAST-01.2：可复制空白模板；失败时显示提示，仍可手动填写 */
     let templateCopied = $state(false);
     let templateCopyError = $state("");
+    let copyingTemplate = $state(false);
     let templateTimer: ReturnType<typeof setTimeout> | undefined;
     async function copyTemplate() {
+        if (copyingTemplate) return;
+        copyingTemplate = true;
         templateCopyError = "";
         try {
             await navigator.clipboard.writeText(CONTACT_TEMPLATE);
@@ -69,6 +73,8 @@
             templateTimer = setTimeout(() => (templateCopied = false), 2000);
         } catch (error) {
             templateCopyError = error instanceof Error ? error.message : "剪贴板不可用";
+        } finally {
+            copyingTemplate = false;
         }
     }
 
@@ -160,23 +166,41 @@
         }
         checked = next;
     }
+    let applying = $state(false);
     function apply() {
-        const patch: Parameters<typeof onApply>[0] = { tagsAppend: [] };
-        let lunar = false;
-        for (const [index, item] of visibleItems().entries()) {
-            if (!checked.has(itemKey(item, index))) continue;
-            if (item.field === "tags") {
-                patch.tagsAppend.push(item.value);
-            } else if (item.field === "birthday") {
-                patch.birthday = item.value;
-                if (item.note?.includes("农历")) lunar = true;
+        if (applying) return;
+        applying = true;
+        try {
+            const patch: Parameters<typeof onApply>[0] = { tagsAppend: [] };
+            let lunar = false;
+            for (const [index, item] of visibleItems().entries()) {
+                if (!checked.has(itemKey(item, index))) continue;
+                if (item.field === "tags") {
+                    patch.tagsAppend.push(item.value);
+                } else if (item.field === "birthday") {
+                    patch.birthday = item.value;
+                    if (item.note?.includes("农历")) lunar = true;
+                } else {
+                    (patch as unknown as Record<string, string>)[item.field] = item.value;
+                }
+            }
+            if (patch.birthday) patch.isLunar = lunar;
+            onApply(patch);
+            onClose();
+        } finally {
+            applying = false;
+        }
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (!previewed) {
+                if (pasteText.trim().length > 0) recognize();
             } else {
-                (patch as unknown as Record<string, string>)[item.field] = item.value;
+                if (checked.size > 0 && !applying) apply();
             }
         }
-        if (patch.birthday) patch.isLunar = lunar;
-        onApply(patch);
-        onClose();
     }
 
     /* V-02/D-40 语义补齐：粘贴未识别、或识别结果未应用即关闭=丢草稿，经守卫确认放弃。
@@ -186,7 +210,7 @@
         return pasteText.trim().length > 0;
     }
     const guardedClose = useCloseGuard({
-        busy: () => false,
+        busy: () => applying,
         dirty: () => hasUnsavedDraft(),
     });
     function requestClose(): void {
@@ -194,17 +218,24 @@
     }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <LvctDialog title={text("qfTitle", "粘贴并识别")} onClose={requestClose}>
     <div class="lvct-qf">
         {#if !previewed}
             <p class="ft__smaller ft__on-surface">
                 {text("qfIntro", "粘贴名片文字、聊天记录或键值清单；识别在本机完成，结果经你确认后才会填入表单。")}
-                <button type="button" class="b3-button b3-button--text lvct-qf__copy" onclick={copyTemplate}>
-                    {templateCopied ? text("qfCopied", "已复制 ✓") : text("qfCopyTemplate", "复制空白模板")}
+                <button type="button" class="b3-button b3-button--text lvct-qf__copy" style="border-radius: var(--lv-r-pill, 9999px);" onclick={copyTemplate} disabled={copyingTemplate}>
+                    {#if templateCopied}
+                        <Check size={12} strokeWidth={1.6} style="margin-right: 3px;" />{text("qfCopied", "已复制 ✓")}
+                    {:else}
+                        <Copy size={12} strokeWidth={1.6} style="margin-right: 3px;" />{text("qfCopyTemplate", "复制空白模板")}
+                    {/if}
                 </button>
                 {#if templateCopyError}<span class="lvct-form__error" role="alert">复制失败：{templateCopyError}。可手动填写下方内容。</span>{/if}
             </p>
             <textarea class="b3-text-field fn__block lvct-qf__input" rows="7"
+                style="border-radius: var(--lvct-r-card, 12px);"
                 placeholder={text("qfPlaceholder", "张三\n手机：13800138000\n微信：zhang_san\n邮箱：a@example.com")}
                 aria-label={text("qfInputLabel", "待识别的联系人内容")} bind:this={sourceInput}
                 bind:value={pasteText}></textarea>
@@ -249,10 +280,19 @@
                 {#if pasteText.trim().length > 0}
                     <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void editSource()}>{text("qfEditSource", "返回修改原文")}</button>
                 {/if}
-                <button class="b3-button" style="border-radius: var(--lv-r-pill, 9999px);" disabled={checked.size === 0} onclick={apply}>
+                <button class="b3-button" style="border-radius: var(--lv-r-pill, 9999px);" disabled={checked.size === 0 || applying} onclick={apply}>
                     {text("qfApply", "应用到表单（{n}）", { n: checked.size })}
                 </button>
             </div>
         {/if}
     </div>
 </LvctDialog>
+
+<style>
+    .lvct-qf__item {
+        border-radius: var(--lvct-r-card, 10px);
+    }
+    .lvct-qf__unrecognized {
+        border-radius: var(--lvct-r-card, 12px);
+    }
+</style>

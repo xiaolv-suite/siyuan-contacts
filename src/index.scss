@@ -1200,7 +1200,8 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     overflow: auto;
     padding: var(--lvct-sp-3);
     border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lvct-r-card, 12px);
+    box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
     background: var(--lvct-bg-app);
     font-family: var(--lvct-font-code);
     font-size: var(--lvct-fs-caption);

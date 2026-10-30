@@ -1707,6 +1707,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let briefingLimit = $state(10);
     let briefingGeneratedAt = $state("");
     let briefingCopied = $state(false);
+    let briefingCopying = $state(false);
     let briefingCopyTimer: ReturnType<typeof setTimeout> | null = null;
     let briefingDocBusy = $state(false);
     let briefingDocCreated = $state<{ docId: string; hpath: string } | null>(null);
@@ -2007,13 +2008,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     async function copyBriefing() {
-        if (!briefingPreview) return;
-        await copyPlainText(briefingPreview);
-        briefingCopied = true;
-        if (briefingCopyTimer) clearTimeout(briefingCopyTimer);
-        briefingCopyTimer = setTimeout(() => {
-            briefingCopied = false;
-        }, 2000);
+        if (!briefingPreview || briefingCopying) return;
+        briefingCopying = true;
+        try {
+            await copyPlainText(briefingPreview);
+            briefingCopied = true;
+            if (briefingCopyTimer) clearTimeout(briefingCopyTimer);
+            briefingCopyTimer = setTimeout(() => {
+                briefingCopied = false;
+            }, 2000);
+        } finally {
+            briefingCopying = false;
+        }
     }
 
     onDestroy(() => {
@@ -5228,7 +5234,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         <div class="lvct-form">
             <label class="lvct-form__item">
                 <span>互动条数范围</span>
-                <select class="b3-select fn__block" aria-label="互动条数范围" bind:value={briefingLimit}>
+                <select class="b3-select fn__block" style="border-radius: var(--lv-r-pill, 9999px);" aria-label="互动条数范围" bind:value={briefingLimit}>
                     <option value={5}>最近 5 条</option>
                     <option value={10}>最近 10 条</option>
                     <option value={20}>最近 20 条</option>
@@ -5247,42 +5253,44 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 </div>
             {/if}
             <div class="lvct-form__actions">
-                <button class="b3-button b3-button--cancel" onclick={() => (briefingExportOpen = false)}>关闭</button>
+                <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (briefingExportOpen = false)}>关闭</button>
                 {#if onCreateBriefingDoc}
                     {#if briefingDocCreated}
                         <button
                             type="button"
                             class="b3-button b3-button--outline ft__primary"
+                            style="border-radius: var(--lv-r-pill, 9999px);"
                             onclick={() => {
                                 onOpenPersonDoc?.(briefingDocCreated!.docId);
                                 briefingExportOpen = false;
                             }}
                         >
-                            <ExternalLink size={14} style="margin-right: 4px;" />
+                            <ExternalLink size={14} strokeWidth={1.6} style="margin-right: 4px;" />
                             {text("briefingDocOpen", "在主编辑器中打开 ↗")}
                         </button>
                     {:else}
                         <button
                             type="button"
                             class="b3-button b3-button--outline"
+                            style="border-radius: var(--lv-r-pill, 9999px);"
                             onclick={handleCreateBriefingDoc}
                             disabled={briefingDocBusy}
                         >
                             <span class="fn__flex" style="align-items: center; gap: 4px;">
-                                <FileText size={14} />
+                                <FileText size={14} strokeWidth={1.6} />
                                 {briefingDocBusy ? text("briefingDocCreating", "正在生成简报文档…") : text("briefingDocCreateBtn", "沉淀为思源文档")}
                             </span>
                         </button>
                     {/if}
                 {/if}
-                <button class="b3-button b3-button--primary" onclick={copyBriefing}>
+                <button class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={copyBriefing} disabled={briefingCopying}>
                     {#if briefingCopied}
-                        <Check size={14} /> 已复制简报全文 ✓
+                        <Check size={14} strokeWidth={1.6} /> 已复制简报全文 ✓
                     {:else}
-                        <Copy size={14} /> 复制简报全文
+                        <Copy size={14} strokeWidth={1.6} /> 复制简报全文
                     {/if}
                 </button>
-                <button class="b3-button b3-button--text" onclick={downloadBriefing}>下载 .md</button>
+                <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={downloadBriefing}>下载 .md</button>
             </div>
             <p class="ft__smaller ft__on-surface">预览与下载内容一致；仅含本地记录的事实，交往次数不代表关系亲疏。</p>
         </div>
