@@ -79,9 +79,10 @@
         max-width: 100%;
         font-size: 11px;
         line-height: 1.4;
-        padding: 1px 7px;
-        border-radius: var(--lvct-r-sm, 4px);
-        background: color-mix(in srgb, var(--lvct-accent) 8%, var(--lvct-bg-app));
+        padding: 2px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-app));
+        border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 15%, transparent);
         color: var(--lvct-text-2);
         box-sizing: border-box;
     }

@@ -1172,6 +1172,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let addingTopic = $state(false);
     let copiedTopicId = $state("");
     let pendingConvertedTopicId = $state("");
+    let busyTopicId = $state("");
 
     async function loadTopics() {
         if (!onLoadTopics) return;
@@ -1208,7 +1209,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     async function handleRemoveTopic(topicId: string) {
-        if (!onRemoveTopic) return;
+        if (!onRemoveTopic || Boolean(busyTopicId)) return;
+        busyTopicId = topicId;
         try {
             const list = await onRemoveTopic(current.docId, topicId);
             if (detailAlive) {
@@ -1217,6 +1219,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) topicsError = requestErrorMessage(error);
+        } finally {
+            busyTopicId = "";
         }
     }
 
@@ -1394,6 +1398,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let newGiftPrice = $state<string | number>("");
     let newGiftOccasion = $state("");
     let addingGift = $state(false);
+    let busyGiftId = $state("");
 
     async function loadGiftIdeas() {
         if (!onLoadGiftIdeas) return;
@@ -1444,7 +1449,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     async function handleToggleGiftStatus(item: GiftIdeaItem) {
-        if (!onUpdateGiftIdea) return;
+        if (!onUpdateGiftIdea || Boolean(busyGiftId)) return;
+        busyGiftId = item.id;
         const nextStatus: GiftIdeaStatus = item.status === "idea" ? "purchased" : item.status === "purchased" ? "given" : "idea";
         try {
             const list = await onUpdateGiftIdea(current.docId, item.id, { status: nextStatus });
@@ -1454,11 +1460,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) giftIdeasError = requestErrorMessage(error);
+        } finally {
+            busyGiftId = "";
         }
     }
 
     async function handleConvertGiftToExchange(item: GiftIdeaItem) {
-        if (!onCreateExchange) return;
+        if (!onCreateExchange || Boolean(busyGiftId)) return;
+        busyGiftId = item.id;
         const todayStr = toLocalDateKey(new Date());
         const exchange = convertGiftIdeaToExchange(item, todayStr);
         try {
@@ -1477,11 +1486,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             onChanged();
         } catch (error) {
             if (detailAlive) giftIdeasError = requestErrorMessage(error);
+        } finally {
+            busyGiftId = "";
         }
     }
 
     async function handleRemoveGiftIdea(ideaId: string) {
-        if (!onRemoveGiftIdea) return;
+        if (!onRemoveGiftIdea || Boolean(busyGiftId)) return;
+        busyGiftId = ideaId;
         try {
             const list = await onRemoveGiftIdea(current.docId, ideaId);
             if (detailAlive) {
@@ -1490,6 +1502,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) giftIdeasError = requestErrorMessage(error);
+        } finally {
+            busyGiftId = "";
         }
     }
 
@@ -1503,6 +1517,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let newAnnivDate = $state(toLocalDateKey(new Date()));
     let newAnnivLunar = $state(false);
     let addingAnniv = $state(false);
+    let busyAnnivId = $state("");
 
     async function loadAnniversaries() {
         if (!onLoadAnniversaries) return;
@@ -1551,7 +1566,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     async function handleRemoveAnniversary(annivId: string) {
-        if (!onRemoveAnniversary) return;
+        if (!onRemoveAnniversary || Boolean(busyAnnivId)) return;
+        busyAnnivId = annivId;
         try {
             const list = await onRemoveAnniversary(current.docId, annivId);
             if (detailAlive) {
@@ -1561,11 +1577,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) anniversariesError = requestErrorMessage(error);
+        } finally {
+            busyAnnivId = "";
         }
     }
 
     async function handleToggleAnnivRemind(anniv: AnniversaryItem) {
-        if (!onUpdateAnniversary) return;
+        if (!onUpdateAnniversary || Boolean(busyAnnivId)) return;
+        busyAnnivId = anniv.id;
         const nextDisabled = !anniv.remindDisabled;
         try {
             const list = await onUpdateAnniversary(current.docId, anniv.id, { remindDisabled: nextDisabled });
@@ -1576,6 +1595,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) anniversariesError = requestErrorMessage(error);
+        } finally {
+            busyAnnivId = "";
         }
     }
 
@@ -1600,6 +1621,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let newProjRole = $state("");
     let newProjDocId = $state("");
     let addingProj = $state(false);
+    let busyProjectId = $state("");
 
     async function loadProjects() {
         if (!onLoadProjects) return;
@@ -1648,7 +1670,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     async function handleRemoveProject(projectId: string) {
-        if (!onRemoveProject) return;
+        if (!onRemoveProject || Boolean(busyProjectId)) return;
+        busyProjectId = projectId;
         try {
             const list = await onRemoveProject(current.docId, projectId);
             if (detailAlive) {
@@ -1657,11 +1680,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) projectsError = requestErrorMessage(error);
+        } finally {
+            busyProjectId = "";
         }
     }
 
     async function handleToggleProjectStatus(proj: PersonProjectItem) {
-        if (!onUpdateProject || busy) return;
+        if (!onUpdateProject || Boolean(busyProjectId)) return;
+        busyProjectId = proj.id;
         const nextStatus = getNextProjectStatus(proj.status);
         try {
             const list = await onUpdateProject(current.docId, proj.id, { status: nextStatus });
@@ -1671,6 +1697,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }
         } catch (error) {
             if (detailAlive) projectsError = requestErrorMessage(error);
+        } finally {
+            busyProjectId = "";
         }
     }
 
@@ -3552,6 +3580,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                         type="button"
                                         class="b3-button b3-button--cancel"
                                         aria-label={text("topicsRemoveAria", "移除话题")}
+                                        disabled={Boolean(busyTopicId)}
                                         onclick={() => void handleRemoveTopic(topic.id)}
                                     >×</button>
                                 </span>
@@ -3640,6 +3669,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                         <button
                                             type="button"
                                             class="b3-button b3-button--text"
+                                            disabled={Boolean(busyGiftId)}
                                             onclick={() => void handleToggleGiftStatus(idea)}
                                             title={idea.status === "given" ? text("giftsStatusGivenHint", "已送出并同步至互动时间线，点击可流转") : text("giftsStatusAria", "点击切换送礼状态")}
                                         >
@@ -3651,6 +3681,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                             <button
                                                 type="button"
                                                 class="b3-button b3-button--outline"
+                                                disabled={Boolean(busyGiftId)}
                                                 onclick={() => void handleConvertGiftToExchange(idea)}
                                             >{text("giftsConvertToExchange", "转入账本")}</button>
                                         {/if}
@@ -3659,6 +3690,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                         type="button"
                                         class="b3-button b3-button--cancel"
                                         aria-label={text("giftsRemoveAria", "删除")}
+                                        disabled={Boolean(busyGiftId)}
                                         onclick={() => void handleRemoveGiftIdea(idea.id)}
                                     >×</button>
                                 </span>
@@ -3874,6 +3906,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                             class="b3-button b3-button--text b3-button--small"
                                             style="font-size: 11px; padding: 1px 6px;"
                                             title={anniv.remindDisabled ? "当前已设置为不再提醒，点击恢复提醒" : "点击设置为不再提醒（免打扰）"}
+                                            disabled={Boolean(busyAnnivId)}
                                             onclick={() => void handleToggleAnnivRemind(anniv)}
                                         >
                                             {#if anniv.remindDisabled}
@@ -3887,6 +3920,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                         type="button"
                                         class="b3-button b3-button--cancel"
                                         aria-label="删除纪念日"
+                                        disabled={Boolean(busyAnnivId)}
                                         onclick={() => void handleRemoveAnniversary(anniv.id)}
                                     >×</button>
                                 </span>
@@ -3961,6 +3995,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                     <button
                                         type="button"
                                         class="lvct-chip lvct-detail__project-status-btn {getProjectStatusMeta(proj.status).className}"
+                                        disabled={Boolean(busyProjectId)}
                                         onclick={() => void handleToggleProjectStatus(proj)}
                                         title={text("toggleProjectStatusTip", "点击切换项目协作状态：进行中 ➔ 已结项 ➔ 已归档")}
                                     >
@@ -3984,6 +4019,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                         type="button"
                                         class="b3-button b3-button--cancel"
                                         aria-label="删除项目关联"
+                                        disabled={Boolean(busyProjectId)}
                                         onclick={() => void handleRemoveProject(proj.id)}
                                     >×</button>
                                 </span>
