@@ -3,7 +3,13 @@
     import { translateText } from "../../domain/translation";
     import { copyPlainText } from "../../shared/clipboard.ts";
     import { onDestroy } from "svelte";
-    import { MessageSquareHeart, Copy, Check } from "@lucide/svelte";
+    import {
+        MessageSquareHeart,
+        Copy,
+        Check,
+        Sparkles,
+        PartyPopper,
+    } from "@lucide/svelte";
 
     let {
         milestones = [],
@@ -19,15 +25,22 @@
         translateText(i18n, key, fallback, values));
 
     let copiedIndex = $state<number | null>(null);
+    let copyingIndex = $state<number | null>(null);
     let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function handleCopy(greeting: string, index: number) {
-        await copyPlainText(greeting);
-        copiedIndex = index;
-        if (copiedTimer) clearTimeout(copiedTimer);
-        copiedTimer = setTimeout(() => {
-            if (copiedIndex === index) copiedIndex = null;
-        }, 2000);
+        if (copyingIndex !== null) return;
+        copyingIndex = index;
+        try {
+            await copyPlainText(greeting);
+            copiedIndex = index;
+            if (copiedTimer) clearTimeout(copiedTimer);
+            copiedTimer = setTimeout(() => {
+                if (copiedIndex === index) copiedIndex = null;
+            }, 2000);
+        } finally {
+            copyingIndex = null;
+        }
     }
 
     onDestroy(() => {
@@ -40,8 +53,12 @@
         {#each milestones as milestone, idx (milestone.anniversary.id)}
             <div class="milestone-item {milestone.isToday ? 'is-today' : ''}">
                 <div class="milestone-left">
-                    <span class="celebration-icon" aria-hidden="true">
-                        {milestone.isToday ? "🎉" : "🌟"}
+                    <span class="celebration-icon {milestone.isToday ? 'is-today' : ''}" aria-hidden="true">
+                        {#if milestone.isToday}
+                            <PartyPopper size={20} strokeWidth={1.6} class="celebration-svg" style="color: var(--lv-brand, #ea580c);" />
+                        {:else}
+                            <Sparkles size={18} strokeWidth={1.6} class="celebration-svg" style="color: var(--lv-data-amber, #d97706);" />
+                        {/if}
                     </span>
                     <div class="milestone-meta">
                         <div class="milestone-title-line">
@@ -68,7 +85,7 @@
                             title={text("applyGreetingTip", "将周年问候语预填入下方互动备注草稿")}
                             onclick={() => onApplyGreeting?.(milestone.congratulatoryText)}
                         >
-                            <MessageSquareHeart size={13} class="lvct-icon-inline" />
+                            <MessageSquareHeart size={13} strokeWidth={1.6} class="lvct-icon-inline" />
                             {text("applyGreetingBtn", "填入问候")}
                         </button>
                     {/if}
@@ -76,14 +93,15 @@
                     <button
                         type="button"
                         class="b3-button b3-button--cancel btn-copy-greeting"
+                        disabled={copyingIndex === idx}
                         title={text("copyGreetingTip", "复制问候语文本至剪贴板")}
                         onclick={() => handleCopy(milestone.congratulatoryText, idx)}
                     >
                         {#if copiedIndex === idx}
-                            <Check size={12} class="lvct-icon-inline ft__primary" />
+                            <Check size={12} strokeWidth={1.6} class="lvct-icon-inline ft__primary" />
                             <span class="ft__primary">{text("copied", "已复制 ✓")}</span>
                         {:else}
-                            <Copy size={12} class="lvct-icon-inline" />
+                            <Copy size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                             {text("copy", "复制")}
                         {/if}
                     </button>
@@ -109,7 +127,7 @@
         padding: 10px 14px;
         background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md, 12px);
+        border-radius: var(--lvct-r-card, 14px);
         box-shadow: var(--lvct-shadow-1);
         transition: all var(--lvct-dur-fast) var(--lvct-ease);
 
@@ -134,8 +152,9 @@
     }
 
     .celebration-icon {
-        font-size: 20px;
-        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
     }
 
@@ -165,6 +184,7 @@
         border-radius: var(--lv-r-pill, 9999px);
         background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.14));
         color: var(--lv-data-amber, #d97706);
+        border: 1px solid color-mix(in srgb, var(--lv-data-amber) 25%, transparent);
         font-variant-numeric: tabular-nums;
     }
 
@@ -172,6 +192,19 @@
         font-size: 11px;
         color: var(--lvct-text-3);
         font-variant-numeric: tabular-nums;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+
+        &::before {
+            content: "";
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            forced-color-adjust: none;
+        }
     }
 
     .countdown-badge.is-today {
@@ -211,6 +244,7 @@
     .btn-apply-greeting,
     .btn-copy-greeting {
         font-size: 11px;
-        padding: 3px 8px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 </style>
