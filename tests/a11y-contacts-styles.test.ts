@@ -335,6 +335,46 @@ test("小驴人脉 · 组织管理与组织资料编辑器对齐细线图标、�
     assert.match(profSvelte, /border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
 });
 
+test("小驴人脉 · 组织操作续做、双链修复与写入反馈对齐空气感指标条、细线图标、全胶囊体系与并发锁", () => {
+    // 1. 联系人创建组织子弹窗外壳
+    const contactOrgSvelte = fs.readFileSync(path.join(SRC, "components", "org", "ContactOrganizationDialog.svelte"), "utf8");
+    assert.match(contactOrgSvelte, /\.lvct-contact-organization-dialog\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-dialog,\s*16px\)/);
+    assert.match(contactOrgSvelte, /\.lvct-contact-organization-dialog\s*\{[\s\S]*box-shadow:\s*0 4px 24px/);
+
+    // 2. 组织操作续做
+    const recoverySvelte = fs.readFileSync(path.join(SRC, "components", "org", "OrgOperationRecovery.svelte"), "utf8");
+    assert.match(recoverySvelte, /actingRequestId/);
+    assert.match(recoverySvelte, /ShieldAlert size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(recoverySvelte, /RefreshCw size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(recoverySvelte, /Play size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(recoverySvelte, /\.lvct-org-recovery\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(recoverySvelte, /\.lvct-org-recovery__entry\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(recoverySvelte, /\.lvct-org-step-tag::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(recoverySvelte, /\.lvct-org-recovery__pill-btn\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 3. 组织成员双链修复
+    const projSvelte = fs.readFileSync(path.join(SRC, "components", "org", "OrgProjectionRepair.svelte"), "utf8");
+    assert.match(projSvelte, /repairingKey/);
+    assert.match(projSvelte, /FileCheck size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(projSvelte, /Wrench size=\{11\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(projSvelte, /\.lvct-org-projection__metrics-bar\s*\{[\s\S]*border-bottom:\s*1px solid var\(--lvct-border-subtle\)/);
+    assert.match(projSvelte, /\.lvct-org-projection__metric:not\(:last-child\)::after\s*\{/);
+    assert.match(projSvelte, /\.lvct-org-projection__metric-value\s*\{[\s\S]*font-variant-numeric:\s*tabular-nums/);
+    assert.match(projSvelte, /\.lvct-org-projection__target\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(projSvelte, /\.lvct-org-projection__state-tag::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(projSvelte, /\.lvct-org-projection__pill-btn\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(projSvelte, /\.lvct-org-projection__action-btn\s*\{[\s\S]*opacity:\s*0\.7;/);
+
+    // 4. 成员写入结果反馈
+    const resultSvelte = fs.readFileSync(path.join(SRC, "components", "org", "OrgMembershipResult.svelte"), "utf8");
+    assert.match(resultSvelte, /CheckCircle2 size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(resultSvelte, /AlertCircle size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(resultSvelte, /FileText size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(resultSvelte, /\.lvct-org-membership-result\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(resultSvelte, /\.lvct-org-membership-result__status-tag::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+});
+
+
 
 
 
