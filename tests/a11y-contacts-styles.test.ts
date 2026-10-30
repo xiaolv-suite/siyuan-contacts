@@ -485,6 +485,19 @@ test("小驴人脉 · 联系人卡片与右侧上下文面板对齐1.6细线图�
     assert.match(ctxSvelte, /\(e\.ctrlKey \|\| e\.metaKey\) && e\.key === "Enter"/);
 });
 
+test("小驴人脉 · 群体活动弹窗对齐12px大圆角分层、全胶囊药丸、1.6细线图标与Ctrl+Enter快捷键", () => {
+    const occSvelte = fs.readFileSync(path.join(SRC, "components", "OccasionDialog.svelte"), "utf8");
+    assert.match(occSvelte, /\(event\.ctrlKey \|\| event\.metaKey\) && event\.key === "Enter"/);
+    assert.match(occSvelte, /Users size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(occSvelte, /Plus size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(occSvelte, /X size=\{11\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(occSvelte, /\.lvct-occ-dialog__section\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(occSvelte, /\.lvct-occ-dialog__candidates\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(occSvelte, /\.lvct-occ-attendee-chip\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(occSvelte, /\.lvct-occ-attendee-dot\s*\{[\s\S]*forced-color-adjust:\s*none;/);
+    assert.match(occSvelte, /\.lvct-occ-dialog__footer[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+});
+
 
 
 
