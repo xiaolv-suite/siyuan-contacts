@@ -4,6 +4,7 @@
     import { translateText } from "../../domain/translation";
     import type { PersonAlias } from "../../domain/person-aliases";
     import { requestErrorMessage } from "../../shared/error-presenter";
+    import { X } from "@lucide/svelte";
 
     let {
         personDocId,
@@ -141,8 +142,15 @@
             {#each aliases as item (item.id)}
                 <span class="lvct-person-aliases__item">
                     <span>{item.alias}</span>
-                    <button type="button" class="b3-button b3-button--text" disabled={busy || !!pendingRemoveId} onclick={() => requestRemove(item.id)}>
-                        {text("personAliasesRemove", "删除")}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text btn-remove-alias"
+                        disabled={busy || !!pendingRemoveId}
+                        onclick={() => requestRemove(item.id)}
+                        title={text("personAliasesRemove", "删除")}
+                    >
+                        <X size={11} strokeWidth={1.6} class="btn-remove-icon" />
+                        <span class="btn-remove-text">{text("personAliasesRemove", "删除")}</span>
                     </button>
                 </span>
                 {#if pendingRemoveId === item.id}
@@ -178,3 +186,73 @@
         </button>
     </div>
 </section>
+
+<style>
+    .lvct-person-aliases__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .lvct-person-aliases__item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px 2px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-color-border-200);
+        font-size: 11.5px;
+        color: var(--lvct-text-1);
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            border-color: var(--lvct-border-subtle);
+
+            .btn-remove-alias {
+                opacity: 1;
+            }
+        }
+    }
+
+    .btn-remove-alias {
+        padding: 0 4px !important;
+        height: auto !important;
+        font-size: 11px !important;
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        opacity: 0.6;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        color: var(--lvct-text-3) !important;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            opacity: 1 !important;
+            color: var(--lvct-danger, #e11d48) !important;
+        }
+
+        @media (hover: none), (max-width: 768px) {
+            opacity: 0.8;
+        }
+    }
+
+    .lvct-person-aliases__confirm {
+        width: 100%;
+        margin-block: 6px;
+        padding: 10px 12px;
+        border-radius: var(--lvct-r-card, 12px);
+
+        button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+
+    .lvct-detail__record {
+        input, button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+</style>

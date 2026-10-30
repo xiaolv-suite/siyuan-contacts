@@ -50,8 +50,9 @@
         margin: var(--lvct-sp-2) 0;
         padding: 12px 14px;
         background: var(--lvct-bg-surface);
-        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
-        border-radius: var(--lvct-r-md, 12px);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 14px);
+        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         color: var(--lvct-text-2);
         font-size: var(--lvct-fs-caption);
         display: grid;

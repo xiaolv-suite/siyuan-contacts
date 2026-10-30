@@ -100,7 +100,7 @@
             <h4 style="margin: 0;">与我的关系</h4>
             <p class="ft__smaller ft__on-surface" style="margin: 2px 0 0;">人工填写称谓（如：同事、朋友、表哥，多个用顿号分隔），仅对当前本人档案生效。</p>
         </div>
-        <button class="b3-button b3-button--text" disabled={busy || loading || dirty && !unknown} onclick={() => void load()}>重新读取核实称谓</button>
+        <button class="b3-button b3-button--text b3-button--small" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy || loading || (dirty && !unknown)} onclick={() => void load()}>重新读取核实称谓</button>
     </div>
     {#if loading}<p role="status" class="ft__smaller">正在核实本人参照与称谓…</p>
     {:else if readError}<p role="alert" class="lvct-form__error">{readError}</p>
@@ -117,7 +117,16 @@
             </div>
         {/if}
         <div class="fn__flex" style="gap: 8px; align-items: center; flex-wrap: wrap;">
-            <input class="b3-text-field fn__flex-1" style="border-radius: var(--lv-r-pill, 9999px);" type="text" placeholder="填写与我的关系称谓，如：同事、朋友" bind:value={draft} disabled={busy || unknown} maxlength="1600" />
+            <input
+                class="b3-text-field fn__flex-1"
+                style="border-radius: var(--lv-r-pill, 9999px);"
+                type="text"
+                placeholder="填写与我的关系称谓，如：同事、朋友"
+                bind:value={draft}
+                disabled={busy || unknown}
+                maxlength="1600"
+                onkeydown={(e) => { if (e.key === "Enter" && dirty && !busy && !unknown) { e.preventDefault(); void save(); } }}
+            />
             <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void save()} disabled={busy || unknown || !dirty}>{busy ? "保存中…" : "保存称谓"}</button>
             <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => { message = ""; void load(false); }}>取消称谓草稿</button>
         </div>
