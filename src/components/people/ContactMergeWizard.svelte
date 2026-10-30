@@ -137,8 +137,8 @@
             并排比对 <b>{primary.name}</b> 与 <b>{secondary.name}</b>，逐字段选择保留方。可随时重置默认值。人物文档与互动、关系历史会保留。
         </p>
         <div class="lvct-merge__switch" role="group" aria-label="切换主次人物">
-            <button class="b3-button b3-button--text" type="button" onclick={switchPrimarySecondary}>
-                <ChevronLeft size={14}/> 切换主次 <ChevronRight size={14}/>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={switchPrimarySecondary}>
+                <ChevronLeft size={14} strokeWidth={1.6} /> 切换主次 <ChevronRight size={14} strokeWidth={1.6} />
             </button>
         </div>
     </header>
@@ -191,7 +191,7 @@
                     <button
                         type="button"
                         class="b3-chip font-size-10"
-                        style="padding: 1px 6px;"
+                        style="padding: 1px 8px; border-radius: var(--lv-r-pill, 9999px);"
                         onclick={() => mergeBothValues(field as keyof ContactMergePlan["fields"])}
                         title="合并保留主次双方的值（顿号分隔）"
                     >保留两者</button>
@@ -255,7 +255,7 @@
 
     {#if validationErrors.length > 0}
         <div class="lvct-merge__errors" role="alert">
-            <ShieldAlert size={16}/> 校验未通过：{validationErrors.join("；")}
+            <ShieldAlert size={16} strokeWidth={1.6} /> 校验未通过：{validationErrors.join("；")}
         </div>
     {/if}
 
@@ -285,7 +285,13 @@
 .lvct-merge__title {
     display: none;
 }
-.lvct-merge__switch { display: flex; }
+.lvct-merge__switch {
+    display: flex;
+
+    button {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+}
 .lvct-merge__headrow, .lvct-merge__row {
     display: grid;
     grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1fr) 220px;
@@ -334,5 +340,9 @@
     gap: 8px;
     justify-content: flex-end;
     margin-top: 8px;
+
+    button {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
 }
 </style>

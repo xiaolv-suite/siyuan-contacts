@@ -141,14 +141,14 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
                 <input
                     class="b3-text-field"
                     type="date"
-                    style="width: 135px;"
+                    style="width: 135px; border-radius: var(--lv-r-pill, 9999px);"
                     bind:value={date}
                     disabled={busy}
                 />
                 <div style="display: flex; gap: 3px; align-items: center;">
-                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={date === todayStr} disabled={busy} onclick={() => (date = todayStr)}>今天</button>
-                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={date === yesterdayStr} disabled={busy} onclick={() => (date = yesterdayStr)}>昨天</button>
-                    <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={date === dayBeforeYesterdayStr} disabled={busy} onclick={() => (date = dayBeforeYesterdayStr)}>前天</button>
+                    <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={date === todayStr} disabled={busy} onclick={() => (date = todayStr)}>今天</button>
+                    <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={date === yesterdayStr} disabled={busy} onclick={() => (date = yesterdayStr)}>昨天</button>
+                    <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={date === dayBeforeYesterdayStr} disabled={busy} onclick={() => (date = dayBeforeYesterdayStr)}>前天</button>
                 </div>
             </div>
         </label>
@@ -159,6 +159,7 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
                     <button
                         type="button"
                         class="b3-chip font-size-11"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
                         class:b3-chip--primary={type === itype}
                         disabled={busy}
                         onclick={() => (type = itype)}
@@ -175,6 +176,7 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
         <textarea
             bind:this={textareaEl}
             class="b3-text-field fn__block"
+            style="border-radius: var(--lvct-r-card, 12px);"
             rows="4"
             placeholder={text("dialogNotePlaceholder", "记录这次交流的核心事实、沟通要点或约定事项…")}
             bind:value={note}
@@ -195,26 +197,47 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
         </label>
         {#if saveAsFact}
             <div style="display: flex; gap: 4px; padding-left: 20px; flex-wrap: wrap;">
-                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "quote"} disabled={busy} onclick={() => (factCategory = "quote")}>💡 观点见解</button>
-                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "preference"} disabled={busy} onclick={() => (factCategory = "preference")}>❤️ 喜好忌口</button>
-                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "background"} disabled={busy} onclick={() => (factCategory = "background")}>💼 背景经历</button>
-                <button type="button" class="b3-chip font-size-11" class:b3-chip--primary={factCategory === "fact"} disabled={busy} onclick={() => (factCategory = "fact")}>📌 关键事实</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "quote"} disabled={busy} onclick={() => (factCategory = "quote")}>💡 观点见解</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "preference"} disabled={busy} onclick={() => (factCategory = "preference")}>❤️ 喜好忌口</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "background"} disabled={busy} onclick={() => (factCategory = "background")}>💼 背景经历</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "fact"} disabled={busy} onclick={() => (factCategory = "fact")}>📌 关键事实</button>
             </div>
         {/if}
     </div>
 
-    <div class="fn__flex" style="justify-content: flex-end; gap: 8px; margin-top: 4px;">
+    <div class="fn__flex dialog-actions" style="justify-content: flex-end; gap: 8px; margin-top: 4px;">
         <button
             type="button"
             class="b3-button b3-button--cancel"
+            style="border-radius: var(--lv-r-pill, 9999px);"
             disabled={busy}
             onclick={onClose}
         >{text("commonCancel", "取消")}</button>
         <button
             type="button"
             class="b3-button b3-button--text"
+            style="border-radius: var(--lv-r-pill, 9999px);"
             disabled={busy}
             onclick={handleSave}
         >{busy ? text("commonSaving", "保存中…") : text("commonSave", "保存互动")}</button>
     </div>
 </div>
+
+<style>
+    .lvct-quick-record-dialog {
+        background: var(--lvct-bg-surface);
+        border-radius: var(--lvct-r-card, 16px);
+
+        input[type="date"] {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+
+        .b3-chip {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+</style>
