@@ -129,14 +129,22 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let copiedMemoryId = $state("");
     let copiedMemoryTimer: ReturnType<typeof setTimeout> | null = null;
 
+    let copyingMemory = false;
     async function handleCopyMemory(memory: OnThisDayMemory): Promise<void> {
-        const textToCopy = formatMemoryIcebreakerText(memory);
-        await copyPlainText(textToCopy);
-        copiedMemoryId = memory.eventId;
-        if (copiedMemoryTimer) clearTimeout(copiedMemoryTimer);
-        copiedMemoryTimer = setTimeout(() => {
-            copiedMemoryId = "";
-        }, 2000);
+        if (copyingMemory) return;
+        copyingMemory = true;
+        try {
+            const textToCopy = formatMemoryIcebreakerText(memory);
+            await copyPlainText(textToCopy);
+            if (!alive) return;
+            copiedMemoryId = memory.eventId;
+            if (copiedMemoryTimer) clearTimeout(copiedMemoryTimer);
+            copiedMemoryTimer = setTimeout(() => {
+                if (alive) copiedMemoryId = "";
+            }, 2000);
+        } finally {
+            copyingMemory = false;
+        }
     }
 
     onDestroy(() => {
@@ -1059,7 +1067,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             </div>
             {#if todayBirthdays.length > 0}
                 <button class="lvct-dash__birthday-banner" onclick={openBirthdayPeople} aria-label="查看今天过生日的联系人">
-                    <Cake size={18} aria-hidden="true" />
+                    <Cake size={18} strokeWidth={1.6} aria-hidden="true" />
                     <span><b>{text("dashBannerToday", "今天生日")}</b> · {todayBirthdays.slice(0, 3).map((item) => item.person.name).join("、")}{todayBirthdays.length > 3 ? ` 等 ${todayBirthdays.length} 人` : ""}</span>
                     <span aria-hidden="true">›</span>
                 </button>
@@ -1083,24 +1091,24 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             {@const activeRate = data.people > 0 ? Math.round((activeCount / data.people) * 100) : 0}
             <div class="lvct-dash__milestone-banner fn__flex" role="status" aria-label="人脉维护激励">
                 <div class="lvct-dash__milestone-left fn__flex">
-                    <span class="lvct-dash__milestone-emoji" style="display: inline-flex; align-items: center;"><Sparkles size={18} style="color: var(--lv-dark-block-data, #FBBF24);" /></span>
+                    <span class="lvct-dash__milestone-emoji" style="display: inline-flex; align-items: center;"><Sparkles size={18} strokeWidth={1.6} style="color: var(--lv-dark-block-data, #FBBF24);" /></span>
                     <div class="lvct-dash__milestone-content">
                         <b>{activeRate >= 80 ? "人脉连接状态极佳！" : activeRate >= 50 ? "人际网络稳步升温中！" : "开启温暖连接的新起点："}</b>
                         <span>
                             已建立连接 <strong class="lvct-data-hl">{activeCount}</strong> 人（覆盖率 <strong class="lvct-data-hl">{activeRate}%</strong>）
                             {#if data.birthdaysThisWeek > 0}
                                 · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: var(--lv-dark-block-sub, #D6D3D1); text-decoration: underline; text-underline-offset: 2px;" onclick={openBirthdayPeople}>
-                                    <Cake size={12} class="lvct-icon-inline" /> 本周有 {data.birthdaysThisWeek} 位好友生日
+                                    <Cake size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 本周有 {data.birthdaysThisWeek} 位好友生日
                                 </button>
                             {/if}
                             {#if overdueCount > 0}
                                 · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: var(--lv-dark-block-sub, #D6D3D1); text-decoration: underline; text-underline-offset: 2px;" onclick={scrollToActionsSection}>
-                                    <AlertTriangle size={12} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办
+                                    <AlertTriangle size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 建议处理 {overdueCount} 条待办
                                 </button>
                             {/if}
                             {#if facade.listUpcomingAnniversaries}
                                 · <button type="button" class="b3-button b3-button--text b3-button--small" style="padding: 0 4px; font-size: 12px; color: var(--lv-dark-block-sub, #D6D3D1); text-decoration: underline; text-underline-offset: 2px;" onclick={() => (anniversariesHubOpen = true)}>
-                                    <Sparkles size={12} class="lvct-icon-inline" /> 近期周年里程碑
+                                    <Sparkles size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 近期周年里程碑
                                 </button>
                             {/if}
                         </span>
@@ -1115,7 +1123,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         <div class="lvct-dash__stats">
             <button class="lvct-dash__stat lvct-dash__stat--people" onclick={() => onOpenPeople()}>
                 <div class="lvct-dash__stat-top">
-                    <span class="lvct-dash__stat-ic" aria-hidden="true"><Users size={14} /></span>
+                    <span class="lvct-dash__stat-ic" aria-hidden="true"><Users size={14} strokeWidth={1.6} /></span>
                     <span class="lvct-dash__stat-tag">全库</span>
                 </div>
                 <b>{data.ordinaryScopeUnknown ? "—" : data.people}</b>
@@ -1124,7 +1132,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             </button>
             <button class="lvct-dash__stat lvct-dash__stat--relations" onclick={onOpenGraph}>
                 <div class="lvct-dash__stat-top">
-                    <span class="lvct-dash__stat-ic" aria-hidden="true"><Share2 size={14} /></span>
+                    <span class="lvct-dash__stat-ic" aria-hidden="true"><Share2 size={14} strokeWidth={1.6} /></span>
                     <span class="lvct-dash__stat-tag">互联</span>
                 </div>
                 <b>{data.ordinaryScopeUnknown ? "—" : data.relations}</b>
@@ -1134,7 +1142,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             <button class="lvct-dash__stat lvct-dash__stat--birthdays" onclick={openBirthdayPeople} disabled={data.ordinaryScopeUnknown}
                 title={data.ordinaryScopeUnknown ? text("dashStatDisabledSelfHint", "请先在设置中核实本人身份") : undefined}>
                 <div class="lvct-dash__stat-top">
-                    <span class="lvct-dash__stat-ic lvct-dash__stat-ic--hl" aria-hidden="true"><Cake size={14} /></span>
+                    <span class="lvct-dash__stat-ic lvct-dash__stat-ic--hl" aria-hidden="true"><Cake size={14} strokeWidth={1.6} /></span>
                     <span class="lvct-dash__stat-tag lvct-dash__stat-tag--hl">本周</span>
                 </div>
                 <b>{data.ordinaryScopeUnknown ? "—" : data.birthdaysThisWeek}</b>
@@ -1144,7 +1152,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             <button class="lvct-dash__stat lvct-dash__stat--never" onclick={openNeverContactedPeople} disabled={data.ordinaryScopeUnknown}
                 title={data.ordinaryScopeUnknown ? text("dashStatDisabledSelfHint", "请先在设置中核实本人身份") : undefined}>
                 <div class="lvct-dash__stat-top">
-                    <span class="lvct-dash__stat-ic lvct-dash__stat-ic--warn" aria-hidden="true"><UserX size={14} /></span>
+                    <span class="lvct-dash__stat-ic lvct-dash__stat-ic--warn" aria-hidden="true"><UserX size={14} strokeWidth={1.6} /></span>
                     <span class="lvct-dash__stat-tag lvct-dash__stat-tag--warn">待激活</span>
                 </div>
                 <b>{data.ordinaryScopeUnknown ? "—" : data.neverContacted}</b>
@@ -1180,7 +1188,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                         }}
                                         title={text("dashViewPersonDetail", "点击查看联系人画像")}
                                     >
-                                        <User size={13} class="lvct-icon-inline" /> {memory.personName}
+                                        <User size={13} strokeWidth={1.6} class="lvct-icon-inline" /> {memory.personName}
                                     </button>
                                 </div>
                                 {#if memory.note}
@@ -1197,9 +1205,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     title={text("dashCopyIcebreakerTitle", "复制带往昔回忆的破冰语录")}
                                 >
                                     {#if copiedMemoryId === memory.eventId}
-                                        <Check size={12} class="lvct-icon-inline" /> {text("copied", "已复制")}
+                                        <Check size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("copied", "已复制")}
                                     {:else}
-                                        <Copy size={12} class="lvct-icon-inline" /> {text("dashCopyMemory", "复制回忆")}
+                                        <Copy size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("dashCopyMemory", "复制回忆")}
                                     {/if}
                                 </button>
                                 <button
@@ -1214,7 +1222,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     }}
                                     title={text("dashIcebreakerHint", "直达联系人互动时间流，记录新的问候破冰")}
                                 >
-                                    <MessageSquare size={12} class="lvct-icon-inline" /> {text("dashIcebreakerAction", "问候破冰 ›")}
+                                    <MessageSquare size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("dashIcebreakerAction", "问候破冰 ›")}
                                 </button>
                             </div>
                         </div>
@@ -1312,7 +1320,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             onclick={() => openHeatPeople("hot", "温热")}
                             title={data.heatDistribution.hot.count > 0 ? "点击在名册中查看温热人脉" : "当前暂无温热联系人"}
                         >
-                            <Flame size={12} class="lvct-icon-inline" /> 温热 {data.heatDistribution.hot.count}
+                            <Flame size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 温热 {data.heatDistribution.hot.count}
                         </button>
                         <button
                             type="button"
@@ -1322,7 +1330,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             onclick={() => openHeatPeople("warm", "常温")}
                             title={data.heatDistribution.warm.count > 0 ? "点击在名册中查看常温人脉" : "当前暂无常温联系人"}
                         >
-                            <Leaf size={12} class="lvct-icon-inline" /> 常温 {data.heatDistribution.warm.count}
+                            <Leaf size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 常温 {data.heatDistribution.warm.count}
                         </button>
                         <button
                             type="button"
@@ -1332,7 +1340,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             onclick={() => openHeatPeople("cool", "微凉")}
                             title={data.heatDistribution.cool.count > 0 ? "点击在名册中查看微凉人脉" : "当前暂无微凉联系人"}
                         >
-                            <Wind size={12} class="lvct-icon-inline" /> 微凉 {data.heatDistribution.cool.count}
+                            <Wind size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 微凉 {data.heatDistribution.cool.count}
                         </button>
                         <button
                             type="button"
@@ -1342,11 +1350,11 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             onclick={() => openHeatPeople("cold", "渐冻")}
                             title={data.heatDistribution.cold.count > 0 ? "点击在名册中查看渐冻人脉" : "当前暂无渐冻联系人"}
                         >
-                            <Snowflake size={12} class="lvct-icon-inline" /> 渐冻 {data.heatDistribution.cold.count}
+                            <Snowflake size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 渐冻 {data.heatDistribution.cold.count}
                         </button>
                         {#if data.heatDistribution.unknown.count > 0}
                             <button type="button" class="b3-chip font-size-11" onclick={() => openHeatPeople("unknown", "未互动")} title="点击在名册中查看未曾互动的联系人">
-                                <Circle size={10} class="lvct-icon-inline" /> 未互动 {data.heatDistribution.unknown.count}
+                                <Circle size={10} strokeWidth={1.6} class="lvct-icon-inline" /> 未互动 {data.heatDistribution.unknown.count}
                             </button>
                         {/if}
                     </div>
@@ -1357,7 +1365,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                     <div class="lvct-home__card lvct-dash__chart-card">
                         <div class="lvct-dash__chart-header">
                             <div class="lvct-dash__chart-title-wrap">
-                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><TrendingUp size={14} style="color: #0284c7;" /></span>
+                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><TrendingUp size={14} strokeWidth={1.6} style="color: #0284c7;" /></span>
                                 <span class="lvct-dash__chart-title">近期互动走势</span>
                                 <span class="lvct-text-muted font-size-11">（共 {data.monthlyTrend.totalCount} 次）</span>
                             </div>
@@ -1391,7 +1399,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                     <div class="lvct-home__card lvct-dash__chart-card">
                         <div class="lvct-dash__chart-header">
                             <div class="lvct-dash__chart-title-wrap">
-                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><MapPin size={14} style="color: var(--lv-brand, #ea580c);" /></span>
+                                <span class="lvct-dash__chart-icon" style="display: inline-flex; align-items: center;"><MapPin size={14} strokeWidth={1.6} style="color: var(--lv-brand, #ea580c);" /></span>
                                 <span class="lvct-dash__chart-title">城市与行程</span>
                             </div>
                             <button
@@ -1465,7 +1473,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             onclick={() => { discoveryOpen = true; void loadPotentialConnections(); }}
                             title={text("dashDiscoverBtnTitle", "智能发现同场活动或同属组织但未建链的潜在人脉")}
                         >
-                            <Sparkles size={13} class="lvct-icon-inline" /> {text("dashDiscoverBtn", "潜在关联")}
+                            <Sparkles size={13} strokeWidth={1.6} class="lvct-icon-inline" /> {text("dashDiscoverBtn", "潜在关联")}
                             {#if potentialConnections.length > 0}
                                 <span class="lvct-chip lvct-chip--tag" style="margin-left: 3px; padding: 0 4px; font-size: 10px;">{potentialConnections.length}</span>
                             {/if}
@@ -1526,7 +1534,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             {#if weekGlanceDays.length > 0}
                 <div class="lvct-week-glance" role="region" aria-label="本周人脉日程滑轨">
                     <div class="lvct-week-glance__header">
-                        <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} class="lvct-icon-inline" /> 📅 本周日程视窗</span>
+                        <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 📅 本周日程视窗</span>
                         <div class="fn__flex" style="gap: 6px; align-items: center;">
                             {#if facade.createWeeklyDigestDoc}
                                 <button
@@ -1536,7 +1544,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                     disabled={generatingDigest}
                                     title={text("dashDigestBtnTitle", "将本周交往足迹、重点联络人与下周待办一键沉淀为思源周报笔记")}
                                 >
-                                    <FileText size={12} class="lvct-icon-inline" /> {generatingDigest ? text("dashDigestGenerating", "周报生成中…") : text("dashDigestCreate", "沉淀周报 ↗")}
+                                    <FileText size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {generatingDigest ? text("dashDigestGenerating", "周报生成中…") : text("dashDigestCreate", "沉淀周报 ↗")}
                                 </button>
                             {/if}
                             {#if selectedGlanceOffset !== null}
@@ -1562,8 +1570,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 <span class="lvct-week-glance__day">{day.dayName}</span>
                                 <span class="lvct-week-glance__num">{day.dayNum}</span>
                                 <div class="lvct-week-glance__dots">
-                                    {#if day.birthdays.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--bday" title="有生日"><Cake size={11} /></span>{/if}
-                                    {#if day.followUps.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--fu" title="有待办"><Pin size={11} /></span>{/if}
+                                    {#if day.birthdays.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--bday" title="有生日"><Cake size={11} strokeWidth={1.6} /></span>{/if}
+                                    {#if day.followUps.length > 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--fu" title="有待办"><Pin size={11} strokeWidth={1.6} /></span>{/if}
                                     {#if day.totalEvents === 0}<span class="lvct-week-glance__dot lvct-week-glance__dot--empty">·</span>{/if}
                                 </div>
                             </button>
@@ -1585,7 +1593,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                         style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; background: var(--lv-heat-cool-soft); color: var(--lv-heat-cool); display: inline-flex; align-items: center;"
                                         title={text("viewPersonDetailTip", "查看 {name} 详情", { name: b.person.name })}
                                         onclick={() => onOpenDetail(b.person)}
-                                    ><Cake size={11} class="lvct-icon-inline" /> {b.person.name}</button>
+                                    ><Cake size={11} strokeWidth={1.6} class="lvct-icon-inline" /> {b.person.name}</button>
                                 {/each}
                                 {#each selectedGlanceDay.followUps as f (f.item.id)}
                                     <button
@@ -1594,7 +1602,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                         style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; background: var(--lv-brand-soft); color: var(--lv-brand); display: inline-flex; align-items: center;"
                                         title={f.person ? text("viewPersonDetailTip", "查看 {name} 详情", { name: f.person.name }) : f.item.title || "跟进"}
                                         onclick={() => { if (f.person) onOpenDetail(f.person); }}
-                                    ><Pin size={11} class="lvct-icon-inline" /> {f.item.title || "保持联系"}{f.person ? `（${f.person.name}）` : ""}</button>
+                                    ><Pin size={11} strokeWidth={1.6} class="lvct-icon-inline" /> {f.item.title || "保持联系"}{f.person ? `（${f.person.name}）` : ""}</button>
                                 {/each}
                             {/if}
                         </div>

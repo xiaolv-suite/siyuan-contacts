@@ -428,6 +428,30 @@ test("小驴人脉 · 设置大盘与图谱证据悬停卡对齐全胶囊体系�
     assert.match(indexScss, /\.lvct-graph-view__hover-card[\s\S]*\.b3-button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)\s*!important/);
 });
 
+test("小驴人脉 · 首页仪表盘与名册工具栏对齐全量1.6细线图标、全胶囊体系与回忆复制防连发锁", () => {
+    // 1. 首页仪表盘细线图标与并发锁
+    const dashSvelte = fs.readFileSync(path.join(SRC, "components", "dashboard", "DashboardView.svelte"), "utf8");
+    assert.match(dashSvelte, /copyingMemory/);
+    assert.match(dashSvelte, /Users size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(dashSvelte, /Share2 size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(dashSvelte, /Cake size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(dashSvelte, /UserX size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(dashSvelte, /TrendingUp size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(dashSvelte, /MapPin size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(dashSvelte, /Calendar size=\{14\}\s*strokeWidth=\{1\.6\}/);
+
+    // 2. 联系人名册视图切换与工具栏细线图标
+    const peopleSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PeopleView.svelte"), "utf8");
+    assert.match(peopleSvelte, /LayoutGrid size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /List size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /Columns3 size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /UserPlus size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /SlidersHorizontal size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /Sparkles size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /Network size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(peopleSvelte, /FileSpreadsheet size=\{14\}\s*strokeWidth=\{1\.6\}/);
+});
+
 
 
 
