@@ -155,4 +155,25 @@ test("小驴人脉 · 纪念日横幅、社交偏好与拜访行程对齐防重�
     assert.match(itinerarySvelte, /\.btn-action\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
 });
 
+test("小驴人脉 · 关系称谓、别名卡片与档案面板对齐全胶囊体系、回车提交与大圆角分层规范", () => {
+    // 1. 关系称谓
+    const labelsSvelte = fs.readFileSync(path.join(SRC, "components", "people", "RelationshipLabels.svelte"), "utf8");
+    assert.match(labelsSvelte, /e\.key === "Enter" && dirty && !busy && !unknown/);
+    assert.match(labelsSvelte, /border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 别名卡片
+    const aliasesSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonAliases.svelte"), "utf8");
+    assert.match(aliasesSvelte, /strokeWidth=\{1\.6\}/);
+    assert.match(aliasesSvelte, /\.lvct-person-aliases__item\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(aliasesSvelte, /\.btn-remove-alias\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(aliasesSvelte, /\.lvct-person-aliases__confirm\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(aliasesSvelte, /\.lvct-detail__record\s*\{[\s\S]*input,\s*button\s*\{[^}]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 3. 档案面板摘要
+    const summarySvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonProfileSummary.svelte"), "utf8");
+    assert.match(summarySvelte, /\.lvct-profile-summary\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*14px\)/);
+    assert.match(summarySvelte, /\.lvct-profile-summary\s*\{[\s\S]*box-shadow:\s*0 1px 4px rgba\(28,\s*24,\s*21,\s*0\.03\)/);
+});
+
+
 
