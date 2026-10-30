@@ -84,6 +84,7 @@
     }
 
     async function handleConfirm(): Promise<void> {
+        if (submitting) return;
         if (validationErrors.length > 0) {
             errorText = validationErrors.join("；");
             return;
@@ -262,8 +263,8 @@
     <p class="ft__smaller ft__on-surface" role="status" aria-live="polite">{liveAnnounce}</p>
 
     <footer class="lvct-merge__footer">
-        <button class="b3-button b3-button--outline" type="button" onclick={onClose} disabled={submitting}>取消</button>
-        <button class="b3-button b3-button--cancel" type="button" onclick={handleConfirm} disabled={submitting || validationErrors.length > 0}>
+        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={onClose} disabled={submitting}>取消</button>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={handleConfirm} disabled={submitting || validationErrors.length > 0}>
             {submitting ? "执行中…" : "执行合并"}
         </button>
     </footer>
