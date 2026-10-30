@@ -281,6 +281,25 @@ test("小驴人脉 · 备注模板管理与便签速记板对齐细线图标、�
     assert.match(scratchSvelte, /\.action-icon-btn\.ft__error\s*\{[\s\S]*opacity:\s*0\.6;/);
 });
 
+test("小驴人脉 · 通讯录导入导出与文档收编对齐细线图标、全胶囊体系、14px/12px大圆角与Ctrl+Enter快捷键", () => {
+    // 1. 通讯录导入导出弹窗
+    const vcardSvelte = fs.readFileSync(path.join(SRC, "components", "people", "VCardDialog.svelte"), "utf8");
+    assert.match(vcardSvelte, /Download size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(vcardSvelte, /lvct-vcard__scope-radio-group[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.lvct-vcard__export\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*14px\)/);
+    assert.match(indexScss, /\.lvct-vcard__card\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(indexScss, /\.lvct-vcard__preview-summary\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+
+    // 2. 文档收编弹窗
+    const importSvelte = fs.readFileSync(path.join(SRC, "components", "people", "ImportDialog.svelte"), "utf8");
+    assert.match(importSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(importSvelte, /\.lvct-import__list\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(importSvelte, /\.lvct-import__queue-item\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*10px\)/);
+});
+
+
 
 
 
