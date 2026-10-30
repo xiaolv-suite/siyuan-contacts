@@ -39,6 +39,9 @@
     let newColor: ScratchpadColor = $state("warm");
     let newPinned = $state(false);
     let saving = $state(false);
+    let pinningId = $state<string | null>(null);
+    let removingId = $state<string | null>(null);
+    let converting = $state(false);
     let errorText = $state("");
 
     const COLOR_OPTIONS: readonly { key: ScratchpadColor; label: string; bg: string }[] = [
@@ -80,30 +83,60 @@
     }
 
     async function handleTogglePin(item: PersonScratchpadItem) {
+        if (pinningId) return;
+        pinningId = item.id;
         try {
             await onUpdate(item.id, { pinned: !item.pinned });
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            pinningId = null;
         }
     }
 
     async function handleRemove(noteId: string) {
+        if (removingId || saving) return;
+        removingId = noteId;
+        errorText = "";
         try {
             await onRemove(noteId);
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            removingId = null;
+        }
+    }
+
+    async function handleConvert(content: string) {
+        if (converting || !onConvertToInteraction) return;
+        converting = true;
+        try {
+            await onConvertToInteraction(content);
+        } catch (err: unknown) {
+            errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            converting = false;
+        }
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && adding) {
+            event.preventDefault();
+            if (!saving) void handleAdd();
         }
     }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="lvct-scratchpad b3-card">
     <div class="lvct-scratchpad__header">
         <div class="fn__flex" style="align-items: center; gap: 8px;">
-            <StickyNote size={18} class="ft__primary" />
+            <StickyNote size={18} strokeWidth={1.6} class="ft__primary" />
             <span class="ft__on-surface font-weight-bold" style="font-size: 14px;">
                 {text("scratchpadTitle", "闪念速记便签板")}
             </span>
-            <span class="b3-chip b3-chip--info ft__smaller">
+            <span class="b3-chip b3-chip--info ft__smaller" style="border-radius: var(--lv-r-pill, 9999px);">
                 {items.length}
             </span>
         </div>
@@ -111,9 +144,10 @@
             <button
                 type="button"
                 class="b3-button b3-button--text b3-button--small"
+                style="border-radius: var(--lv-r-pill, 9999px);"
                 onclick={() => { adding = true; errorText = ""; }}
             >
-                <Plus size={14} style="margin-right: 4px;" />
+                <Plus size={14} strokeWidth={1.6} style="margin-right: 4px;" />
                 {text("scratchpadAddBtn", "贴一张便签")}
             </button>
         {/if}
@@ -124,6 +158,7 @@
         <div class="scratchpad-new-card">
             <textarea
                 class="b3-text-field fn__block"
+                style="border-radius: var(--lvct-r-card, 12px);"
                 rows="3"
                 bind:value={newContent}
                 placeholder={text("scratchpadPlaceholder", "随手记下灵感、电话留言、临时约定或待求证细节…")}
@@ -151,6 +186,7 @@
                     <button
                         type="button"
                         class="b3-button b3-button--cancel b3-button--small"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
                         onclick={() => { adding = false; errorText = ""; }}
                         disabled={saving}
                     >
@@ -159,6 +195,7 @@
                     <button
                         type="button"
                         class="b3-button b3-button--small"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
                         onclick={handleAdd}
                         disabled={saving}
                     >
@@ -189,29 +226,34 @@
                             type="button"
                             class="pin-btn {item.pinned ? 'is-pinned' : ''}"
                             title={item.pinned ? text("scratchpadUnpinTip", "取消置顶") : text("scratchpadPinTip", "置顶便签")}
+                            disabled={pinningId === item.id}
                             onclick={() => handleTogglePin(item)}
                         >
-                            <Pin size={13} />
+                            <Pin size={13} strokeWidth={1.6} />
                         </button>
                         <div class="memo-actions">
                             {#if onConvertToInteraction}
                                 <button
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small action-icon-btn ft__primary"
+                                    style="border-radius: var(--lv-r-pill, 9999px);"
                                     title={text("scratchpadConvertTip", "将便签内容填入互动草稿")}
-                                    onclick={() => onConvertToInteraction?.(item.content)}
+                                    disabled={converting}
+                                    onclick={() => handleConvert(item.content)}
                                 >
-                                    <Sparkles size={13} style="margin-right: 2px;" />
+                                    <Sparkles size={13} strokeWidth={1.6} style="margin-right: 2px;" />
                                     <span>{text("scratchpadConvertBtn", "转互动")}</span>
                                 </button>
                             {/if}
                             <button
                                 type="button"
                                 class="b3-button b3-button--text b3-button--small action-icon-btn ft__error"
+                                style="border-radius: var(--lv-r-pill, 9999px);"
                                 title={text("commonDelete", "删除")}
+                                disabled={removingId === item.id || saving}
                                 onclick={() => handleRemove(item.id)}
                             >
-                                <Trash2 size={13} />
+                                <Trash2 size={13} strokeWidth={1.6} />
                             </button>
                         </div>
                     </div>
@@ -383,11 +425,28 @@
     }
 
     .action-icon-btn {
-        padding: 1px 4px;
+        padding: 1px 6px;
         height: auto;
         font-size: 11px;
         display: flex;
         align-items: center;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+
+    .action-icon-btn.ft__error {
+        opacity: 0.6;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease);
+    }
+
+    .action-icon-btn.ft__error:hover,
+    .action-icon-btn.ft__error:focus-visible {
+        opacity: 1;
+    }
+
+    @media (hover: none) {
+        .action-icon-btn.ft__error {
+            opacity: 1;
+        }
     }
 
     .memo-body {

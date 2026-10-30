@@ -30,6 +30,7 @@
     let errorText = $state("");
     let savedMessage = $state("");
     let latestTemplates: NoteTemplate[] | null = $state(null);
+    let removingTemplateId = $state<string | null>(null);
     // svelte-ignore state_referenced_locally
     let savedDraft: NoteTemplate[] = $state(templates.map((item) => ({ ...item })));
 
@@ -70,16 +71,29 @@
     }
 
     async function removeTemplate(id: string) {
-        const confirmed = await confirmDialog({
-            title: "删除模板",
-            message: text("tplManagerDeleteConfirm", "删除这个模板？已保存的互动不受影响。"),
-            confirmLabel: "删除",
-            cancelLabel: "取消",
-            danger: true,
-        });
-        if (!confirmed) return;
-        draft = draft.filter((item) => item.id !== id);
-        savedMessage = "";
+        if (busy || removingTemplateId) return;
+        removingTemplateId = id;
+        try {
+            const confirmed = await confirmDialog({
+                title: "删除模板",
+                message: text("tplManagerDeleteConfirm", "删除这个模板？已保存的互动不受影响。"),
+                confirmLabel: "删除",
+                cancelLabel: "取消",
+                danger: true,
+            });
+            if (!confirmed) return;
+            draft = draft.filter((item) => item.id !== id);
+            savedMessage = "";
+        } finally {
+            removingTemplateId = null;
+        }
+    }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (!busy) void save();
+        }
     }
 
     async function reload() {
@@ -160,6 +174,8 @@
     }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="lvct-form">
     <p class="ft__smaller ft__on-surface">{text("tplManagerIntro", "模板支持占位符 {{姓名}} {{日期}} {{上次互动}} {{公司}} {{职位}} {{城市}}，应用时自动替换；日期与参与者在记录时仍需确认，模板不会自动提交。")}</p>
     {#if draft.length === 0}
@@ -168,8 +184,8 @@
     {#each draft as item, index (item.id)}
         <div class="lvct-templates__item">
             <div class="lvct-templates__item-head">
-                <input class="b3-text-field" type="text" aria-label={text("tplNameAria", "模板 {n} 名称", { n: index + 1 })} placeholder={text("tplNamePlaceholder", "模板名称（如：见面）")} bind:value={item.name} disabled={busy} />
-                <button class="b3-button b3-button--cancel" title={text("tplDeleteTitle", "删除模板 {n}", { n: index + 1 })} disabled={busy} onclick={() => removeTemplate(item.id)}>{text("tplManagerDelete", "删除")}</button>
+                <input class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" type="text" aria-label={text("tplNameAria", "模板 {n} 名称", { n: index + 1 })} placeholder={text("tplNamePlaceholder", "模板名称（如：见面）")} bind:value={item.name} disabled={busy} />
+                <button class="b3-button b3-button--cancel lvct-templates__delete-btn" style="border-radius: var(--lv-r-pill, 9999px);" title={text("tplDeleteTitle", "删除模板 {n}", { n: index + 1 })} disabled={busy || removingTemplateId === item.id} onclick={() => removeTemplate(item.id)}>{text("tplManagerDelete", "删除")}</button>
             </div>
             <div class="lvct-templates__var-toolbar">
                 <span class="ft__smaller ft__on-surface">{text("tplInsertVarTip", "插入变量：")}</span>
@@ -185,16 +201,16 @@
                     </button>
                 {/each}
             </div>
-            <textarea class="b3-text-field fn__block lvct-templates__content" rows="3" aria-label={text("tplContentAria", "模板 {n} 内容", { n: index + 1 })} placeholder={text("tplContentPlaceholder", "备注内容，可用 {{姓名}} {{日期}} {{上次互动}} {{公司}} {{职位}} {{城市}} 占位")} bind:value={item.content} disabled={busy}></textarea>
+            <textarea class="b3-text-field fn__block lvct-templates__content" style="border-radius: var(--lvct-r-card, 10px);" rows="3" aria-label={text("tplContentAria", "模板 {n} 内容", { n: index + 1 })} placeholder={text("tplContentPlaceholder", "备注内容，可用 {{姓名}} {{日期}} {{上次互动}} {{公司}} {{职位}} {{城市}} 占位")} bind:value={item.content} disabled={busy}></textarea>
         </div>
     {/each}
     <div class="lvct-form__actions">
-        <button class="b3-button b3-button--outline" onclick={addTemplate} disabled={busy || draft.length >= TEMPLATES_LIMIT}>{text("tplManagerAdd", "＋ 新增模板")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => void resetToPresets()} disabled={busy}>{text("tplManagerReset", "恢复精选预置模板")}</button>
-        {#if onReload}<button class="b3-button b3-button--outline" onclick={() => void reload()} disabled={busy}>{text("tplManagerReload", "重新读取当前版本")}</button>{/if}
+        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={addTemplate} disabled={busy || draft.length >= TEMPLATES_LIMIT}>{text("tplManagerAdd", "＋ 新增模板")}</button>
+        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void resetToPresets()} disabled={busy}>{text("tplManagerReset", "恢复精选预置模板")}</button>
+        {#if onReload}<button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void reload()} disabled={busy}>{text("tplManagerReload", "重新读取当前版本")}</button>{/if}
         <span style="flex:1"></span>
-        <button class="b3-button b3-button--cancel" onclick={() => void guardedClose(onClose)} disabled={busy}>{text("tplManagerClose", "关闭")}</button>
-        <button class="b3-button b3-button--text" onclick={() => void save()} disabled={busy}>{busy ? text("tplManagerSaving", "保存中…") : text("tplManagerSave", "保存模板")}</button>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void guardedClose(onClose)} disabled={busy}>{text("tplManagerClose", "关闭")}</button>
+        <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void save()} disabled={busy}>{busy ? text("tplManagerSaving", "保存中…") : text("tplManagerSave", "保存模板")}</button>
     </div>
     {#if draft.length >= TEMPLATES_LIMIT}<p class="ft__smaller ft__on-surface" role="status">{text("tplManagerLimit", "最多保存 {limit} 条模板；删除一条后可继续新增。", { limit: TEMPLATES_LIMIT })}</p>{/if}
     <StatusNotice message={savedMessage} onDismiss={() => (savedMessage = "")} />
@@ -206,12 +222,39 @@
             {#each latestTemplates as item, index (item.id)}
                 <div class="lvct-templates__item">
                     <strong>{item.name}</strong>
-                    <textarea class="b3-text-field fn__block lvct-templates__content" rows="3" aria-label={text("tplLatestContentAria", "当前版本模板 {n} 内容", { n: index + 1 })} value={item.content} readonly></textarea>
+                    <textarea class="b3-text-field fn__block lvct-templates__content" style="border-radius: var(--lvct-r-card, 10px);" rows="3" aria-label={text("tplLatestContentAria", "当前版本模板 {n} 内容", { n: index + 1 })} value={item.content} readonly></textarea>
                 </div>
             {:else}
                 <p>{text("tplManagerLatestEmpty", "当前已保存版本没有模板。")}</p>
             {/each}
-            <button class="b3-button b3-button--outline" onclick={useLatest} disabled={busy}>{text("tplManagerUseLatest", "放弃草稿并载入当前版本")}</button>
+            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={useLatest} disabled={busy}>{text("tplManagerUseLatest", "放弃草稿并载入当前版本")}</button>
         </details>
     {/if}
 </div>
+
+<style>
+    .lvct-templates__item {
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 12px);
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        background: var(--lvct-bg-surface);
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+    }
+    .lvct-templates__delete-btn {
+        opacity: 0.6;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease);
+    }
+    .lvct-templates__delete-btn:hover,
+    .lvct-templates__delete-btn:focus-visible {
+        opacity: 1;
+    }
+    @media (hover: none) {
+        .lvct-templates__delete-btn {
+            opacity: 1;
+        }
+    }
+    .lvct-templates__var-chip {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+    }
+</style>
