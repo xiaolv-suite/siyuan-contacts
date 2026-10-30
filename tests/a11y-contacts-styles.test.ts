@@ -258,6 +258,30 @@ test("小驴人脉 · 粘贴并识别弹窗与会面简报导出版面对齐细�
     assert.match(indexScss, /\.lvct-briefing-preview\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
 });
 
+test("小驴人脉 · 备注模板管理与便签速记板对齐细线图标、全胶囊体系、12px大圆角与并发防连击锁", () => {
+    // 1. 备注模板管理
+    const tplSvelte = fs.readFileSync(path.join(SRC, "components", "people", "TemplateManager.svelte"), "utf8");
+    assert.match(tplSvelte, /removingTemplateId/);
+    assert.match(tplSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(tplSvelte, /\.lvct-templates__item\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(tplSvelte, /\.lvct-templates__delete-btn\s*\{[\s\S]*opacity:\s*0\.6;/);
+    assert.match(tplSvelte, /\.lvct-templates__var-chip\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 便签速记板
+    const scratchSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonScratchpad.svelte"), "utf8");
+    assert.match(scratchSvelte, /StickyNote size=\{18\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(scratchSvelte, /Plus size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(scratchSvelte, /Pin size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(scratchSvelte, /Sparkles size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(scratchSvelte, /Trash2 size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(scratchSvelte, /pinningId/);
+    assert.match(scratchSvelte, /removingId/);
+    assert.match(scratchSvelte, /converting/);
+    assert.match(scratchSvelte, /onkeydown=\{handleKeydown\}/);
+    assert.match(scratchSvelte, /\.action-icon-btn\.ft__error\s*\{[\s\S]*opacity:\s*0\.6;/);
+});
+
+
 
 
 
