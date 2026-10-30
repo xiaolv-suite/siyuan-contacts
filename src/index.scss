@@ -504,7 +504,7 @@ html[data-theme-mode="dark"] .lvct-wizard {
 .lvct-wizard__features {
     padding: var(--lvct-sp-3);
     border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lvct-r-card, 14px);
     background: var(--lvct-bg-app);
     text-align: left;
 
@@ -567,7 +567,8 @@ html[data-theme-mode="dark"] .lvct-wizard {
         width: 100%;
         min-height: var(--lvct-touch-min-mobile);
         box-sizing: border-box;
-        border-radius: var(--lvct-r-md);
+        border-radius: var(--lv-r-pill, 9999px);
+        padding: 0 16px;
         transition:
             border-color var(--lvct-dur-fast) var(--lvct-ease),
             box-shadow var(--lvct-dur-fast) var(--lvct-ease);
@@ -612,7 +613,7 @@ html[data-theme-mode="dark"] .lvct-wizard {
     width: min(240px, 100%);
     min-height: var(--lvct-control-h);
     border: 0;
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lv-r-pill, 9999px);
     background: var(--lvct-brand-gradient);
     color: var(--lvct-on-accent);
     box-shadow: var(--lvct-shadow-1);
@@ -645,7 +646,7 @@ html[data-theme-mode="dark"] .lvct-wizard {
     background: var(--lvct-danger-soft);
     color: var(--lvct-danger);
     border-inline-start-width: 3px;
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lvct-r-card, 14px);
     padding: var(--lvct-sp-3) var(--lvct-sp-4);
     font-size: var(--lvct-fs-body);
     line-height: 1.5;
@@ -667,7 +668,7 @@ html[data-theme-mode="dark"] .lvct-wizard {
     background: var(--lvct-bg-app);
     border: 1px solid var(--lvct-border-subtle);
     border-inline-start: 3px solid var(--lvct-accent);
-    border-radius: var(--lvct-r-md);
+    border-radius: var(--lvct-r-card, 14px);
     padding: var(--lvct-sp-3) var(--lvct-sp-4);
     box-shadow: var(--lvct-shadow-1);
     font-size: var(--lvct-fs-body);
