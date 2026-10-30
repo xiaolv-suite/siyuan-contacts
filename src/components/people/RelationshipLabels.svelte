@@ -106,10 +106,20 @@
     {:else if readError}<p role="alert" class="lvct-form__error">{readError}</p>
     {:else if !snapshot?.selfDocId}<p class="ft__smaller">请先在设置中设置本人档案。</p>
     {:else}
+        {#if (snapshot?.record?.labels ?? []).length > 0}
+            <div class="fn__flex" style="gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+                <span class="ft__smaller ft__on-surface">当前称谓：</span>
+                {#each snapshot?.record?.labels ?? [] as label}
+                    <span class="lvct-chip lvct-chip--group font-size-11" style="border-radius: var(--lv-r-pill, 9999px);">
+                        {label}
+                    </span>
+                {/each}
+            </div>
+        {/if}
         <div class="fn__flex" style="gap: 8px; align-items: center; flex-wrap: wrap;">
-            <input class="b3-text-field fn__flex-1" type="text" placeholder="填写与我的关系称谓，如：同事、朋友" bind:value={draft} disabled={busy || unknown} maxlength="1600" />
-            <button class="b3-button b3-button--outline" onclick={() => void save()} disabled={busy || unknown || !dirty}>{busy ? "保存中…" : "保存称谓"}</button>
-            <button class="b3-button b3-button--cancel" disabled={busy} onclick={() => { message = ""; void load(false); }}>取消称谓草稿</button>
+            <input class="b3-text-field fn__flex-1" style="border-radius: var(--lv-r-pill, 9999px);" type="text" placeholder="填写与我的关系称谓，如：同事、朋友" bind:value={draft} disabled={busy || unknown} maxlength="1600" />
+            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void save()} disabled={busy || unknown || !dirty}>{busy ? "保存中…" : "保存称谓"}</button>
+            <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => { message = ""; void load(false); }}>取消称谓草稿</button>
         </div>
     {/if}
     {#if message}<p role="status" tabindex="-1" class="ft__smaller" style="margin-top: 4px;" bind:this={resultElement}>{message}</p>{/if}
