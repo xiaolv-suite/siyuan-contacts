@@ -11606,6 +11606,10 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         font-weight: 600;
     }
 
+    &__add-btn {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+    }
+
     &__groups {
         display: flex;
         flex-direction: column;
@@ -11623,8 +11627,11 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         font-size: 11px;
         font-weight: 600;
         color: var(--lvct-text-3);
-        min-width: 90px;
+        min-width: 96px;
         flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
     }
 
     &__cards {
@@ -11650,6 +11657,10 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
             transform: translateY(-1px);
             box-shadow: var(--lvct-shadow-1);
             border-color: var(--lvct-group-family, #e11d48);
+
+            .lvct-kinship-tree__remove {
+                opacity: 0.7;
+            }
         }
 
         &--spouse {
@@ -11680,15 +11691,28 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         border: none;
         background: none;
         color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
-        opacity: 0.6;
+        opacity: 0;
         cursor: pointer;
-        padding: 0 2px;
-        font-size: 13px;
-        line-height: 1;
+        padding: 2px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
-            opacity: 1;
+            opacity: 1 !important;
             color: #ef4444;
+            background: color-mix(in srgb, #ef4444 12%, transparent);
+        }
+
+        &:focus-visible {
+            opacity: 1;
+            outline: 2px solid var(--lvct-accent);
+        }
+
+        @media (hover: none), (max-width: 768px) {
+            opacity: 0.6;
         }
     }
 
@@ -11699,6 +11723,10 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         gap: 6px;
         flex-wrap: wrap;
         align-items: center;
+
+        select, input, button {
+            border-radius: var(--lv-r-pill, 9999px) !important;
+        }
 
         @media (max-width: 640px) {
             display: grid;

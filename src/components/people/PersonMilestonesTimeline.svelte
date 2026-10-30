@@ -41,6 +41,7 @@
     let createdDoc = $state<{ docId: string; hpath: string } | null>(null);
     let createError = $state("");
     let copied = $state(false);
+    let copying = $state(false);
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
     onDestroy(() => {
@@ -48,7 +49,8 @@
     });
 
     async function handleCopyMarkdown() {
-        if (!person || milestones.length === 0) return;
+        if (!person || milestones.length === 0 || copying) return;
+        copying = true;
         try {
             const md = buildMilestonesDocumentMarkdown(person, milestones);
             await copyPlainText(md);
@@ -59,6 +61,8 @@
             }, 2000);
         } catch (err: unknown) {
             createError = err instanceof Error ? err.message : String(err);
+        } finally {
+            copying = false;
         }
     }
 
@@ -100,7 +104,7 @@
     <!-- 筛选工具栏与文档沉淀操作 -->
     <div class="milestones-filter-bar">
         <div class="fn__flex" style="align-items: center; gap: 6px;">
-            <Flag size={14} class="ft__primary" />
+            <Flag size={14} strokeWidth={1.6} class="ft__primary" />
             <span class="ft__smaller font-weight-bold">{text("milestonesFilterTitle", "历程分类：")}</span>
         </div>
         <div class="filter-pills-group">
@@ -125,15 +129,16 @@
                 <button
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
+                    disabled={copying}
                     onclick={handleCopyMarkdown}
                     title={text("milestonesCopyTip", "将交往编年史 Markdown 全文复制到剪贴板")}
                 >
                     {#if copied}
-                        <Check size={13} class="lvct-text-success" style="margin-right: 3px;" />
+                        <Check size={13} strokeWidth={1.6} class="lvct-text-success" style="margin-right: 3px;" />
                         <span class="lvct-text-success">{text("milestonesCopied", "已复制全文 ✓")}</span>
                     {:else}
-                        <Copy size={13} style="margin-right: 3px;" />
-                        <span>{text("milestonesCopyBtn", "复制全文")}</span>
+                        <Copy size={13} strokeWidth={1.6} style="margin-right: 3px;" />
+                        <span>{copying ? "复制中…" : text("milestonesCopyBtn", "复制全文")}</span>
                     {/if}
                 </button>
             {/if}
@@ -146,7 +151,7 @@
                         onclick={() => onOpenDoc?.(createdDoc!.docId)}
                         title={text("milestonesDocOpenTip", "在主编辑器中打开编年史文档")}
                     >
-                        <ExternalLink size={13} style="margin-right: 3px;" />
+                        <ExternalLink size={13} strokeWidth={1.6} style="margin-right: 3px;" />
                         <span>{text("milestonesDocOpenBtn", "打开编年史文档 ↗")}</span>
                     </button>
                 {:else}
@@ -157,7 +162,7 @@
                         onclick={handleCreateDoc}
                         title={text("milestonesDocCreateTip", "将交往里程碑全量沉淀为思源实体文档")}
                     >
-                        <FileText size={13} style="margin-right: 3px;" />
+                        <FileText size={13} strokeWidth={1.6} style="margin-right: 3px;" />
                         <span>{creatingDoc ? text("milestonesDocCreating", "正在生成…") : text("milestonesDocCreateBtn", "沉淀为编年史文档")}</span>
                     </button>
                 {/if}
@@ -202,7 +207,7 @@
                                 <div class="event-card {ev.type}">
                                     <div class="card-head">
                                         <span class="event-date">
-                                            <Calendar size={11} style="margin-right: 3px;" />
+                                            <Calendar size={11} strokeWidth={1.6} style="margin-right: 3px;" />
                                             {ev.date}
                                         </span>
                                         <span class="event-badge {ev.type}">
@@ -242,6 +247,12 @@
         flex-wrap: wrap;
         padding-bottom: 8px;
         border-bottom: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
+    }
+
+    .milestones-actions {
+        button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .filter-pills-group {
@@ -370,7 +381,7 @@
     .event-card {
         flex: 1;
         padding: 10px 14px;
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lvct-r-card, 14px);
         background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
@@ -400,27 +411,53 @@
     }
 
     .event-badge {
-        font-size: 10px;
-        padding: 2px 7px;
+        font-size: 10.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 8px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--lvct-bg-app);
-        border: 1px solid var(--lvct-border-subtle);
+        background: transparent;
+        border: 1px solid var(--lvct-color-border-200);
         color: var(--lvct-text-2);
         font-weight: 500;
-    }
 
-    .event-badge.stage_advance {
-        background: var(--lv-brand-soft);
-        border-color: var(--lv-brand);
-        color: var(--lv-brand);
-        font-weight: 600;
-    }
+        &::before {
+            content: "";
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            forced-color-adjust: none;
+        }
 
-    .event-badge.promise_fulfilled {
-        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
-        border-color: var(--lv-data-amber, #d97706);
-        color: var(--lv-data-amber, #d97706);
-        font-weight: 700;
+        &.stage_advance {
+            color: var(--lv-brand, #ea580c);
+            border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
+            font-weight: 600;
+        }
+
+        &.promise_fulfilled {
+            color: #059669;
+            border-color: color-mix(in srgb, #059669 30%, transparent);
+            font-weight: 600;
+        }
+
+        &.anniversary {
+            color: #e11d48;
+            border-color: color-mix(in srgb, #e11d48 30%, transparent);
+        }
+
+        &.first_contact {
+            color: #0284c7;
+            border-color: color-mix(in srgb, #0284c7 30%, transparent);
+        }
+
+        &.exchange {
+            color: var(--lv-data-amber, #d97706);
+            border-color: color-mix(in srgb, var(--lv-data-amber) 30%, transparent);
+        }
     }
 
     .event-title {
