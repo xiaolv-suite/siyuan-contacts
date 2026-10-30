@@ -4767,7 +4767,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         {#if insights && insights.coAttendance.length > 0}
             <div class="lvct-strip__chips" style="margin-bottom: 6px;">
                 {#each insights.coAttendance.slice(0, 5) as item (item.otherDocId)}
-                    <span class="lvct-chip lvct-chip--group">与 {item.name} 同场 {item.count} 次</span>
+                    <span class="lvct-chip lvct-chip--group" style="font-variant-numeric: tabular-nums;">与 {item.name || text("unknownPerson", "未知联系人")} 同场 {item.count} 次</span>
                 {/each}
             </div>
         {/if}
@@ -4805,10 +4805,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                                 onclick={(e) => copyBlockUri(refBlockId, e)}
                                             >
                                                 {#if copiedBlockUriId === refBlockId}
-                                                    <Check size={11} class="lvct-text-success" />
+                                                    <Check size={11} strokeWidth={1.6} class="lvct-text-success" />
                                                     <span class="lvct-text-success">已复制</span>
                                                 {:else}
-                                                    <Link size={11} />
+                                                    <Link size={11} strokeWidth={1.6} />
                                                     <span>原文</span>
                                                 {/if}
                                             </button>
