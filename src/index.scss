@@ -1637,21 +1637,26 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     align-items: center;
     flex-wrap: wrap;
     gap: 8px 12px;
-    padding: 8px 16px;
-    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 25%, var(--lvct-border-subtle));
-    border-radius: var(--lv-r-md, 12px);
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 6%, var(--lvct-bg-elevated));
+    padding: 10px 18px;
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lv-r-pill, 9999px);
+    background: var(--lvct-bg-surface);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    box-shadow: var(--lvct-shadow-2);
+    box-shadow: 0 8px 30px -4px rgba(28, 24, 21, 0.16), 0 2px 10px rgba(28, 24, 21, 0.06);
     animation: lvct-pop-in var(--lvct-dur-base) var(--lvct-ease-spring);
 
     b {
         margin-right: auto;
         color: var(--lv-brand, #ea580c);
-        font-size: 13.5px;
+        font-size: 13px;
         font-weight: 700;
         letter-spacing: -0.01em;
+        background: var(--lv-brand-soft);
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
+        display: inline-flex;
+        align-items: center;
     }
 
     > span {
@@ -1666,13 +1671,14 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
         justify-content: center;
         gap: var(--lvct-sp-1);
         white-space: nowrap;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 }
 
 html[data-theme-mode="dark"] .lvct-people__batchbar {
-    background: color-mix(in srgb, var(--lvct-accent) 10%, var(--lvct-bg-elevated));
-    border-color: var(--lvct-border-subtle);
-    box-shadow: var(--lvct-shadow-2);
+    background: var(--lvct-bg-surface);
+    border-color: var(--lvct-color-border-200);
+    box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.45);
 }
 
 .lvct-people__remove {
