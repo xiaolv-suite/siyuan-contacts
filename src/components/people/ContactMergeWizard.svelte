@@ -291,7 +291,7 @@
     gap: 8px;
     align-items: center;
     padding: 6px 8px;
-    border-bottom: 1px solid var(--lvct-border-subtle);
+    border-bottom: 1px solid var(--lvct-color-border-200);
 }
 .lvct-merge__headrow {
     background: var(--lvct-bg-app);
@@ -301,13 +301,13 @@
 .lvct-merge__col--label { font-weight: 600; color: var(--lvct-text-1); }
 .lvct-merge__col--choice { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .lvct-merge__radio { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--lvct-text-2); }
-.lvct-merge__custom { width: 100%; min-width: 120px; }
+.lvct-merge__custom { width: 100%; min-width: 120px; border-radius: var(--lv-r-pill, 9999px); }
 .lvct-merge__preview {
-    border: 1px solid var(--lvct-border-subtle);
+    border: 1px solid var(--lvct-color-border-200);
     border-radius: var(--lvct-r-card, 16px);
     padding: 12px 16px;
     background: var(--lvct-bg-surface);
-    box-shadow: var(--lvct-shadow-1);
+    box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
 }
 .lvct-merge__preview h4 { margin: 0 0 8px 0; color: var(--lvct-text-1); font-weight: 600; }
 .lvct-merge__preview-grid {
