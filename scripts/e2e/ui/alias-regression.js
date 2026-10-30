@@ -99,6 +99,7 @@ export async function runAliasRegression({ test, assert, kernel, settings, fixtu
                 items: people.map((entry) => ({ id: entry.itemId, docId: entry.docId, itemId: entry.itemId, label: entry.name })),
                 onSelect: (id) => { selected = id; },
             } });
+            await tick();
             fixture.querySelector("button").click();
             await until(() => fixture.querySelector("input"), "选人器搜索框未展开");
             const search = fixture.querySelector("input");

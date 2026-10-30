@@ -70,7 +70,7 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
         isTracking = false;
 
         const threshold = options.threshold ?? 80;
-        node.style.transition = "transform 0.22s cubic-bezier(0.2, 0, 0, 1)";
+        node.style.transition = "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)";
 
         if (isDragging && currentDeltaY >= threshold) {
             // 滑出并触发关闭

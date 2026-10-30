@@ -8540,8 +8540,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: var(--lvct-sp-3);
     padding: var(--lvct-sp-4);
     background: var(--lvct-bg-surface);
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-    border-radius: var(--lvct-r-lg);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
     box-shadow: var(--lvct-shadow-card);
     margin-top: var(--lvct-sp-2);
 
@@ -8604,10 +8604,10 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 6px 10px;
+        padding: 8px 12px;
         background: var(--lvct-bg-app);
-        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
-        border-radius: var(--lvct-r-sm);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lv-r-md, 12px);
         transition: all 0.15s ease;
 
         &:hover {
@@ -8618,14 +8618,14 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     &__avatar {
-        width: 24px;
-        height: 24px;
-        font-size: 11px;
+        width: 28px;
+        height: 28px;
+        font-size: 13px;
         font-weight: 700;
         color: #ffffff;
         display: grid;
         place-items: center;
-        border-radius: 6px;
+        border-radius: 8px;
         background: linear-gradient(135deg, color-mix(in srgb, var(--b3-theme-primary) 70%, #ffffff 30%), var(--b3-theme-primary));
         flex-shrink: 0;
     }
@@ -8648,10 +8648,10 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     &__status {
         font-size: 10px;
-        padding: 1px 5px;
-        border-radius: 4px;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface);
+        padding: 2px 7px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-border-subtle) 40%, transparent);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
 
         &--active {
