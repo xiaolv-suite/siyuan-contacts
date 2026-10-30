@@ -452,6 +452,39 @@ test("小驴人脉 · 首页仪表盘与名册工具栏对齐全量1.6细线图�
     assert.match(peopleSvelte, /FileSpreadsheet size=\{14\}\s*strokeWidth=\{1\.6\}/);
 });
 
+test("小驴人脉 · 联系人卡片与右侧上下文面板对齐1.6细线图标、实体状态圆点与复制防连发锁", () => {
+    // 1. 联系人卡片
+    const cardSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonCard.svelte"), "utf8");
+    assert.match(cardSvelte, /copyingWechat/);
+    assert.match(cardSvelte, /copyingEmail/);
+    assert.match(cardSvelte, /Cake size=\{11\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Phone size=\{11\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Star size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /MessageSquarePlus size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Network size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /ExternalLink size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Star size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /MessageSquarePlus size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Network size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /ExternalLink size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Phone size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /MessageCircle size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Mail size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(cardSvelte, /Clock3 size=\{13\}\s*strokeWidth=\{1\.6\}/);
+
+    // 2. 右侧上下文面板
+    const ctxSvelte = fs.readFileSync(path.join(SRC, "components", "ContextPanel.svelte"), "utf8");
+    assert.match(ctxSvelte, /Sparkles size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /Maximize2 size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /ChevronRight size=\{16\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /Star size=\{13\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /Phone size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /MessageSquare size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /Cake size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(ctxSvelte, /\.lvct-context-timeline__dot\s*\{[\s\S]*forced-color-adjust:\s*none;/);
+    assert.match(ctxSvelte, /\(e\.ctrlKey \|\| e\.metaKey\) && e\.key === "Enter"/);
+});
+
 
 
 
