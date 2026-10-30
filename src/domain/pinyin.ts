@@ -63,7 +63,10 @@ export function getPinyinInitials(text: string): string {
     if (!text) return "";
     const cached = wordInitialCache.get(text);
     if (cached !== undefined) return cached;
-    const result = text.split("").map(getChineseCharInitial).join("");
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+        result += getChineseCharInitial(text[i]);
+    }
     if (wordInitialCache.size >= MAX_WORD_CACHE) {
         const firstKey = wordInitialCache.keys().next().value;
         if (firstKey !== undefined) wordInitialCache.delete(firstKey);
@@ -101,25 +104,29 @@ export function groupPeopleByAlphabet<T extends { name: string }>(people: readon
     activeLetters: Set<string>;
 } {
     const map = new Map<string, T[]>();
-    for (const letter of ALPHABET_LETTERS) {
-        map.set(letter, []);
-    }
-    map.set("#", []);
+    const activeLetters = new Set<string>();
 
     for (const person of people) {
         const initial = getPersonNameInitial(person.name);
-        const list = map.get(initial) ?? map.get("#")!;
+        let list = map.get(initial);
+        if (!list) {
+            list = [];
+            map.set(initial, list);
+            activeLetters.add(initial);
+        }
         list.push(person);
     }
 
     const groups: PinyinInitialGroup<T>[] = [];
-    const activeLetters = new Set<string>();
-
-    for (const [letter, items] of map.entries()) {
-        if (items.length > 0) {
+    for (const letter of ALPHABET_LETTERS) {
+        const items = map.get(letter);
+        if (items && items.length > 0) {
             groups.push({ letter, count: items.length, items });
-            activeLetters.add(letter);
         }
+    }
+    const hashItems = map.get("#");
+    if (hashItems && hashItems.length > 0) {
+        groups.push({ letter: "#", count: hashItems.length, items: hashItems });
     }
 
     return { groups, activeLetters };

@@ -69,6 +69,19 @@ function formatUtcTimestamp(date: Date = new Date()): string {
     return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
 }
 
+/**
+ * 计算全天事件排除性结束日期（RFC 5545 §3.6.1 / §3.8.2.2 规定全天事件 DTEND 为开始日期的次日）。
+ */
+export function nextDayYmd(ymd: string): string {
+    if (!ymd || ymd.length !== 8) return ymd;
+    const year = Number(ymd.slice(0, 4));
+    const month = Number(ymd.slice(4, 6)) - 1;
+    const day = Number(ymd.slice(6, 8));
+    const d = new Date(Date.UTC(year, month, day + 1));
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+}
+
 export function serializeIcsCalendar(
     events: readonly IcsEventItem[],
     calName = "小驴人脉 · 重要日期与纪念日",
@@ -89,6 +102,9 @@ export function serializeIcsCalendar(
         rawLines.push(`UID:${ev.uid}`);
         rawLines.push(`DTSTAMP:${nowUtc}`);
         rawLines.push(`DTSTART;VALUE=DATE:${ev.startDateStr}`);
+        if (ev.isAllDay) {
+            rawLines.push(`DTEND;VALUE=DATE:${nextDayYmd(ev.startDateStr)}`);
+        }
         if (ev.isYearly) {
             rawLines.push("RRULE:FREQ=YEARLY");
         }
