@@ -73,3 +73,21 @@ test("小驴人脉 · 空态操作按钮与全局状态通知条统一对齐全�
     const statusNoticeSvelte = fs.readFileSync(path.join(SRC, "components", "StatusNotice.svelte"), "utf8");
     assert.match(statusNoticeSvelte, /strokeWidth=\{1\.6\}/);
 });
+
+test("小驴人脉 · 信诺履约本、名片弹窗与批量阶段设置对齐一体化指标条、实体状态点与全胶囊交互规范", () => {
+    const promisesSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonPromisesLedger.svelte"), "utf8");
+    assert.match(promisesSvelte, /\.lvct-promises-ledger__metrics\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*14px\)/);
+    assert.match(promisesSvelte, /\.metric-card\s*\{[\s\S]*&:not\(:last-child\)::after\s*\{/);
+    assert.match(promisesSvelte, /\.item-status-tag\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(promisesSvelte, /\.item-status-tag\s*\{[\s\S]*&::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(promisesSvelte, /strokeWidth=\{1\.6\}/);
+
+    const cardModalSvelte = fs.readFileSync(path.join(SRC, "components", "people", "BusinessCardModal.svelte"), "utf8");
+    assert.match(cardModalSvelte, /\.card-modal-footer\s*\{[\s\S]*button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(cardModalSvelte, /strokeWidth=\{1\.6\}/);
+
+    const batchStageSvelte = fs.readFileSync(path.join(SRC, "components", "people", "BatchLifecycleStageModal.svelte"), "utf8");
+    assert.match(batchStageSvelte, /\.stage-option-row\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(batchStageSvelte, /\.modal-actions\s*\{[\s\S]*button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(batchStageSvelte, /\.note-field-wrap\s*\{[\s\S]*input\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+});

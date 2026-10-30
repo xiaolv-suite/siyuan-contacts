@@ -122,10 +122,10 @@
         display: flex;
         align-items: flex-start;
         gap: 8px;
-        padding: 8px 10px;
+        padding: 8px 12px;
         background: var(--b3-theme-surface);
         border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        border-radius: var(--lvct-r-card, 12px);
         cursor: pointer;
         transition: all 0.15s ease;
     }
@@ -165,6 +165,10 @@
         flex-direction: column;
         gap: 4px;
         margin-top: 4px;
+
+        input {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .modal-actions {
@@ -175,6 +179,10 @@
         margin-top: 8px;
         border-top: 1px solid var(--b3-border-color);
         padding-top: 10px;
+
+        button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .btn-confirm {
