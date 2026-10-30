@@ -2867,14 +2867,35 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     background: transparent;
     color: var(--lvct-text-2);
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 0;
+    width: 28px;
+    height: 28px;
     min-width: 28px;
     min-height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--lvct-r-sm);
-    transition: background var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
+    border-radius: var(--lv-r-pill, 9999px);
+    transition: background var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
+}
+
+@media (hover: hover) {
+    .lvct-person-card .lvct-person-card__compact-actions button:not(.lvct-person-card__star-btn--active),
+    .lvct-person-card .lvct-person-card__actions button:not(.lvct-person-card__star-btn--active),
+    .lvct-people__name-cell .lvct-people__open-doc {
+        opacity: 0.25;
+        transform: scale(0.96);
+    }
+
+    .lvct-person-card:hover .lvct-person-card__compact-actions button,
+    .lvct-person-card:hover .lvct-person-card__actions button,
+    .lvct-person-card:focus-within .lvct-person-card__compact-actions button,
+    .lvct-person-card:focus-within .lvct-person-card__actions button,
+    .b3-table tr:hover .lvct-people__name-cell .lvct-people__open-doc,
+    .b3-table tr:focus-within .lvct-people__name-cell .lvct-people__open-doc {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 .lvct-notice {
     display: inline-flex;
@@ -4008,8 +4029,8 @@ html[data-theme-mode="dark"] .lvct-dialog-panel {
 .lvct-graph-view__canvas {
     flex: 1;
     min-height: 0;
-    border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-lg);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
     /* 白色内容面承载节点与连线，中央柔和光场与轻点阵帮助定位 */
     background-color: var(--lvct-bg-surface);
     background-image:
@@ -4200,13 +4221,10 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     overflow: auto;
     box-sizing: border-box;
     padding: var(--lvct-sp-3);
-    border: 1px solid var(--lvct-border-strong);
-    border-radius: var(--lvct-r-lg);
-    /* UX-02.7 浮层玻璃质感 */
-    background: var(--lvct-bg-elevated-glass, var(--lvct-bg-elevated));
-    backdrop-filter: blur(14px) saturate(1.15);
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
-    box-shadow: var(--lvct-shadow-2);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
+    background: var(--lvct-bg-surface);
+    box-shadow: 0 10px 25px -4px rgba(28, 24, 21, 0.12), 0 4px 10px -2px rgba(28, 24, 21, 0.06);
     pointer-events: auto;
     animation: lvct-pop-in 0.16s var(--lvct-ease-spring);
 
