@@ -576,9 +576,9 @@
         margin-top: 14px;
         padding: 14px 16px;
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-color-border-200);
         border-radius: var(--lvct-r-card, 16px);
-        box-shadow: var(--lvct-shadow-1);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -735,9 +735,9 @@
 
     .itinerary-card {
         padding: 12px 14px;
-        border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md, 12px);
-        box-shadow: var(--lvct-shadow-1);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lv-r-md, 12px);
+        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         background: var(--lvct-bg-surface);
         display: flex;
         flex-direction: column;
@@ -746,7 +746,7 @@
 
         &:hover {
             transform: translateY(-1px);
-            box-shadow: var(--lvct-shadow-2);
+            box-shadow: 0 4px 12px rgba(28, 24, 21, 0.06);
         }
     }
 
@@ -783,9 +783,9 @@
 
     .status-badge {
         font-size: 10px;
-        padding: 1px 5px;
-        border-radius: 4px;
-        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        font-weight: 600;
     }
 
     .status-badge--planned {
