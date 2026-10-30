@@ -756,10 +756,17 @@
             renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 } });
     }
 
+    let expanding = false;
     async function toggleGraphExpanded() {
-        graphExpanded = !graphExpanded;
-        await tick();
-        if (alive) container?.scrollIntoView({ block: "nearest" });
+        if (expanding || !alive) return;
+        expanding = true;
+        try {
+            graphExpanded = !graphExpanded;
+            await tick();
+            if (alive) container?.scrollIntoView({ block: "nearest" });
+        } finally {
+            expanding = false;
+        }
     }
 
     function handleCanvasKeydown(event: KeyboardEvent): void {
@@ -1906,9 +1913,9 @@
                         title={isPlayingTimeline ? text("graphTimelinePause", "暂停回放") : text("graphTimelinePlay", "播放网络生长动画")}
                     >
                         {#if isPlayingTimeline}
-                            <Pause size={14} /> {text("graphTimelinePause", "暂停")}
+                            <Pause size={14} strokeWidth={1.6} /> {text("graphTimelinePause", "暂停")}
                         {:else}
-                            <Play size={14} /> {text("graphTimelinePlay", "播放")}
+                            <Play size={14} strokeWidth={1.6} /> {text("graphTimelinePlay", "播放")}
                         {/if}
                     </button>
 
@@ -1945,7 +1952,7 @@
                             onclick={resetTimeline}
                             title={text("graphTimelineReset", "查看全部年份完整图谱")}
                         >
-                            <RotateCcw size={12} class="lvct-icon-inline" /> {text("graphTimelineAll", "全部")}
+                            <RotateCcw size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("graphTimelineAll", "全部")}
                         </button>
                     {/if}
                 </div>
@@ -1963,24 +1970,24 @@
                         disabled={!graphInstance}
                         onclick={() => (layoutMenuOpen = !layoutMenuOpen)}
                     >
-                        {#if activeLayout === "cose"}<Network size={15} />
-                        {:else if activeLayout === "concentric"}<Target size={15} />
-                        {:else if activeLayout === "breadthfirst"}<GitFork size={15} />
-                        {:else}<CircleDot size={15} />{/if}
+                        {#if activeLayout === "cose"}<Network size={15} strokeWidth={1.6} />
+                        {:else if activeLayout === "concentric"}<Target size={15} strokeWidth={1.6} />
+                        {:else if activeLayout === "breadthfirst"}<GitFork size={15} strokeWidth={1.6} />
+                        {:else}<CircleDot size={15} strokeWidth={1.6} />{/if}
                     </button>
                     {#if layoutMenuOpen}
                         <div class="lvct-graph__layout-menu" role="menu">
                             <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "cose"} onclick={() => changeLayout("cose")}>
-                                <Network size={14} class="lvct-icon-inline" /> 力导向聚类 (CoSE)
+                                <Network size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 力导向聚类 (CoSE)
                             </button>
                             <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "concentric"} onclick={() => changeLayout("concentric")}>
-                                <Target size={14} class="lvct-icon-inline" /> 六度辐射圈 (六度人脉)
+                                <Target size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 六度辐射圈 (六度人脉)
                             </button>
                             <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "breadthfirst"} onclick={() => changeLayout("breadthfirst")}>
-                                <GitFork size={14} class="lvct-icon-inline" /> 层级展开 (族谱树)
+                                <GitFork size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 层级展开 (族谱树)
                             </button>
                             <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "circle"} onclick={() => changeLayout("circle")}>
-                                <CircleDot size={14} class="lvct-icon-inline" /> 全局环形 (全景圈)
+                                <CircleDot size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 全局环形 (全景圈)
                             </button>
                         </div>
                     {/if}
@@ -1991,13 +1998,13 @@
                     aria-label={text("graphHubsBtn", "网络枢纽与桥梁分析")}
                     disabled={!graphInstance}
                     onclick={() => (hubsModalOpen = true)}
-                ><Share2 size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphFit", "适应")} (0)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphFit", "适应")} disabled={!graphInstance} onclick={() => graphInstance?.fit()}><Scan size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomIn", "放大")} (+)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomIn", "放大")} disabled={!graphInstance} onclick={() => zoomBy(1.2)}><ZoomIn size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomOut", "缩小")} (-)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomOut", "缩小")} disabled={!graphInstance} onclick={() => zoomBy(1 / 1.2)}><ZoomOut size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphRelayout", "重新布局")} (R)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphRelayout", "重新布局")} disabled={!graphInstance} onclick={relayout}><Network size={15} /></button>
-                <button class="lvct-graph__fab-btn" title={graphExpanded ? "收起大图 (F)" : "展开大图 (F)"} aria-label={graphExpanded ? "收起大图" : "展开大图"} aria-pressed={graphExpanded} onclick={() => void toggleGraphExpanded()}>{#if graphExpanded}<Minimize2 size={16} />{:else}<Maximize2 size={16} />{/if}</button>
-                <button class="lvct-graph__fab-btn" title={text("graphRefresh", "刷新")} aria-label={text("graphRefresh", "刷新")} disabled={loading || refreshInFlight} aria-busy={refreshInFlight} onclick={() => void refresh()}><RefreshCw size={15} /></button>
+                ><Share2 size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphFit", "适应")} (0)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphFit", "适应")} disabled={!graphInstance} onclick={() => graphInstance?.fit()}><Scan size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomIn", "放大")} (+)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomIn", "放大")} disabled={!graphInstance} onclick={() => zoomBy(1.2)}><ZoomIn size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomOut", "缩小")} (-)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomOut", "缩小")} disabled={!graphInstance} onclick={() => zoomBy(1 / 1.2)}><ZoomOut size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphRelayout", "重新布局")} (R)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphRelayout", "重新布局")} disabled={!graphInstance} onclick={relayout}><Network size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphExpanded ? "收起大图 (F)" : "展开大图 (F)"} aria-label={graphExpanded ? "收起大图" : "展开大图"} aria-pressed={graphExpanded} onclick={() => void toggleGraphExpanded()}>{#if graphExpanded}<Minimize2 size={16} strokeWidth={1.6} />{:else}<Maximize2 size={16} strokeWidth={1.6} />{/if}</button>
+                <button class="lvct-graph__fab-btn" title={text("graphRefresh", "刷新")} aria-label={text("graphRefresh", "刷新")} disabled={loading || refreshInFlight} aria-busy={refreshInFlight} onclick={() => void refresh()}><RefreshCw size={15} strokeWidth={1.6} /></button>
             </div>
             {#if activeEvidence}
                 <div
