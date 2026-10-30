@@ -147,7 +147,7 @@
     let hoverTimer: ReturnType<typeof setTimeout> | undefined;
     let clearHoverTimer: ReturnType<typeof setTimeout> | undefined;
     interface EdgeEvidence {
-        kind: "related" | "member" | "ref" | "co_occurrence";
+        kind: "related" | "member" | "ref" | "co_occurrence" | "introducer";
         sourceId: string;
         targetId: string;
         sourceName: string;
@@ -257,6 +257,7 @@
     const edgeLegends = $derived.by(() => {
         const list = [
             { kind: "related", label: "直接关系", lineClass: "solid" },
+            { kind: "introducer", label: "引荐关系", lineClass: "dashed" },
             { kind: "member", label: "组织成员", lineClass: "dashed" },
             { kind: "co_occurrence", label: "共同出席", lineClass: "dotted" },
         ];
@@ -603,6 +604,7 @@
                 listOrganizations: facade?.listOrganizations ? () => facade.listOrganizations() : undefined,
                 loadSelfIdentity: facade?.loadSelfIdentity ? () => facade.loadSelfIdentity() : undefined,
                 loadInteractionEvents: facade?.loadInteractionEvents ? () => facade.loadInteractionEvents!() : undefined,
+                loadOrigins: facade?.loadAllPersonOrigins ? () => facade.loadAllPersonOrigins!() : undefined,
             }, version);
             if (!alive || version !== refreshVersion) return;
             sources = next;
@@ -1096,6 +1098,8 @@
                 { selector: 'edge[kind = "ref"]', style: { "line-style": "dotted", width: 3 } },
                 // E-34：共同出席弱联系（推断关联），细虚线与半透明强调，仅展示，不参与关系查询
                 { selector: 'edge[kind = "co_occurrence"]', style: { "line-style": "dashed", "line-dash-pattern": [4, 4], width: 2, opacity: 0.7 } },
+                // Monica 标杆融合：初识引荐人有向虚线边，带箭头指向被引荐人
+                { selector: 'edge[kind = "introducer"]', style: { "line-style": "dashed", "line-dash-pattern": [6, 3], width: 2.2, "target-arrow-shape": "triangle", "target-arrow-color": palette.edge, "curve-style": "bezier" } },
             ],
         });
         graphInstance = instance;
@@ -1164,6 +1168,18 @@
                         sourceId,
                         targetId,
                         coCount,
+                        sourceName: personA.name,
+                        targetName: personB.name,
+                    };
+                }
+            } else if (kind === "introducer") {
+                const personA = allPeopleByDocId.get(sourceId);
+                const personB = allPeopleByDocId.get(targetId);
+                if (personA && personB) {
+                    activeEvidence = {
+                        kind: "introducer",
+                        sourceId,
+                        targetId,
                         sourceName: personA.name,
                         targetName: personB.name,
                     };
@@ -2019,6 +2035,7 @@
                         <b>{activeEvidence.sourceName} ↔ {activeEvidence.targetName}</b>
                         <span class="lvct-chip lvct-chip--group">
                             {activeEvidence.kind === "related" ? "显式相关人" :
+                             activeEvidence.kind === "introducer" ? "初识引荐人" :
                              activeEvidence.kind === "member" ? (activeEvidence.memberStatus === "former" ? "历史归属" : "当前归属") :
                              activeEvidence.kind === "co_occurrence" ? `同场 ${activeEvidence.coCount} 次` : "文档引用"}
                         </span>
@@ -2033,6 +2050,10 @@
                             {#if activeEvidence.coAttendanceCount && activeEvidence.coAttendanceCount > 0}
                                 <div style="display: flex; align-items: center; gap: 4px;"><Users size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 同场活动：{activeEvidence.coAttendanceCount} 次</div>
                             {/if}
+                        </div>
+                    {:else if activeEvidence.kind === "introducer"}
+                        <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
+                            {activeEvidence.sourceName} 是 {activeEvidence.targetName} 的初识引荐人（溯源自 Monica 人脉引荐链路）。
                         </div>
                     {:else if activeEvidence.kind === "member"}
                         <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">

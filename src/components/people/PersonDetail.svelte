@@ -36,6 +36,7 @@
         Flag,
         Clock,
         Image,
+        Pencil,
     } from "@lucide/svelte";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
@@ -68,8 +69,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import { dueLabel, hasFollowUpDraft } from "../../domain/followups";
     import type { FollowUpItem, SnoozeOption } from "../../domain/followups";
     import { newFollowUpRequestId } from "../../services/followups";
-    import { computeRelationshipHealth, heatLevelColorClass } from "../../domain/cadence";
+    import { computeRelationshipHealth, heatLevelColorClass, CADENCE_TIERS } from "../../domain/cadence";
     import type { PersonCadence, RelationshipHealth } from "../../domain/cadence";
+    import type { PersonOrigin } from "../../domain/person-origin";
+    import { buildPreMeetingBrief, formatPreMeetingBriefText, type PreMeetingBrief } from "../../domain/pre-meeting-brief";
+    import { computeMonthlyInteractionTrend } from "../../domain/interactions";
     import { renderTemplate } from "../../domain/interaction-templates";
     import type { NoteTemplate } from "../../domain/interaction-templates";
     import TemplateManager from "./TemplateManager.svelte";
@@ -230,6 +234,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onSaveItinerary,
         onRemoveItinerary,
         onToggleItineraryChecklist,
+        onLoadOrigin,
+        onSaveOrigin,
+        onSendGreetingReminder,
         collapsedSections,
         onToggleSection,
     }: {
@@ -363,6 +370,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onSaveItinerary?: (item: PersonItineraryItem) => Promise<PersonItineraryItem[]>;
         onRemoveItinerary?: (personDocId: string, itineraryId: string) => Promise<PersonItineraryItem[]>;
         onToggleItineraryChecklist?: (personDocId: string, itineraryId: string, checklistId: string) => Promise<PersonItineraryItem[]>;
+        /** Monica 对标：初识溯源与引荐人（可选） */
+        onLoadOrigin?: (personDocId: string) => Promise<PersonOrigin | null>;
+        onSaveOrigin?: (origin: PersonOrigin) => Promise<PersonOrigin>;
+        /** Simple-PRM / Monica 对标：向小驴管家输出问候提醒 */
+        onSendGreetingReminder?: (personName: string, daysOverdue: number) => Promise<boolean>;
         /** E-14 人物详情区块折叠展开偏好与更新回调 */
         collapsedSections?: import("../../domain/preferences").DetailCollapsedSections;
         onToggleSection?: (sectionKey: import("../../domain/preferences").DetailSectionKey, collapsed: boolean) => void;
@@ -766,6 +778,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadScratchpads();
     loadSocialPreferences();
     loadItineraries();
+    loadOrigin();
     loadPersonExchanges();
 
     let kinships = $state<KinshipMemberItem[]>([]);
@@ -849,6 +862,85 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         } catch (err) {
             console.warn("[LvContacts] 读取拜访行程失败：", err);
             if (detailAlive && current.docId === targetDocId) itineraries = [];
+        }
+    }
+
+    let currentOrigin = $state<PersonOrigin | null>(null);
+    let originEditing = $state(false);
+    let originSaving = $state(false);
+    let metAtDraft = $state("");
+    let introducedByDraft = $state("");
+    let preferencesDraft = $state("");
+    let preMeetingBriefOpen = $state(false);
+    let preMeetingBriefCopied = $state(false);
+    let preMeetingBriefCopyTimer: ReturnType<typeof setTimeout> | null = null;
+    let greetingReminderSending = $state(false);
+    let greetingReminderSent = $state(false);
+    let greetingReminderTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function loadOrigin() {
+        if (!onLoadOrigin || !current?.docId) return;
+        const targetDocId = current.docId;
+        try {
+            const origin = await onLoadOrigin(targetDocId);
+            if (detailAlive && current.docId === targetDocId) {
+                currentOrigin = origin;
+                metAtDraft = origin?.metAt ?? "";
+                introducedByDraft = origin?.introducedByDocId ?? "";
+                preferencesDraft = origin?.preferences ?? "";
+            }
+        } catch (err) {
+            console.warn("[LvContacts] 读取初识溯源失败：", err);
+            if (detailAlive && current.docId === targetDocId) currentOrigin = null;
+        }
+    }
+
+    async function handleSaveOrigin() {
+        if (!onSaveOrigin || originSaving) return;
+        originSaving = true;
+        try {
+            const updated = await onSaveOrigin({
+                personDocId: current.docId,
+                metAt: metAtDraft.trim() || undefined,
+                introducedByDocId: introducedByDraft || undefined,
+                preferences: preferencesDraft.trim() || undefined,
+            });
+            if (detailAlive) {
+                currentOrigin = updated;
+                originEditing = false;
+                onChanged();
+            }
+        } catch (err) {
+            console.warn("[LvContacts] 保存初识溯源失败：", err);
+        } finally {
+            if (detailAlive) originSaving = false;
+        }
+    }
+
+    async function handleCopyPreMeetingBrief() {
+        const textToCopy = formatPreMeetingBriefText(preMeetingBrief);
+        await copyPlainText(textToCopy);
+        preMeetingBriefCopied = true;
+        if (preMeetingBriefCopyTimer) clearTimeout(preMeetingBriefCopyTimer);
+        preMeetingBriefCopyTimer = setTimeout(() => {
+            if (detailAlive) preMeetingBriefCopied = false;
+        }, 2000);
+    }
+
+    async function handleSendGreetingReminder() {
+        if (!onSendGreetingReminder || greetingReminderSending || !relationshipHealth.overdue) return;
+        greetingReminderSending = true;
+        try {
+            const ok = await onSendGreetingReminder(current.name, relationshipHealth.overdueDays);
+            if (detailAlive && ok) {
+                greetingReminderSent = true;
+                if (greetingReminderTimer) clearTimeout(greetingReminderTimer);
+                greetingReminderTimer = setTimeout(() => {
+                    if (detailAlive) greetingReminderSent = false;
+                }, 3000);
+            }
+        } finally {
+            if (detailAlive) greetingReminderSending = false;
         }
     }
 
@@ -2023,6 +2115,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     onDestroy(() => {
+        if (preMeetingBriefCopyTimer) clearTimeout(preMeetingBriefCopyTimer);
+        if (greetingReminderTimer) clearTimeout(greetingReminderTimer);
         if (briefingCopyTimer) clearTimeout(briefingCopyTimer);
         if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
         if (siyuanUriTimer) clearTimeout(siyuanUriTimer);
@@ -2557,6 +2651,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             void loadScratchpads();
             void loadSocialPreferences();
             void loadItineraries();
+            void loadOrigin();
             void loadAnniversaries();
             void loadProjects();
             if (!cadenceDirty) void loadCadence();
@@ -2691,6 +2786,23 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             cadenceDays: targetDays,
             lastInteractionTime: lastTime,
             paused: cadenceMode === "paused",
+        });
+    });
+
+    const currentIntroducer = $derived.by(() => {
+        if (!currentOrigin?.introducedByDocId) return null;
+        return others.find((p) => p.docId === currentOrigin?.introducedByDocId) ?? null;
+    });
+
+    const preMeetingBrief = $derived.by((): PreMeetingBrief => {
+        return buildPreMeetingBrief({
+            person: current,
+            origin: currentOrigin ?? undefined,
+            socialPreferences,
+            timeline: insights?.timeline ?? [],
+            coAttendance: insights?.coAttendance ?? [],
+            introducerName: currentIntroducer?.name,
+            cadenceDays: cadenceMode === "custom" ? cadenceDays : 30,
         });
     });
 
@@ -3074,6 +3186,74 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         <div class="ft__smaller lvct-text-danger" style="margin-bottom: 8px;">{flashcardsError}</div>
     {/if}
 
+    <!-- ⚡ 会前 30 秒破冰速览卡 (Monica 标杆融合) -->
+    <details class="lvct-premeeting-brief" bind:open={preMeetingBriefOpen}>
+        <summary class="lvct-premeeting-brief__summary">
+            <div class="lvct-premeeting-brief__summary-left">
+                <span class="lvct-premeeting-brief__badge">⚡ 会前 30 秒破冰速览</span>
+                <span class="lvct-premeeting-brief__headline">
+                    {preMeetingBrief.statusSummary}
+                </span>
+            </div>
+            <div class="lvct-premeeting-brief__summary-actions">
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small lvct-premeeting-brief__copy-btn"
+                    onclick={(e) => { e.stopPropagation(); e.preventDefault(); void handleCopyPreMeetingBrief(); }}
+                    title="一键复制完整会前备忘录"
+                >
+                    {#if preMeetingBriefCopied}
+                        <Check size={12} strokeWidth={1.6} class="lvct-text-success" /> 已复制备忘
+                    {:else}
+                        <Copy size={12} strokeWidth={1.6} /> 复制速览
+                    {/if}
+                </button>
+            </div>
+        </summary>
+        <div class="lvct-premeeting-brief__content">
+            <div class="lvct-premeeting-brief__grid">
+                <div class="lvct-premeeting-brief__cell">
+                    <span class="lvct-premeeting-brief__label">💬 上次聊了什么</span>
+                    <p class="lvct-premeeting-brief__val">{preMeetingBrief.lastMetText}</p>
+                </div>
+                <div class="lvct-premeeting-brief__cell">
+                    <span class="lvct-premeeting-brief__label">🌱 初识溯源</span>
+                    <p class="lvct-premeeting-brief__val">{preMeetingBrief.originText}</p>
+                </div>
+                {#if preMeetingBrief.dietAndPreferences.length > 0}
+                    <div class="lvct-premeeting-brief__cell">
+                        <span class="lvct-premeeting-brief__label">❤️ 喜好忌口习惯</span>
+                        <div class="lvct-premeeting-brief__chips">
+                            {#each preMeetingBrief.dietAndPreferences as pref}
+                                <span class="lvct-chip lvct-chip--fact">{pref}</span>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+                {#if preMeetingBrief.taboos.length > 0}
+                    <div class="lvct-premeeting-brief__cell lvct-premeeting-brief__cell--taboo">
+                        <span class="lvct-premeeting-brief__label">⚠️ 敏感话题雷区</span>
+                        <div class="lvct-premeeting-brief__chips">
+                            {#each preMeetingBrief.taboos as taboo}
+                                <span class="lvct-chip lvct-chip--error">{taboo}</span>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+                {#if preMeetingBrief.sharedNetwork.length > 0}
+                    <div class="lvct-premeeting-brief__cell">
+                        <span class="lvct-premeeting-brief__label">👥 共同熟人交集</span>
+                        <div class="lvct-premeeting-brief__chips">
+                            {#each preMeetingBrief.sharedNetwork as net}
+                                <span class="lvct-chip lvct-chip--group">{net}</span>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+            </div>
+        </div>
+    </details>
+
     <div class="lvct-detail__tabs" role="tablist" tabindex="-1" aria-label="人物详情内容" onkeydown={handleTabKeydown}>
         <button id="lvct-detail-tab-overview" type="button" role="tab" aria-controls="lvct-detail-panel-overview" aria-selected={activeTab === "overview"} tabindex={activeTab === "overview" ? 0 : -1} class:lvct-detail__tab--active={activeTab === "overview"} onclick={() => void selectTab("overview")}>{text("detailOverview", "概览")}</button>
         <button id="lvct-detail-tab-activity" type="button" role="tab" aria-controls="lvct-detail-panel-activity" aria-selected={activeTab === "activity"} tabindex={activeTab === "activity" ? 0 : -1} class:lvct-detail__tab--active={activeTab === "activity"} onclick={() => void selectTab("activity")}>{text("detailActivity", "互动")}</button>
@@ -3084,6 +3264,82 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -- tabpanel semantics are required for the tablist contract. -->
     <section id="lvct-detail-panel-overview" role="tabpanel" aria-labelledby="lvct-detail-tab-overview" tabindex="0">
     <PersonProfileSummary profile={current.profile} />
+
+    <!-- Monica 标杆：初识溯源与引荐人 (How We Met / Introduced By) -->
+    <section class="lvct-origin-section">
+        <div class="lvct-detail__section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="margin: 0; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                <span>🌱 初识溯源与引荐人</span>
+            </h4>
+            {#if onLoadOrigin && onSaveOrigin && !originEditing}
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small"
+                    style="border-radius: var(--lv-r-pill, 9999px);"
+                    onclick={() => {
+                        originEditing = true;
+                        metAtDraft = currentOrigin?.metAt ?? "";
+                        introducedByDraft = currentOrigin?.introducedByDocId ?? "";
+                        preferencesDraft = currentOrigin?.preferences ?? "";
+                    }}
+                >
+                    <Pencil size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 编辑初识
+                </button>
+            {/if}
+        </div>
+        {#if originEditing}
+            <div class="lvct-origin-edit-box">
+                <label class="lvct-form__item">
+                    <span>初识场合或时间：</span>
+                    <input class="b3-text-field fn__block" type="text" placeholder="如：2024年秋季行业峰会、创业路演" bind:value={metAtDraft} />
+                </label>
+                <label class="lvct-form__item">
+                    <span>引荐人（库内好友）：</span>
+                    <select class="b3-select fn__block" bind:value={introducedByDraft}>
+                        <option value="">无引荐人（自主结识）</option>
+                        {#each others as p (p.docId)}
+                            {#if p.docId !== current.docId}
+                                <option value={p.docId}>{p.name} {p.group ? `(${p.group})` : ""}</option>
+                            {/if}
+                        {/each}
+                    </select>
+                </label>
+                <label class="lvct-form__item">
+                    <span>喜好忌口与备忘速记：</span>
+                    <textarea class="b3-text-field fn__block" rows="2" placeholder="如：海鲜过敏、喜欢手冲浅烘、勿聊前东家" bind:value={preferencesDraft}></textarea>
+                </label>
+                <div class="lvct-origin-actions" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
+                    <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (originEditing = false)}>取消</button>
+                    <button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={handleSaveOrigin} disabled={originSaving}>
+                        {originSaving ? "保存中…" : "保存初识信息"}
+                    </button>
+                </div>
+            </div>
+        {:else}
+            <div class="lvct-origin-display">
+                <div class="lvct-origin-row">
+                    <span class="lvct-origin-label">初识场合：</span>
+                    <span class="lvct-origin-val">{currentOrigin?.metAt || "未记录初识场合与时间"}</span>
+                </div>
+                <div class="lvct-origin-row">
+                    <span class="lvct-origin-label">引荐伙伴：</span>
+                    {#if currentIntroducer}
+                        <button type="button" class="b3-button b3-button--text lvct-origin-link" onclick={() => onOpenPersonDoc?.(currentIntroducer!.docId)}>
+                            🤝 {currentIntroducer.name} ↗
+                        </button>
+                    {:else}
+                        <span class="lvct-origin-val">自主结识 / 无引荐人</span>
+                    {/if}
+                </div>
+                {#if currentOrigin?.preferences}
+                    <div class="lvct-origin-row">
+                        <span class="lvct-origin-label">偏好速记：</span>
+                        <span class="lvct-origin-val">{currentOrigin.preferences}</span>
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    </section>
     {#if onLoadRelationshipLabels && onSaveRelationshipLabels && !current.isSelf}
         <RelationshipLabels personDocId={current.docId} {revision} onLoad={onLoadRelationshipLabels} onSave={onSaveRelationshipLabels} {onChanged} />
     {/if}
@@ -4509,6 +4765,36 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     {cadenceSaving ? text("cadenceSaving", "保存中…") : text("cadenceSave", "保存节奏")}
                 </button>
             </div>
+            <div class="lvct-cadence-tiers" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                {#each CADENCE_TIERS as tier}
+                    <button
+                        type="button"
+                        class="b3-chip font-size-11 lvct-cadence-tier-btn"
+                        style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer;"
+                        class:b3-chip--primary={cadenceMode === "custom" && cadenceDays === tier.days}
+                        onclick={() => { cadenceMode = "custom"; cadenceDays = tier.days; void saveCadence(); }}
+                        title={tier.description}
+                        disabled={cadenceSaving}
+                    >
+                        {tier.icon} {tier.label}
+                    </button>
+                {/each}
+            </div>
+            {#if onSendGreetingReminder && relationshipHealth.overdue}
+                <div style="margin-top: 8px;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
+                        onclick={handleSendGreetingReminder}
+                        disabled={greetingReminderSending || greetingReminderSent}
+                        title="将逾期问候事项同步到小驴管家备忘录"
+                    >
+                        <Bell size={12} strokeWidth={1.6} class="lvct-icon-inline" />
+                        {greetingReminderSent ? "已同步至管家备忘 ✓" : greetingReminderSending ? "正在同步管家…" : "提醒问候（同步到小驴管家）"}
+                    </button>
+                </div>
+            {/if}
             <StatusNotice message={cadenceMessage} onDismiss={() => (cadenceMessage = "")} />
             <p class="ft__smaller ft__on-surface">{text("cadenceNote", "仅影响首页「久未联系」提醒，不写入联系人的数据库字段。")}</p>
         {/if}
@@ -4577,6 +4863,36 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     {cadenceSaving ? text("cadenceSaving", "保存中…") : text("cadenceSave", "保存节奏")}
                 </button>
             </div>
+            <div class="lvct-cadence-tiers" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                {#each CADENCE_TIERS as tier}
+                    <button
+                        type="button"
+                        class="b3-chip font-size-11 lvct-cadence-tier-btn"
+                        style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer;"
+                        class:b3-chip--primary={cadenceMode === "custom" && cadenceDays === tier.days}
+                        onclick={() => { cadenceMode = "custom"; cadenceDays = tier.days; void saveCadence(); }}
+                        title={tier.description}
+                        disabled={cadenceSaving}
+                    >
+                        {tier.icon} {tier.label}
+                    </button>
+                {/each}
+            </div>
+            {#if onSendGreetingReminder && relationshipHealth.overdue}
+                <div style="margin-top: 8px;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
+                        onclick={handleSendGreetingReminder}
+                        disabled={greetingReminderSending || greetingReminderSent}
+                        title="将逾期问候事项同步到小驴管家备忘录"
+                    >
+                        <Bell size={12} strokeWidth={1.6} class="lvct-icon-inline" />
+                        {greetingReminderSent ? "已同步至管家备忘 ✓" : greetingReminderSending ? "正在同步管家…" : "提醒问候（同步到小驴管家）"}
+                    </button>
+                </div>
+            {/if}
             <StatusNotice message={cadenceMessage} onDismiss={() => (cadenceMessage = "")} />
             <p class="ft__smaller ft__on-surface">{text("cadenceNote", "仅影响首页「久未联系」提醒，不写入联系人的数据库字段。")}</p>
         {/if}
@@ -4723,6 +5039,23 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 {i18n}
             />
         {:else}
+        {@const trend12m = computeMonthlyInteractionTrend(insights?.timeline ? insights.timeline.map((t) => ({ id: t.eventId, personDocId: current.docId, occurredAt: t.occurredAt ?? (t.localDate ? new Date(t.localDate).getTime() : 0), localDate: t.localDate, source: t.source as any, note: t.note })) : [], 12)}
+        <div class="lvct-twenty-activity-header">
+            <div class="lvct-twenty-activity-stats">
+                <span class="lvct-twenty-activity-title">📈 近一年互动分布 ({trend12m.totalCount} 次)</span>
+                <span class="lvct-twenty-activity-freq">月峰值: {trend12m.maxCount} 次</span>
+            </div>
+            <div class="lvct-twenty-activity-spark">
+                {#each trend12m.months as month}
+                    {@const heightPercent = trend12m.maxCount > 0 ? Math.max(10, Math.round((month.count / trend12m.maxCount) * 100)) : 10}
+                    <div class="lvct-twenty-spark-bar-wrap" title={`${month.monthKey}：${month.count}次互动`}>
+                        <div class="lvct-twenty-spark-bar" style={`height: ${heightPercent}%;`} class:lvct-twenty-spark-bar--active={month.count > 0}></div>
+                        <span class="lvct-twenty-spark-label">{month.label}</span>
+                    </div>
+                {/each}
+            </div>
+        </div>
+
         <div class="lvct-detail__activity-filters">
             <input class="b3-text-field" type="search" aria-label="搜索互动备注或日期" placeholder="搜索备注或日期" bind:value={activitySearch} oninput={() => (activityLimit = 20)} />
             <select class="b3-select" aria-label="互动来源" bind:value={activitySource} onchange={() => (activityLimit = 20)}>

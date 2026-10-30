@@ -15,7 +15,39 @@ export const CADENCE_STORE_VERSION = 1;
 export const CADENCE_DAYS_MIN = 1;
 export const CADENCE_DAYS_MAX = 365;
 
+export interface CadenceTier {
+    readonly key: string;
+    readonly label: string;
+    readonly days: number;
+    readonly icon: string;
+    readonly description: string;
+}
+
+/** 圈层联络周期推荐档位（Monica / Simple-PRM 标杆融合） */
+export const CADENCE_TIERS: readonly CadenceTier[] = [
+    { key: "core", label: "核心圈 (14天)", days: 14, icon: "🔥", description: "至交密友、关键业务合伙人" },
+    { key: "familiar", label: "熟人圈 (30天)", days: 30, icon: "🌤️", description: "常见好友、团队核心成员" },
+    { key: "partner", label: "合作圈 (90天)", days: 90, icon: "💼", description: "业务上下游、行业同行伙伴" },
+    { key: "evergreen", label: "常青圈 (180天)", days: 180, icon: "🌲", description: "远方亲朋、低频但重要的长线人脉" },
+] as const;
+
 export type RelationshipHeatLevel = "hot" | "warm" | "cool" | "cold" | "paused" | "unknown";
+export type RelationshipWarmthStatus = "warm" | "cooling" | "overdue";
+
+/**
+ * 将客观关系健康度换算为 Monica / Simple-PRM 风格的宏观三态温度：
+ * warm（热络正常）| cooling（渐冷/轻度逾期）| overdue（严重逾期/待问候）
+ */
+export function computeWarmthStatus(health: RelationshipHealth): RelationshipWarmthStatus {
+    if (health.level === "paused") return "warm";
+    if (health.level === "cold" || (health.overdue && health.overdueDays >= 14) || health.level === "unknown") {
+        return "overdue";
+    }
+    if (health.level === "cool" || health.overdue) {
+        return "cooling";
+    }
+    return "warm";
+}
 
 export interface RelationshipHealthInput {
     /** 目标周期天数（1–365） */

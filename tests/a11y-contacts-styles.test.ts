@@ -525,6 +525,30 @@ test("小驴人脉 · 城市行程助手与足迹大盘对齐1.6细线图标、�
     assert.match(regionSvelte, /font-variant-numeric:\s*tabular-nums;/);
 });
 
+test("小驴人脉 · GitHub三大标杆融合对齐圈层联络周期、会前速览折叠卡、初识引荐与Twenty垂直时间轴", () => {
+    // 1. 联系人详情页：会前破冰速览折叠卡、初识溯源与 Twenty 时间轴
+    const detailSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonDetail.svelte"), "utf8");
+    assert.match(detailSvelte, /CADENCE_TIERS/);
+    assert.match(detailSvelte, /preMeetingBrief/);
+    assert.match(detailSvelte, /lvct-premeeting-brief/);
+    assert.match(detailSvelte, /lvct-origin-section/);
+    assert.match(detailSvelte, /lvct-twenty-activity-header/);
+    assert.match(detailSvelte, /handleCopyPreMeetingBrief/);
+    assert.match(detailSvelte, /handleSendGreetingReminder/);
+
+    // 2. 联系人名册：待问候胶囊 tab
+    const peopleSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PeopleView.svelte"), "utf8");
+    assert.match(peopleSvelte, /lvct-people__group-tab--overdue/);
+    assert.match(peopleSvelte, /overduePeopleCount/);
+
+    // 3. 全局 SCSS 样式契约
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.lvct-premeeting-brief\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*14px\)/);
+    assert.match(indexScss, /\.lvct-origin-section\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(indexScss, /\.lvct-twenty-activity-header\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
+    assert.match(indexScss, /\.lvct-people__group-tab--overdue/);
+});
+
 
 
 

@@ -41,8 +41,8 @@ export interface PeopleFilterState {
     region?: string;
     /** E-41 交往生命周期阶段 */
     lifecycleStage?: RelationshipStageKey | "";
-    /** E-59 关系温度分级过滤 */
-    heatLevel?: RelationshipHeatLevel | "";
+    /** E-59 关系温度分级过滤，支持具体等级或宏观 "cooling"(渐冷) / "overdue"(待问候/逾期) 聚合筛选 */
+    heatLevel?: RelationshipHeatLevel | "cooling" | "overdue" | "";
 }
 
 export const EMPTY_PEOPLE_FILTER: PeopleFilterState = {
@@ -141,7 +141,13 @@ export function applyPeopleFilters(
                 paused: cadence?.paused,
                 nowTime: options?.nowTime,
             });
-            if (health.level !== filter.heatLevel) return false;
+            if (filter.heatLevel === "overdue") {
+                if (!health.overdue && health.level !== "cold" && health.level !== "unknown") return false;
+            } else if (filter.heatLevel === "cooling") {
+                if (health.level !== "cool" && health.level !== "cold" && !health.overdue) return false;
+            } else if (health.level !== filter.heatLevel) {
+                return false;
+            }
         }
         return true;
     });

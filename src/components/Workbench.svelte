@@ -994,11 +994,14 @@
 					            onSaveScratchpad={facade.savePersonScratchpad ? (item) => facade.savePersonScratchpad!(item) : undefined}
 						            onUpdateScratchpad={facade.updatePersonScratchpad ? (docId, noteId, patch) => facade.updatePersonScratchpad!(docId, noteId, patch) : undefined}
 						            onRemoveScratchpad={facade.removePersonScratchpad ? (docId, noteId) => facade.removePersonScratchpad!(docId, noteId) : undefined}
-							            onLoadSocialPreferences={facade.loadPersonSocialPreferences ? (docId) => facade.loadPersonSocialPreferences!(docId) : undefined}
-							            onAddSocialPreference={facade.addPersonSocialPreference ? (item) => facade.addPersonSocialPreference!(item) : undefined}
-							            onUpdateSocialPreference={facade.updatePersonSocialPreference ? (docId, prefId, patch) => facade.updatePersonSocialPreference!(docId, prefId, patch) : undefined}
-							            onRemoveSocialPreference={facade.removePersonSocialPreference ? (docId, prefId) => facade.removePersonSocialPreference!(docId, prefId) : undefined}
-							            onLoadItineraries={facade.loadPersonItineraries ? (docId) => facade.loadPersonItineraries!(docId) : undefined}
+								            onLoadSocialPreferences={facade.loadPersonSocialPreferences ? (docId) => facade.loadPersonSocialPreferences!(docId) : undefined}
+								            onAddSocialPreference={facade.addPersonSocialPreference ? (item) => facade.addPersonSocialPreference!(item) : undefined}
+								            onUpdateSocialPreference={facade.updatePersonSocialPreference ? (docId, prefId, patch) => facade.updatePersonSocialPreference!(docId, prefId, patch) : undefined}
+								            onRemoveSocialPreference={facade.removePersonSocialPreference ? (docId, prefId) => facade.removePersonSocialPreference!(docId, prefId) : undefined}
+								            onLoadOrigin={facade.loadPersonOrigin ? (docId) => facade.loadPersonOrigin!(docId) : undefined}
+								            onSaveOrigin={facade.savePersonOrigin ? (origin) => facade.savePersonOrigin!(origin) : undefined}
+								            onSendGreetingReminder={facade.sendGreetingReminderToHome ? (name, overdue) => facade.sendGreetingReminderToHome!(name, overdue) : undefined}
+								            onLoadItineraries={facade.loadPersonItineraries ? (docId) => facade.loadPersonItineraries!(docId) : undefined}
 							            onSaveItinerary={facade.savePersonItinerary ? (item) => facade.savePersonItinerary!(item) : undefined}
 							            onRemoveItinerary={facade.removePersonItinerary ? (docId, itnId) => facade.removePersonItinerary!(docId, itnId) : undefined}
 							            onToggleItineraryChecklist={facade.togglePersonItineraryChecklist ? (docId, itnId, chkId) => facade.togglePersonItineraryChecklist!(docId, itnId, chkId) : undefined}

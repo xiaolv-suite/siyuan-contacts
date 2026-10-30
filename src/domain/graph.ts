@@ -6,6 +6,7 @@
 import type { ContactSummary } from "./person.ts";
 import type { OrgMembershipStatus } from "./org-membership.ts";
 import { occasionKey, type InteractionEvent } from "./interactions.ts";
+import type { PersonOrigin } from "./person-origin.ts";
 
 export interface GraphNode {
     /** 文档 ID（cytoscape 节点 id，点击即开文档） */
@@ -21,8 +22,8 @@ export interface GraphNode {
 export interface GraphEdge {
     source: string;
     target: string;
-    /** B14.6 边来源：related=显式关系（查询唯一依据）；member=组织成员（仅展示，不参与关系查询）；co_occurrence=共同出席弱联系（仅展示，不参与显式关系查询） */
-    kind?: "related" | "member" | "ref" | "co_occurrence";
+    /** B14.6 边来源：related=显式关系（查询唯一依据）；member=组织成员；ref=反链引用；co_occurrence=共同出席弱联系；introducer=引荐人链路（Monica 标杆融合） */
+    kind?: "related" | "member" | "ref" | "co_occurrence" | "introducer";
     /** Member lifecycle on the derived organisation edge. Related/ref edges omit this field. */
     memberStatus?: "active" | "former" | "mixed";
     /** 共同出席/共现次数（仅 kind="co_occurrence" 时使用） */
@@ -57,7 +58,10 @@ export function queryGraphRelations(graph: PersonGraph, firstId: string, secondI
     };
 }
 
-export function buildGraph(people: readonly ContactSummary[]): PersonGraph {
+export function buildGraph(
+    people: readonly ContactSummary[],
+    origins?: Readonly<Record<string, PersonOrigin>>,
+): PersonGraph {
     const itemToDoc = new Map<string, string>();
     for (const person of people) {
         itemToDoc.set(person.itemId, person.docId);
@@ -86,6 +90,24 @@ export function buildGraph(people: readonly ContactSummary[]): PersonGraph {
             const target = nodeById.get(targetDocId);
             if (source) source.degree += 1;
             if (target) target.degree += 1;
+        }
+
+        // 引荐人链路边（Monica 标杆融合）：若档案存在引荐人且引荐人在图谱中，生成引荐边
+        const origin = origins?.[person.docId];
+        if (origin?.introducedByDocId && origin.introducedByDocId !== person.docId && nodeById.has(origin.introducedByDocId)) {
+            const introducerKey = `intro:${origin.introducedByDocId}->${person.docId}`;
+            if (!seen.has(introducerKey)) {
+                seen.add(introducerKey);
+                edges.push({
+                    source: origin.introducedByDocId,
+                    target: person.docId,
+                    kind: "introducer" as const,
+                });
+                const introducerNode = nodeById.get(origin.introducedByDocId);
+                const targetNode = nodeById.get(person.docId);
+                if (introducerNode) introducerNode.degree += 1;
+                if (targetNode) targetNode.degree += 1;
+            }
         }
     }
     return { nodes, edges };

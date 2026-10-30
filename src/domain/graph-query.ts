@@ -5,6 +5,7 @@ import type { ContactSummary } from "./person.ts";
 import type { OrgMembership } from "./org-membership.ts";
 import type { GraphQueryKind } from "./graph-export.ts";
 import type { InteractionEvent } from "./interactions.ts";
+import type { PersonOrigin } from "./person-origin.ts";
 
 export type GraphReadStatus = "verified" | "unknown";
 export type GraphSourceKey = "roster" | "organizations" | "self" | "references";
@@ -25,6 +26,7 @@ export interface GraphSources {
     errors: Partial<Record<GraphSourceKey, string>>;
     revision: number;
     interactionEvents?: readonly InteractionEvent[];
+    origins?: Readonly<Record<string, PersonOrigin>>;
 }
 
 export interface GraphQuery {
@@ -149,7 +151,7 @@ export function graphRegistry(sources: GraphSources): { people: ContactSummary[]
     const coOccurrenceEdges = sources.interactionEvents && sources.interactionEvents.length > 0
         ? buildCoOccurrenceEdges(sources.interactionEvents, people)
         : [];
-    const related = buildGraph(people);
+    const related = buildGraph(people, sources.origins);
     return { people, organizations: overlay.nodes.sort((left, right) => compareGraphIds(left.id, right.id)),
         graph: orderGraph({ nodes: [...related.nodes, ...overlay.nodes], edges: [...related.edges, ...overlay.edges, ...coOccurrenceEdges] }), diagnostics };
 }
@@ -281,13 +283,16 @@ export function buildGraphQuerySnapshot(sources: GraphSources, query: GraphQuery
         result: { kind, status: resultStatus, ids: [...resultIds].sort(compareGraphIds), pathIds, neighborIds: relations.neighborIds, reason } };
 }
 
-export function graphEdgeLabel(kind: "related" | "member" | "ref" | "co_occurrence" | undefined, memberStatus?: "active" | "former" | "mixed"): string {
+export function graphEdgeLabel(kind: "related" | "member" | "ref" | "co_occurrence" | "introducer" | undefined, memberStatus?: "active" | "former" | "mixed"): string {
     if (kind === "member") {
         const lifecycle = memberStatus === "active" ? "当前" : memberStatus === "former" ? "历史" : memberStatus === "mixed" ? "当前+历史" : "";
         return `组织成员（member）${lifecycle ? `·${lifecycle}` : ""}`;
     }
     if (kind === "co_occurrence") {
         return "共同出席推断（co_occurrence）";
+    }
+    if (kind === "introducer") {
+        return "初识引荐链路（introducer）";
     }
     return kind === "ref" ? "文档块引用（ref）" : "显式人物关系（related）";
 }
