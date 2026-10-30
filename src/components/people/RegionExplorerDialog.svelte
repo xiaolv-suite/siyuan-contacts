@@ -483,6 +483,10 @@
     }
     .lvct-region-dialog__header-search {
         min-width: 220px;
+
+        input {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
     .lvct-region-dialog__quick-chips {
         display: flex;
@@ -490,6 +494,10 @@
         align-items: center;
         gap: 6px;
         font-size: 12px;
+
+        .b3-chip {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
     .lvct-region-dialog__chips-label {
         color: var(--b3-theme-on-surface);
@@ -500,7 +508,7 @@
         min-height: 0;
         gap: 16px;
         border: 1px solid var(--b3-theme-surface-lighter);
-        border-radius: 6px;
+        border-radius: var(--lvct-r-card, 16px);
         overflow: hidden;
     }
     /* 左侧城市列表 */
@@ -599,6 +607,10 @@
         gap: 4px;
         margin-top: 6px;
         font-size: 12px;
+
+        .b3-chip {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
     .lvct-region-dialog__nearby-label {
         color: var(--b3-theme-on-surface);
@@ -607,6 +619,10 @@
         display: flex;
         gap: 8px;
         flex-shrink: 0;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
     .lvct-region-dialog__contacts-wrap {
         flex: 1;
@@ -620,7 +636,7 @@
     }
     .lvct-region-dialog__person-card {
         padding: 10px 12px;
-        border-radius: var(--lvct-r-md, 8px);
+        border-radius: var(--lvct-r-card, 14px);
         background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-border-subtle);
         box-shadow: var(--lvct-shadow-card);

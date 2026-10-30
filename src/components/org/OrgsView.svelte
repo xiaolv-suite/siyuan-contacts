@@ -272,6 +272,7 @@
         <span class="fn__flex-1"></span>
         <input
             class="b3-text-field lvct-orgs-view__filter"
+            style="border-radius: var(--lv-r-pill, 9999px);"
             type="search"
             aria-label={text("orgsSearchLabel", "搜索组织")}
             placeholder={text("orgsSearchPlaceholder", "按组织名称搜索")}
@@ -279,25 +280,25 @@
             disabled={loading || !!errorText}
             title={loading ? "组织列表正在读取，请稍候" : errorText ? "组织列表读取失败，请先重新加载" : undefined}
         />
-        <select class="b3-select lvct-orgs-view__filter" aria-label={text("orgsStatusLabel", "组织状态")} bind:value={organizationStatus} disabled={loading || !!errorText}
+        <select class="b3-select lvct-orgs-view__filter" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={text("orgsStatusLabel", "组织状态")} bind:value={organizationStatus} disabled={loading || !!errorText}
             title={loading ? "组织列表正在读取，请稍候" : errorText ? "组织列表读取失败，请先重新加载" : undefined}>
             <option value="all">{text("orgsStatusAll", "全部状态")}</option>
             <option value="active">{text("orgsStatusActive", "仅活跃")}</option>
             <option value="archived">{text("orgsStatusArchived", "仅已归档")}</option>
         </select>
         {#if organizationFilterActive}
-            <button type="button" class="b3-button b3-button--text" onclick={() => { organizationQuery = ""; organizationStatus = "all"; }}>
+            <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => { organizationQuery = ""; organizationStatus = "all"; }}>
                 {text("orgsClearFilters", "清除筛选")}
             </button>
         {/if}
         <!-- B13.8：手动对账入口（外部编辑无通知时，打开时对账 + 手动刷新兜底） -->
-        <button type="button" class="b3-button b3-button--text" onclick={() => void refresh()} disabled={loading}
+        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void refresh()} disabled={loading}
             title={loading ? "组织列表正在读取，请稍候" : undefined}>
             {text("graphReload", "重新加载")}</button>
-        <button type="button" class="b3-button b3-button--text" onclick={() => onOpenOrgManager()}>
+        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => onOpenOrgManager()}>
             {text("orgsManage", "组织管理")}
         </button>
-        {#if onCreateOrganization}<button type="button" class="b3-button b3-button--primary" onclick={onCreateOrganization}><Plus size={15} />{text("orgsCreateFirst", "新建组织")}</button>{/if}
+        {#if onCreateOrganization}<button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={onCreateOrganization}><Plus size={15} />{text("orgsCreateFirst", "新建组织")}</button>{/if}
         {#if organizationLoadError}
             <button type="button" class="b3-button b3-button--text" onclick={retryRemainingOrganizations} disabled={organizationLoadingMore}
                 title={organizationLoadingMore ? "组织列表正在继续读取，请稍候" : undefined}>
