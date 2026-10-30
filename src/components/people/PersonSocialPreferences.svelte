@@ -38,6 +38,8 @@
     let newContent = $state("");
     let newIsTaboo = $state(false);
     let saving = $state(false);
+    let togglingId: string | null = $state(null);
+    let removingId: string | null = $state(null);
     let errorText = $state("");
 
     const grouped = $derived(groupPreferencesByCategory(items));
@@ -49,6 +51,7 @@
     });
 
     async function handleAdd() {
+        if (saving || removingId) return;
         const trimmed = newContent.trim();
         if (!trimmed) {
             errorText = text("socialPrefsContentRequired", "偏好或忌口内容不能为空");
@@ -79,18 +82,28 @@
     }
 
     async function handleToggleTaboo(item: PersonSocialPreferenceItem) {
+        if (saving || togglingId === item.id) return;
+        togglingId = item.id;
+        errorText = "";
         try {
             await onUpdate(item.id, { isTaboo: !item.isTaboo });
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            togglingId = null;
         }
     }
 
     async function handleRemove(prefId: string) {
+        if (saving || removingId === prefId) return;
+        removingId = prefId;
+        errorText = "";
         try {
             await onRemove(prefId);
         } catch (err: unknown) {
             errorText = err instanceof Error ? err.message : String(err);
+        } finally {
+            removingId = null;
         }
     }
 </script>
@@ -98,7 +111,7 @@
 <div class="lvct-social-prefs b3-card">
     <div class="lvct-social-prefs__header">
         <div class="fn__flex" style="align-items: center; gap: 8px;">
-            <Utensils size={18} class="ft__primary" />
+            <Utensils size={15} strokeWidth={1.6} class="ft__primary" />
             <span class="ft__on-surface font-weight-bold" style="font-size: 14px;">
                 {text("socialPrefsTitle", "社交偏好与交往忌口档案")}
             </span>
@@ -109,10 +122,10 @@
         {#if !adding}
             <button
                 type="button"
-                class="b3-button b3-button--text b3-button--small"
+                class="b3-button b3-button--text b3-button--small btn-add-pref"
                 onclick={() => { adding = true; errorText = ""; }}
             >
-                <Plus size={14} style="margin-right: 4px;" />
+                <Plus size={13} strokeWidth={1.6} style="margin-right: 4px;" />
                 {text("socialPrefsAddBtn", "添加偏好/忌口")}
             </button>
         {/if}
@@ -123,7 +136,7 @@
         <div class="social-prefs-form">
             <div class="form-row">
                 <span class="form-label">{text("socialPrefsCategoryLabel", "档案分类")}:</span>
-                <select class="b3-select fn__flex-1" bind:value={newCategory}>
+                <select class="b3-select fn__flex-1" bind:value={newCategory} disabled={saving}>
                     {#each SOCIAL_PREFERENCE_CATEGORIES as c (c.key)}
                         <option value={c.key}>{c.icon} {text(`socialPrefCat_${c.key}`, c.label)}</option>
                     {/each}
@@ -137,6 +150,7 @@
                     type="text"
                     bind:value={newContent}
                     placeholder={SOCIAL_PREFERENCE_CATEGORIES.find((c) => c.key === newCategory)?.placeholder}
+                    disabled={saving}
                 />
             </div>
 
@@ -144,7 +158,7 @@
                 <div class="form-row">
                     <span class="form-label"></span>
                     <label class="taboo-checkbox-label">
-                        <input type="checkbox" bind:checked={newIsTaboo} />
+                        <input type="checkbox" bind:checked={newIsTaboo} disabled={saving} />
                         <span class="ft__smaller ft__error">{text("socialPrefsIsTabooLabel", "设为重要红线/严重忌口（会前重点警示）")}</span>
                     </label>
                 </div>
@@ -200,7 +214,7 @@
                                     <div class="pref-content">
                                         {#if item.isTaboo}
                                             <span class="taboo-badge">
-                                                <ShieldAlert size={12} style="margin-right: 2px;" />
+                                                <ShieldAlert size={12} strokeWidth={1.6} style="margin-right: 2px;" />
                                                 {text("socialPrefsTabooBadge", "红线禁忌")}
                                             </span>
                                         {/if}
@@ -211,6 +225,7 @@
                                             <button
                                                 type="button"
                                                 class="b3-button b3-button--text b3-button--small pref-action-btn"
+                                                disabled={saving || togglingId === item.id}
                                                 title={item.isTaboo ? text("socialPrefsCancelTabooTip", "取消红线标记") : text("socialPrefsMarkTabooTip", "标记为红线禁忌")}
                                                 onclick={() => handleToggleTaboo(item)}
                                             >
@@ -219,11 +234,12 @@
                                         {/if}
                                         <button
                                             type="button"
-                                            class="b3-button b3-button--text b3-button--small pref-action-btn ft__error"
+                                            class="b3-button b3-button--text b3-button--small pref-action-btn btn-remove-pref ft__error"
+                                            disabled={saving || removingId === item.id}
                                             title={text("commonDelete", "删除")}
                                             onclick={() => handleRemove(item.id)}
                                         >
-                                            <Trash2 size={12} />
+                                            <Trash2 size={12} strokeWidth={1.6} />
                                         </button>
                                     </div>
                                 </div>
@@ -253,16 +269,24 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+
+        button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .social-prefs-form {
         padding: 10px 14px;
         background: var(--lvct-bg-app);
         border: 1px dashed var(--lvct-color-border-200);
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lvct-r-card, 12px);
         display: flex;
         flex-direction: column;
         gap: 8px;
+
+        select, input, button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .form-row {
@@ -326,6 +350,7 @@
         font-size: 11px;
         color: var(--b3-theme-on-surface-light);
         font-weight: normal;
+        font-variant-numeric: tabular-nums;
     }
 
     .category-items {
@@ -336,7 +361,7 @@
 
     .pref-card {
         padding: 8px 12px;
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lvct-r-card, 12px);
         background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-color-border-200);
         box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
@@ -349,6 +374,10 @@
         &:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(28, 24, 21, 0.06);
+
+            .btn-remove-pref {
+                opacity: 0.7;
+            }
         }
     }
 
@@ -367,14 +396,26 @@
 
     .taboo-badge {
         font-size: 10px;
-        padding: 2px 7px;
+        padding: 1px 8px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--lvct-danger-soft, rgba(225, 29, 72, 0.12));
+        background: transparent;
+        border: 1px solid color-mix(in srgb, var(--lvct-danger, #e11d48) 32%, transparent);
         color: var(--lvct-danger, #e11d48);
         font-weight: 600;
         display: inline-flex;
         align-items: center;
+        gap: 3px;
         flex-shrink: 0;
+
+        &::before {
+            content: "";
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            forced-color-adjust: none;
+        }
     }
 
     .pref-text {
@@ -392,10 +433,34 @@
     }
 
     .pref-action-btn {
-        padding: 1px 5px;
+        padding: 2px 8px;
         height: auto;
         font-size: 11px;
         display: inline-flex;
         align-items: center;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+
+    .btn-remove-pref {
+        opacity: 0;
+        border-radius: 50% !important;
+        padding: 3px !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            opacity: 1 !important;
+        }
+
+        &:focus-visible {
+            opacity: 1;
+            outline: 2px solid var(--lvct-accent);
+        }
+
+        @media (hover: none), (max-width: 768px) {
+            opacity: 0.7;
+        }
     }
 </style>

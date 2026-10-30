@@ -124,3 +124,35 @@ test("小驴人脉 · 亲属树谱、大事记时间轴与互惠卡片对齐细�
     assert.match(reciprocitySvelte, /\.metric-val\s*\{[\s\S]*font-variant-numeric:\s*tabular-nums/);
 });
 
+test("小驴人脉 · 纪念日横幅、社交偏好与拜访行程对齐防重入锁、细线图标、全胶囊化与实体状态点", () => {
+    // 1. 纪念日横幅
+    const annivSvelte = fs.readFileSync(path.join(SRC, "components", "people", "AnniversaryMilestoneBanner.svelte"), "utf8");
+    assert.match(annivSvelte, /copyingIndex\s*=\s*\$state<number\s*\|\s*null>\(null\)/);
+    assert.match(annivSvelte, /disabled=\{copyingIndex === idx\}/);
+    assert.match(annivSvelte, /strokeWidth=\{1\.6\}/);
+    assert.doesNotMatch(annivSvelte, /milestone\.isToday \? "🎉" : "🌟"/);
+    assert.match(annivSvelte, /\.btn-apply-greeting,\s*\.btn-copy-greeting\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 社交偏好与忌口
+    const prefsSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonSocialPreferences.svelte"), "utf8");
+    assert.match(prefsSvelte, /removingId:\s*string\s*\|\s*null\s*=\s*\$state\(null\)/);
+    assert.match(prefsSvelte, /disabled=\{saving\s*\|\|\s*removingId === item\.id\}/);
+    assert.match(prefsSvelte, /strokeWidth=\{1\.6\}/);
+    assert.match(prefsSvelte, /\.taboo-badge\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(prefsSvelte, /\.taboo-badge\s*\{[\s\S]*&::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(prefsSvelte, /\.btn-remove-pref\s*\{[\s\S]*opacity:\s*0;/);
+
+    // 3. 拜访行程与行前准备
+    const itinerarySvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonItinerary.svelte"), "utf8");
+    assert.match(itinerarySvelte, /copyingId\s*=\s*\$state<string\s*\|\s*null>\(null\)/);
+    assert.match(itinerarySvelte, /togglingChecklistId\s*=\s*\$state<string\s*\|\s*null>\(null\)/);
+    assert.match(itinerarySvelte, /disabled=\{busy\s*\|\|\s*togglingChecklistId === chk\.id\}/);
+    assert.doesNotMatch(itinerarySvelte, /🗓️/);
+    assert.match(itinerarySvelte, /strokeWidth=\{1\.6\}/);
+    assert.match(itinerarySvelte, /\.status-badge\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(itinerarySvelte, /\.status-badge::before\s*\{[\s\S]*forced-color-adjust:\s*none/);
+    assert.match(itinerarySvelte, /\.checklist-chip\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(itinerarySvelte, /\.btn-action\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+});
+
+

@@ -55,6 +55,8 @@
     let isEditing = $state(false);
     let editingId = $state<string | null>(null);
     let busy = $state(false);
+    let copyingId = $state<string | null>(null);
+    let togglingChecklistId = $state<string | null>(null);
     let errorText = $state("");
     let copiedId = $state("");
 
@@ -197,6 +199,18 @@
         }
     }
 
+    async function handleToggleChecklist(itineraryId: string, checklistId: string) {
+        if (busy || togglingChecklistId) return;
+        togglingChecklistId = checklistId;
+        try {
+            await onToggleChecklist(itineraryId, checklistId);
+        } catch (e: unknown) {
+            errorText = e instanceof Error ? e.message : String(e);
+        } finally {
+            togglingChecklistId = null;
+        }
+    }
+
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
     onDestroy(() => {
@@ -204,13 +218,19 @@
     });
 
     async function handleCopyMarkdown(item: PersonItineraryItem) {
-        const md = formatItineraryMarkdown(item, personName);
-        await copyPlainText(md);
-        copiedId = item.id;
-        if (copyTimer) clearTimeout(copyTimer);
-        copyTimer = setTimeout(() => {
-            if (copiedId === item.id) copiedId = "";
-        }, 2000);
+        if (busy || copyingId) return;
+        copyingId = item.id;
+        try {
+            const md = formatItineraryMarkdown(item, personName);
+            await copyPlainText(md);
+            copiedId = item.id;
+            if (copyTimer) clearTimeout(copyTimer);
+            copyTimer = setTimeout(() => {
+                if (copiedId === item.id) copiedId = "";
+            }, 2000);
+        } finally {
+            copyingId = null;
+        }
     }
 
     async function handleCompleteAndLog(item: PersonItineraryItem) {
@@ -238,7 +258,7 @@
 <div class="lvct-itinerary-section">
     <div class="lvct-itinerary-header">
         <div class="header-left">
-            <span class="header-icon">🗓️</span>
+            <Calendar size={15} strokeWidth={1.6} class="lvct-icon-inline header-icon" style="color: var(--lv-brand, #ea580c);" />
             <span class="header-title">{text("itinerarySectionTitle", "会客拜访行程与行前准备")}</span>
             {#if plannedCount > 0}
                 <span class="badge-planned">{text("itineraryPlannedBadge", "{n} 待赴约", { n: plannedCount })}</span>
@@ -252,7 +272,7 @@
                     class="b3-button b3-button--outline btn-add-itinerary"
                     onclick={startCreate}
                 >
-                    <Plus size={12} class="lvct-icon-inline" />
+                    <Plus size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                     {text("addItineraryBtn", "＋ 规划会面行程")}
                 </button>
             {/if}
@@ -371,7 +391,7 @@
                                 title={text("deleteChecklist", "删除此检查项")}
                                 onclick={() => removeChecklistItem(chk.id)}
                             >
-                                <Trash2 size={12} />
+                                <Trash2 size={12} strokeWidth={1.6} />
                             </button>
                         </div>
                     {/each}
@@ -393,7 +413,7 @@
                             onclick={addChecklistItem}
                             disabled={busy || !newChecklistText.trim()}
                         >
-                            <Plus size={12} />
+                            <Plus size={12} strokeWidth={1.6} />
                         </button>
                     </div>
                 {/if}
@@ -464,22 +484,22 @@
 
                     <div class="card-meta">
                         <span class="meta-item">
-                            <Calendar size={12} class="lvct-icon-inline" />
+                            <Calendar size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                             {item.targetDate}
                             {#if item.targetTime}
-                                <Clock size={11} class="lvct-icon-inline" style="margin-left: 4px;" />
+                                <Clock size={11} strokeWidth={1.6} class="lvct-icon-inline" style="margin-left: 4px;" />
                                 {item.targetTime}
                             {/if}
                         </span>
                         {#if item.location}
                             <span class="meta-item">
-                                <MapPin size={12} class="lvct-icon-inline" />
+                                <MapPin size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                                 {item.location}
                             </span>
                         {/if}
                         {#if item.attendees}
                             <span class="meta-item">
-                                <Users size={12} class="lvct-icon-inline" />
+                                <Users size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                                 {item.attendees}
                             </span>
                         {/if}
@@ -496,13 +516,14 @@
                                     <button
                                         type="button"
                                         class="checklist-chip {chk.done ? 'is-done' : ''}"
-                                        onclick={() => onToggleChecklist(item.id, chk.id)}
+                                        disabled={busy || togglingChecklistId === chk.id}
+                                        onclick={() => handleToggleChecklist(item.id, chk.id)}
                                         title={text("toggleChecklistTip", "点击切换准备状态")}
                                     >
                                         {#if chk.done}
-                                            <CheckSquare size={13} class="chk-icon is-done" />
+                                            <CheckSquare size={13} strokeWidth={1.6} class="chk-icon is-done" />
                                         {:else}
-                                            <Square size={13} class="chk-icon" />
+                                            <Square size={13} strokeWidth={1.6} class="chk-icon" />
                                         {/if}
                                         <span class="chk-text">{chk.text}</span>
                                     </button>
@@ -513,7 +534,7 @@
 
                     {#if item.note}
                         <div class="card-note ft__smaller ft__on-surface">
-                            <FileText size={11} class="lvct-icon-inline" />
+                            <FileText size={11} strokeWidth={1.6} class="lvct-icon-inline" />
                             {item.note}
                         </div>
                     {/if}
@@ -524,10 +545,11 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--outline btn-action ft__primary"
+                                disabled={busy}
                                 onclick={() => handleCompleteAndLog(item)}
                                 title={text("completeAndLogTip", "标记为已完成并填入交往互动草稿")}
                             >
-                                <Check size={12} class="lvct-icon-inline" />
+                                <Check size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                                 {text("completeAndLogBtn", "履约并记互动")}
                             </button>
                         {/if}
@@ -535,14 +557,15 @@
                         <button
                             type="button"
                             class="b3-button b3-button--cancel btn-action"
+                            disabled={busy || copyingId === item.id}
                             onclick={() => handleCopyMarkdown(item)}
                             title={text("copyMarkdownTip", "复制行程单 Markdown 文本")}
                         >
                             {#if copiedId === item.id}
-                                <Check size={12} class="lvct-icon-inline ft__primary" />
+                                <Check size={12} strokeWidth={1.6} class="lvct-icon-inline ft__primary" />
                                 <span class="ft__primary">{text("copied", "已复制 ✓")}</span>
                             {:else}
-                                <Copy size={12} class="lvct-icon-inline" />
+                                <Copy size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                                 {text("copyMarkdownBtn", "复制行程")}
                             {/if}
                         </button>
@@ -550,18 +573,20 @@
                         <button
                             type="button"
                             class="b3-button b3-button--cancel btn-action"
+                            disabled={busy}
                             onclick={() => startEdit(item)}
                         >
-                            <Edit3 size={12} class="lvct-icon-inline" />
+                            <Edit3 size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                             {text("edit", "编辑")}
                         </button>
 
                         <button
                             type="button"
                             class="b3-button b3-button--cancel btn-action ft__error"
+                            disabled={busy}
                             onclick={() => handleDelete(item.id)}
                         >
-                            <Trash2 size={12} class="lvct-icon-inline" />
+                            <Trash2 size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                             {text("delete", "删除")}
                         </button>
                     </div>
@@ -597,7 +622,7 @@
     }
 
     .header-icon {
-        font-size: 16px;
+        font-size: 15px;
     }
 
     .header-title {
@@ -618,7 +643,8 @@
 
     .btn-add-itinerary {
         font-size: 11px;
-        padding: 2px 8px;
+        padding: 2px 10px;
+        border-radius: var(--lv-r-pill, 9999px) !important;
     }
 
     .itinerary-toolbar {
@@ -636,7 +662,7 @@
         border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 11px;
-        padding: 3px 10px;
+        padding: 3px 12px;
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         color: var(--lvct-text-2);
@@ -644,9 +670,9 @@
     }
 
     .filter-pill.is-active {
-        background: var(--lv-brand);
-        color: #ffffff;
-        border-color: var(--lv-brand);
+        background: var(--lv-brand-soft);
+        color: var(--lv-brand, #ea580c);
+        border-color: var(--lv-brand, #ea580c);
         font-weight: 600;
     }
 
@@ -654,11 +680,19 @@
     .itinerary-form-card {
         padding: 12px 14px;
         border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md, 12px);
+        border-radius: var(--lvct-r-card, 14px);
         background: var(--lvct-bg-app);
         display: flex;
         flex-direction: column;
         gap: 8px;
+
+        input, button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+
+        textarea {
+            border-radius: var(--lvct-r-card, 10px);
+        }
     }
 
     .form-title {
@@ -736,7 +770,7 @@
     .itinerary-card {
         padding: 12px 14px;
         border: 1px solid var(--lvct-color-border-200);
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lvct-r-card, 14px);
         box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         background: var(--lvct-bg-surface);
         display: flex;
@@ -783,29 +817,45 @@
 
     .status-badge {
         font-size: 10px;
-        padding: 2px 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 1px 8px;
         border-radius: var(--lv-r-pill, 9999px);
+        background: transparent;
+        border: 1px solid var(--lvct-color-border-200);
         font-weight: 600;
     }
 
+    .status-badge::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        forced-color-adjust: none;
+    }
+
     .status-badge--planned {
-        background: color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
-        color: var(--b3-theme-primary);
+        color: var(--lv-brand, #ea580c);
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
     }
 
     .status-badge--completed {
-        background: color-mix(in srgb, #10b981 15%, transparent);
         color: #10b981;
+        border-color: color-mix(in srgb, #10b981 30%, transparent);
     }
 
     .status-badge--cancelled {
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
+        border-color: var(--lvct-border-subtle);
     }
 
     .countdown-badge {
         font-size: 11px;
         color: var(--b3-theme-on-surface-light);
+        font-variant-numeric: tabular-nums;
     }
 
     .countdown-badge.is-overdue {
@@ -820,12 +870,14 @@
         gap: 12px;
         font-size: 11px;
         color: var(--b3-theme-on-surface-light);
+        font-variant-numeric: tabular-nums;
     }
 
     .meta-item {
         display: inline-flex;
         align-items: center;
         gap: 4px;
+        font-variant-numeric: tabular-nums;
     }
 
     .card-checklists {
@@ -845,8 +897,8 @@
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        padding: 2px 7px;
-        border-radius: 4px;
+        padding: 2px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         background: var(--b3-theme-surface-lighter);
         border: 1px solid var(--b3-border-color);
         font-size: 11px;
@@ -871,7 +923,7 @@
         color: var(--b3-theme-on-surface-light);
         background: var(--b3-theme-surface-lighter);
         padding: 4px 8px;
-        border-radius: 4px;
+        border-radius: var(--lvct-r-card, 10px);
     }
 
     .card-actions {
@@ -886,7 +938,8 @@
 
     .btn-action {
         font-size: 11px;
-        padding: 2px 8px;
+        padding: 3px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .empty-state {
