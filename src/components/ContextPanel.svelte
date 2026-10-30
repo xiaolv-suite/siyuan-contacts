@@ -99,7 +99,7 @@
                 {#if person}
                     {person.name.slice(0, 1)}
                 {:else}
-                    <Sparkles size={14} />
+                    <Sparkles size={14} strokeWidth={1.6} />
                 {/if}
             </span>
             <div class="lvct-context-panel__title-text">
@@ -116,7 +116,7 @@
                     aria-label={text("openFullScreenDetail", "展开全屏深度档案")}
                     onclick={() => onOpenDetail(person)}
                 >
-                    <Maximize2 size={14} />
+                    <Maximize2 size={14} strokeWidth={1.6} />
                 </button>
             {/if}
             <button
@@ -126,7 +126,7 @@
                 aria-label={text("collapsePanel", "收起侧栏面板")}
                 onclick={onClose}
             >
-                <ChevronRight size={16} />
+                <ChevronRight size={16} strokeWidth={1.6} />
             </button>
         </div>
     </header>
@@ -143,14 +143,14 @@
                         <div class="lvct-context-card__name-line">
                             <b>{person.name}</b>
                             {#if isPersonStarred(preferences, person.docId)}
-                                <Star size={13} fill="#f59e0b" color="#f59e0b" />
+                                <Star size={13} strokeWidth={1.6} fill="#f59e0b" color="#f59e0b" />
                             {/if}
                         </div>
                         {#if person.phone}
-                            <span class="lvct-context-card__meta"><Phone size={12} class="lvct-icon-inline" /> {person.phone}</span>
+                            <span class="lvct-context-card__meta"><Phone size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.phone}</span>
                         {/if}
                         {#if person.wechat}
-                            <span class="lvct-context-card__meta"><MessageSquare size={12} class="lvct-icon-inline" /> {person.wechat}</span>
+                            <span class="lvct-context-card__meta"><MessageSquare size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.wechat}</span>
                         {/if}
                     </div>
                 </div>
@@ -161,7 +161,7 @@
                         {health.level === "hot" ? "🔥 温热" : health.level === "warm" ? "🍃 常温" : health.level === "cool" ? "🌬️ 微凉" : health.level === "cold" ? "❄️ 渐冻" : health.level === "paused" ? "⏸️ 暂缓" : "❄️ 未联系"} · {health.score}%
                     </span>
                     {#if person.birthday}
-                        <span class="lvct-context-card__bday"><Cake size={12} class="lvct-icon-inline" /> {person.birthday}</span>
+                        <span class="lvct-context-card__bday"><Cake size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.birthday}</span>
                     {/if}
                 </div>
 
@@ -184,7 +184,12 @@
                         placeholder="记录会面、电话或交流随想…"
                         bind:value={quickNote}
                         disabled={quickBusy}
-                        onkeydown={(e) => { if (e.key === "Enter") void handleQuickRecord(); }}
+                        onkeydown={(e) => {
+                            if (e.key === "Enter" || ((e.ctrlKey || e.metaKey) && e.key === "Enter")) {
+                                e.preventDefault();
+                                void handleQuickRecord();
+                            }
+                        }}
                     />
                     <button
                         type="button"
@@ -230,9 +235,10 @@
                 <button
                     type="button"
                     class="b3-button b3-button--outline fn__block"
+                    style="border-radius: var(--lv-r-pill, 9999px);"
                     onclick={() => onOpenDetail(person)}
                 >
-                    <Sparkles size={14} class="lvct-icon-inline" /> {text("viewFullDossier", "进入完整交往档案")}
+                    <Sparkles size={14} strokeWidth={1.6} class="lvct-icon-inline" /> {text("viewFullDossier", "进入完整交往档案")}
                 </button>
             </div>
         {:else}
@@ -455,12 +461,13 @@
     }
 
     .lvct-context-timeline__dot {
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
         border-radius: 50%;
         background: var(--lv-brand, #EA580C);
         margin-top: 5px;
         flex-shrink: 0;
+        forced-color-adjust: none;
     }
 
     .lvct-context-timeline__content {

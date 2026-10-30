@@ -69,34 +69,50 @@
         paused: cadencePaused,
     }));
 
+    let alive = true;
+    let copyingWechat = false;
     let wechatCopied = $state(false);
     let wechatTimer: ReturnType<typeof setTimeout> | null = null;
+    let copyingEmail = false;
     let emailCopied = $state(false);
     let emailTimer: ReturnType<typeof setTimeout> | null = null;
 
-    function copyWechat(event: Event) {
+    async function copyWechat(event: Event): Promise<void> {
         event.stopPropagation();
-        if (!person.wechat) return;
-        void copyPlainText(person.wechat);
-        wechatCopied = true;
-        if (wechatTimer) clearTimeout(wechatTimer);
-        wechatTimer = setTimeout(() => {
-            wechatCopied = false;
-        }, 1500);
+        if (!person.wechat || copyingWechat || !alive) return;
+        copyingWechat = true;
+        try {
+            await copyPlainText(person.wechat);
+            if (!alive) return;
+            wechatCopied = true;
+            if (wechatTimer) clearTimeout(wechatTimer);
+            wechatTimer = setTimeout(() => {
+                if (alive) wechatCopied = false;
+            }, 1500);
+        } finally {
+            copyingWechat = false;
+        }
     }
 
-    function copyEmail(event: Event) {
+    async function copyEmail(event: Event): Promise<void> {
         event.stopPropagation();
-        if (!person.email) return;
-        void copyPlainText(person.email);
-        emailCopied = true;
-        if (emailTimer) clearTimeout(emailTimer);
-        emailTimer = setTimeout(() => {
-            emailCopied = false;
-        }, 1500);
+        if (!person.email || copyingEmail || !alive) return;
+        copyingEmail = true;
+        try {
+            await copyPlainText(person.email);
+            if (!alive) return;
+            emailCopied = true;
+            if (emailTimer) clearTimeout(emailTimer);
+            emailTimer = setTimeout(() => {
+                if (alive) emailCopied = false;
+            }, 1500);
+        } finally {
+            copyingEmail = false;
+        }
     }
 
     onDestroy(() => {
+        alive = false;
         if (wechatTimer) clearTimeout(wechatTimer);
         if (emailTimer) clearTimeout(emailTimer);
     });
@@ -137,7 +153,7 @@
                     <strong class="lvct-person-card__name" title={person.name}>{person.name}</strong>
                     {#if person.isSelf}<span class="lvct-chip lvct-bucket--today">本人</span>{/if}
                     {#if person.group}<span class="lvct-chip lvct-chip--group font-size-11">{person.group}</span>{/if}
-                    {#if birthday}<span class="lvct-person-card__bday font-size-11" style="display: inline-flex; align-items: center;"><Cake size={11} class="lvct-icon-inline" /> {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天后`}</span>{/if}
+                    {#if birthday}<span class="lvct-person-card__bday font-size-11" style="display: inline-flex; align-items: center;"><Cake size={11} strokeWidth={1.6} class="lvct-icon-inline" /> {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天后`}</span>{/if}
                     {#if recent && health.level !== "unknown"}
                         <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-11 lvct-person-card__heat-pill`} title={`关系温度 ${health.score}%${recent.count ? ` · 共交往 ${recent.count} 次` : ""}`}>
                             {health.level === "hot" ? "温热" : health.level === "warm" ? "常温" : health.level === "cool" ? "微凉" : health.level === "cold" ? "渐冻" : "暂停"}
@@ -152,7 +168,7 @@
             </div>
             {#if person.phone}
                 <span class="lvct-person-card__compact-phone font-size-11">
-                    <Phone size={11} class="lvct-text-muted" />
+                    <Phone size={11} strokeWidth={1.6} class="lvct-text-muted" />
                     <span>{person.phone}</span>
                 </span>
             {/if}
@@ -166,14 +182,14 @@
                         aria-label={starred ? `取消 ${person.name} 的星标` : `将 ${person.name} 设为星标`}
                         onclick={(event) => { event.stopPropagation(); onToggleStarred?.(!starred); }}
                     >
-                        <Star size={14} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
+                        <Star size={14} strokeWidth={1.6} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
                     </button>
                 {/if}
                 {#if onOpenActivity}
-                    <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={() => onOpenActivity?.(person)}><MessageSquarePlus size={14}/></button>
+                    <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={() => onOpenActivity?.(person)}><MessageSquarePlus size={14} strokeWidth={1.6} /></button>
                 {/if}
-                {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={() => onOpenGraphPerson?.(person.docId)}><Network size={14}/></button>{/if}
-                {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={() => onOpenPersonDoc(person.docId)}><ExternalLink size={14}/></button>{/if}
+                {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={() => onOpenGraphPerson?.(person.docId)}><Network size={14} strokeWidth={1.6} /></button>{/if}
+                {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={() => onOpenPersonDoc(person.docId)}><ExternalLink size={14} strokeWidth={1.6} /></button>{/if}
             </span>
         </div>
     {:else}
@@ -214,24 +230,24 @@
                     aria-label={starred ? `取消 ${person.name} 的星标` : `将 ${person.name} 设为星标`}
                     onclick={(event) => { event.stopPropagation(); onToggleStarred?.(!starred); }}
                 >
-                    <Star size={16} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
+                    <Star size={16} strokeWidth={1.6} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
                 </button>
             {/if}
             {#if onOpenActivity}
-                <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={(event) => { event.stopPropagation(); onOpenActivity?.(person); }}><MessageSquarePlus size={16}/></button>
+                <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={(event) => { event.stopPropagation(); onOpenActivity?.(person); }}><MessageSquarePlus size={16} strokeWidth={1.6} /></button>
             {/if}
-            {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={(event) => { event.stopPropagation(); onOpenGraphPerson?.(person.docId); }}><Network size={16}/></button>{/if}
-            {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={(event) => { event.stopPropagation(); onOpenPersonDoc(person.docId); }}><ExternalLink size={16}/></button>{/if}
+            {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={(event) => { event.stopPropagation(); onOpenGraphPerson?.(person.docId); }}><Network size={16} strokeWidth={1.6} /></button>{/if}
+            {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={(event) => { event.stopPropagation(); onOpenPersonDoc(person.docId); }}><ExternalLink size={16} strokeWidth={1.6} /></button>{/if}
         </div>
         {#if person.profile}<PersonProfileSummary profile={person.profile} compact hideEmpty />
         {:else if orgLine}
             <div class="lvct-person-card__org" aria-label="单位" title={orgLine}>{orgLine}</div>
         {/if}
         <div class="lvct-person-card__meta">
-            {#if person.phone}<div><span aria-hidden="true"><Phone size={13}/></span><a class="lvct-person-card__meta-value" href={telHref(person.phone)} onclick={(event) => event.stopPropagation()}>{person.phone}</a></div>{/if}
+            {#if person.phone}<div><span aria-hidden="true"><Phone size={13} strokeWidth={1.6} /></span><a class="lvct-person-card__meta-value" href={telHref(person.phone)} onclick={(event) => event.stopPropagation()}>{person.phone}</a></div>{/if}
             {#if person.wechat}
                 <div>
-                    <span aria-hidden="true"><MessageCircle size={13}/></span>
+                    <span aria-hidden="true"><MessageCircle size={13} strokeWidth={1.6} /></span>
                     <span
                         class="lvct-person-card__meta-value"
                         class:lvct-text-success={wechatCopied}
@@ -241,7 +257,7 @@
                         onclick={copyWechat}
                         onkeydown={(event) => {
                             if (event.key === "Enter" || event.key === " ") {
-                                copyWechat(event);
+                                void copyWechat(event);
                             }
                         }}
                     >{wechatCopied ? "已复制微信号 ✓" : person.wechat}</span>
@@ -249,7 +265,7 @@
             {/if}
             {#if person.email}
                 <div>
-                    <span aria-hidden="true"><Mail size={13}/></span>
+                    <span aria-hidden="true"><Mail size={13} strokeWidth={1.6} /></span>
                     <a
                         class="lvct-person-card__meta-value"
                         class:lvct-text-success={emailCopied}
@@ -259,14 +275,14 @@
                             event.stopPropagation();
                             if (event.ctrlKey || event.metaKey) {
                                 event.preventDefault();
-                                copyEmail(event);
+                                void copyEmail(event);
                             }
                         }}
                     >{emailCopied ? "已复制邮箱 ✓" : person.email}</a>
                 </div>
             {/if}
             <div>
-                <span aria-hidden="true"><Clock3 size={13}/></span>
+                <span aria-hidden="true"><Clock3 size={13} strokeWidth={1.6} /></span>
                 <span class="lvct-person-card__meta-value">{recentLabel}</span>
                 {#if recent && recent.count && recent.count > 0}
                     <span class="lvct-text-muted font-size-11" style="margin-left: 2px;">({recent.count}次)</span>
