@@ -154,6 +154,7 @@
     let creatingOrganization = $state(false);
     let profileSection: HTMLElement | undefined = $state();
     let removingOrgDocId = $state("");
+    let removingMembershipId = $state<string | null>(null);
     let organizationRemovalPanel: HTMLElement | undefined = $state();
     function validateEditDraft(value: ContactDraft): ValidationIssue[] {
         const errors: ValidationIssue[] = [];
@@ -362,34 +363,39 @@
     }
     async function saveEditMembership(): Promise<void> { await saveProfileEditor(); }
     async function removeMembership(membership: import("../../services/org").PersonOrgMembershipView): Promise<void> {
-        if (!onRemoveOrgMembership || profileBusy || profileLoading) return;
-        const confirmed = await confirmDialog({
-            title: "删除组织经历",
-            message: `确定删除「${membership.orgName}」的这段组织经历吗？正常离职或毕业请编辑状态并保留历史。`,
-            confirmLabel: "删除",
-            cancelLabel: "取消",
-            danger: true,
-        });
-        if (!confirmed) return;
-        profileBusy = true;
-        profileError = "";
+        if (!onRemoveOrgMembership || profileBusy || profileLoading || removingMembershipId) return;
+        removingMembershipId = membership.id;
         try {
-            const result = await onRemoveOrgMembership(membership.id, membershipSnapshot(membership));
-            if (!alive) return;
-            const report = result as OrgMembershipWriteReport | undefined;
-            if (report?.fact === "verified" && Array.isArray(report.projections)) membershipReports = [...membershipReports, report];
-            else {
-                if (!onLoadOrgMemberships) throw new Error("删除结果待核实，请重新读取组织经历，未再次删除。");
-                orgMemberships = await onLoadOrgMemberships(person.docId);
+            const confirmed = await confirmDialog({
+                title: "删除组织经历",
+                message: `确定删除「${membership.orgName}」的这段组织经历吗？正常离职或毕业请编辑状态并保留历史。`,
+                confirmLabel: "删除",
+                cancelLabel: "取消",
+                danger: true,
+            });
+            if (!confirmed) return;
+            profileBusy = true;
+            profileError = "";
+            try {
+                const result = await onRemoveOrgMembership(membership.id, membershipSnapshot(membership));
                 if (!alive) return;
-                if (orgMemberships.some((entry) => entry.id === membership.id)) throw new Error("删除结果未核实，请重新读取后核对，已保留原经历。");
-            }
-            if (editingMembershipId === membership.id) { editingMembershipId = ""; editingMembershipSnapshot = null; editingAttemptedInput = null; }
-            profileMessage = "组织归属已删除";
-            onSaved();
-            await loadProfileEditor(true);
-        } catch (error) { profileError = requestErrorMessage(error); }
-        finally { profileBusy = false; }
+                const report = result as OrgMembershipWriteReport | undefined;
+                if (report?.fact === "verified" && Array.isArray(report.projections)) membershipReports = [...membershipReports, report];
+                else {
+                    if (!onLoadOrgMemberships) throw new Error("删除结果待核实，请重新读取组织经历，未再次删除。");
+                    orgMemberships = await onLoadOrgMemberships(person.docId);
+                    if (!alive) return;
+                    if (orgMemberships.some((entry) => entry.id === membership.id)) throw new Error("删除结果未核实，请重新读取后核对，已保留原经历。");
+                }
+                if (editingMembershipId === membership.id) { editingMembershipId = ""; editingMembershipSnapshot = null; editingAttemptedInput = null; }
+                profileMessage = "组织归属已删除";
+                onSaved();
+                await loadProfileEditor(true);
+            } catch (error) { profileError = requestErrorMessage(error); }
+            finally { profileBusy = false; }
+        } finally {
+            if (alive) removingMembershipId = null;
+        }
     }
     // 运行时由 Svelte 注入 onMount；控制逻辑单测以无生命周期夹具执行，需安全跳过。
     if (typeof onMount === "function") onMount(() => { if (profileSupported) void loadProfileEditor(); });
@@ -709,12 +715,22 @@
             running = false;
         }
     }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            if (removingOrgDocId || removingMembershipId) return;
+            event.preventDefault();
+            void submit();
+        }
+    }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="lvct-form">
     <div class="lvct-form__toolbar">
-        <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" onclick={() => (quickFillOpen = true)} disabled={running}>
-            <ClipboardPaste size={14}/>{text("qfOpen", "粘贴并识别")}
+        <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (quickFillOpen = true)} disabled={running}>
+            <ClipboardPaste size={14} strokeWidth={1.6} />{text("qfOpen", "粘贴并识别")}
         </button>
     </div>
     {#if profileSupported}
@@ -745,14 +761,14 @@
                         <div class="lvct-person-edit__org-confirm" role="alertdialog" aria-modal="false" aria-label="取消组织经历" tabindex="-1" bind:this={organizationRemovalPanel}
                             onkeydown={(event) => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); keepOrganizationDraft(); } }}>
                             <p>取消选择「{pendingOrg?.name ?? removingOrgDocId}」将丢失已填写的组织资料。</p>
-                            <button type="button" class="b3-button b3-button--cancel" onclick={keepOrganizationDraft}>保留经历</button>
-                            <button type="button" class="b3-button b3-button--outline" onclick={confirmRemoveOrganizationDraft}>确认移除这条经历</button>
+                            <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={keepOrganizationDraft}>保留经历</button>
+                            <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={confirmRemoveOrganizationDraft}>确认移除这条经历</button>
                         </div>
                     {/if}
                     {#each orgDrafts as entry (entry.orgDocId)}
                         <div class="lvct-person-edit__org-draft" data-org-doc-id={entry.orgDocId} oninput={() => { entry.error = ""; entry.errorField = undefined; }} onchange={() => { entry.error = ""; entry.errorField = undefined; }}>
                             <div class="lvct-person-edit__org-draft-head"><strong>{entry.name}</strong>
-                                <button type="button" class="b3-button b3-button--text" aria-label={`${entry.attempted ? "放弃本地草稿" : "取消选择"}${entry.name}`} disabled={profileBusy} onclick={() => discardOrgDraft(entry)}>{entry.attempted ? "放弃本地草稿" : "取消选择"}</button>
+                                <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={`${entry.attempted ? "放弃本地草稿" : "取消选择"}${entry.name}`} disabled={profileBusy} onclick={() => discardOrgDraft(entry)}>{entry.attempted ? "放弃本地草稿" : "取消选择"}</button>
                             </div>
                             <div class="lvct-form__grid">
                                 <label class="lvct-form__item"><span>归属分类</span><select class="b3-select fn__block" bind:value={entry.affiliationKind} disabled={profileBusy || Boolean(entry.attempted)}><option value="work">工作单位</option><option value="education">学校</option><option value="family">家庭</option><option value="unspecified">其他组织</option></select></label>
@@ -791,9 +807,9 @@
                                         {#if membership.joinedOn || membership.leftOn}<span class="ft__smaller ft__on-surface"> · {membership.joinedOn || "未知"} – {membership.leftOn || "至今"}</span>{/if}
                                         {#if membership.note}<span class="ft__smaller ft__on-surface" title={membership.note}> · {membership.note}</span>{/if}
                                     </div>
-                                    {#if onUpdateOrgMembership}<button type="button" class="b3-button b3-button--text" onclick={() => startEditMembership(membership)} disabled={profileBusy || profileLoading || membership.removed}>编辑</button>{/if}
-                                    {#if !membership.removed}<button type="button" class="b3-button b3-button--text" onclick={() => addOrgDraft({ docId: membership.orgDocId, name: membership.orgName, archived: membership.archived }, true)} disabled={profileBusy || profileLoading || selectedOrgIds.includes(membership.orgDocId)}>补录历史</button>{/if}
-                                    {#if onRemoveOrgMembership}<button type="button" class="b3-button b3-button--cancel" onclick={() => void removeMembership(membership)} disabled={profileBusy || profileLoading || membership.removed}>删除</button>{/if}
+                                    {#if onUpdateOrgMembership}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => startEditMembership(membership)} disabled={profileBusy || profileLoading || membership.removed}>编辑</button>{/if}
+                                    {#if !membership.removed}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => addOrgDraft({ docId: membership.orgDocId, name: membership.orgName, archived: membership.archived }, true)} disabled={profileBusy || profileLoading || selectedOrgIds.includes(membership.orgDocId)}>补录历史</button>{/if}
+                                    {#if onRemoveOrgMembership}<button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void removeMembership(membership)} disabled={profileBusy || profileLoading || membership.removed || removingMembershipId === membership.id}>删除</button>{/if}
                                     {#if membership.removed}<span class="ft__smaller ft__on-surface">组织已移除；恢复组织后才能维护这段经历。</span>{/if}
                                 </div>
                                 {#if editingMembershipId === membership.id}
@@ -806,7 +822,7 @@
                                         <label class="lvct-form__item"><span>职位/身份</span><input class="b3-text-field fn__block" bind:value={editingOrgTitle} disabled={profileBusy || Boolean(editingAttemptedInput)} /></label>
                                         <label class="lvct-form__item"><span>开始日期</span><input class="b3-text-field fn__block" type="date" bind:value={editingOrgJoinedOn} disabled={profileBusy || Boolean(editingAttemptedInput)} /></label>
                                         <label class="lvct-form__item"><span>结束日期</span><input class="b3-text-field fn__block" type="date" bind:value={editingOrgLeftOn} disabled={profileBusy || Boolean(editingAttemptedInput) || editingOrgStatus === "active"} /></label>
-                                        <div class="lvct-form__actions"><button type="button" class="b3-button b3-button--text" onclick={() => void saveEditMembership()} disabled={profileBusy}>保存</button><button type="button" class="b3-button b3-button--cancel" onclick={cancelEditMembership} disabled={profileBusy}>取消</button></div>
+                                        <div class="lvct-form__actions"><button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void saveEditMembership()} disabled={profileBusy}>保存</button><button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={cancelEditMembership} disabled={profileBusy}>取消</button></div>
                                     </div>
                                 {/if}
                             {/each}
@@ -819,12 +835,12 @@
                 {#if recoveredMemberships.length}<p role="status">已重读核实：{recoveredMemberships.join("、")}。成员事实已保留；双链状态请到设置 → 数据与字段 → 组织成员双链核对。</p>{/if}
                 {#if profileError}
                     <p class="lvct-form__error" role="alert">{profileError}</p>
-                    <button type="button" class="b3-button b3-button--outline" onclick={() => void loadProfileEditor(true)} disabled={profileBusy || profileLoading}>
+                    <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void loadProfileEditor(true)} disabled={profileBusy || profileLoading}>
                         {profileLoading ? "重新读取中…" : "重新读取资料"}
                     </button>
                 {/if}
                 {#if profileMessage}<p role="status">{profileMessage}</p>{/if}
-                <button type="button" class="b3-button b3-button--outline" onclick={() => void saveProfileEditor()} disabled={profileBusy || creatingOrganization || running || Boolean(removingOrgDocId) || !profileDirty}>
+                <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void saveProfileEditor()} disabled={profileBusy || creatingOrganization || running || Boolean(removingOrgDocId) || !profileDirty}>
                     {profileBusy ? "保存资料中…" : "保存组织与称谓"}
                 </button>
             {/if}
@@ -861,7 +877,7 @@
                     <button
                         type="button"
                         class="b3-button b3-button--text b3-button--small"
-                        style="padding: 0 4px; font-size: 11px; color: var(--lv-brand, #ea580c);"
+                        style="padding: 0 8px; font-size: 11px; color: var(--lv-brand, #ea580c); border-radius: var(--lv-r-pill, 9999px);"
                         onclick={applyAllSuggestedTags}
                         title="一键追加全部推断画像标签"
                     >+ 采纳全部建议标签</button>
@@ -871,13 +887,13 @@
             {#if suggestedTags.length > 0}
                 <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
                     <span class="ft__smaller" style="color: var(--lvct-text-3); display: inline-flex; align-items: center; gap: 3px;">
-                        <Sparkles size={11} /> 智能推断建议：
+                        <Sparkles size={11} strokeWidth={1.6} /> 智能推断建议：
                     </span>
                     {#each suggestedTags as stag}
                         <button
                             type="button"
                             class="b3-chip font-size-11"
-                            style="cursor: pointer;"
+                            style="cursor: pointer; border-radius: var(--lv-r-pill, 9999px);"
                             title={`点击将「${stag}」追加到标签`}
                             onclick={() => appendSuggestedTag(stag)}
                         >+ {stag}</button>
@@ -893,11 +909,11 @@
     {/if}
 
     <div class="lvct-form__actions">
-        <button class="b3-button b3-button--cancel" onclick={() => guardedClose(onClose)} disabled={running}>{text("formCancel", "取消")}</button>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={running}>{text("formCancel", "取消")}</button>
         {#if failedFields.length > 0}
-            <button class="b3-button b3-button--outline" onclick={retryFailed} disabled={running || profileBusy || creatingOrganization || (profileSupported && profileLoading) || !groupValid}>{text("formRetryFailed", "核实并重试未完成字段")}</button>
+            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={retryFailed} disabled={running || profileBusy || creatingOrganization || (profileSupported && profileLoading) || !groupValid}>{text("formRetryFailed", "核实并重试未完成字段")}</button>
         {/if}
-        <button class="b3-button b3-button--primary" onclick={submit} disabled={running || profileBusy || creatingOrganization || (profileSupported && profileLoading) || !groupValid}>
+        <button class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={submit} disabled={running || profileBusy || creatingOrganization || (profileSupported && profileLoading) || !groupValid}>
             {running ? text("formSaving", "保存中…") : text("formSave", "保存")}
         </button>
     </div>
@@ -914,11 +930,54 @@
 {/if}
 
 <style>
-    .lvct-person-edit__org-draft { border: 1px solid var(--lvct-border-subtle); border-radius: 8px; padding: 12px; margin: 12px 0; min-width: 0; }
+    .lvct-person-edit__profile {
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 12px);
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+        padding: 12px 14px;
+        margin-bottom: 12px;
+    }
+    .lvct-person-edit__org-draft {
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 12px);
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+        padding: 12px;
+        margin: 12px 0;
+        min-width: 0;
+    }
     .lvct-person-edit__org-draft-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
     .lvct-person-edit__org-draft-head strong { min-width: 0; overflow-wrap: anywhere; }
     .lvct-person-edit__org-draft-head button { flex-shrink: 0; }
-    .lvct-person-edit__org-confirm { padding: 12px; margin-top: 8px; border: 1px solid var(--lvct-accent); border-radius: 8px; }
+    .lvct-person-edit__org-confirm {
+        padding: 12px;
+        margin-top: 8px;
+        border: 1px solid var(--lvct-accent);
+        border-radius: var(--lvct-r-card, 12px);
+        background: var(--lvct-bg-surface);
+    }
+    .lvct-person-edit__org-item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: var(--lvct-r-card, 10px);
+        background: var(--lvct-bg-surface);
+        margin-bottom: 6px;
+    }
+    .lvct-person-edit__org-item .b3-button--cancel {
+        opacity: 0.6;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease);
+    }
+    .lvct-person-edit__org-item .b3-button--cancel:hover,
+    .lvct-person-edit__org-item .b3-button--cancel:focus-visible {
+        opacity: 1;
+    }
+    @media (hover: none) {
+        .lvct-person-edit__org-item .b3-button--cancel {
+            opacity: 1;
+        }
+    }
     .lvct-person-edit__org-more { margin-top: 8px; }
     .lvct-person-edit__org-more summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 40px; cursor: pointer; }
     .lvct-person-edit__org-more summary::before { content: "▸"; color: var(--lvct-accent); }
