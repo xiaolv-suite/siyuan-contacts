@@ -432,6 +432,7 @@
             <div class="fn__flex" style="align-items: center; gap: 8px; margin-top: 6px;">
                 <button
                     class="b3-button b3-button--outline"
+                    style="border-radius: var(--lv-r-pill, 9999px);"
                     onclick={runExport}
                     disabled={exporting || parsing || importing || retrying || targetExportCount === 0}
                 >
@@ -446,10 +447,10 @@
 
     <div class="lvct-vcard__section-title">{text("vcardImportTitle", "导入")}</div>
     <div class="lvct-people__toolbar fn__flex" style="flex-wrap: wrap; gap: 8px; align-items: center;">
-        <button class="b3-button b3-button--outline" onclick={() => guardedClose(() => fileInput?.click())} disabled={parsing || importing || exporting || retrying}>
+        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(() => fileInput?.click())} disabled={parsing || importing || exporting || retrying}>
             {parsing ? text("vcardParsing", "解析中…") : "选择 .vcf / .csv 文件…"}
         </button>
-        <button type="button" class="b3-button b3-button--text" onclick={downloadCsvTemplate} title="下载带标准表头的 CSV/Excel 模版文件，填好后可直接在此导入">
+        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={downloadCsvTemplate} title="下载带标准表头的 CSV/Excel 模版文件，填好后可直接在此导入">
             <Download size={14} /> 下载 Excel/CSV 导入模板
         </button>
         <input
@@ -632,9 +633,9 @@
     {/if}
 
     <div class="lvct-form__actions">
-        <button class="b3-button b3-button--cancel" onclick={() => guardedClose(onClose)} disabled={operationBusy}>关闭</button>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={operationBusy}>关闭</button>
         {#if !report}
-            <button class="b3-button b3-button--text" onclick={runImport} disabled={importing || parsing || exporting || !!errorText || !plans || selectedCount === 0}>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={runImport} disabled={importing || parsing || exporting || !!errorText || !plans || selectedCount === 0}>
                 {importing ? "导入中…" : `导入为联系人（${selectedCount}）`}
             </button>
         {/if}
