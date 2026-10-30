@@ -381,13 +381,24 @@
             }
         }
     }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && editing) {
+            event.preventDefault();
+            if (!busy && dirty && !pendingDeleteId) {
+                void save();
+            }
+        }
+    }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#snippet readonlyValue(item: Extract<PersonField, { kind: "entry" }>)}
     <div class="lvct-person-fields__content" data-field-content={item.id}>{item.value || "（空）"}</div>
     {#if item.value.length > 0}
         <div class="lvct-person-fields__copy-actions">
-            <button type="button" class="b3-button b3-button--text" data-copy-field-id={item.id} aria-label={`复制${item.label}的内容`} disabled={busy || copyInFlight} onclick={() => void copyValue(item.id)}>{copyPendingId === item.id ? "复制中…" : "复制内容"}</button>
+            <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" data-copy-field-id={item.id} aria-label={`复制${item.label}的内容`} disabled={busy || copyInFlight} onclick={() => void copyValue(item.id)}>{copyPendingId === item.id ? "复制中…" : "复制内容"}</button>
         </div>
     {/if}
     {#if copyResultId === item.id}
@@ -400,7 +411,7 @@
     <div class="lvct-person-fields__heading">
         <h4>补充资料</h4>
         {#if baseline && !editing && !loading}
-            <button type="button" class="b3-button b3-button--text" disabled={busy} onclick={() => beginEditing()}>编辑补充资料</button>
+            <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => beginEditing()}>编辑补充资料</button>
         {/if}
     </div>
     <p class="ft__smaller ft__on-surface">可添加同名的多条资料，用分组整理为两层。这些资料随人物文档备份；暂不用于快捷联系、全局搜索、通讯录导出或插件迁移包。</p>
@@ -428,21 +439,21 @@
                     <div class="lvct-person-fields__item" data-field-id={item.id} data-field-kind={item.kind}>
                         <div class="lvct-person-fields__item-heading"><strong>{item.kind === "group" ? "分组" : "条目"}</strong>
                             <div class="lvct-person-fields__item-actions">
-                                <button type="button" class="b3-button b3-button--text" aria-label={`上移${item.label || (item.kind === "group" ? "分组" : "条目")}`} disabled={blocked || siblingIndex(item.id, -1) < 0} onclick={() => move(item.id, -1)}>上移</button>
-                                <button type="button" class="b3-button b3-button--text" aria-label={`下移${item.label || (item.kind === "group" ? "分组" : "条目")}`} disabled={blocked || siblingIndex(item.id, 1) < 0} onclick={() => move(item.id, 1)}>下移</button>
-                                <button type="button" class="b3-button b3-button--text" disabled={blocked} onclick={() => requestDelete(item.id)}>删除</button>
+                                <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={`上移${item.label || (item.kind === "group" ? "分组" : "条目")}`} disabled={blocked || siblingIndex(item.id, -1) < 0} onclick={() => move(item.id, -1)}>上移</button>
+                                <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={`下移${item.label || (item.kind === "group" ? "分组" : "条目")}`} disabled={blocked || siblingIndex(item.id, 1) < 0} onclick={() => move(item.id, 1)}>下移</button>
+                                <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={blocked} onclick={() => requestDelete(item.id)}>删除</button>
                             </div>
                         </div>
                         <label class="lvct-field__row" for={`${componentId}-${item.id}-label`}><span>{item.kind === "group" ? "分组名称" : "条目名称"}（必填）</span>
-                            <input id={`${componentId}-${item.id}-label`} class="b3-text-field" type="text" value={item.label} maxlength={MAX_PERSON_FIELD_LABEL_LENGTH} aria-label={item.kind === "group" ? "分组名称" : "条目名称"} aria-invalid={attemptedValidation && !item.label.trim()} aria-describedby={attemptedValidation && !item.label.trim() ? `${componentId}-${item.id}-error` : undefined} required disabled={blocked} oninput={(event) => updateLabel(item.id, event.currentTarget.value)} />
+                            <input id={`${componentId}-${item.id}-label`} class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" type="text" value={item.label} maxlength={MAX_PERSON_FIELD_LABEL_LENGTH} aria-label={item.kind === "group" ? "分组名称" : "条目名称"} aria-invalid={attemptedValidation && !item.label.trim()} aria-describedby={attemptedValidation && !item.label.trim() ? `${componentId}-${item.id}-error` : undefined} required disabled={blocked} oninput={(event) => updateLabel(item.id, event.currentTarget.value)} />
                             {#if attemptedValidation && !item.label.trim()}<small id={`${componentId}-${item.id}-error`} class="lvct-form__error">名称不能为空。</small>{/if}
                         </label>
                         {#if item.kind === "entry"}
                             <label class="lvct-field__row" for={`${componentId}-${item.id}-value`}><span>内容</span>
-                                <textarea id={`${componentId}-${item.id}-value`} class="b3-text-field" rows="3" value={item.value} maxlength={MAX_PERSON_FIELD_VALUE_LENGTH} aria-label="内容" disabled={blocked} oninput={(event) => updateValue(item.id, event.currentTarget.value)}></textarea>
+                                <textarea id={`${componentId}-${item.id}-value`} class="b3-text-field" style="border-radius: var(--lvct-r-card, 10px);" rows="3" value={item.value} maxlength={MAX_PERSON_FIELD_VALUE_LENGTH} aria-label="内容" disabled={blocked} oninput={(event) => updateValue(item.id, event.currentTarget.value)}></textarea>
                             </label>
                             <label class="lvct-field__row" for={`${componentId}-${item.id}-parent`}><span>所属分组</span>
-                                <select id={`${componentId}-${item.id}-parent`} class="b3-select" value={item.parentId ?? ""} aria-label="所属分组" disabled={blocked} onchange={(event) => updateParent(item.id, event.currentTarget.value)}>
+                                <select id={`${componentId}-${item.id}-parent`} class="b3-select" style="border-radius: var(--lv-r-pill, 9999px);" value={item.parentId ?? ""} aria-label="所属分组" disabled={blocked} onchange={(event) => updateParent(item.id, event.currentTarget.value)}>
                                     <option value="">不分组</option>
                                     {#each groups as group (group.id)}<option value={group.id}>{group.label || "未命名分组"}</option>{/each}
                                 </select>
@@ -453,15 +464,15 @@
                                 {#if item.kind === "group"}
                                     <p>删除“{item.label || "未命名分组"}”时，如何处理其中的 {draft.filter((child) => child.kind === "entry" && child.parentId === item.id).length} 条资料？选择后仍需保存补充资料。</p>
                                     <div class="lvct-person-fields__actions">
-                                        <button type="button" class="b3-button b3-button--outline" disabled={busy} onclick={() => confirmDelete(true)}>保留子条目（解除分组）</button>
-                                        <button type="button" class="b3-button b3-button--cancel" disabled={busy} onclick={() => confirmDelete(false)}>连同子条目删除</button>
-                                        <button type="button" class="b3-button b3-button--text" disabled={busy} onclick={() => pendingDeleteId = ""}>取消</button>
+                                        <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => confirmDelete(true)}>保留子条目（解除分组）</button>
+                                        <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => confirmDelete(false)}>连同子条目删除</button>
+                                        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => pendingDeleteId = ""}>取消</button>
                                     </div>
                                 {:else}
                                     <p>从草稿中删除“{item.label || "未命名条目"}”？保存前仍可取消整份修改。</p>
                                     <div class="lvct-person-fields__actions">
-                                        <button type="button" class="b3-button b3-button--cancel" disabled={busy} onclick={() => confirmDelete(false)}>确认删除条目</button>
-                                        <button type="button" class="b3-button b3-button--text" disabled={busy} onclick={() => pendingDeleteId = ""}>取消</button>
+                                        <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => confirmDelete(false)}>确认删除条目</button>
+                                        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => pendingDeleteId = ""}>取消</button>
                                     </div>
                                 {/if}
                             </div>
@@ -470,22 +481,22 @@
                 {/each}
             </div>
             <div class="lvct-person-fields__actions">
-                <button type="button" class="b3-button b3-button--outline" disabled={blocked || draft.length >= MAX_PERSON_FIELDS_ITEMS} onclick={() => void add("entry")}>添加资料条目</button>
-                <button type="button" class="b3-button b3-button--outline" disabled={blocked || draft.length >= MAX_PERSON_FIELDS_ITEMS} onclick={() => void add("group")}>添加分组</button>
-                <button type="button" class="b3-button b3-button--text" disabled={blocked || !dirty} onclick={() => void save()}>{saving ? "保存中…" : "保存补充资料"}</button>
-                <button type="button" class="b3-button b3-button--cancel" disabled={busy} onclick={() => void cancelEditing()}>取消编辑</button>
+                <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={blocked || draft.length >= MAX_PERSON_FIELDS_ITEMS} onclick={() => void add("entry")}>添加资料条目</button>
+                <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={blocked || draft.length >= MAX_PERSON_FIELDS_ITEMS} onclick={() => void add("group")}>添加分组</button>
+                <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={blocked || !dirty} onclick={() => void save()}>{saving ? "保存中…" : "保存补充资料"}</button>
+                <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => void cancelEditing()}>取消编辑</button>
             </div>
         {:else if baseline.snapshot.items.length === 0}
             <p class="ft__smaller ft__on-surface">还没有补充资料。可添加多个电话、地址、家庭信息等自定义条目。</p>
-            <button type="button" class="b3-button b3-button--outline" disabled={busy} onclick={() => void add("entry")}>添加资料条目</button>
+            <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => void add("entry")}>添加资料条目</button>
         {:else}
             <div class="lvct-person-fields__filter">
                 <label class="lvct-field__row" for={`${componentId}-filter`}><span>筛选补充资料</span>
-                    <input id={`${componentId}-filter`} class="b3-text-field" type="search" aria-label="筛选补充资料" placeholder="名称、分组或内容" value={filterQuery} oninput={(event) => changeFilter(event.currentTarget.value)} />
+                    <input id={`${componentId}-filter`} class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" type="search" aria-label="筛选补充资料" placeholder="名称、分组或内容" value={filterQuery} oninput={(event) => changeFilter(event.currentTarget.value)} />
                 </label>
                 <div class="lvct-person-fields__filter-actions">
                     <p class="ft__smaller ft__on-surface" role="status" aria-atomic="true">{filterQuery.trim() ? `找到 ${filtered.matchedEntryCount} / ${totalEntryCount} 条资料` : `共 ${totalEntryCount} 条资料`}</p>
-                    {#if filterQuery}<button type="button" class="b3-button b3-button--text" onclick={() => changeFilter("")}>清空筛选</button>{/if}
+                    {#if filterQuery}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => changeFilter("")}>清空筛选</button>{/if}
                 </div>
             </div>
             {#if copyInFlight && !copyPendingId}<p class="ft__smaller ft__on-surface" role="status">正在完成复制，请稍候再复制。</p>{/if}
@@ -510,7 +521,18 @@
         {/if}
     {/if}
     <div class="lvct-person-fields__actions lvct-person-fields__recovery">
-        <button type="button" class="b3-button b3-button--text" disabled={busy} onclick={() => void reread()}>重新读取</button>
-        {#if onOpenDocument}<button type="button" class="b3-button b3-button--text" disabled={busy} onclick={onOpenDocument}>打开人物文档</button>{/if}
+        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => void reread()}>重新读取</button>
+        {#if onOpenDocument}<button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={onOpenDocument}>打开人物文档</button>{/if}
     </div>
 </section>
+
+<style>
+    .lvct-person-fields__item,
+    .lvct-person-fields__group {
+        border-radius: var(--lvct-r-card, 12px) !important;
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+    }
+    .lvct-person-fields__confirm {
+        border-radius: var(--lvct-r-card, 10px);
+    }
+</style>
