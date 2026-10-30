@@ -3630,6 +3630,10 @@ html[data-theme-mode="dark"] .lvct-notice {
     justify-content: flex-start;
     flex-wrap: wrap;
     margin-top: var(--lvct-sp-3);
+
+    .b3-button {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
 }
 
 .lvct-form__hint {
@@ -4875,14 +4879,19 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     span {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+        padding: 3px 12px 3px 6px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-bg-surface) 60%, transparent);
+        border: 1px solid transparent;
+        transition: all var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     b {
         display: inline-grid;
         place-items: center;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background: var(--lvct-bg-surface);
         color: var(--lvct-text-2);
@@ -4896,20 +4905,22 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
 }
 
 .lvct-capture__step--active {
-    color: var(--lvct-accent);
+    color: var(--lv-brand, #ea580c) !important;
+    background: var(--lv-brand-soft) !important;
+    border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent) !important;
 
     b {
-        background: var(--lvct-accent);
-        color: var(--lvct-on-accent);
+        background: var(--lv-brand, #ea580c) !important;
+        color: #ffffff !important;
     }
 }
 
 .lvct-capture__step--done {
-    color: var(--lvct-success);
+    color: #059669 !important;
 
     b {
-        background: var(--lvct-success);
-        color: var(--lvct-on-accent);
+        background: #059669 !important;
+        color: #ffffff !important;
     }
 }
 
