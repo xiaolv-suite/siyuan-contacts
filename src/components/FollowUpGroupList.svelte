@@ -151,16 +151,17 @@
     border-bottom: 1px solid var(--b3-border-color, rgba(0,0,0,0.06));
 }
 .lvct-fu-group__pill {
-    padding: 2px 8px;
+    padding: 3px 10px;
     font-size: 11px;
-    border-radius: 12px;
+    border-radius: var(--lv-r-pill, 9999px);
     color: var(--b3-theme-on-surface);
     background: transparent;
-    opacity: 0.75;
+    opacity: 0.8;
+    transition: all 0.15s ease;
 }
 .lvct-fu-group__pill--active {
-    background: var(--b3-theme-primary);
-    color: var(--b3-theme-on-primary, #fff);
+    background: var(--lv-brand, #ea580c);
+    color: #ffffff;
     opacity: 1;
     font-weight: 600;
 }
@@ -183,9 +184,9 @@
     text-align: center;
     font-size: 11px;
     font-weight: 600;
-    border-radius: 9999px;
-    background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
-    color: var(--b3-theme-primary);
+    border-radius: var(--lv-r-pill, 9999px);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+    color: var(--lv-brand, #ea580c);
     padding: 1px 6px;
 }
 .lvct-fu-group__group ul {
@@ -197,15 +198,39 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 1px 0;
+    padding: 2px 0;
 }
 .lvct-fu-group__status {
     font-size: 11px;
     font-weight: 500;
-    border-radius: 4px;
-    padding: 1px 6px;
+    border-radius: var(--lv-r-pill, 9999px);
+    padding: 1px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: 1px solid var(--lvct-color-border-200);
 }
-.lvct-fu-group__status--open { background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent); color: var(--b3-theme-primary); }
-.lvct-fu-group__status--done { background: color-mix(in srgb, var(--b3-theme-success, #4caf7d) 16%, transparent); color: var(--b3-theme-success, #4caf7d); }
-.lvct-fu-group__status--cancelled { background: color-mix(in srgb, var(--b3-theme-on-surface-light) 18%, transparent); color: var(--b3-theme-on-surface-light); }
+.lvct-fu-group__status::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+    forced-color-adjust: none;
+}
+.lvct-fu-group__status--open {
+    color: var(--lv-brand, #ea580c);
+    border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
+}
+.lvct-fu-group__status--done {
+    color: #059669;
+    border-color: color-mix(in srgb, #059669 30%, transparent);
+}
+.lvct-fu-group__status--cancelled {
+    color: var(--b3-theme-on-surface-light);
+    border-color: var(--lvct-border-subtle);
+}
 </style>

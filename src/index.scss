@@ -1245,6 +1245,13 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
 }
 
 // F12 交往回顾报表
+.lvct-review {
+    .b3-button--outline,
+    .b3-button--primary {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+}
+
 .lvct-review__range {
     display: flex;
     align-items: center;

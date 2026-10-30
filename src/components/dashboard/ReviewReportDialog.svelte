@@ -264,16 +264,16 @@
         {/if}
     {:else}
     <div class="lvct-review__range">
-        <select class="b3-select" aria-label={text("reviewRangeLabel", "统计区间")} bind:value={mode} onchange={() => load()}>
+        <select class="b3-select" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={text("reviewRangeLabel", "统计区间")} bind:value={mode} onchange={() => load()}>
             <option value="month">{text("reviewRangeMonth", "本月")}</option>
             <option value="30">{text("reviewRange30", "最近 30 天")}</option>
             <option value="90">{text("reviewRange90", "最近 90 天")}</option>
             <option value="custom">{text("reviewRangeCustom", "自定义")}</option>
         </select>
         {#if mode === "custom"}
-            <input type="date" class="b3-text-field" aria-label={text("reviewFrom", "报表开始日期")} bind:value={customFrom} onchange={() => load()} />
+            <input type="date" class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={text("reviewFrom", "报表开始日期")} bind:value={customFrom} onchange={() => load()} />
             <span class="ft__on-surface">~</span>
-            <input type="date" class="b3-text-field" aria-label={text("reviewTo", "报表结束日期")} bind:value={customTo} onchange={() => load()} />
+            <input type="date" class="b3-text-field" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={text("reviewTo", "报表结束日期")} bind:value={customTo} onchange={() => load()} />
         {/if}
     </div>
 
@@ -366,6 +366,7 @@
                     <button
                         type="button"
                         class="b3-button b3-button--primary"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
                         disabled={creatingDoc || !report}
                         onclick={handleCreateDoc}
                     >
