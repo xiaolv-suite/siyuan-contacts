@@ -218,8 +218,19 @@
         }
     }
 
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (!importing && !loading && !errorText && groupValid && notebookId && selectedIds.length > 0) {
+                void runImport();
+            }
+        }
+    }
+
     loadNotebooks();
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="lvct-import">
     {#if queue}
@@ -241,14 +252,14 @@
         </ul>
         <p class="ft__smaller ft__on-surface">断点仅保留本窗口；关闭不会删除已保存文档，但重开不自动恢复队列。暂停在当前项完成后生效。</p>
         <div class="lvct-form__actions">
-            {#if importing}<button class="b3-button b3-button--outline" onclick={() => (pauseRequested = true)} disabled={pauseRequested}>{pauseRequested ? "当前项结束后暂停" : "暂停"}</button>
+            {#if importing}<button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (pauseRequested = true)} disabled={pauseRequested}>{pauseRequested ? "当前项结束后暂停" : "暂停"}</button>
             {:else if queue.items.some((item) => item.status !== "applied" && item.status !== "skipped")}
-                <button class="b3-button b3-button--outline" onclick={() => runQueue()}>继续并核实未完成项</button>
+                <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => runQueue()}>继续并核实未完成项</button>
                 {#if queue.items.some((item) => item.status !== "pending" && item.status !== "applied" && item.status !== "skipped")}
-                    <button class="b3-button b3-button--outline" onclick={() => runQueue(true)}>仅重试失败/未知/冲突项</button>
+                    <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => runQueue(true)}>仅重试失败/未知/冲突项</button>
                 {/if}
             {/if}
-            <button class="b3-button b3-button--cancel" onclick={() => guardedClose(onClose)} disabled={importing}>关闭</button>
+            <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={importing}>关闭</button>
         </div>
     {:else}
     {#if importedCount === null}
@@ -284,12 +295,12 @@
 
     {#if scan && !loading}
         <p class="lvct-import__scan-status" role="status" aria-live="polite">已扫描 {scan.scanned} 篇 · 可收编 {scan.candidates.length} 篇 · {scan.state === "complete" ? "已核实完整范围" : scan.state === "failed" ? "读取失败，保留前页游标与候选" : "尚有未扫描范围"}</p>
-        {#if scan.state !== "complete"}<button class="b3-button b3-button--outline" onclick={() => search(true)} disabled={importing || loading}>{scan.state === "failed" ? "从失败页重试扫描" : "继续扫描"}</button>{/if}
+        {#if scan.state !== "complete"}<button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => search(true)} disabled={importing || loading}>{scan.state === "failed" ? "从失败页重试扫描" : "继续扫描"}</button>{/if}
         <p class="ft__smaller">全选仅包含已扫描候选；继续不会自动勾选新增项。姓名 → 文档标题；分组/标签 → 已确认字段，原正文保持原位。</p>
     {/if}
     {#if selectedIds.length}
         <p role="status">手动选择 {selectedIds.length} 篇 · 当前范围隐藏 {hiddenSelectedCount} 篇；筛选和来源切换保留原文档与笔记本，导入包含这些已选对象。</p>
-        <button class="b3-button b3-button--text" onclick={() => (selected = {})} disabled={importing || loading}>清空全部选择</button>
+        <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (selected = {})} disabled={importing || loading}>清空全部选择</button>
     {/if}
 
     {#if importedCount !== null}
@@ -358,3 +369,16 @@
     </p>
     {/if}
 </div>
+
+<style>
+    .lvct-import__list {
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 12px);
+        overflow: hidden;
+        background: var(--lvct-bg-surface);
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
+    }
+    .lvct-import__queue-item {
+        border-radius: var(--lvct-r-card, 10px);
+    }
+</style>

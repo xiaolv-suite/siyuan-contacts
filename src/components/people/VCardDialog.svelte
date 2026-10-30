@@ -406,22 +406,40 @@
     <div class="lvct-vcard__export">
         <div class="lvct-vcard__section-title">{text("vcardExportTitle", "导出联系人")}</div>
         <div class="lvct-vcard__export-options">
-            <div class="lvct-vcard__scope-radio-group" role="radiogroup" aria-label="导出范围选择" style="display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0;">
-                <label class="b3-label" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <input type="radio" name="vcard-export-scope" value="all" bind:group={exportScope} disabled={exporting} />
-                    <span>全部联系人</span>
-                </label>
+            <div class="lvct-vcard__scope-radio-group" role="radiogroup" aria-label="导出范围选择" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0;">
+                <button
+                    type="button"
+                    class="b3-chip font-size-11"
+                    style="border-radius: var(--lv-r-pill, 9999px);"
+                    class:b3-chip--primary={exportScope === "all"}
+                    disabled={exporting}
+                    onclick={() => (exportScope = "all")}
+                >
+                    全部联系人
+                </button>
                 {#if hasActiveFilter && filteredPeople.length > 0}
-                    <label class="b3-label" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <input type="radio" name="vcard-export-scope" value="filtered" bind:group={exportScope} disabled={exporting} />
-                        <span>当前筛选结果（{filteredPeople.length} 人）</span>
-                    </label>
+                    <button
+                        type="button"
+                        class="b3-chip font-size-11"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
+                        class:b3-chip--primary={exportScope === "filtered"}
+                        disabled={exporting}
+                        onclick={() => (exportScope = "filtered")}
+                    >
+                        当前筛选（{filteredPeople.length} 人）
+                    </button>
                 {/if}
                 {#if selectedPeople.length > 0}
-                    <label class="b3-label" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                        <input type="radio" name="vcard-export-scope" value="selected" bind:group={exportScope} disabled={exporting} />
-                        <span>已选中的联系人（{selectedPeople.length} 人）</span>
-                    </label>
+                    <button
+                        type="button"
+                        class="b3-chip font-size-11"
+                        style="border-radius: var(--lv-r-pill, 9999px);"
+                        class:b3-chip--primary={exportScope === "selected"}
+                        disabled={exporting}
+                        onclick={() => (exportScope = "selected")}
+                    >
+                        已选中（{selectedPeople.length} 人）
+                    </button>
                 {/if}
             </div>
             {#if exportSampleNames}
@@ -451,7 +469,7 @@
             {parsing ? text("vcardParsing", "解析中…") : "选择 .vcf / .csv 文件…"}
         </button>
         <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={downloadCsvTemplate} title="下载带标准表头的 CSV/Excel 模版文件，填好后可直接在此导入">
-            <Download size={14} /> 下载 Excel/CSV 导入模板
+            <Download size={14} strokeWidth={1.6} /> 下载 Excel/CSV 导入模板
         </button>
         <input
             bind:this={fileInput}
@@ -469,27 +487,27 @@
         <ViewState compact loading title={text("vcardParsingTitle", "正在解析通讯录并检查重名")} />
     {:else if importing}
         <ViewState compact loading title={text("vcardImportingTitle", "正在导入联系人")} description={statusText} />
-        <button class="b3-button b3-button--outline" onclick={() => (pauseRequested = true)} disabled={pauseRequested}>{pauseRequested ? "当前项结束后暂停" : "暂停"}</button>
+        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (pauseRequested = true)} disabled={pauseRequested}>{pauseRequested ? "当前项结束后暂停" : "暂停"}</button>
     {:else if errorText && !report}
         <ViewState compact error title={text("vcardErrorTitle", "通讯录处理失败")} description={errorText}>
-            <button class="b3-button b3-button--outline" onclick={() => fileInput?.click()}>{text("vcardPickAgain", "重新选择文件")}</button>
+            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => fileInput?.click()}>{text("vcardPickAgain", "重新选择文件")}</button>
         </ViewState>
     {:else if report}
         {#if errorText}<p class="lvct-form__error" role="alert">{errorText}；原队列及断点保留。</p>{/if}
         <p role="status">已确认 {report.expected ?? lastChosen.length} 项；未执行 {reportPending.length} 项。{report.paused ? "已暂停，原队列保留" : "本轮结束"}</p>
-        {#if retrying}<p role="status">{statusText}</p><button class="b3-button b3-button--outline" onclick={() => (pauseRequested = true)} disabled={pauseRequested}>当前项结束后暂停</button>{/if}
+        {#if retrying}<p role="status">{statusText}</p><button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (pauseRequested = true)} disabled={pauseRequested}>当前项结束后暂停</button>{/if}
         <ViewState compact icon={retryable ? "!" : "✓"}
             title={retryable ? text("vcardReportPartialTitle", "导入结束，部分联系人未完成") : text("vcardReportDoneTitle", "导入完成")}
             description={text("vcardReportSummary", "新增 {imported} 人，跳过 {skipped} 人，失败 {failed} 人，待核对 {unknown} 人。", { imported: report.imported, skipped: reportSkipped.length, failed: reportFailed.length, unknown: reportUnknown.length })}>
-            <button class="b3-button b3-button--text" onclick={() => guardedClose(onClose)} disabled={operationBusy}>{text("vcardBackToPeople", "返回联系人")}</button>
-            <button class="b3-button b3-button--outline" onclick={() => guardedClose(() => fileInput?.click())} disabled={retrying}>{text("vcardPickOtherFile", "选择其他文件")}</button>
-            <button class="b3-button b3-button--outline" onclick={downloadDiagnostics} disabled={retrying}>{text("vcardDiagnostics", "保存诊断信息")}</button>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={operationBusy}>{text("vcardBackToPeople", "返回联系人")}</button>
+            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(() => fileInput?.click())} disabled={retrying}>{text("vcardPickOtherFile", "选择其他文件")}</button>
+            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={downloadDiagnostics} disabled={retrying}>{text("vcardDiagnostics", "保存诊断信息")}</button>
             {#if retryable}
-                <button class="b3-button b3-button--outline" onclick={() => runRetry()} disabled={retrying}>
+                <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => runRetry()} disabled={retrying}>
                     {retrying ? text("vcardRetrying", "核对并重试中…") : text("vcardRetryButton", "核对名册并重试（{n} 项）", { n: reportFailed.length + reportUnknown.length + reportPending.length })}
                 </button>
                 {#if reportFailed.length + reportUnknown.length > 0}
-                    <button class="b3-button b3-button--outline" onclick={() => runRetry(true)} disabled={retrying}>仅核实重试失败/未知项</button>
+                    <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => runRetry(true)} disabled={retrying}>仅核实重试失败/未知项</button>
                 {/if}
             {/if}
         </ViewState>
