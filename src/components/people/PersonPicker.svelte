@@ -107,12 +107,11 @@
 
     $effect(() => {
         if (!open || !wrap || !panel) return;
-        // 移动端聚焦搜索框会唤起输入法并触发 viewport resize/scroll；
-        // 这些变化不代表用户要关闭选人器，否则浮层会在键盘出现后立即消失。
-        return attachPopover(panel, wrap, closeAndFocus, keepOpenOnViewportChange ? {
+        // 聚焦搜索框或视口轻微变动时不应误关选人器，而是跟随重新计算定位。
+        return attachPopover(panel, wrap, closeAndFocus, {
             closeOnScroll: false,
             closeOnResize: false,
-        } : undefined);
+        });
     });
 
     $effect(() => {
