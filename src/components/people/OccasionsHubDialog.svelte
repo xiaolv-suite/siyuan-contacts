@@ -149,7 +149,7 @@
     <!-- 工具与筛选栏 -->
     <div class="occ-toolbar">
         <div class="search-input-box">
-            <span class="search-icon"><Search size={14} /></span>
+            <span class="search-icon"><Search size={14} strokeWidth={1.6} /></span>
             <input
                 class="b3-text-field fn__block"
                 type="search"
@@ -181,7 +181,7 @@
                     onclick={onOpenOccasionDialog}
                     title={text("newOccasionBtnTip", "录入包含多位联系人的群体活动")}
                 >
-                    <Plus size={14} style="margin-right: 2px;" />
+                    <Plus size={14} strokeWidth={1.6} style="margin-right: 2px;" />
                     {text("newOccasionBtn", "记录新活动")}
                 </button>
             {/if}
@@ -209,7 +209,7 @@
             >
                 {#if onOpenOccasionDialog && !searchQuery && typeFilter === "all"}
                     <button type="button" class="b3-button b3-button--outline" onclick={onOpenOccasionDialog}>
-                        <Plus size={13} style="margin-right: 2px;" /> {text("newOccasionBtn", "记录新活动")}
+                        <Plus size={13} strokeWidth={1.6} style="margin-right: 2px;" /> {text("newOccasionBtn", "记录新活动")}
                     </button>
                 {/if}
             </ViewState>
@@ -221,14 +221,14 @@
                         <div class="occ-card-top">
                             <div class="occ-card-meta-line">
                                 <span class="occ-date-badge font-bold">
-                                    <Calendar size={12} class="lvct-icon-inline" /> {occasion.date}{occasion.endDate ? ` ~ ${occasion.endDate}` : ""}
+                                    <Calendar size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {occasion.date}{occasion.endDate ? ` ~ ${occasion.endDate}` : ""}
                                 </span>
                                 <span class="occ-type-tag">
                                     {typeMeta.icon} {typeMeta.label}
                                 </span>
                                 {#if occasion.place}
                                     <span class="occ-place-tag">
-                                        <MapPin size={11} class="lvct-icon-inline" /> {occasion.place}
+                                        <MapPin size={11} strokeWidth={1.6} class="lvct-icon-inline" /> {occasion.place}
                                     </span>
                                 {/if}
                             </div>
@@ -240,7 +240,7 @@
                                 disabled={Boolean(deletingId)}
                                 title={text("deleteOccasionTip", "删除此条活动记录")}
                             >
-                                <Trash2 size={13} />
+                                <Trash2 size={13} strokeWidth={1.6} />
                             </button>
                         </div>
 
@@ -257,7 +257,7 @@
                         <div class="occ-attendees-bar">
                             <div class="occ-attendees-left">
                                 <span class="attendees-label ft__smaller ft__on-surface-light">
-                                    <Users size={12} class="lvct-icon-inline" />
+                                    <Users size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                                     {text("occAttendeesCount", "参会好友（{n}人）：", { n: occasion.attendees.length })}
                                 </span>
                                 <div class="attendee-chips">
@@ -286,7 +286,7 @@
                                         onclick={() => onOpenDoc(occasion.sourceDocId!)}
                                         title={text("openLinkedNoteTip", "打开关联的思源笔记文档")}
                                     >
-                                        <FileText size={12} class="lvct-icon-inline" /> {text("openLinkedNote", "来源笔记")}
+                                        <FileText size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("openLinkedNote", "来源笔记")}
                                     </button>
                                 {/if}
 
@@ -297,7 +297,7 @@
                                         onclick={() => handleHighlightAttendees(occasion)}
                                         title={text("highlightInRosterTip", "在联系人名册中筛选并高亮这些参与者")}
                                     >
-                                        <Sparkles size={12} class="lvct-icon-inline" /> {text("highlightInRoster", "名册下钻")}
+                                        <Sparkles size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("highlightInRoster", "名册下钻")}
                                     </button>
                                 {/if}
                             </div>
@@ -498,22 +498,43 @@
 
     .occ-type-tag, .occ-place-tag {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-2);
         display: inline-flex;
         align-items: center;
-        gap: 2px;
+        gap: 3px;
+        padding: 1px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lvct-bg-app);
+        border: 1px solid var(--lvct-color-border-200);
     }
 
     .btn-del-occ {
-        padding: 2px;
+        padding: 4px;
         color: var(--b3-theme-on-surface-light);
-        opacity: 0.6;
-        transition: opacity 0.15s ease;
+        opacity: 0;
+        border-radius: 50% !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            opacity: 1 !important;
+            color: var(--lvct-danger, #ef4444);
+        }
+
+        &:focus-visible {
+            opacity: 1;
+            outline: 2px solid var(--lvct-accent);
+        }
+
+        @media (hover: none), (max-width: 768px) {
+            opacity: 0.7;
+        }
     }
 
-    .btn-del-occ:hover {
-        opacity: 1;
-        color: var(--lvct-danger, #ef4444);
+    .occ-card:hover .btn-del-occ {
+        opacity: 0.7;
     }
 
     .occ-card-body {
@@ -570,8 +591,8 @@
         gap: 4px;
         background: var(--b3-theme-background);
         border: 1px solid var(--b3-border-color);
-        padding: 2px 6px;
-        border-radius: 999px;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         transition: border-color 0.15s ease;
     }

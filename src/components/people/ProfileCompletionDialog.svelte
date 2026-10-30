@@ -169,7 +169,7 @@
 
 {#if done}
     <div class="lvct-qf">
-        <p role="status" class="lvct-capture__done-line"><CheckCircle2 size={14}/> {text("qfCompletionDone", "补录结束：保存 {saved} 人，跳过 {skipped} 人。", { saved: savedCount, skipped: skippedCount })}</p>
+        <p role="status" class="lvct-capture__done-line"><CheckCircle2 size={14} strokeWidth={1.6} /> {text("qfCompletionDone", "补录结束：保存 {saved} 人，跳过 {skipped} 人。", { saved: savedCount, skipped: skippedCount })}</p>
         <p class="ft__smaller ft__on-surface">{text("qfCompletionDoneHint", "首页生日提醒与久未联系统计会在下次加载时反映补录结果。")}</p>
         <div class="lvct-form__actions">
             <button class="b3-button" onclick={onClose}>{text("formDone", "完成")}</button>
@@ -229,3 +229,24 @@
 {#if Object.keys(results).length}
     <ul aria-label="补录逐项结果">{#each Object.entries(results) as [docId, status] (docId)}<li>{docId} · {status}</li>{/each}</ul>
 {/if}
+
+<style>
+    .lvct-qf {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
+
+        input {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+
+    .lvct-form__actions button {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+</style>

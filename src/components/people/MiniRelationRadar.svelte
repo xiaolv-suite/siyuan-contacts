@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { ContactSummary } from "../../domain/person";
     import { computeRadarPositions } from "../../domain/radar-topology.ts";
+    import { Sparkles } from "@lucide/svelte";
 
     let {
         current,
@@ -141,8 +142,9 @@
         </g>
     </svg>
 
-    <div class="ft__smaller ft__on-surface" style="text-align: center; margin-top: -6px; margin-bottom: 8px;">
-        💡 提示：点击雷达网络中的任一节点，可平滑穿透至该好友详情档案
+    <div class="ft__smaller ft__on-surface" style="text-align: center; margin-top: -6px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+        <Sparkles size={12} strokeWidth={1.6} style="color: var(--lv-brand, #ea580c);" />
+        <span>提示：点击雷达网络中的任一节点，可平滑穿透至该好友详情档案</span>
     </div>
 </div>
 
@@ -153,7 +155,8 @@
         align-items: center;
         background: var(--lvct-bg-elevated);
         border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md);
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         padding: 6px 12px;
         margin-bottom: 12px;
     }

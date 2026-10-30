@@ -175,5 +175,27 @@ test("小驴人脉 · 关系称谓、别名卡片与档案面板对齐全胶囊�
     assert.match(summarySvelte, /\.lvct-profile-summary\s*\{[\s\S]*box-shadow:\s*0 1px 4px rgba\(28,\s*24,\s*21,\s*0\.03\)/);
 });
 
+test("小驴人脉 · 群体活动大盘、补录弹窗与关系雷达对齐细线图标、全胶囊体系与大圆角规范", () => {
+    // 1. 群体活动大盘
+    const occSvelte = fs.readFileSync(path.join(SRC, "components", "people", "OccasionsHubDialog.svelte"), "utf8");
+    assert.match(occSvelte, /strokeWidth=\{1\.6\}/);
+    assert.match(occSvelte, /\.btn-del-occ\s*\{[\s\S]*opacity:\s*0;/);
+    assert.match(occSvelte, /\.occ-type-tag,\s*\.occ-place-tag\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(occSvelte, /\.attendee-chip\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 2. 补录弹窗
+    const qfSvelte = fs.readFileSync(path.join(SRC, "components", "people", "ProfileCompletionDialog.svelte"), "utf8");
+    assert.match(qfSvelte, /CheckCircle2 size=\{14\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(qfSvelte, /\.lvct-qf\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*16px\)/);
+    assert.match(qfSvelte, /\.lvct-form__actions button\s*\{[^}]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    // 3. 微型关系雷达
+    const radarSvelte = fs.readFileSync(path.join(SRC, "components", "people", "MiniRelationRadar.svelte"), "utf8");
+    assert.doesNotMatch(radarSvelte, /💡/);
+    assert.match(radarSvelte, /Sparkles size=\{12\}\s*strokeWidth=\{1\.6\}/);
+    assert.match(radarSvelte, /\.lvct-radar-container\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*16px\)/);
+});
+
+
 
 
