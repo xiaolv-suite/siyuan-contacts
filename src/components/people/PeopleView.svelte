@@ -1839,7 +1839,7 @@
     {#snippet viewMenuControl()}
         <span id="lvct-people-viewsmenu" bind:this={viewsMenuWrap} style="position:relative; display:inline-flex">
             <button class="b3-button b3-button--outline" aria-label={text("peopleViews", "视图")} aria-expanded={viewsOpen} aria-controls={viewsOpen ? "lvct-people-viewsmenu-panel" : undefined} onclick={() => (viewsOpen = !viewsOpen)}>
-                <Bookmark size={16}/>{activeViewName ? `${text("peopleViews", "视图")}：${activeViewName}` : text("peopleViews", "视图")}
+                <Bookmark size={16} strokeWidth={1.6} />{activeViewName ? `${text("peopleViews", "视图")}：${activeViewName}` : text("peopleViews", "视图")}
             </button>
             {#if viewsOpen}
                 <!-- Saved views expose independent apply, rename and delete actions;
@@ -1852,8 +1852,8 @@
                         <div class="lvct-people__viewsmenu-item">
                             <button type="button" class="lvct-people__viewsmenu-apply" title={`应用视图 ${view.name}`} onclick={() => applySavedView(view)}>{view.name}</button>
                             <span class="lvct-people__colmenu-actions">
-                                <button type="button" aria-label={`重命名视图 ${view.name}`} onclick={() => renameSavedView(view)}><Pencil size={14}/></button>
-                                <button type="button" aria-label={`删除视图 ${view.name}`} onclick={() => deleteSavedView(view)}><Trash2 size={14}/></button>
+                                <button type="button" aria-label={`重命名视图 ${view.name}`} onclick={() => renameSavedView(view)}><Pencil size={14} strokeWidth={1.6} /></button>
+                                <button type="button" aria-label={`删除视图 ${view.name}`} onclick={() => deleteSavedView(view)}><Trash2 size={14} strokeWidth={1.6} /></button>
                             </span>
                         </div>
                     {/each}
@@ -1898,7 +1898,7 @@
                 aria-controls={moreOpen ? "lvct-people-moremenu-panel" : undefined}
                 onclick={() => (moreOpen = !moreOpen)}
             >
-                <SlidersHorizontal size={16}/>{text("peopleMoreFilters", "更多筛选")}{isExtraFilterActive(extraFilter) ? " ·" : ""}
+                <SlidersHorizontal size={16} strokeWidth={1.6} />{text("peopleMoreFilters", "更多筛选")}{isExtraFilterActive(extraFilter) ? " ·" : ""}
             </button>
             {#if moreOpen}
                 <div id="lvct-people-moremenu-panel" class="lvct-people__moremenu" bind:this={moreMenuPanel} role="group" aria-label="组合筛选">
@@ -2001,14 +2001,14 @@
             onclick={() => { if (isMobile) closeMobileSheet(false); tidyDrawerOpen = true; }}
             title={text("peopleTidyTitle", "智能识别并归纳缺少分组或标签的待安顿无序联系人")}
         >
-            <Sparkles size={16} />{text("peopleTidy", "待安顿整理")}{unorganizedCount > 0 ? ` ·${unorganizedCount}` : ""}
+            <Sparkles size={16} strokeWidth={1.6} />{text("peopleTidy", "待安顿整理")}{unorganizedCount > 0 ? ` ·${unorganizedCount}` : ""}
         </button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16}/>{text("peopleImportDocs", "导入已有文档")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16}/>{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
-        <button class="b3-button b3-button--outline lvct-people__occasions-btn" onclick={() => { if (isMobile) closeMobileSheet(false); occasionsHubOpen = true; }} title={text("peopleOccasionsHubTip", "查看群体活动大事记与聚会记录大盘")}><Calendar size={16}/>{text("peopleOccasion", "活动大盘")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16}/>{text("peopleRegionExplorer", "城市与行程")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16} strokeWidth={1.6} />{text("peopleImportDocs", "导入已有文档")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16} strokeWidth={1.6} />{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
+        <button class="b3-button b3-button--outline lvct-people__occasions-btn" onclick={() => { if (isMobile) closeMobileSheet(false); occasionsHubOpen = true; }} title={text("peopleOccasionsHubTip", "查看群体活动大事记与聚会记录大盘")}><Calendar size={16} strokeWidth={1.6} />{text("peopleOccasion", "活动大盘")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16} strokeWidth={1.6} />{text("peopleRegionExplorer", "城市与行程")}</button>
         {#if onListTrash}
-            <button class="b3-button b3-button--outline lvct-people__trash-btn" onclick={() => { if (isMobile) closeMobileSheet(false); trashDrawerOpen = true; }} title={text("peopleTrashBtnTip", "查看回收站与近期软删除联系人，支持一键恢复")}><Trash2 size={16}/>{text("peopleTrashBtn", "回收站")}</button>
+            <button class="b3-button b3-button--outline lvct-people__trash-btn" onclick={() => { if (isMobile) closeMobileSheet(false); trashDrawerOpen = true; }} title={text("peopleTrashBtnTip", "查看回收站与近期软删除联系人，支持一键恢复")}><Trash2 size={16} strokeWidth={1.6} />{text("peopleTrashBtn", "回收站")}</button>
         {/if}
     {/snippet}
     <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
@@ -2022,7 +2022,7 @@
                     value={searchInput}
                     oninput={(event) => handleSearchInput((event.currentTarget as HTMLInputElement).value)}
                 />
-                <button class="b3-button" onclick={() => (adding = true)} aria-label={text("peopleCreate", "新建联系人")}><UserPlus size={16}/>{text("peopleCreate", "新建")}</button>
+                <button class="b3-button" onclick={() => (adding = true)} aria-label={text("peopleCreate", "新建联系人")}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建")}</button>
                 <button
                     class="b3-button b3-button--outline"
                     aria-label={text("peopleMobileTools", "筛选与整理")}
@@ -2030,7 +2030,7 @@
                     aria-controls={mobileSheetOpen ? "lvct-people-mobile-tools-sheet" : undefined}
                     bind:this={mobileSheetTrigger}
                     onclick={openMobileSheet}
-                ><SlidersHorizontal size={16}/>{text("peopleMobileTools", "筛选与整理")}{isExtraFilterActive(extraFilter) || duplicatePairs.length > 0 ? " ·" : ""}</button>
+                ><SlidersHorizontal size={16} strokeWidth={1.6} />{text("peopleMobileTools", "筛选与整理")}{isExtraFilterActive(extraFilter) || duplicatePairs.length > 0 ? " ·" : ""}</button>
             </div>
         {:else}
             <!-- 桌面端搜索输入框：order -1 独占第一行，固定高度拒绝纵向拉伸 -->
@@ -2065,7 +2065,7 @@
                     title="将当前输入按自然语言快速解析为姓名、电话、邮箱、标签等字段并新建"
                     onclick={() => openAddWithName(searchInput.trim())}
                 >
-                    <Zap size={13} /> 快捷建档
+                    <Zap size={13} strokeWidth={1.6} /> 快捷建档
                 </button>
             {/if}
 
@@ -2100,14 +2100,14 @@
                         class:lvct-seg__item--active={viewMode === "cards"}
                         aria-pressed={viewMode === "cards"}
                         onclick={() => setViewMode("cards")}
-                    ><LayoutGrid size={14}/>{text("peopleCards", "卡片")}</button>
+                    ><LayoutGrid size={14} strokeWidth={1.6} />{text("peopleCards", "卡片")}</button>
                     <button
                         type="button"
                         class="lvct-seg__item"
                         class:lvct-seg__item--active={viewMode === "table"}
                         aria-pressed={viewMode === "table"}
                         onclick={() => setViewMode("table")}
-                    ><List size={14}/>{text("peopleTable", "表格")}</button>
+                    ><List size={14} strokeWidth={1.6} />{text("peopleTable", "表格")}</button>
                 </span>
                 {#if viewMode === "table"}
                     <span id="lvct-people-colmenu" bind:this={colMenuWrap} style="position:relative; display:inline-flex">
@@ -2118,7 +2118,7 @@
                             aria-label="表格列设置"
                             title="表格列设置"
                             onclick={() => (colMenuOpen = !colMenuOpen)}
-                        ><Columns3 size={16}/>{text("peopleColumnSettings", "列设置")}</button>
+                        ><Columns3 size={16} strokeWidth={1.6} />{text("peopleColumnSettings", "列设置")}</button>
                         {#if colMenuOpen}
                             <div id="lvct-people-colmenu-panel" class="lvct-people__colmenu" bind:this={colMenuPanel} role="group" aria-label="表格列显隐与顺序">
                                 <p class="lvct-people__menu-title">显示字段</p>
@@ -2152,7 +2152,7 @@
                 {/if}
             </span>
 
-            <button class="b3-button b3-button--primary lvct-people__create" onclick={() => (adding = true)}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
+            <button class="b3-button b3-button--primary lvct-people__create" onclick={() => (adding = true)}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建联系人")}</button>
             <span class="lvct-people__toolbar-actions">
                 {@render actionControls()}
             </span>
@@ -2169,7 +2169,7 @@
                     class:lvct-people__group-tab--active={filterStarredOnly}
                     onclick={() => { filterStarredOnly = !filterStarredOnly; visibleCount = PAGE_SIZE; }}
                     title={text("starredOnlyTip", "只看星标常用联系人")}
-                ><Star size={12} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />{text("starredGroupTab", "常用 ({n})", { n: starredCount })}</button>
+                ><Star size={12} strokeWidth={1.6} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />{text("starredGroupTab", "常用 ({n})", { n: starredCount })}</button>
             {/if}
             <button
                 type="button"
@@ -2267,7 +2267,7 @@
                 {@render viewMenuControl()}
                 {@render filterControls()}
                 {@render actionControls()}
-                <button class="b3-button b3-button--outline" onclick={() => { closeMobileSheet(false); adding = true; }}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
+                <button class="b3-button b3-button--outline" onclick={() => { closeMobileSheet(false); adding = true; }}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建联系人")}</button>
             </div>
         </div>
     {/if}
@@ -2365,7 +2365,7 @@
                     }}
                     disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
                     title={text("peopleBatchViewInGraphTip", "在关系图谱中聚焦已选联系人")}
-                ><Network size={14}/> {text("peopleBatchViewInGraph", "在图谱中查看")}</button>
+                ><Network size={14} strokeWidth={1.6} /> {text("peopleBatchViewInGraph", "在图谱中查看")}</button>
             {/if}
             <button class="b3-button b3-button--outline" onclick={exportSelected} disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending} title={selectionScopePending ? pendingScopeMessage : batchBusy || batchOrgBusy || exportingSelected ? text("batchBusyTip", "批量操作进行中，请稍候") : undefined}>{text("batchExportVcard", "导出 vCard")}</button>
             <button
@@ -2374,7 +2374,7 @@
                 disabled={batchBusy || batchOrgBusy || exportingSelected || selectionScopePending}
                 title={text("peopleBatchCsvTitle", "将已选联系人导出为自带 BOM 的标准 CSV 表格文件（Excel/WPS 打开不乱码）")}
             >
-                <FileSpreadsheet size={14} class="lvct-icon-inline" /> {text("peopleBatchCsv", "导出 CSV")}
+                <FileSpreadsheet size={14} strokeWidth={1.6} class="lvct-icon-inline" /> {text("peopleBatchCsv", "导出 CSV")}
             </button>
             <button
                 class="b3-button b3-button--outline lvct-people__batch-md-btn"
@@ -2383,10 +2383,10 @@
                 title={text("peopleBatchMdTitle", "将已选联系人复制为排版清晰的 Markdown 宽表")}
             >
                 {#if copiedMdTable}
-                    <Check size={14} class="lvct-icon-inline ft__primary" />
+                    <Check size={14} strokeWidth={1.6} class="lvct-icon-inline ft__primary" />
                     <span class="ft__primary">{text("copied", "已复制 ✓")}</span>
                 {:else}
-                    <Copy size={14} class="lvct-icon-inline" /> {text("peopleBatchMdTable", "复制表格")}
+                    <Copy size={14} strokeWidth={1.6} class="lvct-icon-inline" /> {text("peopleBatchMdTable", "复制表格")}
                 {/if}
             </button>
             {#if onCreateBatchFlashcardsDoc}
@@ -2396,7 +2396,7 @@
                     disabled={batchBusy || batchOrgBusy || exportingSelected || batchFlashcardsBusy || selectionScopePending}
                     title={text("peopleBatchFlashcardsTitle", "将选中联系人一键批量汇编为思源复习闪卡（Riff Cards）")}
                 >
-                    <Layers size={14} class="lvct-icon-inline" /> {batchFlashcardsBusy ? text("peopleBatchFlashcardsBusy", "闪卡生成中…") : text("peopleBatchFlashcards", "制作复习闪卡")}
+                    <Layers size={14} strokeWidth={1.6} class="lvct-icon-inline" /> {batchFlashcardsBusy ? text("peopleBatchFlashcardsBusy", "闪卡生成中…") : text("peopleBatchFlashcards", "制作复习闪卡")}
                 </button>
             {/if}
             {#if batchFlashcardsDocInfo}
@@ -2515,7 +2515,7 @@
                 <div class="lvct-empty__actions">
                     {#if searchText.trim()}
                         <button class="b3-button b3-button--primary" onclick={() => openAddWithName(searchText.trim())}>
-                            <UserPlus size={15} /> 快捷录入建档 “{searchText.trim()}”
+                            <UserPlus size={15} strokeWidth={1.6} /> 快捷录入建档 “{searchText.trim()}”
                         </button>
                     {/if}
                     <button class="b3-button b3-button--outline" onclick={clearAllConditions}>清除所有筛选</button>
@@ -2583,8 +2583,8 @@
                                 <button type="button" class="lvct-people__name-btn" aria-label={`查看 ${person.name} 的详情`} onclick={(event) => { event.stopPropagation(); onOpenDetail(person); }}>
                                     <b>{person.name}</b>
                                 </button>
-                                {#if onOpenGraphPerson}<button type="button" class="lvct-people__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={(event) => { event.stopPropagation(); onOpenGraphPerson?.(person.docId); }}><Network size={16}/></button>{/if}
-                                {#if onOpenPersonDoc}<button type="button" class="lvct-people__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={(event) => { event.stopPropagation(); onOpenPersonDoc(person.docId); }}><ExternalLink size={16}/></button>{/if}
+                                {#if onOpenGraphPerson}<button type="button" class="lvct-people__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={(event) => { event.stopPropagation(); onOpenGraphPerson?.(person.docId); }}><Network size={16} strokeWidth={1.6} /></button>{/if}
+                                {#if onOpenPersonDoc}<button type="button" class="lvct-people__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={(event) => { event.stopPropagation(); onOpenPersonDoc(person.docId); }}><ExternalLink size={16} strokeWidth={1.6} /></button>{/if}
                             </td>
                             {#each tableColumns as column (column)}
                                 <td>
