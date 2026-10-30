@@ -13,7 +13,8 @@
     import OrgManagerDialog from "./org/OrgManagerDialog.svelte";
     import OrganizationProfileEditor from "./org/OrganizationProfileEditor.svelte";
     import { createCloseScope, anyDirtyChanges } from "./close-guard";
-    import { House, UsersRound, Network, Settings, Building2, UserPlus, Search } from "@lucide/svelte";
+    import { House, UsersRound, Network, Settings, Building2, UserPlus, Search, PanelRightClose, PanelRightOpen } from "@lucide/svelte";
+    import ContextPanel from "./ContextPanel.svelte";
     import SettingsView from "./SettingsView.svelte";
     import { getContext, onDestroy, onMount, tick } from "svelte";
     import { translateText } from "../domain/translation";
@@ -147,6 +148,8 @@
         return preferenceRequests.save(next, effectiveBaseline);
     }
     let detailPerson: ContactSummary | null = $state(null);
+    let contextPerson: ContactSummary | null = $state(null);
+    let contextPanelOpen = $state(true);
     let peopleGroups: string[] = $state([]);
     let detailReturn = $state<PersonReturnContext | null>(null);
     let organizationOpen = $state(false);
@@ -401,6 +404,7 @@
 
     async function openDetail(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
         if (!lifecycleToken.isAlive()) return;
+        contextPerson = person;
         if (detailPerson && !(await canLeave.requestClose())) return;
         if (!lifecycleToken.isAlive()) return;
         detailInitialTab = initialTab;
@@ -664,12 +668,30 @@
                 <h1 tabindex="-1">{currentMeta.title}</h1>
                 <p>{currentMeta.subtitle}</p>
             </div>
-            {#if current === "home"}<div class="lvct-workbench__header-actions">
-                <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
-                    onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
-                <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><Search size={16}/>{text("homeSearchAction", "搜索")}</button>
-                <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
-            </div>{/if}
+            <div class="lvct-workbench__header-side-tools" style="display: flex; align-items: center; gap: 8px;">
+                {#if current === "home"}<div class="lvct-workbench__header-actions">
+                    <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
+                        onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
+                    <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><Search size={16}/>{text("homeSearchAction", "搜索")}</button>
+                    <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
+                </div>{/if}
+                {#if !isMobile && current !== "settings"}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small lvct-workbench__toggle-context-btn"
+                        class:is-active={contextPanelOpen}
+                        title={contextPanelOpen ? text("collapseContextPanel", "收起右侧速览面板") : text("expandContextPanel", "展开右侧速览面板")}
+                        aria-label={contextPanelOpen ? text("collapseContextPanel", "收起右侧速览面板") : text("expandContextPanel", "展开右侧速览面板")}
+                        onclick={() => (contextPanelOpen = !contextPanelOpen)}
+                    >
+                        {#if contextPanelOpen}
+                            <PanelRightClose size={16} />
+                        {:else}
+                            <PanelRightOpen size={16} />
+                        {/if}
+                    </button>
+                {/if}
+            </div>
         </header>
         <StatusNotice message={dataChangeNotice} onDismiss={() => (dataChangeNotice = "")} />
         <StatusNotice message={preferencesNotice} error />
@@ -713,7 +735,7 @@
                     onClearFocus={clearPeopleFocus}
                     revision={dataRevision}
                     onOpenDetail={openDetail}
-                    activePersonId={detailPerson?.itemId ?? ""}
+                    activePersonId={detailPerson?.itemId ?? (contextPanelOpen ? contextPerson?.itemId : "") ?? ""}
                     onOrderChange={(ordered) => {
                         if (ordered.map((person) => person.itemId).join("|") !== peopleOrder.map((person) => person.itemId).join("|")) peopleOrder = ordered;
                     }}
@@ -851,6 +873,20 @@
         </div>
 
     </main>
+
+    {#if contextPanelOpen && !isMobile && current !== "settings"}
+        <div class="lvct-workbench__context">
+            <ContextPanel
+                {facade}
+                i18n={facade.i18n}
+                preferences={currentPreferences}
+                person={contextPerson}
+                onOpenDetail={openDetail}
+                onClose={() => (contextPanelOpen = false)}
+                onRecordSuccess={() => (dataRevision += 1)}
+            />
+        </div>
+    {/if}
 </div>
 
 {#if organizationOpen}

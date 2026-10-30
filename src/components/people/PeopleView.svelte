@@ -1821,6 +1821,9 @@
         if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) {
             return;
         }
+        if (typeof document !== "undefined" && document.querySelector(".lvct-dialog-mask, [role=dialog][aria-modal=true], .lvct-sheet--open")) {
+            return;
+        }
         if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
             event.preventDefault();
             searchInputElement?.focus();

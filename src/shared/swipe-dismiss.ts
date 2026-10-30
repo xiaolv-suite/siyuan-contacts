@@ -17,6 +17,7 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
     let currentDeltaY = 0;
     let isTracking = false;
     let isDragging = false;
+    let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
     function getTouch(event: TouchEvent): Touch | null {
         return event.touches.length > 0 ? event.touches[0] : null;
@@ -74,7 +75,9 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
         if (isDragging && currentDeltaY >= threshold) {
             // 滑出并触发关闭
             node.style.transform = "translateY(100%)";
-            setTimeout(() => {
+            if (dismissTimer) clearTimeout(dismissTimer);
+            dismissTimer = setTimeout(() => {
+                dismissTimer = null;
                 options.onDismiss();
             }, 180);
         } else {
@@ -96,6 +99,10 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
             options = newOptions;
         },
         destroy() {
+            if (dismissTimer) {
+                clearTimeout(dismissTimer);
+                dismissTimer = null;
+            }
             node.removeEventListener("touchstart", onTouchStart);
             node.removeEventListener("touchmove", onTouchMove);
             node.removeEventListener("touchend", onTouchEnd);
