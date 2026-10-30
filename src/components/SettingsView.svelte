@@ -1098,7 +1098,7 @@ import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 
 <div class="lvct-settings" data-lvct-theme={draft.themeScheme || "cognac"}>
     <div class="lvct-settings__topbar">
-        <button class="b3-button b3-button--outline" onclick={() => guardedClose(onBack)}>← {text("settingsBack", "返回工作台")}</button>
+        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onBack)}>← {text("settingsBack", "返回工作台")}</button>
         <div class="lvct-settings__heading">
             <h1>{text("settingsPageTitle", "设置与数据")}</h1>
             <p>{text("settingsPageSubtitle", "配置默认行为、数据锚点和提醒，让联系人工作台保持可控。")}</p>

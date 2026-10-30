@@ -2163,8 +2163,8 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     display: flex;
     align-items: center;
     gap: var(--lvct-sp-2);
-    padding: 8px 12px;
-    border-radius: 9px;
+    padding: 8px 14px;
+    border-radius: var(--lv-r-pill, 9999px);
     color: var(--lvct-text-2);
     font-size: var(--lvct-fs-body);
     font-weight: 500;
@@ -2196,17 +2196,17 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     }
 
     &--active {
-        background: var(--lvct-bg-surface);
-        color: var(--lvct-accent-text);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.1));
+        color: var(--lv-brand, #ea580c);
         font-weight: 650;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        box-shadow: none;
     }
 }
 
 html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
-    background: color-mix(in srgb, var(--lvct-accent) 14%, var(--lvct-bg-surface));
-    color: var(--lvct-accent-text);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 18%, var(--lvct-bg-surface));
+    color: var(--lv-brand, #ea580c);
+    box-shadow: none;
 }
 
 .lvct-settings__nav-status {
@@ -2223,11 +2223,11 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
 
 .lvct-settings__panel {
     padding: var(--lvct-sp-4);
-    border: 1px solid var(--lvct-border-subtle);
-    border-radius: var(--lvct-r-lg);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
     background: var(--lvct-bg-surface);
     /* UX-02.10 与全局卡片阴影语言统一 */
-    box-shadow: var(--lvct-shadow-1);
+    box-shadow: 0 4px 20px -2px rgba(28, 24, 21, 0.04);
 
     h2 {
         margin: 0 0 var(--lvct-sp-1);
