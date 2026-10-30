@@ -3,7 +3,6 @@
      *  浮层复用 popover 定位原语（B02），在 Peek/工作台滚动容器内不被裁剪。
      *  只改选择交互，不改变调用方的写入语义（选中后由调用方走既有服务）。 */
     import { onDestroy, tick } from "svelte";
-    import { getFrontend } from "siyuan";
     import { attachPopover } from "../../libs/popover";
     import { registerDialogEscapeScope } from "../../libs/dialog-escape-scope";
     import { translateText } from "../../domain/translation";
@@ -48,8 +47,6 @@
         onSelect: (id: string) => void;
     } = $props();
     const text = $derived.by(() => (key: string, fallback: string) => translateText(i18n, key, fallback));
-    const frontend = getFrontend();
-    const keepOpenOnViewportChange = frontend === "mobile" || frontend === "browser-mobile";
 
     let open = $state(false);
     let query = $state("");

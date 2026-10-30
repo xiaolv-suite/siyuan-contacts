@@ -396,42 +396,69 @@
 
     .anniv-metrics-bar {
         display: flex;
-        gap: 12px;
+        align-items: stretch;
+        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
+        border-radius: var(--lvct-r-card, 16px);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
+        padding: 12px 16px;
+        gap: 0;
     }
 
     .metric-card {
         flex: 1;
-        padding: 8px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
-        border-radius: 6px;
+        padding: 4px 16px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
         display: flex;
         flex-direction: column;
+        justify-content: center;
         gap: 2px;
+        position: relative;
+
+        &:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 15%;
+            bottom: 15%;
+            width: 1px;
+            background: var(--lvct-border-subtle, rgba(44, 28, 16, 0.08));
+        }
     }
 
     .metric-card--highlight {
-        border-color: var(--lv-heat-cool, #f59e0b);
-        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 8%, transparent);
+        background: color-mix(in srgb, var(--lv-data-amber, #d97706) 6%, transparent);
+        border-radius: 10px;
     }
 
     @media (max-width: 640px) {
         .anniv-metrics-bar {
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            padding: 8px;
+            gap: 8px;
         }
         .metric-card {
-            min-width: calc(50% - 6px);
+            padding: 6px 10px;
+            &:not(:last-child)::after {
+                display: none;
+            }
         }
     }
 
     .metric-title {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+        font-weight: 500;
     }
 
     .metric-number {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 24px;
+        font-weight: 750;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
     }
 
     .anniv-toolbar {
@@ -472,28 +499,29 @@
     .filter-pills {
         display: flex;
         gap: 4px;
-        background: var(--b3-theme-surface);
-        padding: 2px;
-        border-radius: 6px;
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-app, var(--b3-theme-surface));
+        padding: 3px;
+        border-radius: var(--lv-r-pill, 9999px);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
     }
 
     .filter-pill {
         background: transparent;
         border: none;
-        padding: 3px 8px;
-        font-size: 12px;
-        border-radius: 4px;
-        color: var(--b3-theme-on-surface);
+        padding: 4px 12px;
+        font-size: 11.5px;
+        border-radius: var(--lv-r-pill, 9999px);
+        color: var(--lvct-text-2, var(--b3-theme-on-surface));
         cursor: pointer;
         display: flex;
         align-items: center;
+        transition: all 0.15s ease;
     }
 
     .filter-pill.is-active {
-        background: var(--b3-theme-primary);
-        color: var(--b3-theme-on-primary);
-        font-weight: 500;
+        background: var(--lv-brand-soft, color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent));
+        color: var(--lv-brand, #ea580c);
+        font-weight: 600;
     }
 
     .anniv-content {
