@@ -46,6 +46,7 @@ test("ical-export domain: serializeIcsCalendar 生成标准 VCALENDAR / VEVENT �
     assert.ok(ics.includes("BEGIN:VEVENT\r\n"));
     assert.ok(ics.includes("UID:ev-01@lv-contacts\r\n"));
     assert.ok(ics.includes("DTSTART;VALUE=DATE:19900815\r\n"));
+    assert.ok(ics.includes("DTEND;VALUE=DATE:19900816\r\n"));
     assert.ok(ics.includes("RRULE:FREQ=YEARLY\r\n"));
     assert.ok(ics.includes("SUMMARY:🎂 张三 的生日\r\n"));
     assert.ok(ics.includes("TRANSP:TRANSPARENT\r\n"));
