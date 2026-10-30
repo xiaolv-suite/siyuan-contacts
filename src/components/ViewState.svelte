@@ -32,21 +32,21 @@
         {:else}
             <div class="lvct-empty__icon" aria-hidden="true">
                 {#if error || icon === "!"}
-                    <CircleAlert size={22} strokeWidth={1.8} />
+                    <CircleAlert size={22} strokeWidth={1.6} />
                 {:else if icon === "birthday"}
-                    <Cake size={20} strokeWidth={1.8} />
+                    <Cake size={20} strokeWidth={1.6} />
                 {:else if icon === "calendar"}
-                    <CalendarDays size={20} strokeWidth={1.8} />
+                    <CalendarDays size={20} strokeWidth={1.6} />
                 {:else if icon === "check" || icon === "✓"}
-                    <Check size={20} strokeWidth={1.8} />
+                    <Check size={20} strokeWidth={1.6} />
                 {:else if icon === "plus" || icon === "＋"}
-                    <UserRoundPlus size={21} strokeWidth={1.8} />
+                    <UserRoundPlus size={21} strokeWidth={1.6} />
                 {:else if icon === "upload" || icon === "↥"}
-                    <Upload size={21} strokeWidth={1.8} />
+                    <Upload size={21} strokeWidth={1.6} />
                 {:else if icon === "success"}
-                    <CheckCircle2 size={21} strokeWidth={1.8} />
+                    <CheckCircle2 size={21} strokeWidth={1.6} />
                 {:else if icon === "inbox"}
-                    <Inbox size={21} strokeWidth={1.8} />
+                    <Inbox size={21} strokeWidth={1.6} />
                 {:else}
                     {icon}
                 {/if}

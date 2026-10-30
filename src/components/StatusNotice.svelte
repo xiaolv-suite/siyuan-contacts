@@ -21,7 +21,7 @@
 
 {#if message}
     <div class="lvct-notice" class:lvct-notice--error={error} role={error ? "alert" : "status"}>
-        {#if error}<CircleAlert size={16}/>{:else}<CheckCircle2 size={16}/>{/if}
+        {#if error}<CircleAlert size={16} strokeWidth={1.6} />{:else}<CheckCircle2 size={16} strokeWidth={1.6} />{/if}
         <span>{message}</span>
         {#if actionLabel && onAction}<button type="button" class="lvct-notice__action" disabled={actionDisabled} aria-disabled={actionDisabled} onclick={onAction}>{actionLabel}</button>{/if}
     </div>

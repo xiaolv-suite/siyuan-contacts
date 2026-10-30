@@ -59,3 +59,17 @@ test("小驴人脉 · 用户高对比度偏好 (prefers-contrast: more) 提供�
     assert.match(controlsContent, /:where\(button, a, input, select, textarea, \[tabindex="0"\]\):focus-visible\s*\{[^}]*outline:\s*3px solid var\(--lvct-accent\)/);
     assert.match(controlsContent, /\.b3-dialog__container\s*\{[^}]*border:\s*2px solid var\(--b3-theme-on-background,\s*currentColor\) !important;/);
 });
+
+test("小驴人脉 · 空态操作按钮与全局状态通知条统一对齐全胶囊体系与 1.6 细线图标规范", () => {
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.lvct-empty__actions\s*\{[\s\S]*\.b3-button\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(indexScss, /\.lvct-notice\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(indexScss, /\.lvct-notice__action\s*\{[\s\S]*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+
+    const viewStateSvelte = fs.readFileSync(path.join(SRC, "components", "ViewState.svelte"), "utf8");
+    assert.match(viewStateSvelte, /strokeWidth=\{1\.6\}/);
+    assert.doesNotMatch(viewStateSvelte, /strokeWidth=\{1\.8\}/);
+
+    const statusNoticeSvelte = fs.readFileSync(path.join(SRC, "components", "StatusNotice.svelte"), "utf8");
+    assert.match(statusNoticeSvelte, /strokeWidth=\{1\.6\}/);
+});
