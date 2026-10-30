@@ -1355,21 +1355,25 @@
         min-width: 0;
         gap: 6px;
     }
-    .lvct-graph-toolbar__primary > input { flex: 1 1 220px; min-width: 160px; }
+    .lvct-graph-toolbar__primary > input {
+        flex: 1 1 220px;
+        min-width: 160px;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
     .lvct-graph-toolbar__primary > .ft__smaller { flex: 0 1 auto; }
     .lvct-graph-toolbar__actions { justify-content: flex-end; }
     .lvct-graph-toolbar__actions > [role="group"] {
         display: inline-flex;
         align-items: center;
         gap: 2px;
-        padding: 2px;
-        border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-sm);
+        padding: 3px;
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lv-r-pill, 9999px);
         background: var(--lvct-bg-app);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button {
         min-height: var(--lvct-touch-min);
-        border-radius: calc(var(--lvct-r-sm) - 2px);
+        border-radius: var(--lv-r-pill, 9999px);
         transition:
             background var(--lvct-dur-fast) var(--lvct-ease),
             border-color var(--lvct-dur-fast) var(--lvct-ease),
@@ -1377,14 +1381,18 @@
             transform var(--lvct-dur-fast) var(--lvct-ease);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button[aria-pressed="true"] {
-        border-color: var(--lvct-border-strong);
-        background: var(--lvct-bg-active);
-        color: var(--lvct-text-1);
+        border-color: var(--lv-brand, #ea580c);
+        background: var(--lv-brand, #ea580c);
+        color: #ffffff;
         font-weight: var(--lvct-fw-medium);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button:focus-visible {
         outline: 2px solid var(--lvct-accent);
         outline-offset: 1px;
+    }
+    .lvct-graph-timeline-toggle,
+    .lvct-graph-toolbar__actions > .b3-button {
+        border-radius: var(--lv-r-pill, 9999px);
     }
     .lvct-graph-toolbar__filters {
         padding-top: 4px;
@@ -1442,10 +1450,17 @@
         flex-wrap: wrap;
         gap: 6px;
         min-width: 0;
-        padding: 4px 6px;
+        padding: 4px 8px;
         border: 1px solid var(--lvct-border-subtle);
-        border-radius: var(--lvct-r-md);
+        border-radius: var(--lvct-r-card, 12px);
         background: var(--lvct-bg-elevated);
+
+        select {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+    .lvct-graph-toolbar__depth-tabs button {
+        border-radius: var(--lv-r-pill, 9999px);
     }
     .lvct-graph-toolbar__filter-group--scope { flex: 1 1 520px; }
     .lvct-graph-toolbar__filter-group--refine { flex: 1 1 280px; }

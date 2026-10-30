@@ -277,8 +277,9 @@
 
     .btn-adopt-all {
         font-size: 11px;
-        padding: 3px 8px;
+        padding: 4px 12px;
         font-weight: 600;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .tidy-content-list {
@@ -371,8 +372,8 @@
     .sugg-chip,
     .sugg-tag-chip {
         font-size: 11px;
-        padding: 2px 7px;
-        border-radius: 4px;
+        padding: 2px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         display: inline-flex;
         align-items: center;
@@ -403,7 +404,8 @@
 
     .btn-adopt-person {
         font-size: 11px;
-        padding: 2px 6px;
+        padding: 2px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .tidy-footer-actions {
@@ -413,6 +415,10 @@
         border-top: 1px solid var(--b3-border-color);
         padding-top: 10px;
         margin-top: 4px;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .btn-apply-batch {
