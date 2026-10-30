@@ -13,7 +13,7 @@
         type MilestoneWindowFilter,
         type AnniversaryHubItem,
     } from "../../domain/anniversary-milestones.ts";
-    import { serializeBatchAnniversariesToIcs } from "../../domain/ical-export.ts";
+    import { serializeBatchAnniversariesToIcs, buildBatchIcsFilename } from "../../domain/ical-export.ts";
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { translateText } from "../../domain/translation.ts";
     import { copyPlainText } from "../../shared/clipboard.ts";
@@ -157,7 +157,7 @@
         const a = document.createElement("a");
         a.href = url;
         const todayStr = toLocalDateKey(new Date());
-        a.download = `小驴人脉_近期纪念日里程碑_${todayStr}.ics`;
+        a.download = buildBatchIcsFilename(text("annivExportFileLabel", "近期纪念日里程碑"), todayStr);
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
