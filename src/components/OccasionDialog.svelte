@@ -6,6 +6,7 @@
     import type { ContactSummary } from "../domain/person";
     import type { OccasionAttendee, OccasionType } from "../domain/occasion-cluster";
     import type { CreateOccasionInput } from "../services/occasions";
+    import { Plus, X, Users } from "@lucide/svelte";
 
     let {
         i18n,
@@ -48,12 +49,13 @@
     );
 
     function addAttendee(p: ContactSummary) {
-        if (selectedAttendees.some((a) => a.personDocId === p.docId)) return;
+        if (submitting || selectedAttendees.some((a) => a.personDocId === p.docId)) return;
         selectedAttendees = [...selectedAttendees, { personDocId: p.docId, name: p.name, role: "guest" }];
         attendeeSearch = "";
     }
 
     function removeAttendee(docId: string) {
+        if (submitting) return;
         selectedAttendees = selectedAttendees.filter((a) => a.personDocId !== docId);
     }
 
@@ -88,9 +90,17 @@
             submitting = false;
         }
     }
+
+    function handleKeydown(event: KeyboardEvent) {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            void handleSave();
+        }
+    }
 </script>
 
-<div class="lvct-occ-dialog">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="lvct-occ-dialog" onkeydown={handleKeydown}>
     <header class="lvct-occ-dialog__head">
         <h3 id="lvct-occ-title" class="lvct-occ-dialog__title">{text("occDialogTitle", "记录群体活动与场合")}</h3>
         <p class="ft__smaller ft__on-surface" style="margin-top: 0;">
@@ -150,21 +160,27 @@
 
         <div class="lvct-occ-dialog__section">
             <div class="lvct-occ-dialog__section-head">
-                <span class="lvct-occ-dialog__label">{text("occFieldAttendees", "参与联系人 *")}（{selectedAttendees.length} 人）</span>
+                <span class="lvct-occ-dialog__label" style="display: inline-flex; align-items: center; gap: 5px;">
+                    <Users size={13} strokeWidth={1.6} class="ft__primary" />
+                    <span>{text("occFieldAttendees", "参与联系人 *")}（{selectedAttendees.length} 人）</span>
+                </span>
             </div>
             {#if selectedAttendees.length > 0}
                 <div class="lvct-occ-dialog__chips">
                     {#each selectedAttendees as attendee (attendee.personDocId)}
-                        <span class="lvct-chip lvct-bucket--soon">
-                            {attendee.name}
+                        <span class="lvct-chip lvct-occ-attendee-chip">
+                            <span class="lvct-occ-attendee-dot"></span>
+                            <span class="lvct-occ-attendee-name">{attendee.name}</span>
                             <button
                                 type="button"
-                                class="b3-button b3-button--text"
-                                style="padding: 0 4px; margin-left: 2px;"
+                                class="lvct-occ-attendee-remove-btn"
                                 onclick={() => removeAttendee(attendee.personDocId)}
                                 disabled={submitting}
                                 aria-label={text("occRemoveAttendee", "移除参与人")}
-                            >×</button>
+                                title={text("occRemoveAttendee", "移除参与人")}
+                            >
+                                <X size={11} strokeWidth={1.6} />
+                            </button>
                         </span>
                     {/each}
                 </div>
@@ -183,11 +199,11 @@
                             <li>
                                 <button
                                     type="button"
-                                    class="b3-button b3-button--text fn__block"
-                                    style="text-align: left; padding: 4px 8px;"
+                                    class="b3-button b3-button--text fn__block lvct-occ-candidate-btn"
                                     onclick={() => addAttendee(candidate)}
                                 >
-                                    + {candidate.name}
+                                    <Plus size={12} strokeWidth={1.6} />
+                                    <span>{candidate.name}</span>
                                     {#if candidate.group}<span class="ft__smaller ft__on-surface">（{candidate.group}）</span>{/if}
                                 </button>
                             </li>
@@ -247,7 +263,7 @@
 
     <footer class="lvct-occ-dialog__footer">
         <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={onClose} disabled={submitting}>{text("cancel", "取消")}</button>
-        <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={handleSave} disabled={submitting}>
+        <button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={handleSave} disabled={submitting}>
             {submitting ? text("occSaving", "保存中…") : text("occSaveBtn", "保存活动")}
         </button>
     </footer>
@@ -290,16 +306,54 @@
 .lvct-occ-dialog__section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 8px 10px;
-    background: var(--b3-theme-surface, transparent);
-    border: 1px solid var(--b3-border-color, rgba(0,0,0,0.08));
-    border-radius: 6px;
+    gap: 8px;
+    padding: 12px 14px;
+    background: var(--b3-theme-background-light, rgba(0, 0, 0, 0.02));
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-card, 12px);
+    box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
 }
 .lvct-occ-dialog__chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+}
+.lvct-occ-attendee-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: var(--lv-r-pill, 9999px);
+    background: var(--b3-theme-surface, #ffffff);
+    border: 1px solid var(--lvct-border-subtle);
+    font-size: 11.5px;
+    color: var(--b3-theme-on-background);
+    box-shadow: 0 1px 2px rgba(28, 24, 21, 0.03);
+}
+.lvct-occ-attendee-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--lv-brand, #ea580c);
+    forced-color-adjust: none;
+}
+.lvct-occ-attendee-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: var(--b3-theme-on-surface-light, #888);
+    padding: 2px;
+    cursor: pointer;
+    border-radius: var(--lv-r-pill, 9999px);
+    opacity: 0.65;
+    transition: all 0.15s ease;
+}
+.lvct-occ-attendee-remove-btn:hover {
+    opacity: 1;
+    color: var(--b3-theme-error, #ef4444);
+    background: rgba(239, 68, 68, 0.08);
 }
 .lvct-occ-dialog__picker {
     position: relative;
@@ -311,19 +365,32 @@
     right: 0;
     z-index: 10;
     background: var(--b3-theme-surface);
-    border: 1px solid var(--b3-border-color);
-    border-radius: 4px;
-    box-shadow: var(--b3-dialog-shadow, 0 4px 12px rgba(0,0,0,0.15));
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-card, 12px);
+    box-shadow: 0 8px 24px rgba(28, 24, 21, 0.12);
     list-style: none;
-    margin: 2px 0 0 0;
-    padding: 2px 0;
+    margin: 4px 0 0 0;
+    padding: 4px;
     max-height: 200px;
     overflow-y: auto;
+}
+.lvct-occ-candidate-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+    padding: 6px 10px;
+    border-radius: var(--lvct-r-sm, 6px);
+    font-size: 12px;
 }
 .lvct-occ-dialog__footer {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
     margin-top: 8px;
+}
+.lvct-occ-dialog__footer button {
+    border-radius: var(--lv-r-pill, 9999px);
 }
 </style>
