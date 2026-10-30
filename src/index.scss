@@ -9336,15 +9336,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-settings__nav {
     width: 184px;
     padding: 8px;
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 68%, transparent);
-    border-radius: var(--lvct-r-panel);
-    background: var(--lvct-surface-muted);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lvct-r-card, 16px);
+    background: var(--lvct-bg-app);
 }
 
 .lvct-settings__nav-item {
     min-height: var(--lvct-control-h);
-    padding: 9px 12px;
-    border-radius: 8px;
+    padding: 9px 14px;
+    border-radius: var(--lv-r-pill, 9999px);
     color: var(--lvct-text-2);
     font-size: var(--lvct-fs-body);
     display: flex;
@@ -9361,16 +9361,16 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
         color: var(--lv-brand, #ea580c);
         font-weight: 600;
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lv-brand, #ea580c) 20%, transparent);
+        box-shadow: none;
     }
 }
 
 .lvct-settings__panel {
     padding: 28px;
-    border-radius: var(--lvct-r-panel);
+    border-radius: var(--lvct-r-card, 16px);
     background: var(--lvct-bg-surface);
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-    box-shadow: var(--lvct-shadow-card);
+    border: 1px solid var(--lvct-color-border-200);
+    box-shadow: 0 4px 20px -2px rgba(28, 24, 21, 0.05);
 }
 
 .lvct-settings__panel h2 {
@@ -11093,24 +11093,26 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 6px 14px;
-    background: var(--b3-theme-surface);
-    border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+    padding: 8px 18px;
+    background: var(--lvct-bg-surface);
+    border: 1px solid var(--lvct-color-border-200);
     border-radius: 9999px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 30px -4px rgba(28, 24, 21, 0.12), 0 2px 8px rgba(28, 24, 21, 0.04);
     z-index: 10;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
     max-width: calc(100% - 32px);
     overflow-x: auto;
 
     .lvct-graph-timeline-play-btn {
-        padding: 4px 10px;
-        color: var(--b3-theme-primary);
+        padding: 4px 12px;
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
         font-size: 12px;
+        border-radius: 9999px;
         display: inline-flex;
         align-items: center;
         gap: 4px;
+        background: var(--lv-brand-soft);
     }
 
     .lvct-graph-timeline-slider-wrap {
@@ -11118,9 +11120,8 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         gap: 8px;
 
         span {
-            font-size: 10.5px;
-            color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
-            opacity: 0.8;
+            font-size: 11px;
+            color: var(--lvct-text-3);
             font-variant-numeric: tabular-nums;
         }
     }
@@ -11128,6 +11129,7 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     .lvct-graph-timeline-slider {
         width: 140px;
         cursor: pointer;
+        accent-color: var(--lv-brand, #ea580c);
     }
 
     .lvct-graph-timeline-info {
@@ -11136,13 +11138,19 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         white-space: nowrap;
 
         .b3-chip {
-            padding: 2px 7px;
+            padding: 3px 9px;
+            border-radius: 9999px;
+            background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
+            color: var(--lv-data-amber, #d97706);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
         }
     }
 
     .lvct-graph-timeline-reset {
-        padding: 2px 6px;
+        padding: 4px 10px;
         font-size: 11px;
+        border-radius: 9999px;
     }
 }
 
