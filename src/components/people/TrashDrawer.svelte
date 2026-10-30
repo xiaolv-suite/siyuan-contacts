@@ -255,7 +255,7 @@
         justify-content: space-between;
         gap: 12px;
         padding-bottom: 8px;
-        border-bottom: 1px solid var(--b3-border-color);
+        border-bottom: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
     }
 
     .header-info {
@@ -288,6 +288,7 @@
 
     .search-input-box input {
         padding-left: 28px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .search-icon {
@@ -320,15 +321,15 @@
         justify-content: space-between;
         padding: 12px 16px;
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         border-radius: var(--lvct-r-card, 16px);
-        box-shadow: var(--lvct-shadow-1);
+        box-shadow: 0 2px 8px rgba(28, 24, 21, 0.04);
         gap: 12px;
         transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
             transform: translateY(-1px);
-            box-shadow: var(--lvct-shadow-2);
+            box-shadow: 0 4px 14px rgba(28, 24, 21, 0.08);
             border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle));
         }
     }

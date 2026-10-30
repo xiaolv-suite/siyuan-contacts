@@ -2682,15 +2682,15 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     }
 }
 
-/* 拼音首字母 A-Z 跳跃条 */
+/* 拼音首字母 A-Z 跳跃条：全胶囊磨砂玻璃底 + 暖橙高光激活项 */
 .lvct-people__alphabet-bar {
     display: flex;
     align-items: center;
-    gap: 2px;
-    padding: 3px 8px;
-    background: color-mix(in srgb, var(--lvct-bg-surface) 60%, var(--lvct-bg-app));
-    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
-    border-radius: var(--lvct-r-md, 6px);
+    gap: 3px;
+    padding: 4px 10px;
+    background: var(--lvct-bg-app);
+    border: 1px solid var(--lvct-color-border-200);
+    border-radius: var(--lv-r-pill, 9999px);
     margin-bottom: var(--lvct-sp-2);
     overflow-x: auto;
     white-space: nowrap;
@@ -2702,21 +2702,21 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     }
 
     @media (max-height: 480px) {
-        padding: 1px 4px;
+        padding: 2px 6px;
         margin-bottom: var(--lvct-sp-1);
     }
 }
 
 .lvct-people__alphabet-btn {
-    min-width: 22px;
+    min-width: 24px;
     height: 24px;
-    padding: 0 4px;
+    padding: 0 6px;
     font-size: 11px;
     font-weight: 500;
     line-height: 24px;
     text-align: center;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--lv-r-pill, 9999px);
     background: transparent;
     color: var(--lvct-text-2);
     cursor: pointer;
@@ -2731,7 +2731,7 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     }
 
     &:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
+        background: var(--lv-brand-soft);
         color: var(--lv-brand, #ea580c);
     }
 
@@ -2744,7 +2744,7 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
 
     &--all {
         font-weight: 600;
-        padding: 0 6px;
+        padding: 0 8px;
     }
 
     &:disabled {
