@@ -175,12 +175,13 @@
     .lifecycle-funnel-insight {
         display: flex;
         align-items: flex-start;
-        gap: 5px;
-        padding: 5px 8px;
-        background: var(--b3-theme-surface-lighter);
-        border-radius: 4px;
-        line-height: 1.4;
-        margin-top: 2px;
+        gap: 6px;
+        padding: 6px 10px;
+        background: color-mix(in srgb, var(--b3-theme-surface-lighter) 60%, transparent);
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lvct-r-card, 12px);
+        line-height: 1.45;
+        margin-top: 4px;
     }
 
     .insight-icon {

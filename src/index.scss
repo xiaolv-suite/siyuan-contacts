@@ -10615,16 +10615,27 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     vertical-align: middle;
 }
 
-/* E-29 关系温度与紧迫度分级样式类 */
+/* E-29 关系温度与紧迫度分级样式类（文字加小圆点） */
 .lvct-heat {
     display: inline-flex;
     align-items: center;
-    gap: var(--lvct-sp-1, 4px);
+    gap: 5px;
     font-size: 11px;
     font-weight: 500;
     line-height: 1;
     border-radius: var(--lvct-r-pill, 9999px);
-    padding: 2px 7px;
+    padding: 2px 8px;
+
+    &::before {
+        content: "";
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+        forced-color-adjust: none;
+    }
 
     &--hot {
         color: var(--lv-heat-hot);
@@ -11280,6 +11291,18 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         gap: 10px;
         flex-wrap: wrap;
         padding: 6px 2px;
+
+        .b3-chip {
+            border-radius: var(--lv-r-pill, 9999px);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--lvct-dur-fast) var(--lvct-ease);
+
+            &.b3-chip--primary {
+                background: var(--lv-brand);
+                color: #ffffff;
+            }
+        }
     }
 
     &__list {
@@ -11361,6 +11384,10 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         border-top: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
         flex-wrap: wrap;
         gap: 8px;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 }
 

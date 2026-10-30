@@ -349,6 +349,7 @@
 
     .search-input-box input {
         padding-left: 28px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .filter-pills {
@@ -467,8 +468,8 @@
 
     .taboo-chip {
         font-size: 11px;
-        padding: 2px 7px;
-        border-radius: 4px;
+        padding: 2px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
         background: var(--b3-theme-error-lightest, rgba(235, 77, 75, 0.1));
         color: var(--b3-theme-error);
         border: 1px solid rgba(235, 77, 75, 0.3);
@@ -477,8 +478,8 @@
 
     .pref-chip {
         font-size: 11px;
-        padding: 2px 7px;
-        border-radius: 4px;
+        padding: 2px 9px;
+        border-radius: var(--lv-r-pill, 9999px);
         background: var(--b3-theme-background);
         border: 1px solid var(--b3-border-color);
         color: var(--b3-theme-on-surface);
@@ -500,8 +501,8 @@
 
     .promise-tag {
         font-size: 10px;
-        padding: 1px 4px;
-        border-radius: 3px;
+        padding: 1px 7px;
+        border-radius: var(--lv-r-pill, 9999px);
         flex-shrink: 0;
         font-weight: 600;
     }

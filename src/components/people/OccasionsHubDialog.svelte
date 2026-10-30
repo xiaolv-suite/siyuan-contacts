@@ -407,6 +407,7 @@
 
     .search-input-box input {
         padding-left: 28px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .search-icon {
@@ -424,12 +425,17 @@
         display: flex;
         align-items: center;
         gap: 8px;
+
+        select {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .btn-new-occasion {
         white-space: nowrap;
         font-size: 12px;
         padding: 4px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .occ-content-list {
@@ -596,8 +602,8 @@
         font-size: 9px;
         color: var(--lv-brand, #ea580c);
         background: var(--lv-brand-soft, rgba(234, 88, 12, 0.1));
-        padding: 0 4px;
-        border-radius: 2px;
+        padding: 1px 6px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .occ-card-actions {
@@ -605,6 +611,10 @@
         align-items: center;
         gap: 6px;
         flex-shrink: 0;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .occ-footer {
@@ -614,5 +624,9 @@
         padding-top: 8px;
         border-top: 1px solid var(--b3-border-color);
         margin-top: 4px;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 </style>

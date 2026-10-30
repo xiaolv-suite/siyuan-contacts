@@ -56,6 +56,7 @@
     let categoryFilter = $state<AnniversaryCategory | "all">("all");
     let copiedItemId = $state<string | null>(null);
     let copiedTimer: ReturnType<typeof setTimeout> | null = null;
+    let exportingIcs = $state(false);
 
     $effect(() => {
         if (!facade.listUpcomingAnniversaries) {
@@ -139,29 +140,34 @@
     }
 
     function handleExportIcs() {
-        if (allHubItems.length === 0) return;
-        const peopleMap = new Map<string, { person: ContactSummary; anniversaries: AnniversaryItem[] }>();
-        for (const item of allHubItems) {
-            const p = peopleByDocId.get(item.personDocId);
-            if (!p) continue;
-            let entry = peopleMap.get(item.personDocId);
-            if (!entry) {
-                entry = { person: p, anniversaries: [] };
-                peopleMap.set(item.personDocId, entry);
+        if (allHubItems.length === 0 || exportingIcs) return;
+        exportingIcs = true;
+        try {
+            const peopleMap = new Map<string, { person: ContactSummary; anniversaries: AnniversaryItem[] }>();
+            for (const item of allHubItems) {
+                const p = peopleByDocId.get(item.personDocId);
+                if (!p) continue;
+                let entry = peopleMap.get(item.personDocId);
+                if (!entry) {
+                    entry = { person: p, anniversaries: [] };
+                    peopleMap.set(item.personDocId, entry);
+                }
+                entry.anniversaries.push(item.anniversary);
             }
-            entry.anniversaries.push(item.anniversary);
+            const icsContent = serializeBatchAnniversariesToIcs(Array.from(peopleMap.values()));
+            const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const todayStr = toLocalDateKey(new Date());
+            a.download = buildBatchIcsFilename(text("annivExportFileLabel", "近期纪念日里程碑"), todayStr);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } finally {
+            exportingIcs = false;
         }
-        const icsContent = serializeBatchAnniversariesToIcs(Array.from(peopleMap.values()));
-        const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        const todayStr = toLocalDateKey(new Date());
-        a.download = buildBatchIcsFilename(text("annivExportFileLabel", "近期纪念日里程碑"), todayStr);
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     }
 
     function getCategoryEmoji(cat: AnniversaryCategory): string {
@@ -477,6 +483,7 @@
 
     .search-input-box input {
         padding-left: 28px;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .search-icon {
@@ -627,8 +634,8 @@
         align-items: flex-end;
         background: var(--b3-theme-background);
         border: 1px solid var(--b3-border-color);
-        padding: 3px 8px;
-        border-radius: 6px;
+        padding: 4px 10px;
+        border-radius: var(--lv-r-pill, 9999px);
         flex-shrink: 0;
     }
 
@@ -686,12 +693,17 @@
         align-items: center;
         gap: 6px;
         margin-top: 2px;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 
     .lvct-export-ics-btn {
         display: inline-flex;
         align-items: center;
         white-space: nowrap;
+        border-radius: var(--lv-r-pill, 9999px);
     }
 
     .anniv-footer {
@@ -701,5 +713,9 @@
         padding-top: 8px;
         border-top: 1px solid var(--b3-border-color);
         margin-top: 4px;
+
+        .b3-button {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
     }
 </style>
