@@ -209,8 +209,8 @@
                 aria-label={text("qfInputLabel", "待识别的联系人内容")} bind:this={sourceInput}
                 bind:value={pasteText}></textarea>
             <div class="lvct-form__actions">
-                <button class="b3-button b3-button--cancel" onclick={requestClose}>{text("formCancel", "取消")}</button>
-                <button class="b3-button" disabled={pasteText.trim().length === 0} onclick={recognize}>{text("qfRecognize", "识别")}</button>
+                <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={requestClose}>{text("formCancel", "取消")}</button>
+                <button class="b3-button" style="border-radius: var(--lv-r-pill, 9999px);" disabled={pasteText.trim().length === 0} onclick={recognize}>{text("qfRecognize", "识别")}</button>
             </div>
         {:else}
             <p class="ft__smaller">来源：本地粘贴/单人表格；目标：当前一个草稿。每项显示原文 → 字段；不同候选值须单选，未识别内容保留并忽略，不直接写联系人。</p>
@@ -245,11 +245,11 @@
                 </div>
             {/if}
             <div class="lvct-form__actions">
-                <button class="b3-button b3-button--cancel" onclick={requestClose}>{text("formCancel", "取消")}</button>
+                <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={requestClose}>{text("formCancel", "取消")}</button>
                 {#if pasteText.trim().length > 0}
-                    <button class="b3-button b3-button--outline" onclick={() => void editSource()}>{text("qfEditSource", "返回修改原文")}</button>
+                    <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void editSource()}>{text("qfEditSource", "返回修改原文")}</button>
                 {/if}
-                <button class="b3-button" disabled={checked.size === 0} onclick={apply}>
+                <button class="b3-button" style="border-radius: var(--lv-r-pill, 9999px);" disabled={checked.size === 0} onclick={apply}>
                     {text("qfApply", "应用到表单（{n}）", { n: checked.size })}
                 </button>
             </div>

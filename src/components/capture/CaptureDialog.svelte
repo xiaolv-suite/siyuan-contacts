@@ -509,20 +509,20 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
         </div>
         {#if result.complete === false}
             <div class="lvct-form__actions">
-                <button class="b3-button b3-button--outline" onclick={retryIncomplete} disabled={running}>
+                <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={retryIncomplete} disabled={running}>
                     {running ? text("captureRetrying", "核实并重试中…") : text("captureRetryIncomplete", "仅重试未完成项")}
                 </button>
             </div>
         {/if}
         {#if !aiExtrasComplete() && (aiProfileCandidates.some((c) => c.checked) || aiFollowUpCandidates.some((c) => c.checked))}
             <div class="lvct-form__actions">
-                <button class="b3-button b3-button--outline" onclick={retryAiExtras} disabled={running}>
+                <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={retryAiExtras} disabled={running}>
                     {running ? text("captureRetryingAi", "核实 AI 写入中…") : text("captureRetryAi", "仅重试未核实的 AI 写入")}
                 </button>
             </div>
         {/if}
         <div class="lvct-form__actions">
-            <button class="b3-button b3-button--text" onclick={closeIfIdle}>{text("captureDone", "完成")}</button>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={closeIfIdle}>{text("captureDone", "完成")}</button>
         </div>
     {:else}
         <nav class="lvct-capture__steps" aria-label="捕获向导步骤">
@@ -735,8 +735,8 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
         {/if}
 
         <div class="lvct-form__actions">
-            <button class="b3-button b3-button--cancel" onclick={() => (step = 1)} disabled={running}>{text("captureBackToIdentify", "返回识别")}</button>
-            <button class="b3-button b3-button--text" onclick={submit} disabled={running || !hasTarget}>
+            <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (step = 1)} disabled={running}>{text("captureBackToIdentify", "返回识别")}</button>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={submit} disabled={running || !hasTarget}>
                 {running ? text("captureRecording", "记录中…") : text("captureRecordAndWrite", "记录互动并建立事项双链")}
             </button>
         </div>
@@ -749,8 +749,8 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
         </div>
         {:else}
         <div class="lvct-form__actions">
-            <button class="b3-button b3-button--cancel" onclick={closeIfIdle}>{text("captureCancel", "取消")}</button>
-            <button class="b3-button b3-button--text" onclick={() => (step = 2)} disabled={!hasTarget || aiRunning}>{text("captureNextConfirm", "下一步：确认记录")}</button>
+            <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={closeIfIdle}>{text("captureCancel", "取消")}</button>
+            <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (step = 2)} disabled={!hasTarget || aiRunning}>{text("captureNextConfirm", "下一步：确认记录")}</button>
         </div>
         {/if}
     {/if}
