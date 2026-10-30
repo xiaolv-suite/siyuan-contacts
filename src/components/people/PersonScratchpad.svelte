@@ -229,9 +229,9 @@
         margin: 14px 0;
         padding: 14px 16px;
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-color-border-200);
         border-radius: var(--lvct-r-card, 16px);
-        box-shadow: var(--lvct-shadow-1);
+        box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -246,8 +246,8 @@
     .scratchpad-new-card {
         padding: 10px 14px;
         background: var(--lvct-bg-app);
-        border: 1px dashed color-mix(in srgb, var(--lv-brand) 40%, transparent);
-        border-radius: var(--lvct-r-md, 12px);
+        border: 1px dashed var(--lvct-color-border-200);
+        border-radius: var(--lv-r-md, 12px);
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -265,6 +265,10 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        background: var(--lvct-bg-surface);
+        padding: 3px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        border: 1px solid var(--lvct-color-border-200);
     }
 
     .color-dot-btn {
@@ -278,7 +282,7 @@
     }
 
     .color-dot-btn.is-active {
-        border-color: var(--b3-theme-primary);
+        border-color: var(--lv-brand, #ea580c);
         transform: scale(1.15);
     }
 
@@ -287,7 +291,7 @@
         align-items: center;
         gap: 4px;
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         cursor: pointer;
     }
 
@@ -311,9 +315,9 @@
 
     .memo-card {
         padding: 12px 14px;
-        border-radius: var(--lvct-r-md, 12px);
-        border: 1px solid var(--lvct-border-subtle);
-        box-shadow: var(--lvct-shadow-1);
+        border-radius: var(--lv-r-md, 12px);
+        border: 1px solid var(--lvct-color-border-200);
+        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
         display: flex;
         flex-direction: column;
         gap: 6px;
@@ -323,7 +327,7 @@
     }
 
     .memo-card:hover {
-        box-shadow: var(--lvct-shadow-2);
+        box-shadow: 0 4px 12px rgba(28, 24, 21, 0.06);
         transform: translateY(-1px);
     }
 

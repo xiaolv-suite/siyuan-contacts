@@ -204,7 +204,7 @@
         gap: 12px;
         flex-wrap: wrap;
         padding-bottom: 10px;
-        border-bottom: 1px solid var(--b3-border-color);
+        border-bottom: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
     }
 
     .control-segment {
@@ -215,26 +215,26 @@
 
     .control-label {
         font-size: 12px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
         display: flex;
         align-items: center;
     }
 
     .segment-pill {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         background: transparent;
-        font-size: 11px;
-        padding: 3px 9px;
-        border-radius: 12px;
+        font-size: 11.5px;
+        padding: 4px 12px;
+        border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2, var(--b3-theme-on-surface));
         transition: all 0.15s ease;
     }
 
     .segment-pill.is-active {
-        background: var(--b3-theme-primary-lightest);
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft, color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent));
+        border-color: var(--lv-brand, #ea580c);
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
     }
 
@@ -242,17 +242,18 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 20px 10px;
-        background: var(--b3-theme-background);
-        border: 1px dashed var(--b3-border-color);
-        border-radius: 8px;
+        padding: 24px 12px;
+        background: var(--lvct-bg-app, #F5F3F0);
+        border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
+        border-radius: var(--lvct-r-card, 16px);
         overflow: auto;
         max-height: 520px;
+        box-shadow: inset 0 2px 6px rgba(28, 24, 21, 0.03);
     }
 
     .card-svg-wrapper {
         display: flex;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 8px 30px -4px rgba(28, 24, 21, 0.16), 0 2px 10px rgba(28, 24, 21, 0.06);
         border-radius: 20px;
         max-width: 100%;
     }
