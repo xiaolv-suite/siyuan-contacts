@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-    buildPersonFieldsDom, emptyPersonFields, filterPersonFields, MAX_PERSON_FIELDS_ITEMS, MAX_PERSON_FIELDS_JSON_LENGTH,
-    normalizePersonFields, parsePersonFieldsBlock, personFieldsKey, removePersonField,
+    buildPersonFieldsDom, buildPersonFieldsMarkdown, emptyPersonFields, filterPersonFields, MAX_PERSON_FIELDS_ITEMS, MAX_PERSON_FIELDS_JSON_LENGTH,
+    normalizePersonFields, parsePersonFieldsBlock, parsePersonFieldsMarkdown, personFieldsKey, removePersonField,
 } from "../src/domain/person-fields.ts";
 import type { PersonField, PersonFieldsSnapshot } from "../src/domain/person-fields.ts";
 
@@ -187,3 +187,35 @@ test("补充资料筛选空组匹配显示组与零条目，无命中为空且�
     assert.deepEqual(filterPersonFields(source, groupId), { items: [], matchedEntryCount: 0 });
     assert.deepEqual(filterPersonFields([], ""), { items: [], matchedEntryCount: 0 });
 });
+
+test("补充资料可读化 Markdown（格式 2）生成与解析往返保真", () => {
+    const snap = sample();
+    const md = buildPersonFieldsMarkdown(snap);
+    assert.match(md, /## 补充资料/);
+    assert.match(md, /- \*\*联系方式\*\*/);
+    assert.match(md, /  - 电话：  工作号码 <br \/> 第二行/);
+    assert.match(md, /- 电话：  工作号码 <br \/> 第二行/);
+    assert.match(md, /<!-- lvct-fields-data:\{[\s\S]*\} -->/);
+
+    // parsePersonFieldsBlock 兼容解析该可读 Markdown 块，100% 还原快照
+    const parsed = parsePersonFieldsBlock({ id: blockId, type: "p", content: md, format: "2" }, docId);
+    assert.deepEqual(parsed, snap);
+
+    // parsePersonFieldsMarkdown 纯纯从无数据注释的纯文本列表解析
+    const pureTextMd = `## 补充资料
+- **常用联系**
+  - 手机：13800000000
+- 个人网址：https://example.com`;
+    const fromText = parsePersonFieldsMarkdown(pureTextMd, docId);
+    assert.equal(fromText.items.length, 3);
+    assert.equal(fromText.items[0].kind, "group");
+    assert.equal(fromText.items[0].label, "常用联系");
+    assert.equal(fromText.items[1].kind, "entry");
+    assert.equal(fromText.items[1].label, "手机");
+    assert.equal((fromText.items[1] as any).value, "13800000000");
+    assert.equal((fromText.items[1] as any).parentId, fromText.items[0].id);
+    assert.equal(fromText.items[2].kind, "entry");
+    assert.equal(fromText.items[2].label, "个人网址");
+    assert.equal((fromText.items[2] as any).value, "https://example.com");
+});
+

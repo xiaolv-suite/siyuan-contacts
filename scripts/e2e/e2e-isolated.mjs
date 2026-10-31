@@ -16,7 +16,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, execSync } from "node:child_process";
 import { assertIsolatedPath, assertTestPortAvailable, observeTestKernel, prepareIsolatedWorkspace } from "./kernel-safety.mjs";
 import { readBrowserDebuggingPort, removeIsolatedBrowserProfile, stopIsolatedBrowser } from "./browser-cleanup.mjs";
 import { guardScratch, kernelTokenFromConfig, makeApi, sweepOrphans } from "../lib/smoke-kernel.mjs";
@@ -56,6 +56,8 @@ function resolveBrowser() {
     return candidate;
 }
 
+const FORBIDDEN_PORTS = new Set([6806, 43919]);
+
 async function allocateFreePort() {
     const port = await new Promise((resolvePort, rejectPort) => {
         const server = net.createServer();
@@ -65,10 +67,25 @@ async function allocateFreePort() {
             server.close((err) => (err ? rejectPort(err) : resolvePort(assigned)));
         });
     });
-    if (port === 6806) return allocateFreePort();
+    if (FORBIDDEN_PORTS.has(port)) return allocateFreePort();
     await assertTestPortAvailable("127.0.0.1", port);
     return port;
 }
+
+async function choosePort() {
+    const preferred = process.env.TEST_ISOLATED_PORT ? Number(process.env.TEST_ISOLATED_PORT) : 43920;
+    if (preferred && !FORBIDDEN_PORTS.has(preferred)) {
+        try {
+            await assertTestPortAvailable("127.0.0.1", preferred);
+            return preferred;
+        } catch {
+            console.warn(`[e2e-isolated] 首选端口 ${preferred} 已被占用，将自动分配可用空闲端口`);
+        }
+    }
+    return allocateFreePort();
+}
+
+const KEEP = process.argv.includes("--keep");
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -103,9 +120,17 @@ if (!process.argv.includes("--stage2-only")) {
 console.log("\n== [2/2] 运行中文真实思源桌面主线交互、一屏几何与截图实测 ==");
 const { kernel, appDir } = resolveKernel();
 const chromePath = resolveBrowser();
-const port = await allocateFreePort();
+const port = await choosePort();
 const baseURL = `http://127.0.0.1:${port}`;
-const workspace = path.join(os.tmpdir(), `SiYuan-Lvct-IsolatedWalk-${randomUUID()}`);
+const defaultWorkspaceDir = process.platform === "win32" && fs.existsSync("D:\\思源插件")
+    ? path.join("D:\\思源插件", "小驴人脉-isolated-preview")
+    : path.join(os.tmpdir(), `SiYuan-Lvct-IsolatedWalk-${randomUUID()}`);
+const workspace = process.env.TEST_ISOLATED_WORKSPACE
+    ? path.resolve(process.env.TEST_ISOLATED_WORKSPACE)
+    : (KEEP ? defaultWorkspaceDir : path.join(os.tmpdir(), `SiYuan-Lvct-IsolatedWalk-${randomUUID()}`));
+if (KEEP && fs.existsSync(workspace)) {
+    try { fs.rmSync(workspace, { recursive: true, force: true }); } catch {}
+}
 prepareIsolatedWorkspace(workspace, "lvct-isolated-walk.json", "lvct v0.7.2 isolated browser walkthrough");
 
 const pluginTarget = path.join(workspace, "data", "plugins", PLUGIN_NAME);
@@ -146,12 +171,22 @@ async function kernelApi(route, body = {}) {
 }
 
 try {
-    kernelProc = spawn(kernel, ["--workspace", workspace, "serve", "--wd", appDir, "--port", String(port), "--lang", "zh_CN"], {
-        stdio: "ignore",
-        windowsHide: true,
-        env: { ...process.env, SIYUAN_WORKSPACE_PATH: workspace },
-    });
-    assertRunning = observeTestKernel(kernelProc);
+    if (KEEP && process.platform === "win32") {
+        const pidStr = execSync(
+            `powershell.exe -NoProfile -Command "(Start-Process -FilePath '${kernel}' -ArgumentList '--workspace','${workspace.replace(/'/g, "''")}','serve','--wd','${appDir.replace(/'/g, "''")}','--port','${port}','--lang','zh_CN' -WindowStyle Hidden -PassThru).Id"`,
+            { encoding: "utf8" },
+        ).trim();
+        const pid = Number(pidStr) || undefined;
+        kernelProc = { pid, exitCode: null, unref() {}, once() {}, kill() {} };
+        assertRunning = () => {};
+    } else {
+        kernelProc = spawn(kernel, ["--workspace", workspace, "serve", "--wd", appDir, "--port", String(port), "--lang", "zh_CN"], {
+            stdio: "ignore",
+            windowsHide: true,
+            env: { ...process.env, SIYUAN_WORKSPACE_PATH: workspace },
+        });
+        assertRunning = observeTestKernel(kernelProc);
+    }
     await waitUntil(deadline, async () => {
         const boot = await kernelApi("/api/system/bootProgress").catch(() => null);
         return Boolean(boot?.code === 0 && boot.data?.progress >= 100);
@@ -646,16 +681,28 @@ try {
     if (browserProfile) {
         try { await removeIsolatedBrowserProfile(browserProfile); } catch {}
     }
-    if (createdNotebookId && token) {
-        try { await kernelApi("/api/notebook/removeNotebook", { notebook: createdNotebookId }); } catch {}
+    if (!KEEP) {
+        if (createdNotebookId && token) {
+            try { await kernelApi("/api/notebook/removeNotebook", { notebook: createdNotebookId }); } catch {}
+        }
+        if (kernelProc) {
+            try {
+                await kernelApi("/api/sqlite/flushTransaction").catch(() => null);
+                await stopIsolatedBrowser(kernelProc, { requestClose: () => kernelApi("/api/system/exit", { force: true }) });
+            } catch {}
+        }
+        try { fs.rmSync(workspace, { recursive: true, force: true }); } catch {}
+    } else {
+        await kernelApi("/api/sqlite/flushTransaction").catch(() => null);
+        console.log(`\n========================================================================`);
+        console.log(`🎉 [e2e-isolated] --keep 已生效，隔离工作区与思源内核保持常驻运行！`);
+        console.log(`  🔗 浏览器直达地址: ${baseURL}/stage/build/desktop/`);
+        console.log(`  🔑 API Token:     ${token}`);
+        console.log(`  📂 隔离工作区:     ${workspace}`);
+        console.log(`  🆔 内核 PID:      ${kernelProc?.pid ?? "未知"}`);
+        console.log(`  💡 提示: 复制上方「浏览器直达地址」即可在 Chrome/Edge 中直接体验小驴人脉`);
+        console.log(`========================================================================\n`);
     }
-    if (kernelProc) {
-        try {
-            await kernelApi("/api/sqlite/flushTransaction").catch(() => null);
-            await stopIsolatedBrowser(kernelProc, { requestClose: () => kernelApi("/api/system/exit", { force: true }) });
-        } catch {}
-    }
-    try { fs.rmSync(workspace, { recursive: true, force: true }); } catch {}
     fs.writeFileSync(path.join(ARTIFACT_DIR, "summary.json"), JSON.stringify(report, null, 2) + "\n");
 }
 

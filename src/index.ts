@@ -134,7 +134,8 @@ import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bri
 import { handleProtyleEvent, type PanelContext } from "./panels/person-panel";
 import { svelteDialog } from "./libs/dialog";
 import { openSiYuanDocument } from "./libs/open-document";
-import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation } from "./libs/data-events";
+import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation, subscribeDataChanged } from "./libs/data-events";
+import { schedulePersonDocMirror, disposeDocMirrorScheduler } from "./services/doc-mirror";
 import type { ContactsSettings } from "./domain/model";
 import type { ContactSummary } from "./domain/person";
 import { emptyDraft } from "./domain/person";
@@ -249,6 +250,16 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         bindOrgMembershipStorage(this); /* B12：卡片「单位」行依赖成员索引 */
         lifecycleToken.onDispose(bindPeopleProfileStorage(this));
         lifecycleToken.onDispose(bindContactAliasStorage(this));
+        lifecycleToken.onDispose(() => disposeDocMirrorScheduler());
+
+        const unsubscribeDataMirror = subscribeDataChanged((change) => {
+            if (change.docIds && change.docIds.length > 0) {
+                for (const docId of change.docIds) {
+                    schedulePersonDocMirror(this, docId);
+                }
+            }
+        });
+        lifecycleToken.onDispose(unsubscribeDataMirror);
 
         this.addIcons(`<symbol id="iconLvContacts" viewBox="0 0 32 32">
   <circle cx="21" cy="11.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity="0.45"/>

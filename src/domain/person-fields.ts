@@ -124,6 +124,33 @@ export function buildPersonFieldsDom(snapshot: PersonFieldsSnapshot, blockId: st
     return `<div data-node-id="${blockId}" data-type="NodeParagraph" class="p" ${PERSON_FIELDS_ATTR}="1" ${PERSON_FIELDS_FORMAT_ATTR}="1"><div contenteditable="true"><strong>${PERSON_FIELDS_TITLE}</strong><br />${json}</div></div>`;
 }
 
+/** 生成人类可读的 Markdown 补充资料区块（包含两层分组与条目，带隐式数据注释） */
+export function buildPersonFieldsMarkdown(snapshot: PersonFieldsSnapshot): string {
+    const lines = [`## ${PERSON_FIELDS_TITLE}`, ""];
+    const groups = snapshot.items.filter((item): item is Extract<PersonField, { kind: "group" }> => item.kind === "group");
+    const topEntries = snapshot.items.filter((item): item is Extract<PersonField, { kind: "entry" }> => item.kind === "entry" && !item.parentId);
+
+    if (snapshot.items.length === 0) {
+        lines.push("- *（暂无补充条目）*");
+    } else {
+        for (const group of groups) {
+            lines.push(`- **${group.label}** <!-- lvct-id:${group.id} -->`);
+            const children = snapshot.items.filter((item): item is Extract<PersonField, { kind: "entry" }> => item.kind === "entry" && item.parentId === group.id);
+            for (const child of children) {
+                const cleanVal = (child.value || "").replace(/\r?\n/g, " <br /> ");
+                lines.push(`  - ${child.label}：${cleanVal} <!-- lvct-id:${child.id} -->`);
+            }
+        }
+        for (const entry of topEntries) {
+            const cleanVal = (entry.value || "").replace(/\r?\n/g, " <br /> ");
+            lines.push(`- ${entry.label}：${cleanVal} <!-- lvct-id:${entry.id} -->`);
+        }
+    }
+    const json = personFieldsKey(snapshot);
+    lines.push(`<!-- lvct-fields-data:${json} -->`);
+    return lines.join("\n");
+}
+
 /** JSON.parse 会静默保留同名键的末值；原生手工编辑必须显式拒绝这种歧义。 */
 function rejectDuplicateJsonKeys(json: string): void {
     const stack: Array<{ kind: "object" | "array"; keys: Set<string>; expectKey: boolean }> = [];
@@ -151,20 +178,88 @@ function rejectDuplicateJsonKeys(json: string): void {
     }
 }
 
-/** 只接受指定格式的原生 content；不尝试从 Markdown 或可疑片段恢复。 */
+/** 兼容解析格式 1（单段落 JSON）与格式 2（可读 Markdown + 隐式注释），保留完整数据保真 */
 export function parsePersonFieldsBlock(block: PersonFieldsBlock, ownerDocId: string): PersonFieldsSnapshot {
     assertOwnerDocId(ownerDocId);
     if (!block || typeof block.id !== "string" || !NODE_ID.test(block.id) || block.id === ownerDocId
-        || block.type !== "p" || block.format !== "1" || typeof block.content !== "string") throw new Error("补充资料块格式或身份无效");
-    const prefix = `${PERSON_FIELDS_TITLE}\n`;
-    if (!block.content.startsWith(prefix)) throw new Error("补充资料正文标题无效");
-    const json = block.content.slice(prefix.length);
-    if (!json || /[\r\n]/.test(json) || json.length > MAX_PERSON_FIELDS_JSON_LENGTH) throw new Error("补充资料正文必须为受限单行 JSON");
-    let snapshot: unknown;
-    try { snapshot = JSON.parse(json); }
-    catch { throw new Error("补充资料 JSON 格式无效，请保留原文并核对"); }
-    rejectDuplicateJsonKeys(json);
-    return normalizePersonFields(snapshot, ownerDocId);
+        || (block.type !== "p" && block.type !== "s")
+        || typeof block.content !== "string") throw new Error("补充资料块格式或身份无效");
+
+    if (block.format === "1") {
+        const prefix = `${PERSON_FIELDS_TITLE}\n`;
+        if (!block.content.startsWith(prefix)) throw new Error("补充资料正文标题无效");
+        const json = block.content.slice(prefix.length);
+        if (!json || /[\r\n]/.test(json) || json.length > MAX_PERSON_FIELDS_JSON_LENGTH) throw new Error("补充资料正文必须为受限单行 JSON");
+        let snapshot: unknown;
+        try { snapshot = JSON.parse(json); }
+        catch { throw new Error("补充资料 JSON 格式无效，请保留原文并核对"); }
+        rejectDuplicateJsonKeys(json);
+        return normalizePersonFields(snapshot, ownerDocId);
+    }
+
+    if (block.format === "2" || block.format === undefined) {
+        // 格式 2 或含隐式注释区块：优先尝试还原
+        const dataCommentMatch = block.content.match(/<!--\s*lvct-fields-data:([\s\S]*?)\s*-->/);
+        if (dataCommentMatch) {
+            const json = dataCommentMatch[1].trim();
+            let snapshot: unknown;
+            try { snapshot = JSON.parse(json); }
+            catch { throw new Error("补充资料 JSON 格式无效，请保留原文并核对"); }
+            rejectDuplicateJsonKeys(json);
+            return normalizePersonFields(snapshot, ownerDocId);
+        }
+
+        if (block.content.startsWith(`## ${PERSON_FIELDS_TITLE}`)) {
+            return parsePersonFieldsMarkdown(block.content, ownerDocId);
+        }
+    }
+
+    throw new Error("补充资料块格式或身份无效");
+}
+
+/** 从人类可读列表 Markdown 提取补充资料条目 */
+export function parsePersonFieldsMarkdown(content: string, ownerDocId: string): PersonFieldsSnapshot {
+    assertOwnerDocId(ownerDocId);
+    const lines = content.split(/\r?\n/);
+    const items: PersonField[] = [];
+    let currentGroupId: string | null = null;
+
+    for (const rawLine of lines) {
+        const trimmed = rawLine.trim();
+        if (!trimmed.startsWith("- ")) continue;
+        const isChild = rawLine.startsWith("  - ") || rawLine.startsWith("\t- ");
+
+        const idMatch = rawLine.match(/<!--\s*lvct-id:([a-zA-Z0-9_-]+)\s*-->/);
+        const assignedId = idMatch ? idMatch[1] : (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `00000000-0000-4000-8000-${Math.random().toString(16).slice(2, 14).padEnd(12, "0")}`);
+
+        // 分组行：- **分组名**
+        const groupMatch = trimmed.match(/^- \*\*(.*?)\*\*(?:\s*<!--.*-->)?$/);
+        if (groupMatch && !isChild) {
+            const label = groupMatch[1].trim();
+            if (label) {
+                currentGroupId = assignedId;
+                items.push({ id: assignedId, kind: "group", label });
+                continue;
+            }
+        }
+
+        // 条目行：- 名称：内容
+        const entryMatch = trimmed.match(/^- (.*?)[：:]([\s\S]*?)(?:\s*<!--.*-->)?$/);
+        if (entryMatch) {
+            const label = entryMatch[1].replace(/^\*\*(.*?)\*\*$/, "$1").trim();
+            const value = entryMatch[2].replace(/<br\s*\/?>/gi, "\n").trim();
+            if (label) {
+                if (isChild && currentGroupId) {
+                    items.push({ id: assignedId, kind: "entry", label, value, parentId: currentGroupId });
+                } else {
+                    currentGroupId = null;
+                    items.push({ id: assignedId, kind: "entry", label, value });
+                }
+            }
+        }
+    }
+
+    return normalizePersonFields({ schemaVersion: 1, ownerDocId, items }, ownerDocId);
 }
 
 /** 删除分组必须明确选择：解除子项分组，或连同子项移除。 */

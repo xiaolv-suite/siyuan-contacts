@@ -11,7 +11,7 @@ import type { PersonIdentityResolution } from "../domain/person-aliases";
 import { loadPersonAliasStore } from "../data/person-aliases";
 import type { ContactsSettings } from "../domain/model";
 import { getRoster, invalidateRoster } from "./roster";
-import { documentExists } from "../api/blocks";
+import { documentExists, setBlockAttrs } from "../api/blocks";
 
 const ID_PATTERN = /^\d{14}-[0-9a-z]{7}$/;
 
@@ -33,11 +33,30 @@ export async function addPersonAlias(plugin: Plugin, personDocId: string, alias:
             throw new Error("别名人物未唯一登记或文档不可达，未保存或改绑");
         }
     }
-    return createPersonAlias(plugin, personDocId, alias);
+    const record = await createPersonAlias(plugin, personDocId, alias);
+    try {
+        const all = await listPersonAliasRecords(plugin, personDocId);
+        const aliasStr = all.map((a) => a.alias.trim()).filter(Boolean).join(",");
+        await setBlockAttrs(personDocId, { alias: aliasStr });
+    } catch (e) {
+        console.warn("[LvContacts] 同步人物别名至思源原生属性未完成:", e);
+    }
+    return record;
 }
 
 export async function removePersonAlias(plugin: Plugin, id: string): Promise<void> {
+    const store = await loadPersonAliasStore(plugin);
+    const target = store.aliases.find((a) => a.id === id);
     await deletePersonAlias(plugin, id);
+    if (target?.personDocId) {
+        try {
+            const all = await listPersonAliasRecords(plugin, target.personDocId);
+            const aliasStr = all.map((a) => a.alias.trim()).filter(Boolean).join(",");
+            await setBlockAttrs(target.personDocId, { alias: aliasStr });
+        } catch (e) {
+            console.warn("[LvContacts] 移除人物别名同步至思源原生属性未完成:", e);
+        }
+    }
 }
 
 export async function resolveAlias(plugin: Plugin, alias: string, settings?: ContactsSettings): Promise<PersonIdentityResolution> {

@@ -62,11 +62,12 @@ export async function readPersonFieldsBlocks(docId: string): Promise<PersonField
         try { attributes = organizationIalAttributes(row.ial); } catch {
             throw new KernelProtocolError("/api/query/sql", "补充资料块属性形状尚未核实");
         }
-        if (attributes[PERSON_FIELDS_ATTR] !== "1" || attributes[PERSON_FIELDS_FORMAT_ATTR] !== "1"
+        if (attributes[PERSON_FIELDS_ATTR] !== "1"
+            || (attributes[PERSON_FIELDS_FORMAT_ATTR] && attributes[PERSON_FIELDS_FORMAT_ATTR] !== "1" && attributes[PERSON_FIELDS_FORMAT_ATTR] !== "2")
             || attributes.id !== undefined && attributes.id !== row.id) {
             throw new KernelProtocolError("/api/query/sql", "补充资料标记、格式或块身份尚未核实");
         }
-        return { id: row.id, type: row.type, content: row.content, format: attributes[PERSON_FIELDS_FORMAT_ATTR] };
+        return { id: row.id, type: row.type, content: row.content, format: attributes[PERSON_FIELDS_FORMAT_ATTR] ?? "2" };
     });
 }
 
