@@ -15,6 +15,7 @@ export interface HeatmapDay {
     level: 0 | 1 | 2 | 3 | 4; // 活跃度颜色档位
     peopleCount: number;  // 当天互动的不同联系人数
     personNames: string[];// 参与互动的联系人姓名列表（去重，截取前 3 位）
+    personDocIds: string[];// 当天参与互动的全部联系人 docId（去重）
     isFuture?: boolean;   // 是否为未来日期
 }
 
@@ -167,6 +168,7 @@ export function computeActivityHeatmap(
                 level,
                 peopleCount,
                 personNames: personNames.slice(0, 3),
+                personDocIds: (!isFuture && rec) ? [...rec.docIds] : [],
                 isFuture,
             });
 

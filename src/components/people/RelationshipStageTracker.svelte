@@ -241,8 +241,8 @@
         font-size: 11px;
         padding: 2px 7px;
         border-radius: 10px;
-        background: var(--b3-theme-primary-lightest);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
     }
 
@@ -269,9 +269,9 @@
     }
 
     .stage-step-pill.active {
-        border-color: var(--b3-theme-primary);
-        background: var(--b3-theme-primary-lightest);
-        color: var(--b3-theme-primary);
+        border-color: var(--lv-brand, #ea580c);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
     }
 
@@ -348,7 +348,7 @@
 
     .guideline-desc {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-variant);
+        color: var(--lvct-text-3);
         margin: 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -413,9 +413,9 @@
     }
 
     .stage-select-btn.is-selected {
-        background: var(--b3-theme-primary-lightest);
-        border-color: var(--b3-theme-primary);
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        border-color: var(--lv-brand, #ea580c);
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
     }
 

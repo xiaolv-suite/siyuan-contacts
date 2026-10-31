@@ -72,6 +72,9 @@
         createRequested = 0,
         importRequested = 0,
         vcardRequested = 0,
+        occasionRequested = 0,
+        regionExplorerRequested = 0,
+        regionExplorerInitialCity = "",
         onClearFocus,
         onOpenDetail,
         activePersonId = "",
@@ -120,6 +123,11 @@
         importRequested?: number;
         /** 首页快速开始入口请求打开 vCard 弹窗。 */
         vcardRequested?: number;
+        /** 首页群体活动大盘请求直接打开新建活动弹窗。 */
+        occasionRequested?: number;
+        /** 城市档案条请求直接打开城市人脉与行程助手弹窗。 */
+        regionExplorerRequested?: number;
+        regionExplorerInitialCity?: string;
         onClearFocus?: () => void;
         onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
         activePersonId?: string;
@@ -213,6 +221,8 @@
     $effect(() => { if (createRequested > 0) adding = true; });
     $effect(() => { if (importRequested > 0) importing = true; });
     $effect(() => { if (vcardRequested > 0) vcarding = true; });
+    $effect(() => { if (occasionRequested > 0) occasioning = true; });
+    $effect(() => { if (regionExplorerRequested > 0) regionExploring = true; });
     let groupFilter: string = $state("");
     let tagFilter: string[] = $state([]);
     // svelte-ignore state_referenced_locally
@@ -1737,7 +1747,7 @@
     async function handleBatchFlashcards(): Promise<void> {
         if (!onCreateBatchFlashcardsDoc || batchBusy || batchOrgBusy || batchFlashcardsBusy || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmFlashcardsHidden", "为选中的 {total} 人制作闪卡（含筛选外 {hidden} 人），继续吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
+        if (hiddenSelectionCount > 0 && !(await confirmDialog({ message: text("batchConfirmFlashcardsHidden", "为选中的 {total} 人制作闪卡（含筛选外 {hidden} 人），继续吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }) }))) return;
 
         batchFlashcardsBusy = true;
         batchError = "";
@@ -1766,7 +1776,7 @@
     async function exportSelected() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
+        if (hiddenSelectionCount > 0 && !(await confirmDialog({ message: text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }) }))) return;
         exportingSelected = true;
         try {
             const text = await exportVcfText(settings, selectedIds);
@@ -1789,10 +1799,10 @@
     let copiedMdTable = $state(false);
     let copiedMdTableTimer: ReturnType<typeof setTimeout> | null = null;
 
-    function exportSelectedCsv() {
+    async function exportSelectedCsv() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
+        if (hiddenSelectionCount > 0 && !(await confirmDialog({ message: text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }) }))) return;
         try {
             const csvText = exportContactsToCsv(selectedPeople);
             const stamp = toLocalDateKey(new Date()).replaceAll("-", "");
@@ -2897,6 +2907,7 @@
             <RegionExplorerDialog
                 contacts={people}
                 notebookId={settings.notebookId}
+                initialCity={regionExplorerInitialCity}
                 {i18n}
                 onApplyRegionFilter={(region) => {
                     extraFilter = { ...extraFilter, region };

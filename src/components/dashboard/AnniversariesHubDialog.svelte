@@ -582,8 +582,8 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        color: var(--lv-brand, #ea580c);
         font-weight: 600;
         font-size: 13px;
         display: flex;

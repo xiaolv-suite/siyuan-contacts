@@ -192,6 +192,7 @@
                         class="b3-text-field fn__block"
                         type="text"
                         placeholder="记录会面、电话或交流随想…"
+                        aria-label={text("quickRecordTitle", "随手记一笔互动")}
                         bind:value={quickNote}
                         disabled={quickBusy}
                         onkeydown={(e) => {

@@ -47,6 +47,7 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
     let saveAsFact = $state(false);
     let factCategory = $state<FactCategory>("quote");
     let busy = $state(false);
+    let interactionRecorded = $state(false);
     let errorMessage = $state("");
     let textareaEl: HTMLTextAreaElement | undefined = $state();
 
@@ -61,49 +62,56 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
         try {
             const targetDate = date || toLocalDateKey();
             const occurredAt = new Date(`${targetDate}T12:00:00`).getTime();
-            await recordInteraction(plugin, {
-                personDocId: person.docId,
-                note: note.trim() || undefined,
-                type,
-                occurredAt,
-                source: "manual",
-            });
-            const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
-            if (pluginSettings?.checkinItemId) {
-                void logCheckinEventSafely({
-                    itemId: pluginSettings.checkinItemId,
-                    value: 1,
-                    externalRef: `contacts:${person.docId}:${targetDate}:${occurredAt}`,
-                    note: note.trim() ? `与联系人互动：${note.trim()}` : "与联系人互动跟进",
-                }).catch(() => {});
-            }
-            emitDataChanged({ topics: ["people"], docIds: [person.docId] });
-            void syncInteractionDocSection(plugin, person.docId).catch(() => {});
-            if (syncToDailyNote && pluginSettings?.notebookId) {
-                void appendInteractionToDailyNote(pluginSettings.notebookId, {
+            if (!interactionRecorded) {
+                await recordInteraction(plugin, {
                     personDocId: person.docId,
-                    personName: person.name,
-                    localDate: targetDate,
-                    type,
                     note: note.trim() || undefined,
+                    type,
                     occurredAt,
-                }).catch(() => {});
+                    source: "manual",
+                });
+                interactionRecorded = true;
+                const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
+                if (pluginSettings?.checkinItemId) {
+                    void logCheckinEventSafely({
+                        itemId: pluginSettings.checkinItemId,
+                        value: 1,
+                        externalRef: `contacts:${person.docId}:${targetDate}:${occurredAt}`,
+                        note: note.trim() ? `与联系人互动：${note.trim()}` : "与联系人互动跟进",
+                    }).catch(() => {});
+                }
+                emitDataChanged({ topics: ["people"], docIds: [person.docId] });
+                if (saveAsFact && note.trim() && person?.docId) {
+                    await syncInteractionDocSection(plugin, person.docId).catch(() => {});
+                } else {
+                    void syncInteractionDocSection(plugin, person.docId).catch(() => {});
+                }
+                if (syncToDailyNote && pluginSettings?.notebookId) {
+                    void appendInteractionToDailyNote(pluginSettings.notebookId, {
+                        personDocId: person.docId,
+                        personName: person.name,
+                        localDate: targetDate,
+                        type,
+                        note: note.trim() || undefined,
+                        occurredAt,
+                    }).catch(() => {});
+                }
             }
             if (saveAsFact && note.trim() && person?.docId) {
-                void (async () => {
-                    try {
-                        const existing = await loadPersonFactsFromDoc(person.docId);
-                        const newFact: PersonFactItem = {
-                            id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                            text: note.trim(),
-                            category: factCategory,
-                            date: targetDate,
-                        };
-                        await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
-                    } catch (e) {
-                        console.warn("[LvContacts] 快捷记互动沉淀事实失败：", e);
-                    }
-                })();
+                try {
+                    const existing = await loadPersonFactsFromDoc(person.docId);
+                    const newFact: PersonFactItem = {
+                        id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        text: note.trim(),
+                        category: factCategory,
+                        date: targetDate,
+                    };
+                    await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
+                } catch (e) {
+                    onSaved?.();
+                    errorMessage = `互动已记录，但写入人物事实段未完成（可再次点击保存重试事实段）：${requestErrorMessage(e)}`;
+                    return;
+                }
             }
             onSaved?.();
             onClose();

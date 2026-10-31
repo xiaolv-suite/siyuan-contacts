@@ -68,6 +68,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         onCreate,
         onImportVCard,
         onImportDocuments,
+        onCreateOccasion,
+        onOpenPersonDoc,
         onOpenOrganizations,
         onOpenSettings,
         onPreferencesChange,
@@ -82,6 +84,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         onCreate?: () => void;
         onImportVCard?: () => void;
         onImportDocuments?: () => void;
+        onCreateOccasion?: () => void;
+        onOpenPersonDoc?: (docId: string) => void;
         onOpenOrganizations?: () => void;
         onOpenSettings?: () => void;
         /** 摘要忽略等偏好写入（F08）；未接线时「当日不再展示」退化为本次隐藏 */
@@ -933,15 +937,18 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let discoveryOpen = $state(false);
     let discoveryLoading = $state(false);
     let potentialConnections: import("../../domain/connections-discovery").PotentialConnection[] = $state([]);
+    let discoveryError = $state("");
     let establishingKey = $state("");
 
     async function loadPotentialConnections() {
         if (!facade.discoverPotentialConnections) return;
         discoveryLoading = true;
+        discoveryError = "";
         try {
             potentialConnections = await facade.discoverPotentialConnections({ minScore: 2, maxResults: 20 });
-        } catch {
+        } catch (err) {
             potentialConnections = [];
+            discoveryError = requestErrorMessage(err);
         } finally {
             discoveryLoading = false;
         }
@@ -950,11 +957,12 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     async function handleEstablishConnection(pair: import("../../domain/connections-discovery").PotentialConnection) {
         if (!facade.establishPotentialConnection || establishingKey) return;
         establishingKey = pair.id;
+        discoveryError = "";
         try {
             await facade.establishPotentialConnection(pair.personA.docId, pair.personB.docId);
             potentialConnections = potentialConnections.filter((p) => p.id !== pair.id);
         } catch (err) {
-            console.warn("[LvContacts] 建立潜在关联失败：", err);
+            discoveryError = `建立关联未完成：${requestErrorMessage(err)}`;
         } finally {
             establishingKey = "";
         }
@@ -1280,7 +1288,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             {#if weekGlanceDays.length > 0}
                 <div class="lvct-week-glance" role="region" aria-label="本周人脉日程滑轨">
                     <div class="lvct-week-glance__header">
-                        <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 📅 本周日程视窗</span>
+                        <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 本周日程视窗</span>
                         <div class="fn__flex" style="gap: 6px; align-items: center;">
                             {#if facade.createWeeklyDigestDoc}
                                 <button
@@ -1848,7 +1856,20 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             <span class="lvct-text-muted font-size-11">（52周互动打卡足迹）</span>
                         </div>
                     </div>
-                    <ActivityHeatmap data={data.activityHeatmap} {i18n} />
+                    <ActivityHeatmap
+                        data={data.activityHeatmap}
+                        {i18n}
+                        onSelectDate={(dateKey) => {
+                            const day = data?.activityHeatmap?.weeks.flat().find((d) => d.dateKey === dateKey);
+                            const docIds = day?.personDocIds ?? [];
+                            if (docIds.length === 0) return;
+                            onOpenPeople({ memberDocIds: docIds, label: `${dateKey} 互动联系人` });
+                            if (docIds.length === 1) {
+                                const matched = (data?.allPeople ?? []).find((p) => p.docId === docIds[0]);
+                                if (matched) onOpenDetail(matched, "activity");
+                            }
+                        }}
+                    />
                 </div>
             {/if}
 
@@ -1918,9 +1939,18 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 {text("dashDiscoveryDesc", "基于同场活动与共同从属机构的图算法智能挖掘。发现未登记为正式双向关系的好友，支持一键在双方文档追加双链并建立正式关联。")}
             </p>
 
+            {#if discoveryError}
+                <StatusNotice message={discoveryError} error onDismiss={() => (discoveryError = "")} />
+            {/if}
             {#if discoveryLoading}
                 <div style="padding: 24px; text-align: center;" class="ft__smaller ft__on-surface">
                     {text("dashDiscoveryLoading", "正在智能挖掘知识库共现事实…")}
+                </div>
+            {:else if discoveryError && potentialConnections.length === 0}
+                <div style="padding: 16px; text-align: center;">
+                    <button type="button" class="b3-button b3-button--outline" onclick={() => void loadPotentialConnections()}>
+                        {text("commonRetry", "重试")}
+                    </button>
                 </div>
             {:else if potentialConnections.length === 0}
                 <div style="padding: 24px; text-align: center;" class="ft__smaller ft__on-surface">
@@ -2066,7 +2096,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onDeleteOccasion={facade.deleteOccasion ? (id) => facade.deleteOccasion!(id) : undefined}
             onOpenOccasionDialog={() => {
                 occasionsHubOpen = false;
-                onOpenPeople();
+                if (onCreateOccasion) onCreateOccasion();
+                else onOpenPeople();
             }}
             onOpenPerson={(docId) => {
                 occasionsHubOpen = false;
@@ -2078,6 +2109,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 occasionsHubOpen = false;
                 onOpenPeople({ ...filter, label: filter.label ?? "群体活动参会人" });
             }}
+            onOpenDoc={onOpenPersonDoc}
             onClose={() => (occasionsHubOpen = false)}
             {i18n}
         />

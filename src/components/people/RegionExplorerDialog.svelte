@@ -13,19 +13,21 @@
     import { copyPlainText } from "../../shared/clipboard.ts";
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { extractCityOrganizations } from "../../domain/city-topic.ts";
-    import { onDestroy } from "svelte";
+    import { onDestroy, untrack } from "svelte";
     import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText, ExternalLink, Sparkles } from "@lucide/svelte";
     import { syncCityTopicDocument, createTripItineraryDoc } from "../../services/city-topic";
 
     let {
         contacts = [],
         notebookId,
+        initialCity = "",
         onApplyRegionFilter,
         onClose,
         onOpenDoc,
     }: {
         contacts: readonly ContactSummary[];
         notebookId?: string;
+        initialCity?: string;
         i18n?: Readonly<Record<string, string>>;
         onApplyRegionFilter: (region: string) => void;
         onClose: () => void;
@@ -36,8 +38,8 @@
 
     // 搜索关键词
     let citySearch = $state("");
-    // 当前选中的城市（默认为人数最多的城市或首个城市）
-    let selectedCity = $state<string>("");
+    // 当前选中的城市（默认为传入城市、人数最多的城市或首个城市）
+    let selectedCity = $state<string>(untrack(() => initialCity.trim()));
     // 复制成功的提示状态与并发防连发锁
     let copyingVisitList = $state(false);
     let copySuccess = $state(false);
@@ -247,6 +249,7 @@
                     type="search"
                     class="b3-text-field b3-text-field--small"
                     placeholder="搜索城市、省份或大区..."
+                    aria-label="搜索城市、省份或大区"
                     bind:value={citySearch}
                 />
             </div>

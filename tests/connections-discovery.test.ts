@@ -152,3 +152,30 @@ test("discoverPersonTies：针对单个人物发掘潜在共现伙伴与一度�
     assert(rec.reasons.some((r) => r.includes("共同好友：王五")));
 });
 
+test("discoverPersonTies & discoverPotentialConnections：接入 org-membership 共同机构且不把普通分组（如朋友）误判为共同机构", () => {
+    const p1 = makePerson("doc1", "item1", "王浩然", { group: "朋友" });
+    const p2 = makePerson("doc2", "item2", "林知夏", { group: "朋友" });
+    const p3 = makePerson("doc3", "item3", "周予安", { group: "朋友" });
+
+    // 仅相同分组（“朋友”）不应被误判为共同机构
+    assert.equal(discoverPersonTies("doc1", [p1, p2], []).length, 0);
+
+    // 传入 listCommonOrgBackground 形态的 knownCommonOrgs 后可准确推荐同机构伙伴
+    const ties = discoverPersonTies("doc1", [p1, p2, p3], [], {
+        knownCommonOrgs: [{ orgName: "远山科技", peers: [{ docId: "doc2" }] }],
+    });
+    assert.equal(ties.length, 1);
+    assert.equal(ties[0].targetPerson.docId, "doc2");
+    assert.deepEqual(ties[0].commonOrgs, ["远山科技"]);
+
+    // 全库潜在关联支持 knownOrgMemberships 补充纯 AV 名册缺失的机构归属
+    const pairs = discoverPotentialConnections([p1, p2, p3], [], {
+        knownOrgMemberships: [
+            { personDocId: "doc1", orgName: "远山科技" },
+            { personDocId: "doc2", orgName: "远山科技" },
+        ],
+    });
+    assert.equal(pairs.length, 1);
+    assert.deepEqual(pairs[0].commonOrgs, ["远山科技"]);
+});
+

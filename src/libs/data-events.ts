@@ -137,3 +137,54 @@ export function subscribePersonNavigation(owner: object, handler: (request: Pers
     deliver();
     return token.invalidate;
 }
+
+export const LVCT_WORKBENCH_NAVIGATION = "lvct-workbench-navigation";
+export interface WorkbenchNavigationRequest {
+    view: "home" | "people" | "graph" | "orgs" | "settings";
+    focus?: {
+        itemIds?: readonly string[];
+        memberDocIds?: readonly string[];
+        label?: string;
+        sort?: "name" | "group" | "birthday" | "recent";
+        workQuery?: string;
+    };
+    openRegionExplorer?: { city?: string };
+    editOrgDocId?: string;
+}
+const pendingWorkbenchNavigation = new WeakMap<object, { request: WorkbenchNavigationRequest; token?: LifecycleToken; detach?: () => void }>();
+
+export function requestWorkbenchNavigation(owner: object, request: WorkbenchNavigationRequest, token?: LifecycleToken): void {
+    if (!owner || token && !token.isAlive()) return;
+    pendingWorkbenchNavigation.get(owner)?.detach?.();
+    const entry = { request, token, detach: undefined as (() => void) | undefined };
+    pendingWorkbenchNavigation.set(owner, entry);
+    entry.detach = token?.onDispose(() => {
+        if (pendingWorkbenchNavigation.get(owner) === entry) pendingWorkbenchNavigation.delete(owner);
+    });
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new CustomEvent(LVCT_WORKBENCH_NAVIGATION, { detail: { owner } }));
+    }
+}
+
+export function subscribeWorkbenchNavigation(owner: object, handler: (request: WorkbenchNavigationRequest) => void, parentToken?: LifecycleToken): () => void {
+    const token = createLifecycleToken(parentToken);
+    const deliver = () => {
+        if (!token.isAlive()) return;
+        const entry = pendingWorkbenchNavigation.get(owner);
+        if (!entry || entry.token && !entry.token.isAlive()) return;
+        pendingWorkbenchNavigation.delete(owner);
+        entry.detach?.();
+        handler(entry.request);
+    };
+    const wrapped = (event: Event) => {
+        if ((event as CustomEvent<{ owner?: object }>).detail?.owner === owner) deliver();
+    };
+    if (typeof window !== "undefined" && token.isAlive()) {
+        window.addEventListener(LVCT_WORKBENCH_NAVIGATION, wrapped);
+    }
+    token.onDispose(() => {
+        if (typeof window !== "undefined") window.removeEventListener(LVCT_WORKBENCH_NAVIGATION, wrapped);
+    });
+    deliver();
+    return token.invalidate;
+}

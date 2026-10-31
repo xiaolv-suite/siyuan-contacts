@@ -11,6 +11,7 @@
     } from "../../domain/itineraries.ts";
     import { translateText } from "../../domain/translation";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import { confirmDialog } from "../../libs/confirm-dialog";
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { onDestroy } from "svelte";
     import {
@@ -176,7 +177,7 @@
 
     async function handleDelete(id: string) {
         if (busy) return;
-        if (!window.confirm(text("confirmDeleteItinerary", "确定删除这条会面行程备忘吗？"))) return;
+        if (!(await confirmDialog({ message: text("confirmDeleteItinerary", "确定删除这条会面行程备忘吗？"), danger: true }))) return;
         busy = true;
         try {
             await onRemove(id);

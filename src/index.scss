@@ -787,7 +787,7 @@ html[data-theme-mode="dark"] .lvct-wizard {
     width: 100%;
     border-radius: var(--lv-r-pill, 9999px);
     /* 保证独立使用的搜索入口不会被工具栏的固有宽度压成窄条，并固定单行高度防拉伸。 */
-    min-width: 260px;
+    min-width: min(260px, 100%);
     height: 38px;
     min-height: 38px;
     max-height: 38px;
@@ -930,7 +930,13 @@ html[data-theme-mode="dark"] .lvct-wizard {
     }
 }
 
-.lvct-people__viewtoggle { display: inline-flex; }
+.lvct-people__viewtoggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
+}
 
 .lvct-people__batch-hint {
     margin: var(--lvct-sp-2) 0 0;
@@ -3492,6 +3498,20 @@ html[data-theme-mode="dark"] .lvct-notice {
     gap: var(--lvct-sp-2);
 }
 
+.lvct-dialog-panel .lvct-form > .lvct-form__actions,
+.lvct-dialog-panel .lvct-qf > .lvct-form__actions {
+    position: sticky;
+    bottom: calc(var(--lvct-sp-4) * -1);
+    z-index: 3;
+    margin-inline: calc(var(--lvct-sp-4) * -1);
+    margin-bottom: calc(var(--lvct-sp-4) * -1);
+    padding: var(--lvct-sp-3) var(--lvct-sp-4);
+    background: color-mix(in srgb, var(--lvct-bg-elevated) 95%, transparent);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--lvct-border-hairline, var(--lvct-border-subtle));
+    border-radius: 0 0 var(--lvct-r-xl) var(--lvct-r-xl);
+}
+
 .lvct-form__toolbar {
     display: flex;
     justify-content: flex-start;
@@ -3766,6 +3786,7 @@ html[data-theme-mode="dark"] .lvct-notice {
     width: min(var(--lvct-dialog-w), 92vw);
     max-height: min(90vh, 760px);
     overflow: auto;
+    scroll-padding-top: 76px;
     padding: var(--lvct-sp-4);
     box-sizing: border-box;
     animation: lvct-dialog-in var(--lvct-dur-base) var(--lvct-ease-spring);
@@ -6501,21 +6522,25 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
 .lvct-dash__stats {
     display: flex;
+    flex-wrap: wrap;
     align-items: stretch;
     background: var(--lvct-bg-surface);
     border: 1px solid var(--lvct-color-border-200);
     border-radius: var(--lvct-r-card, 16px);
     box-shadow: 0 4px 18px -2px rgba(28, 24, 21, 0.04);
-    padding: 16px 12px;
-    gap: 0;
+    padding: 12px 10px;
+    gap: 4px 0;
     box-sizing: border-box;
 }
 
 .lvct-dash__stat-top {
     display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    min-width: 0;
 }
 
 .lvct-dash__stat-tag {
@@ -6540,15 +6565,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
 /* 统计优先：指标之间用竖分隔而不是卡片包裹 */
 .lvct-dash__stat {
-    flex: 1;
+    flex: 1 1 132px;
     min-width: 0;
     position: relative;
-    overflow: hidden;
+    overflow: clip;
     background: transparent !important;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    padding: 8px 20px;
+    padding: 8px 14px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -6604,19 +6629,18 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     &::after {
         content: "";
         position: absolute;
-        right: -24px;
-        top: -24px;
-        width: 84px;
-        height: 84px;
-        border-radius: 50%;
-        background: radial-gradient(circle, color-mix(in srgb, var(--lvct-accent) 24%, transparent) 0%, transparent 70%);
+        right: 0;
+        top: 0;
+        width: 72px;
+        height: 72px;
+        border-radius: 0 var(--lvct-r-card, 16px) 0 100%;
+        background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--lvct-accent) 24%, transparent) 0%, transparent 72%);
         pointer-events: none;
-        transition: opacity var(--lvct-dur-base) var(--lvct-ease), transform var(--lvct-dur-base) var(--lvct-ease);
+        transition: opacity var(--lvct-dur-base) var(--lvct-ease);
         opacity: 0.7;
     }
 
     &:hover::after {
-        transform: scale(1.2);
         opacity: 1;
     }
 
@@ -6817,7 +6841,9 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-trend-bar__label {
     font-size: 11px;
     color: var(--b3-theme-on-surface);
+}
 
+.lvct-dash__stat {
     .lvct-dash__stat-ic {
         display: inline-flex;
         align-items: center;
@@ -7693,9 +7719,11 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         flex: 1;
         flex-direction: row;
         min-width: 0;
-        overflow: visible;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(50px, 1fr));
         gap: 0;
     }
 
@@ -7706,8 +7734,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         justify-content: center;
         flex-direction: column;
         gap: var(--lvct-sp-1);
-        padding: 6px 2px;
-        font-size: var(--lvct-fs-micro);
+        padding: 6px 0;
+        font-size: 10px;
         transition: color var(--lvct-dur-fast) var(--lvct-ease),
             background-color var(--lvct-dur-fast) var(--lvct-ease),
             transform var(--lvct-dur-micro) var(--lvct-ease);
@@ -9496,7 +9524,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
 .lvct-dash__stat {
     min-height: 138px;
-    padding: 18px;
+    padding: 14px;
+    overflow: clip;
     background: var(--lvct-bg-surface);
     transition: border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
 
@@ -9812,10 +9841,19 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
 .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle {
     min-width: 0;
+    max-width: 100%;
 }
 
 .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle .lvct-seg {
     max-width: 100%;
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+.lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle .lvct-seg__item {
+    padding: 0 10px;
+    gap: 4px;
+    min-width: 0;
 }
 
 .lvct-orgs-view__card-description {
@@ -9875,13 +9913,21 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         width: 100%;
     }
 
-    .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle .lvct-seg,
-    .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle .lvct-seg__item {
-        width: 100%;
+    .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle:has(.lvct-seg + .lvct-seg) {
+        grid-column: 1 / -1;
+        flex-wrap: nowrap;
+    }
+
+    .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle .lvct-seg {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
     }
 
     .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle .lvct-seg__item {
         flex: 1 1 0;
+        width: auto;
+        padding: 0 6px;
         justify-content: center;
     }
 
@@ -11129,6 +11175,8 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 .lvct-heatmap {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
     gap: 10px;
     padding: 14px 18px;
     background: var(--lvct-bg-surface);
@@ -11162,11 +11210,13 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 
     &__scroll-container {
         overflow-x: auto;
+        max-width: 100%;
         padding-bottom: 4px;
     }
 
     &__months {
         display: flex;
+        width: max-content;
         margin-bottom: 4px;
     }
 
@@ -11185,11 +11235,13 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 
     &__month-label {
         grid-row: 1;
+        grid-column-end: span 4;
         white-space: nowrap;
     }
 
     &__body {
         display: flex;
+        width: max-content;
         gap: 4px;
     }
 

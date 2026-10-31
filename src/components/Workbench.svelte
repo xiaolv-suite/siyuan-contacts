@@ -18,7 +18,7 @@
     import SettingsView from "./SettingsView.svelte";
     import { getContext, onDestroy, onMount, tick } from "svelte";
     import { translateText } from "../domain/translation";
-    import { subscribeDataChangedDebounced, subscribePersonNavigation } from "../libs/data-events";
+    import { subscribeDataChangedDebounced, subscribePersonNavigation, subscribeWorkbenchNavigation } from "../libs/data-events";
     import { isNavigationDocId, personReturnContext, resolveNavigationPerson } from "../domain/navigation";
     import type { PersonReturnContext } from "../domain/navigation";
     import StatusNotice from "./StatusNotice.svelte";
@@ -395,6 +395,9 @@
     let createRequested = $state(0);
     let importRequested = $state(0);
     let vcardRequested = $state(0);
+    let occasionRequested = $state(0);
+    let regionExplorerRequested = $state(0);
+    let regionExplorerInitialCity = $state("");
     let dataRevision = $state(0);
     let peopleFocusIds: string[] = $state([]);
     let peopleFocusLabel = $state("");
@@ -445,16 +448,20 @@
             createRequested = 0;
             importRequested = 0;
             vcardRequested = 0;
+            occasionRequested = 0;
+            regionExplorerRequested = 0;
+            regionExplorerInitialCity = "";
         }
         clearPeopleFocus();
         return true;
     }
 
-    async function requestPeopleAction(action: "create" | "import" | "vcard"): Promise<void> {
+    async function requestPeopleAction(action: "create" | "import" | "vcard" | "occasion"): Promise<void> {
         if (!(await selectView("people"))) return;
         if (action === "create") createRequested += 1;
         if (action === "import") importRequested += 1;
         if (action === "vcard") vcardRequested += 1;
+        if (action === "occasion") occasionRequested += 1;
     }
 
     async function submitGlobalSearch() {
@@ -531,6 +538,28 @@
             })();
         }, lifecycleToken);
         lifecycleToken.onDispose(unsubscribePerson);
+        const unsubscribeWorkbenchNav = subscribeWorkbenchNavigation(facade, (request) => {
+            void (async () => {
+                if (!lifecycleToken.isAlive()) return;
+                if (request.openRegionExplorer) {
+                    if (!(await selectView("people"))) return;
+                    regionExplorerInitialCity = request.openRegionExplorer.city ?? "";
+                    regionExplorerRequested += 1;
+                    return;
+                }
+                if (request.editOrgDocId) {
+                    if (!(await selectView("orgs"))) return;
+                    await openEditOrganizationProfile(request.editOrgDocId);
+                    return;
+                }
+                if (request.view === "people" && request.focus) {
+                    await openPeople(request.focus);
+                } else {
+                    await selectView(request.view);
+                }
+            })();
+        }, lifecycleToken);
+        lifecycleToken.onDispose(unsubscribeWorkbenchNav);
         const handleRequestedView = (event: Event) => {
             if (!lifecycleToken.isAlive()) return;
             const detail = (event as CustomEvent<{
@@ -605,6 +634,13 @@
                 return;
             }
             dataRevision += 1;
+            if (contextPerson && typeof facade.listContacts === "function") {
+                const targetDocId = contextPerson.docId;
+                void facade.listContacts().then((latest) => {
+                    if (!lifecycleToken.isAlive() || contextPerson?.docId !== targetDocId) return;
+                    contextPerson = latest.find((item) => item.docId === targetDocId) ?? null;
+                }).catch(() => {});
+            }
             void preferenceRequests.load().catch(() => {});
             if (anyDirtyChanges()) {
                 dataChangeNotice = text("dataChangedWhileEditing", "数据已在其他窗口更新：列表已刷新，未保存的草稿已保留。");
@@ -714,6 +750,8 @@
                     onCreate={() => void requestPeopleAction("create")}
                     onImportVCard={() => void requestPeopleAction("vcard")}
                     onImportDocuments={() => void requestPeopleAction("import")}
+                    onCreateOccasion={() => void requestPeopleAction("occasion")}
+                    {onOpenPersonDoc}
                     onOpenOrganizations={() => void selectView("orgs")}
                     onOpenSettings={() => void selectView("settings")}
                 />
@@ -734,6 +772,9 @@
                     {createRequested}
                     {importRequested}
                     {vcardRequested}
+                    {occasionRequested}
+                    {regionExplorerRequested}
+                    {regionExplorerInitialCity}
                     onClearFocus={clearPeopleFocus}
                     revision={dataRevision}
                     onOpenDetail={openDetail}
@@ -870,6 +911,7 @@
                     onBack={() => (current = "home")}
                     onInteractionsUpdated={() => (dataRevision += 1)}
                     onOpenPeople={(focus) => void openPeople(focus)}
+                    onOpenDoc={onOpenPersonDoc}
                 />
             {/if}
         </div>
@@ -1017,6 +1059,7 @@
             navigationOrder={current === "people" ? peopleOrder : undefined}
             onChanged={() => (dataRevision += 1)}
             onDeleted={() => {
+                if (contextPerson?.docId === detailPerson?.docId) contextPerson = null;
                 void closeDetail();
                 dataRevision += 1;
             }}

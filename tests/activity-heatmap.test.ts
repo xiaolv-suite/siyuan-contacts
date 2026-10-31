@@ -112,8 +112,10 @@ test("computeActivityHeatmap：生成 52 周网格并正确聚合互动数据", 
     assert.equal(wed.peopleCount, 2, "涉及张总与李教授两位联系人");
     assert(wed.personNames.includes("张总"));
     assert(wed.personNames.includes("李教授"));
+    assert.equal(wed.personDocIds.length, 2, "应记录当日互动联系人的稳定 docId 供点击下钻");
 
     // 2026-10-29 是周四 (未来日期，应为 isFuture)
     const thu = lastWeek[3];
     assert.equal(thu.isFuture, true, "基准日之后应标记为未来日期");
+    assert.deepEqual(thu.personDocIds, []);
 });

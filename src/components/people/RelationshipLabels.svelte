@@ -122,6 +122,7 @@
                 style="border-radius: var(--lv-r-pill, 9999px);"
                 type="text"
                 placeholder="填写与我的关系称谓，如：同事、朋友"
+                aria-label="与我的关系称谓"
                 bind:value={draft}
                 disabled={busy || unknown}
                 maxlength="1600"
