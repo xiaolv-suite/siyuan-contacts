@@ -460,12 +460,24 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 category: detailFactCategory,
                 date: toLocalDateKey(new Date()),
             };
-            const next = [newItem, ...facts];
-            void onSavePersonFacts(current.docId, next).then(() => {
-                facts = next;
-            }).catch((err) => {
-                console.warn("[LvContacts] 记互动沉淀事实失败：", err);
-            });
+            const targetDocId = current.docId;
+            void (async () => {
+                try {
+                    const baseline = factsReadVerified ? facts : (onLoadPersonFacts ? await onLoadPersonFacts(targetDocId) : []);
+                    const next = [newItem, ...baseline];
+                    await onSavePersonFacts(targetDocId, next);
+                    if (detailAlive && current.docId === targetDocId) {
+                        facts = next;
+                        factsReadVerified = true;
+                        factsError = "";
+                        factsSaveError = "";
+                    }
+                } catch (err) {
+                    if (detailAlive && current.docId === targetDocId) {
+                        factsSaveError = `沉淀事实失败：${requestErrorMessage(err)}`;
+                    }
+                }
+            })();
         }
         if (pendingConvertedTopicId && onRemoveTopic) {
             const topicIdToRemove = pendingConvertedTopicId;
@@ -1068,6 +1080,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let factsLoading = $state(false);
     let factsSaving = $state(false);
     let factsError = $state("");
+    let factsSaveError = $state("");
+    let factsReadVerified = $state(false);
     let newFactText = $state("");
     let newFactCategory: FactCategory = $state("quote");
     let newFactSource = $state("");
@@ -1084,27 +1098,51 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
+    async function ensureVerifiedFactsBaseline(targetDocId: string): Promise<PersonFactItem[]> {
+        if (factsReadVerified) return facts;
+        if (!onLoadPersonFacts) return facts;
+        const loaded = await onLoadPersonFacts(targetDocId);
+        if (detailAlive && current.docId === targetDocId) {
+            facts = loaded;
+            factsReadVerified = true;
+            factsError = "";
+        }
+        return loaded;
+    }
+
     async function adoptExtractedFact(fact: PersonFactItem): Promise<void> {
-        if (!onSavePersonFacts || !current?.docId) return;
-        const next = [fact, ...facts];
+        if (!onSavePersonFacts || !current?.docId || factsSaving) return;
+        const targetDocId = current.docId;
+        factsSaving = true;
+        factsSaveError = "";
         try {
-            await onSavePersonFacts(current.docId, next);
+            const baseline = await ensureVerifiedFactsBaseline(targetDocId);
+            const next = [fact, ...baseline];
+            await onSavePersonFacts(targetDocId, next);
             facts = next;
             extractedFactsPreview = extractedFactsPreview.filter((f) => f.id !== fact.id);
         } catch (err) {
-            console.warn("[LvContacts] 采纳提炼事实失败", err);
+            factsSaveError = `保存事实失败：${requestErrorMessage(err)}`;
+        } finally {
+            factsSaving = false;
         }
     }
 
     async function adoptAllExtractedFacts(): Promise<void> {
-        if (!onSavePersonFacts || !current?.docId || extractedFactsPreview.length === 0) return;
-        const next = [...extractedFactsPreview, ...facts];
+        if (!onSavePersonFacts || !current?.docId || extractedFactsPreview.length === 0 || factsSaving) return;
+        const targetDocId = current.docId;
+        factsSaving = true;
+        factsSaveError = "";
         try {
-            await onSavePersonFacts(current.docId, next);
+            const baseline = await ensureVerifiedFactsBaseline(targetDocId);
+            const next = [...extractedFactsPreview, ...baseline];
+            await onSavePersonFacts(targetDocId, next);
             facts = next;
             extractedFactsPreview = [];
         } catch (err) {
-            console.warn("[LvContacts] 批量采纳提炼事实失败", err);
+            factsSaveError = `保存事实失败：${requestErrorMessage(err)}`;
+        } finally {
+            factsSaving = false;
         }
     }
 
@@ -1113,12 +1151,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         const targetDocId = current.docId;
         factsLoading = true;
         factsError = "";
+        factsSaveError = "";
+        factsReadVerified = false;
         try {
             const list = await onLoadPersonFacts(targetDocId);
-            if (detailAlive && current.docId === targetDocId) facts = list;
+            if (detailAlive && current.docId === targetDocId) {
+                facts = list;
+                factsReadVerified = true;
+            }
         } catch (err) {
             if (detailAlive && current.docId === targetDocId) {
                 facts = [];
+                factsReadVerified = false;
                 factsError = `读取事实画像失败：${err instanceof Error ? err.message : String(err)}`;
             }
         } finally {
@@ -1128,8 +1172,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function handleAddFact(): Promise<void> {
         if (!onSavePersonFacts || !current?.docId || !newFactText.trim() || factsSaving) return;
+        const targetDocId = current.docId;
         factsSaving = true;
+        factsSaveError = "";
         try {
+            const baseline = await ensureVerifiedFactsBaseline(targetDocId);
             const newItem: PersonFactItem = {
                 id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                 text: newFactText.trim(),
@@ -1137,11 +1184,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 date: toLocalDateKey(new Date()),
                 ...(newFactSource.trim() ? { sourceRef: newFactSource.trim() } : {}),
             };
-            const next = [newItem, ...facts];
-            await onSavePersonFacts(current.docId, next);
+            const next = [newItem, ...baseline];
+            await onSavePersonFacts(targetDocId, next);
             facts = next;
             newFactText = "";
             newFactSource = "";
+        } catch (err) {
+            factsSaveError = `保存事实失败：${requestErrorMessage(err)}`;
         } finally {
             factsSaving = false;
         }
@@ -1149,24 +1198,33 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function handleRemoveFact(id: string): Promise<void> {
         if (!onSavePersonFacts || !current?.docId || factsSaving) return;
+        const targetDocId = current.docId;
         factsSaving = true;
+        factsSaveError = "";
         try {
-            const next = facts.filter((f) => f.id !== id);
-            await onSavePersonFacts(current.docId, next);
+            const baseline = await ensureVerifiedFactsBaseline(targetDocId);
+            const next = baseline.filter((f) => f.id !== id);
+            await onSavePersonFacts(targetDocId, next);
             facts = next;
+        } catch (err) {
+            factsSaveError = `删除事实失败：${requestErrorMessage(err)}`;
         } finally {
             factsSaving = false;
         }
     }
     let flashcardToastId = $state("");
     let flashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
-    function makeFactFlashcard(fact: PersonFactItem) {
+    async function makeFactFlashcard(fact: PersonFactItem) {
         const catLabel = FACT_CATEGORY_META[fact.category]?.label || "社交备忘";
-        const text = `Q: [人脉常识] ${current.name} 的【${catLabel}】是什么？\nA: ${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
-        void copyPlainText(text);
-        flashcardToastId = fact.id;
-        if (flashcardToastTimer) clearTimeout(flashcardToastTimer);
-        flashcardToastTimer = setTimeout(() => { flashcardToastId = ""; }, 1800);
+        const content = `Q: [人脉常识] ${current.name} 的【${catLabel}】是什么？\nA: ${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
+        try {
+            await copyPlainText(content);
+            flashcardToastId = fact.id;
+            if (flashcardToastTimer) clearTimeout(flashcardToastTimer);
+            flashcardToastTimer = setTimeout(() => { flashcardToastId = ""; }, 1800);
+        } catch (err) {
+            factsSaveError = `复制失败：${requestErrorMessage(err)}`;
+        }
     }
 
     loadFacts();
@@ -1415,12 +1473,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 if (copiedTopicId === topic.id) copiedTopicId = "";
             }, 1500);
         } catch (err) {
-            console.warn("[LvContacts] 复制谈资备忘失败", err);
-            copiedTopicId = topic.id;
-            if (copiedTopicTimer) clearTimeout(copiedTopicTimer);
-            copiedTopicTimer = setTimeout(() => {
-                if (copiedTopicId === topic.id) copiedTopicId = "";
-            }, 1500);
+            topicsError = `复制失败：${requestErrorMessage(err)}`;
         }
     }
 
@@ -1918,12 +1971,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 timelineCopied = false;
             }, 1500);
         } catch (err) {
-            console.warn("[LvContacts] 复制往来记录失败", err);
-            timelineCopied = true;
-            if (timelineCopyTimer) clearTimeout(timelineCopyTimer);
-            timelineCopyTimer = setTimeout(() => {
-                timelineCopied = false;
-            }, 1500);
+            errorText = `复制失败：${requestErrorMessage(err)}`;
         }
     }
 
@@ -1999,12 +2047,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 if (copiedBlockUriId === blockId) copiedBlockUriId = "";
             }, 1500);
         } catch (err) {
-            console.warn("[LvContacts] 复制块引用失败", err);
-            copiedBlockUriId = blockId;
-            if (copiedBlockUriTimer) clearTimeout(copiedBlockUriTimer);
-            copiedBlockUriTimer = setTimeout(() => {
-                if (copiedBlockUriId === blockId) copiedBlockUriId = "";
-            }, 1500);
+            errorText = `复制块链接失败：${requestErrorMessage(err)}`;
         }
     }
 
@@ -2027,12 +2070,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 backlinkSummaryCopied = false;
             }, 1500);
         } catch (err) {
-            console.warn("[LvContacts] 复制反链摘要失败", err);
-            backlinkSummaryCopied = true;
-            if (backlinkSummaryTimer) clearTimeout(backlinkSummaryTimer);
-            backlinkSummaryTimer = setTimeout(() => {
-                backlinkSummaryCopied = false;
-            }, 1500);
+            errorText = `复制反链摘要失败：${requestErrorMessage(err)}`;
         }
     }
 
@@ -4122,6 +4160,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         <div class="ft__smaller ft__on-surface" style="padding: 4px 0 8px;">暂无记录的谈资或事实</div>
                     {/if}
 
+                    {#if factsSaveError}
+                        <div class="lvct-form__error" role="alert" style="margin: 4px 0 8px;">{factsSaveError}</div>
+                    {/if}
                     <!-- 快速新增事实表单 -->
                     <div class="lvct-facts-form">
                         <div class="lvct-facts-form__cats">

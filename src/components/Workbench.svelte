@@ -475,9 +475,11 @@
         let targetItemIds: string[] = [];
         if (focus?.itemIds && focus.itemIds.length > 0) {
             targetItemIds = [...focus.itemIds];
-        } else if (focus?.memberDocIds && focus.memberDocIds.length > 0 && peopleOrder.length > 0) {
+        } else if (focus?.memberDocIds && focus.memberDocIds.length > 0) {
             const docIdSet = new Set(focus.memberDocIds);
-            targetItemIds = peopleOrder.filter((p) => docIdSet.has(p.docId)).map((p) => p.itemId);
+            const source = peopleOrder.length > 0 ? peopleOrder : await facade.listContacts().catch(() => []);
+            if (!lifecycleToken.isAlive()) return;
+            targetItemIds = source.filter((p) => docIdSet.has(p.docId)).map((p) => p.itemId);
         }
 
         peopleFocusIds = targetItemIds;

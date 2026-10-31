@@ -2984,16 +2984,12 @@
                     occasionsHubOpen = false;
                     const person = people.find((p) => p.docId === docId);
                     if (person) onOpenDetail(person);
-                    else {
-                        focusIds = [docId];
-                        focusLabel = text("specifiedAttendee", "指定参会人");
-                        visibleCount = PAGE_SIZE;
-                    }
                 }}
                 onOpenPeople={(filter) => {
                     occasionsHubOpen = false;
                     if (filter.memberDocIds) {
-                        focusIds = filter.memberDocIds;
+                        const docSet = new Set(filter.memberDocIds);
+                        focusIds = people.filter((p) => docSet.has(p.docId)).map((p) => p.itemId);
                         focusLabel = filter.label ?? text("occasionAttendeesFallback", "群体活动参会人");
                         visibleCount = PAGE_SIZE;
                     }

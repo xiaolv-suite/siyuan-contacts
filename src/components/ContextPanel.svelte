@@ -3,9 +3,10 @@
     import type { ContactSummary } from "../domain/person";
     import type { ContactsPluginFacade } from "../types";
     import { translateText } from "../domain/translation";
-    import { computeRelationshipHealth, heatLevelColorClass } from "../domain/cadence";
+    import { computeRelationshipHealth, heatLevelColorClass, type PersonCadence } from "../domain/cadence";
     import { isPersonStarred } from "../domain/preferences";
     import type { ViewPreferences } from "../domain/preferences";
+    import { maskPhone, maskWechat } from "../domain/privacy-mask.ts";
 
     let {
         facade,
@@ -33,27 +34,36 @@
     let quickError = $state("");
     let recentInteractions = $state<Array<{ eventId: string; date: string; content: string }>>([]);
     let loadingInteractions = $state(false);
+    let personCadence = $state<PersonCadence | null>(null);
+    const isMasked = $derived(Boolean(preferences?.privacyShieldEnabled));
 
-    // 关系温度求值
+    // 关系温度求值：按人物真实节奏（无独立配置时回退全局久未联系天数）与暂停态计算
     const health = $derived.by(() => {
         if (!person) return { level: "unknown" as const, score: 0 };
         const first = recentInteractions[0];
         const lastTime = first?.date ? new Date(first.date).getTime() : undefined;
         return computeRelationshipHealth({
-            cadenceDays: 30,
+            cadenceDays: personCadence?.days ?? (preferences?.staleThresholdDays || 30),
             lastInteractionTime: lastTime,
-            paused: false,
+            paused: Boolean(personCadence?.paused),
         });
     });
 
-    // 当上下文人物变化时加载最近互动
+    // 当上下文人物变化时加载最近互动与联系节奏
     $effect(() => {
         const docId = person?.docId;
         if (!docId) {
             recentInteractions = [];
+            personCadence = null;
             return;
         }
         loadingInteractions = true;
+        personCadence = null;
+        facade.getPersonCadence?.(docId).then((cad) => {
+            if (person?.docId === docId) personCadence = cad;
+        }).catch(() => {
+            if (person?.docId === docId) personCadence = null;
+        });
         facade.loadPersonInsights?.(docId).then((ins) => {
             if (person?.docId === docId) {
                 recentInteractions = (ins?.timeline || []).slice(0, 3).map((item) => ({
@@ -147,10 +157,10 @@
                             {/if}
                         </div>
                         {#if person.phone}
-                            <span class="lvct-context-card__meta"><Phone size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.phone}</span>
+                            <span class="lvct-context-card__meta"><Phone size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {isMasked ? maskPhone(person.phone) : person.phone}</span>
                         {/if}
                         {#if person.wechat}
-                            <span class="lvct-context-card__meta"><MessageSquare size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.wechat}</span>
+                            <span class="lvct-context-card__meta"><MessageSquare size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {isMasked ? maskWechat(person.wechat) : person.wechat}</span>
                         {/if}
                     </div>
                 </div>
@@ -158,7 +168,7 @@
                 <!-- 关系温度胶囊 -->
                 <div class="lvct-context-card__heat-line">
                     <span class={`lvct-heat ${heatLevelColorClass(health.level)}`} style="font-size: 11px; padding: 2px 8px; border-radius: 9999px;">
-                        {health.level === "hot" ? "🔥 温热" : health.level === "warm" ? "🍃 常温" : health.level === "cool" ? "🌬️ 微凉" : health.level === "cold" ? "❄️ 渐冻" : health.level === "paused" ? "⏸️ 暂缓" : "❄️ 未联系"} · {health.score}%
+                        {health.level === "hot" ? "🔥 温热" : health.level === "warm" ? "🍃 常温" : health.level === "cool" ? "🌬️ 微凉" : health.level === "cold" ? "❄️ 渐冻" : health.level === "paused" ? "⏸️ 暂缓" : "❄️ 未联系"}
                     </span>
                     {#if person.birthday}
                         <span class="lvct-context-card__bday"><Cake size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.birthday}</span>

@@ -2135,7 +2135,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onClose={() => (exchangesHubOpen = false)}
             onOpenPerson={(docId) => {
                 exchangesHubOpen = false;
-                onOpenPeople({ memberDocIds: [docId] });
+                const matched = (data?.allPeople ?? []).find((p) => p.docId === docId);
+                onOpenPeople({ memberDocIds: [docId], label: matched?.name ?? "指定联系人" });
+                if (matched) onOpenDetail(matched);
             }}
         />
     </LvctDialog>
@@ -2149,7 +2151,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onClose={() => (preMeetingOpen = false)}
             onOpenPerson={(docId) => {
                 preMeetingOpen = false;
-                onOpenPeople({ memberDocIds: [docId] });
+                const matched = (data?.allPeople ?? []).find((p) => p.docId === docId);
+                onOpenPeople({ memberDocIds: [docId], label: matched?.name ?? "会前速查联系人" });
+                if (matched) onOpenDetail(matched);
             }}
         />
     </LvctDialog>
@@ -2163,7 +2167,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onClose={() => (coolingRadarOpen = false)}
             onOpenPerson={(docId) => {
                 coolingRadarOpen = false;
-                onOpenPeople({ memberDocIds: [docId] });
+                const matched = (data?.allPeople ?? []).find((p) => p.docId === docId);
+                onOpenPeople({ memberDocIds: [docId], label: matched?.name ?? "降温预警联系人" });
+                if (matched) onOpenDetail(matched);
             }}
         />
     </LvctDialog>
@@ -2178,7 +2184,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             onClose={() => (anniversariesHubOpen = false)}
             onOpenPerson={(docId) => {
                 anniversariesHubOpen = false;
-                onOpenPeople({ memberDocIds: [docId] });
+                const matched = (data?.allPeople ?? []).find((p) => p.docId === docId);
+                onOpenPeople({ memberDocIds: [docId], label: matched?.name ?? "纪念日联系人" });
+                if (matched) onOpenDetail(matched);
             }}
             onLogInteraction={async (person, defaultNote) => {
                 anniversariesHubOpen = false;
@@ -2205,11 +2213,13 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             }}
             onOpenPerson={(docId) => {
                 occasionsHubOpen = false;
-                onOpenPeople({ memberDocIds: [docId] });
+                const matched = (data?.allPeople ?? []).find((p) => p.docId === docId);
+                onOpenPeople({ memberDocIds: [docId], label: matched?.name ?? "指定参会人" });
+                if (matched) onOpenDetail(matched);
             }}
             onOpenPeople={(filter) => {
                 occasionsHubOpen = false;
-                onOpenPeople(filter);
+                onOpenPeople({ ...filter, label: filter.label ?? "群体活动参会人" });
             }}
             onClose={() => (occasionsHubOpen = false)}
             {i18n}
