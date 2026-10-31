@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.1** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.1) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.2** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.2) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -41,9 +41,8 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 | **🌡️ Cadence & Relationship Temperature** | Moving past mechanical reminders to objectively calculated relationship temperatures, preventing connections from slipping away unnoticed. | • 4-tier dynamic temperature: 🔥 Hot (frequently contacted) / 🍃 Warm (healthy) / 🌬️ Cool (mildly overdue) / ❄️ Cold (distant)<br>• Custom cadence intervals (1–365 days) or pause snooze<br>• Home "Cooling Radar & Reconnect Hub" console with star VIP weighting and 1-click drilldown |
 | **💬 Interactions & Scene Templates** | Conversational timeline tracking with contextual variables, extracting insights directly from your discussions. | • Bubble interaction timeline distinguishing visits, coffee, meals, calls, chat, and meetings<br>• 9 curated scenario templates (business visit, coffee chat, banquet dinner, forums, consultations, etc.)<br>• Dynamic variables (`{{name}}`, `{{date}}`, `{{lastContact}}`, `{{company}}`, `{{role}}`, `{{city}}`)<br>• Automatic fact extraction: quotes, preferences, and verified facts |
 | **🗓️ Itineraries & Visit Preparation** | Designed for appointments, travel, and meetings, ensuring you arrive well-prepared and follow up without re-typing. | • Structured agenda, time, venue, companions, and checklist items<br>• Interactive preparation checklist (documents, samples, gifts) with checkmarks<br>• Countdown badges (Today / N days away / Overdue)<br>• 1-click "Fulfill and Log Interaction" to append minutes into timeline; 1-click Markdown copy |
-| **🛡️ Preferences & Dietary Taboos** | Record friends' and partners' genuine dietary habits and taboos to avoid missteps when hosting or meeting. | • 4 dimensions: 🍲 Food & Taboos, ☕ Beverages, 🤝 Meeting Habits, 🚫 Sensitive Topics & Red Lines<br>• Header "Micro-Preferences Ribbon" with high-contrast red line alert badges<br>• Home "Pre-Meeting Hub & Taboo Radar" to audit taboos across all contacts |
-| **🌱 Lifecycle Funnel & Stage Progression** | Tracking relationship depth from first acquaintance to core alliance with cohort maturity insights. | • 5 stages: 🌱 Acquaintance ➔ 💬 Connection ➔ 🚀 Collaboration ➔ ⭐ Close Ally ➔ 💤 Dormant<br>• Transition date and memo logs; batch stage progression in roster<br>• Home "Lifecycle Funnel Console" calculating collaboration & ally rates |
-| **⚖️ Reciprocity & Balance Audit** | Ensuring long-term healthy, mutual relationships through bilateral commitment and ledger balance audits. | • Bilateral commitments: track my promises vs. their promises fulfillment rates<br>• Gift & favor ledger: net balance transparency for mutual favors<br>• Dynamic balance scale ratio bar with 0–100 reciprocity index score |
+| **🛡️ Preferences & Dietary Taboos** | Record genuine dietary habits and taboos directly inside the person's SiYuan document to avoid missteps when hosting or meeting. | • Native person-document facts block supporting preferences & `🚫 Taboo Red Lines`<br>• Header "Micro-Preferences Ribbon" and 30-Second Pre-Meeting Brief automatically surface red-line alerts<br>• Home "Pre-Meeting Hub & Taboo Radar" to audit taboos across all contacts |
+| **⚖️ Bilateral Promises & Favor Ledger** | Keep factual records of mutual commitments and gift/favor exchanges. | • Bilateral commitments: track my promises vs. their promises and fulfillment dates<br>• Gift & favor ledger: transparent tracking of favors and settlement status |
 | **🌐 Network Graph & Hubs Analysis** | Visualizing complex social connections and identifying central hubs and bridge connectors across circles. | • Dual modes: explicit relations graph + native SiYuan document reference graph<br>• 4 layout engines: CoSE, Concentric, Breadthfirst, Circle<br>• Timeline growth slider replaying network evolution over the years<br>• "Network Hubs & Bridge Connectors" modal identifying degree hubs and cross-circle bridges |
 | **📜 Chronicles & Milestone Documents** | Archiving shared history and milestones into lifelong digital records. | • Longitudinal milestones chronicle tracking first acquaintance, stage shifts, and fulfilled promises<br>• 1-click export to native SiYuan document (`/人脉回顾/📜 人脉交往编年史 · Name`) and Markdown<br>• Header "Anniversary Milestones Banner" celebrating N-year milestones with ready-to-use greeting copy<br>• Standard RFC 5545 iCalendar (`.ics`) export for all anniversaries and birthdays |
 | **🎴 Business Card Posters & Riff Flashcards** | Sharable vector business cards and spaced-repetition flashcards for cognitive retention. | • Pure SVG vector business card posters (horizontal 600x380 / vertical 440x600, 3 luxury themes)<br>• 1-click generation of native SiYuan Riff Q&A flashcards for FSRS spaced-repetition review |
@@ -55,20 +54,23 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.1 (2026-10-31)
+## This release: v0.7.2 (2026-10-31)
 
-This release fuses core PRM capabilities inspired by Monica, Twenty, and Simple-PRM, and completes end-to-end persistence, migration, merge, and UI token calibration:
+Core-loop focus and first-screen consolidation (`D-0040`: Find → Pre-Meeting Review → Log Interaction → Next Follow-Up):
 
-- **How We Met / Introducer Link & 30-Second Pre-Meeting Brief (`PersonDetail.svelte` & `person-origin.ts`)**: Record first-met context, in-workspace introducer link (rendering directed dashed introducer edges in the Cytoscape graph), and quick preference notes; added 1-click copyable "30-Second Pre-Meeting Brief" card; fixed initial empty-store write, clear-to-remove, external refresh draft protection, and unsaved close guard.
-- **Cadence Tiers, Overdue Filter & 24-Module Lossless Migration Bundle (`cadence.ts` & `migration-bundle.ts`)**: Added 14/30/90/180-day circle cadence presets and roster "Overdue" filter chip; integrated `person-origins.json` into the 24-module migration bundle and duplicate contact merge service (including introducer pointer redirection, relationship labels, and occasion attendees merge).
-- **Directed Graph Edge Preservation, Timezone Unification & Token Calibration (`graph.ts` & `index.scss`)**: Fixed `orderGraph` reversing directed `introducer` edges when target ID < source ID; eliminated all 26 remaining UTC `toISOString().slice(0, 10)` date slices in favor of local `toLocalDateKey`; added saved-view enum whitelist validation; aligned overdue/starred group tabs, narrow-screen wrapping, and Twenty 12-month sparkline high-contrast styles.
+- **In-Place Interaction Editing (`interactions.ts` & `PersonDetail.svelte`)**: Edit date, type, and note on any recorded interaction; atomically tombstones the old event and appends the amended event under store lock while preserving source and `externalRef`, syncing the person document section and guarding unsaved edits.
+- **Preferences & Taboo Red Lines Unified in Person Document (`doc-section.ts` & `pre-meeting.ts`)**: The person document facts section now natively supports `🚫 Taboo` flags and automatically feeds the header ribbon, 30-second Pre-Meeting Brief, and workspace Pre-Meeting Hub; fixed silent read/write failure handling on document fact blocks.
+- **First-Screen Consolidation & Removal of Groundless Scores (`PersonCard.svelte`, `PersonDetail.svelte` & `DashboardView.svelte`)**: Fixed narrow roster card squeezing and multi-row toolbar overflow; removed arbitrary 0–100 reciprocity/radar scores, lifecycle conversion rates, and cheerleader banners; promoted "Log Interaction + Things to Remember" and "Today's Actions" above the fold while folding low-frequency panels; fixed ContextPanel privacy-shield masking, real cadence lookup, and cold-start hub drilldowns.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (**1075/1075 PASS**); 3-tier browser UI regressions passing (**529/529**); production build and release checks passed.
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (**1082/1082 PASS**); 3-tier browser UI regressions passing (**528/528**); production build, release gate, and isolated kernel load checks passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.7.0 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.7.1 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.1 · 2026-10-31
+- How We Met / Introducer Link (`person-origin.ts`), 30-Second Pre-Meeting Brief card, 14/30/90/180-day cadence tiers, 24-module lossless migration bundle, duplicate merge 19-step completion, directed `introducer` edge preservation, and local timezone unification.
 
 ### v0.7.0 · 2026-10-30
 - Roster soft-delete trash bin drawer (`TrashDrawer.svelte`) with 30-day buffer and 1-click restore.
