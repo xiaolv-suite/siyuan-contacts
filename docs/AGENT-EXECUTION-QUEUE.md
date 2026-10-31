@@ -1,5 +1,7 @@
 # Agent 执行队列
 
+> 🔄 **单一事实来源迁移说明（2026-10-31）**：本文件的有效待办队列已整合归入单一事实来源池 **[docs/UNIFIED-BACKLOG-POOL.md](UNIFIED-BACKLOG-POOL.md)**，本文件保留作为历史溯源快照。
+
 本文件是 [AGENT-DEVELOPMENT-BACKLOG](AGENT-DEVELOPMENT-BACKLOG.md) 的短队列视图。开发前先读完整任务卡；这里不重复维护验收细节。
 
 ## 当前状态（2026-10-17）

@@ -541,12 +541,15 @@ test("小驴人脉 · GitHub三大标杆融合对齐圈层联络周期、会前�
     assert.match(peopleSvelte, /lvct-people__group-tab--overdue/);
     assert.match(peopleSvelte, /overduePeopleCount/);
 
-    // 3. 全局 SCSS 样式契约
+    // 3. 全局 SCSS 样式契约与统一令牌对齐
     const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
     assert.match(indexScss, /\.lvct-premeeting-brief\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*14px\)/);
     assert.match(indexScss, /\.lvct-origin-section\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
     assert.match(indexScss, /\.lvct-twenty-activity-header\s*\{[\s\S]*border-radius:\s*var\(--lvct-r-card,\s*12px\)/);
-    assert.match(indexScss, /\.lvct-people__group-tab--overdue/);
+    assert.match(indexScss, /\.lvct-people__group-tab--overdue[\s\S]*var\(--lv-heat-cold/);
+    assert.match(indexScss, /\.lvct-origin-edit-box[\s\S]*input,\s*select\s*\{\s*border-radius:\s*var\(--lv-r-pill,\s*9999px\)/);
+    assert.match(indexScss, /\.lvct-twenty-spark-bar[\s\S]*var\(--lv-data-amber/);
+    assert.match(indexScss, /\.lvct-twenty-spark-bar[\s\S]*@media\s*\(forced-colors:\s*active\)/);
 });
 
 

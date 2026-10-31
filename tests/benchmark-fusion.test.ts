@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 
 import { CADENCE_TIERS, computeWarmthStatus, computeRelationshipHealth } from "../src/domain/cadence.ts";
 import {
@@ -10,9 +12,12 @@ import {
     PERSON_ORIGIN_STORE_VERSION,
     type PersonOrigin,
 } from "../src/domain/person-origin.ts";
-import { buildGraph } from "../src/domain/graph.ts";
+import { buildGraph, orderGraph } from "../src/domain/graph.ts";
+import { graphRegistry } from "../src/domain/graph-query.ts";
 import { applyPeopleFilters } from "../src/domain/people-filters.ts";
+import { normalizeSavedViews } from "../src/domain/saved-views.ts";
 import { buildPreMeetingBrief, formatPreMeetingBriefText } from "../src/domain/pre-meeting-brief.ts";
+import { savePersonOrigin, loadPersonOrigin, mergePersonOriginStore } from "../src/data/person-origins.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 
 test("标杆融合 · 联络周期档位与关系温度状态 (Warm / Cooling / Overdue) 计算", () => {
@@ -397,3 +402,214 @@ test("标杆融合 · 会前 30 秒破冰速览卡 (Pre-Meeting Brief) 组装与
     assert.ok(formattedText.includes("❤️ 喜好习惯:"));
     assert.ok(formattedText.includes("⚠️ 禁忌雷区:"));
 });
+
+test("BUG-01 回归 · orderGraph 与 graphRegistry 保留 introducer 有向引荐边原始方向（target < source 时不反转）", () => {
+    // 被引荐人 docTarget 的字典序小于引荐人 docIntroducer
+    const docTarget = "20260101000000-aaaaaaa";
+    const docIntroducer = "20261231235959-zzzzzzz";
+
+    const people: ContactSummary[] = [
+        {
+            docId: docTarget,
+            itemId: "item-target",
+            name: "被引荐人甲",
+            phone: "",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "朋友",
+            tags: [],
+            relatedItemIds: [],
+        },
+        {
+            docId: docIntroducer,
+            itemId: "item-introducer",
+            name: "引荐人乙",
+            phone: "",
+            email: "",
+            wechat: "",
+            website: "",
+            birthday: "",
+            isLunar: false,
+            group: "朋友",
+            tags: [],
+            relatedItemIds: [],
+        },
+    ];
+
+    const origins: Record<string, PersonOrigin> = {
+        [docTarget]: {
+            personDocId: docTarget,
+            metAt: "技术沙龙",
+            introducedByDocId: docIntroducer,
+        },
+    };
+
+    const rawGraph = buildGraph(people, origins);
+    const ordered = orderGraph(rawGraph);
+    assert.equal(ordered.edges.length, 1);
+    assert.equal(ordered.edges[0].kind, "introducer");
+    assert.equal(ordered.edges[0].source, docIntroducer, "引荐边 source 必须保持为引荐人，不能被字典序反转");
+    assert.equal(ordered.edges[0].target, docTarget, "引荐边 target 必须保持为被引荐人");
+
+    const registry = graphRegistry({
+        people,
+        organizations: [],
+        selfDocId: null,
+        status: { roster: "verified", organizations: "verified", self: "verified" },
+        errors: {},
+        revision: 1,
+        origins,
+    });
+    const introEdge = registry.graph.edges.find((e) => e.kind === "introducer");
+    assert.ok(introEdge);
+    assert.equal(introEdge.source, docIntroducer);
+    assert.equal(introEdge.target, docTarget);
+});
+
+test("BUG-02 & BUG-04 回归 · 初识溯源首次空库写入、清空移除与 24 模块全要素迁移包往返", async () => {
+    const storeMap = new Map<string, unknown>();
+    const fakePlugin = {
+        async loadData(key: string) {
+            return storeMap.has(key) ? structuredClone(storeMap.get(key)) : null;
+        },
+        async saveData(key: string, data: unknown) {
+            storeMap.set(key, typeof data === "string" ? JSON.parse(data) : structuredClone(data));
+        },
+    } as any;
+
+    const docA = "20261031120000-persona";
+    const docB = "20261031120000-personb";
+
+    // 1. 首次空库（loadData 返回 null 或空串 ""）时 normalizePersonOriginStoreForWrite 与 savePersonOrigin 必须成功
+    assert.deepEqual(normalizePersonOriginStoreForWrite(null), {
+        schemaVersion: 1,
+        origins: {},
+    });
+    assert.deepEqual(normalizePersonOriginStoreForWrite(""), {
+        schemaVersion: 1,
+        origins: {},
+    });
+
+    const saved = await savePersonOrigin(fakePlugin, {
+        personDocId: docA,
+        metAt: "2025春季峰会",
+        introducedByDocId: docB,
+        preferences: "常喝美式咖啡",
+    });
+    assert.equal(saved.metAt, "2025春季峰会");
+    assert.equal(saved.introducedByDocId, docB);
+
+    const readBack = await loadPersonOrigin(fakePlugin, docA);
+    assert.ok(readBack);
+    assert.equal(readBack.metAt, "2025春季峰会");
+
+    // 2. 清空后移除记录
+    await savePersonOrigin(fakePlugin, {
+        personDocId: docA,
+        metAt: "   ",
+        introducedByDocId: "",
+        preferences: "",
+    });
+    assert.equal(await loadPersonOrigin(fakePlugin, docA), null);
+
+    // 3. mergePersonOriginStore 可无损恢复初识溯源记录并支持现状优先合并
+    const mergeInitial = await mergePersonOriginStore(fakePlugin, {
+        schemaVersion: 1,
+        origins: {
+            [docA]: {
+                personDocId: docA,
+                metAt: "2025春季峰会",
+                introducedByDocId: docB,
+                preferences: "常喝美式咖啡",
+            },
+        },
+    });
+    assert.equal(mergeInitial.merged, 1);
+
+    const restored = await loadPersonOrigin(fakePlugin, docA);
+    assert.ok(restored);
+    assert.equal(restored.metAt, "2025春季峰会");
+    assert.equal(restored.introducedByDocId, docB);
+    assert.equal(restored.preferences, "常喝美式咖啡");
+
+    // 4. 现状优先合并：已有部分字段时不覆盖，仅补齐缺失字段
+    const mergeRes = await mergePersonOriginStore(fakePlugin, {
+        schemaVersion: 1,
+        origins: {
+            [docA]: {
+                personDocId: docA,
+                metAt: "旧峰会不应覆盖",
+                preferences: "旧偏好不应覆盖",
+            },
+        },
+    });
+    assert.equal(mergeRes.skipped, 1);
+    const afterMerge = await loadPersonOrigin(fakePlugin, docA);
+    assert.equal(afterMerge?.metAt, "2025春季峰会");
+});
+
+test("BUG-05 回归 · 已保存视图枚举白名单校验与全仓零 UTC 日期切片守门", () => {
+    const views = normalizeSavedViews([
+        {
+            id: "v-valid",
+            name: "待问候视图",
+            query: {
+                search: "",
+                group: "",
+                tags: [],
+                tagMatch: "all",
+                recentFrom: "",
+                recentTo: "",
+                neverContacted: false,
+                sort: "recent",
+                lifecycleStage: "close_ally",
+                heatLevel: "overdue",
+            },
+        },
+        {
+            id: "v-invalid-enum",
+            name: "脏枚举视图",
+            query: {
+                search: "",
+                group: "",
+                tags: [],
+                tagMatch: "all",
+                recentFrom: "",
+                recentTo: "",
+                neverContacted: false,
+                sort: "name",
+                lifecycleStage: "invalid_stage_xyz",
+                heatLevel: "invalid_heat_xyz",
+            },
+        },
+    ]);
+    assert.equal(views.length, 2);
+    assert.equal(views[0].query.lifecycleStage, "close_ally");
+    assert.equal(views[0].query.heatLevel, "overdue");
+    assert.equal(views[1].query.lifecycleStage, undefined, "非法 lifecycleStage 必须被过滤");
+    assert.equal(views[1].query.heatLevel, undefined, "非法 heatLevel 必须被过滤");
+
+    // 扫描 src/ 确保零 toISOString().slice(0, 10) 残留
+    const srcRoot = path.resolve(import.meta.dirname, "../src");
+    const walk = (dir: string): string[] => {
+        const out: string[] = [];
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) out.push(...walk(full));
+            else if (/\.(ts|svelte)$/.test(entry.name)) out.push(full);
+        }
+        return out;
+    };
+    const offenders: string[] = [];
+    for (const file of walk(srcRoot)) {
+        const content = fs.readFileSync(file, "utf8");
+        if (content.includes("toISOString().slice(0, 10)")) {
+            offenders.push(path.relative(srcRoot, file));
+        }
+    }
+    assert.deepEqual(offenders, [], `src/ 下禁止使用 UTC 日期切片 toISOString().slice(0, 10)：${offenders.join(", ")}`);
+});
+

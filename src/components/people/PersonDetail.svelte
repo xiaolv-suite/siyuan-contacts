@@ -868,6 +868,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let currentOrigin = $state<PersonOrigin | null>(null);
     let originEditing = $state(false);
     let originSaving = $state(false);
+    let originError = $state("");
     let metAtDraft = $state("");
     let introducedByDraft = $state("");
     let preferencesDraft = $state("");
@@ -876,7 +877,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let preMeetingBriefCopyTimer: ReturnType<typeof setTimeout> | null = null;
     let greetingReminderSending = $state(false);
     let greetingReminderSent = $state(false);
+    let greetingReminderError = $state("");
     let greetingReminderTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const originDirty = $derived(
+        originEditing && (
+            metAtDraft.trim() !== (currentOrigin?.metAt ?? "") ||
+            introducedByDraft !== (currentOrigin?.introducedByDocId ?? "") ||
+            preferencesDraft.trim() !== (currentOrigin?.preferences ?? "")
+        ),
+    );
 
     async function loadOrigin() {
         if (!onLoadOrigin || !current?.docId) return;
@@ -885,9 +895,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             const origin = await onLoadOrigin(targetDocId);
             if (detailAlive && current.docId === targetDocId) {
                 currentOrigin = origin;
-                metAtDraft = origin?.metAt ?? "";
-                introducedByDraft = origin?.introducedByDocId ?? "";
-                preferencesDraft = origin?.preferences ?? "";
+                if (!originEditing) {
+                    metAtDraft = origin?.metAt ?? "";
+                    introducedByDraft = origin?.introducedByDocId ?? "";
+                    preferencesDraft = origin?.preferences ?? "";
+                }
             }
         } catch (err) {
             console.warn("[LvContacts] 读取初识溯源失败：", err);
@@ -895,9 +907,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
-    async function handleSaveOrigin() {
+    async function handleSaveOrigin(rethrow = false) {
         if (!onSaveOrigin || originSaving) return;
         originSaving = true;
+        originError = "";
         try {
             const updated = await onSaveOrigin({
                 personDocId: current.docId,
@@ -906,16 +919,28 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 preferences: preferencesDraft.trim() || undefined,
             });
             if (detailAlive) {
-                currentOrigin = updated;
+                const hasContent = Boolean(updated?.metAt || updated?.introducedByDocId || updated?.preferences);
+                currentOrigin = hasContent ? updated : null;
                 originEditing = false;
+                originError = "";
                 onChanged();
             }
         } catch (err) {
-            console.warn("[LvContacts] 保存初识溯源失败：", err);
+            if (detailAlive) originError = requestErrorMessage(err);
+            if (rethrow) throw err;
         } finally {
             if (detailAlive) originSaving = false;
         }
     }
+
+    useCloseGuard({
+        busy: () => originSaving || greetingReminderSending,
+        dirty: () => originDirty,
+        changes: () => (originDirty ? ["初识溯源与引荐人尚未保存"] : []),
+        save: async () => {
+            if (originDirty) await handleSaveOrigin(true);
+        },
+    });
 
     async function handleCopyPreMeetingBrief() {
         const textToCopy = formatPreMeetingBriefText(preMeetingBrief);
@@ -930,15 +955,21 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     async function handleSendGreetingReminder() {
         if (!onSendGreetingReminder || greetingReminderSending || !relationshipHealth.overdue) return;
         greetingReminderSending = true;
+        greetingReminderError = "";
         try {
             const ok = await onSendGreetingReminder(current.name, relationshipHealth.overdueDays);
-            if (detailAlive && ok) {
+            if (!detailAlive) return;
+            if (ok) {
                 greetingReminderSent = true;
                 if (greetingReminderTimer) clearTimeout(greetingReminderTimer);
                 greetingReminderTimer = setTimeout(() => {
                     if (detailAlive) greetingReminderSent = false;
                 }, 3000);
+            } else {
+                greetingReminderError = "未检测到已启用的小驴管家，无法同步问候备忘";
             }
+        } catch (err) {
+            if (detailAlive) greetingReminderError = requestErrorMessage(err);
         } finally {
             if (detailAlive) greetingReminderSending = false;
         }
@@ -2232,7 +2263,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
-        const stamp = new Date().toISOString().slice(0, 10);
+        const stamp = toLocalDateKey(new Date());
         anchor.download = buildBriefingFilename(current.name, stamp);
         anchor.click();
         URL.revokeObjectURL(url);
@@ -2651,7 +2682,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             void loadScratchpads();
             void loadSocialPreferences();
             void loadItineraries();
-            void loadOrigin();
+            if (!originEditing && !originSaving) void loadOrigin();
             void loadAnniversaries();
             void loadProjects();
             if (!cadenceDirty) void loadCadence();
@@ -3278,6 +3309,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     style="border-radius: var(--lv-r-pill, 9999px);"
                     onclick={() => {
                         originEditing = true;
+                        originError = "";
                         metAtDraft = currentOrigin?.metAt ?? "";
                         introducedByDraft = currentOrigin?.introducedByDocId ?? "";
                         preferencesDraft = currentOrigin?.preferences ?? "";
@@ -3289,13 +3321,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         </div>
         {#if originEditing}
             <div class="lvct-origin-edit-box">
+                {#if originError}
+                    <div class="lvct-form__error" role="alert">{originError}</div>
+                {/if}
                 <label class="lvct-form__item">
                     <span>初识场合或时间：</span>
-                    <input class="b3-text-field fn__block" type="text" placeholder="如：2024年秋季行业峰会、创业路演" bind:value={metAtDraft} />
+                    <input class="b3-text-field fn__block" type="text" maxlength="200" placeholder="如：2024年秋季行业峰会、创业路演" bind:value={metAtDraft} oninput={() => (originError = "")} disabled={originSaving} />
                 </label>
                 <label class="lvct-form__item">
                     <span>引荐人（库内好友）：</span>
-                    <select class="b3-select fn__block" bind:value={introducedByDraft}>
+                    <select class="b3-select fn__block" bind:value={introducedByDraft} onchange={() => (originError = "")} disabled={originSaving}>
                         <option value="">无引荐人（自主结识）</option>
                         {#each others as p (p.docId)}
                             {#if p.docId !== current.docId}
@@ -3306,11 +3341,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 </label>
                 <label class="lvct-form__item">
                     <span>喜好忌口与备忘速记：</span>
-                    <textarea class="b3-text-field fn__block" rows="2" placeholder="如：海鲜过敏、喜欢手冲浅烘、勿聊前东家" bind:value={preferencesDraft}></textarea>
+                    <textarea class="b3-text-field fn__block" rows="2" maxlength="2000" placeholder="如：海鲜过敏、喜欢手冲浅烘、勿聊前东家" bind:value={preferencesDraft} oninput={() => (originError = "")} disabled={originSaving}></textarea>
                 </label>
                 <div class="lvct-origin-actions" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;">
-                    <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (originEditing = false)}>取消</button>
-                    <button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={handleSaveOrigin} disabled={originSaving}>
+                    <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={originSaving} onclick={() => { originEditing = false; originError = ""; }}>取消</button>
+                    <button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void handleSaveOrigin()} disabled={originSaving}>
                         {originSaving ? "保存中…" : "保存初识信息"}
                     </button>
                 </div>
@@ -4793,6 +4828,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         <Bell size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                         {greetingReminderSent ? "已同步至管家备忘 ✓" : greetingReminderSending ? "正在同步管家…" : "提醒问候（同步到小驴管家）"}
                     </button>
+                    {#if greetingReminderError}
+                        <div class="lvct-form__error" role="alert" style="margin-top: 6px;">{greetingReminderError}</div>
+                    {/if}
                 </div>
             {/if}
             <StatusNotice message={cadenceMessage} onDismiss={() => (cadenceMessage = "")} />
@@ -4891,6 +4929,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         <Bell size={12} strokeWidth={1.6} class="lvct-icon-inline" />
                         {greetingReminderSent ? "已同步至管家备忘 ✓" : greetingReminderSending ? "正在同步管家…" : "提醒问候（同步到小驴管家）"}
                     </button>
+                    {#if greetingReminderError}
+                        <div class="lvct-form__error" role="alert" style="margin-top: 6px;">{greetingReminderError}</div>
+                    {/if}
                 </div>
             {/if}
             <StatusNotice message={cadenceMessage} onDismiss={() => (cadenceMessage = "")} />

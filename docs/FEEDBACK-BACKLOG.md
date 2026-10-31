@@ -1,5 +1,7 @@
 # 用户反馈待办（BACKLOG）
 
+> 🔄 **单一事实来源迁移说明（2026-10-31）**：本文件的有效待办已整合归入单一事实来源池 **[docs/UNIFIED-BACKLOG-POOL.md](UNIFIED-BACKLOG-POOL.md)**，本文件保留作为历史溯源快照。
+
 > **2026-10-15 当前基线：** 当前稳定发布为 v0.5.13；CI、发布包和附件校验见 [RELEASE](RELEASE.md) / [UI-REGRESSION](UI-REGRESSION.md)。Issue #35 仍缺脱敏 VCF，不能确认此次 vCard 兼容性补强是否命中根因；#36–#40 已完成并关闭。C03 移动用例现走真实移动抽屉并全量通过。本文保存反馈来源、产品决定和历史状态快照；任务状态和开发顺序唯一以 [AGENT-DEVELOPMENT-BACKLOG](AGENT-DEVELOPMENT-BACKLOG.md) 为准。
 
 > **Agent 执行入口：** 本文件保留反馈来源、历史批次和审计细节；开发 Agent 只从 [AGENT-DEVELOPMENT-BACKLOG](AGENT-DEVELOPMENT-BACKLOG.md) 的任务卡认领工作，不直接从本文件的历史条目开工。

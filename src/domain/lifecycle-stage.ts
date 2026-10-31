@@ -4,6 +4,8 @@
  * 将人际交往关系从浅到深演进管理：初相识 -> 常交流 -> 共合作 -> 核心挚友 (或自然沉睡维护)。
  */
 
+import { toLocalDateKey } from "./date-key.ts";
+
 export type RelationshipStageKey = "acquaintance" | "connection" | "collaboration" | "close_ally" | "dormant";
 
 export interface StageTransitionRecord {
@@ -107,7 +109,7 @@ function sanitizeTransitionRecord(raw: unknown): StageTransitionRecord | null {
     const stage: RelationshipStageKey = isValidStageKey(r.stage) ? r.stage : "acquaintance";
     const changedAt = typeof r.changedAt === "string" && r.changedAt.trim()
         ? r.changedAt.trim()
-        : new Date().toISOString().slice(0, 10);
+        : toLocalDateKey(new Date());
     const note = typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined;
     const timestamp = typeof r.timestamp === "number" && r.timestamp > 0 ? r.timestamp : Date.now();
 
@@ -201,7 +203,7 @@ export function updatePersonStage(
     const currentRecord = getPersonLifecycle(store, personDocId);
 
     const now = Date.now();
-    const today = (dateStr || new Date().toISOString().slice(0, 10)).trim();
+    const today = (dateStr || toLocalDateKey(new Date())).trim();
 
     const transition: StageTransitionRecord = {
         stage: stageKey,

@@ -62,7 +62,7 @@
 
     // 表单状态
     let formTitle = $state("");
-    let formDate = $state(new Date().toISOString().slice(0, 10));
+    let formDate = $state(toLocalDateKey(new Date()));
     let formTime = $state("");
     let formLocation = $state("");
     let formAttendees = $state("");

@@ -1936,7 +1936,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     /** Simple-PRM / Monica 对标：向小驴管家输出到期问候提醒 */
     async sendGreetingReminderToHome(personName: string, daysOverdue: number): Promise<boolean> {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = toLocalDateKey(new Date());
         return callBridge<HomeBridgeApi, boolean>(
             "home",
             "memo",

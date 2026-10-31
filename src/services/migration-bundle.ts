@@ -63,6 +63,8 @@ import { loadSocialPreferencesStoreStrict, mergeSocialPreferencesStore, PERSON_S
 import { normalizeSocialPreferencesStoreForWrite, type PersonSocialPreferencesStore } from "../domain/social-preferences";
 import { loadLifecycleStoreStrict, mergeLifecycleStore, PERSON_LIFECYCLE_STORAGE_KEY } from "../data/lifecycle-stage";
 import { normalizeLifecycleStoreForWrite, type PersonLifecycleStore } from "../domain/lifecycle-stage";
+import { loadPersonOriginStoreStrict, mergePersonOriginStore, PERSON_ORIGIN_STORAGE_KEY } from "../data/person-origins";
+import { normalizePersonOriginStoreForWrite, type PersonOriginStore } from "../domain/person-origin";
 import { TRASH_STORAGE_KEY } from "../data/trash";
 import { parseTopicStore } from "../domain/topics";
 import type { PersonTopicStore } from "../domain/topics";
@@ -72,7 +74,7 @@ export const MIGRATION_BUNDLE_STORAGE_KEY = "lvct-migration-bundle";
 
 export interface MigrationModulePreview {
     key: "interactions" | "followUps" | "cadences" | "reminderDismissals" | "registry" | "templates" | "exchanges" | "aliases" | "selfIdentity" | "orgMemberships" | "organizationProfiles" | "relationshipLabels" | "topics" | "giftIdeas" | "occasions"
-        | "anniversaries" | "promises" | "kinships" | "projects" | "itineraries" | "scratchpads" | "socialPreferences" | "lifecycleStage";
+        | "anniversaries" | "promises" | "kinships" | "projects" | "itineraries" | "scratchpads" | "socialPreferences" | "lifecycleStage" | "personOrigins";
     label: string;
     count: number;
     tombstones?: number;
@@ -102,6 +104,7 @@ export const MIGRATION_COVERAGE = [
     { key: PERSON_SCRATCHPAD_STORAGE_KEY, status: "included", module: "scratchpads" },
     { key: PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, status: "included", module: "socialPreferences" },
     { key: PERSON_LIFECYCLE_STORAGE_KEY, status: "included", module: "lifecycleStage" },
+    { key: PERSON_ORIGIN_STORAGE_KEY, status: "included", module: "personOrigins" },
     { key: "org-projection-checkpoints.json", status: "excluded", reason: "本工作区未完成文档投影请求，不跨库重放" },
     { key: "organization-operations.json", status: "excluded", reason: "本工作区组织创建/改名操作断点，不跨库重放" },
     { key: "bridge-requests.json", status: "excluded", reason: "本工作区外部桥请求断点，不跨库重放" },
@@ -134,6 +137,7 @@ interface BundleModules {
     scratchpads?: PersonScratchpadStore;
     socialPreferences?: PersonSocialPreferencesStore;
     lifecycleStage?: PersonLifecycleStore;
+    personOrigins?: PersonOriginStore;
 }
 
 interface MigrationBundle {
@@ -145,7 +149,7 @@ interface MigrationBundle {
 
 const MIGRATION_MODULE_KEYS = new Set<MigrationModulePreview["key"]>([
     "interactions", "followUps", "cadences", "reminderDismissals", "registry", "templates", "exchanges", "aliases", "selfIdentity", "orgMemberships", "organizationProfiles", "relationshipLabels", "topics", "giftIdeas", "occasions",
-    "anniversaries", "promises", "kinships", "projects", "itineraries", "scratchpads", "socialPreferences", "lifecycleStage",
+    "anniversaries", "promises", "kinships", "projects", "itineraries", "scratchpads", "socialPreferences", "lifecycleStage", "personOrigins",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -222,6 +226,7 @@ function validateBundleModules(value: unknown): asserts value is BundleModules {
     if (value.scratchpads !== undefined) normalizeScratchpadStoreForWrite(requireModuleEnvelope(value.scratchpads, "闪念便签"));
     if (value.socialPreferences !== undefined) normalizeSocialPreferencesStoreForWrite(requireModuleEnvelope(value.socialPreferences, "社交偏好与忌口"));
     if (value.lifecycleStage !== undefined) normalizeLifecycleStoreForWrite(requireModuleEnvelope(value.lifecycleStage, "交往生命周期阶段"));
+    if (value.personOrigins !== undefined) normalizePersonOriginStoreForWrite(requireModuleEnvelope(value.personOrigins, "初识溯源与引荐"));
     if (value.selfIdentity !== undefined) {
         const module = requireModuleEnvelope(value.selfIdentity, "本人身份");
         if (!("identity" in module)) throw new Error("本人身份模块缺少 identity，拒绝导入");
@@ -250,7 +255,7 @@ function parseBundle(text: string): MigrationBundle {
 
 export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
     const [interactions, followUps, cadences, reminderDismissals, registry, templatesStore, exchanges, aliases, identity, orgMemberships, organizationProfiles, relationshipLabels, topics, giftIdeas, occasions,
-        anniversaries, promises, kinships, projects, itineraries, scratchpads, socialPreferences, lifecycleStage] = await Promise.all([
+        anniversaries, promises, kinships, projects, itineraries, scratchpads, socialPreferences, lifecycleStage, personOrigins] = await Promise.all([
         JSON.parse(await exportInteractionJson(plugin)) as BundleModules["interactions"],
         JSON.parse(await exportFollowUpsJson(plugin)) as BundleModules["followUps"],
         loadCadenceMapStrict(plugin),
@@ -274,6 +279,7 @@ export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
         withStoreLock(PERSON_SCRATCHPAD_STORAGE_KEY, () => loadScratchpadStoreStrict(plugin)),
         withStoreLock(PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, () => loadSocialPreferencesStoreStrict(plugin)),
         withStoreLock(PERSON_LIFECYCLE_STORAGE_KEY, () => loadLifecycleStoreStrict(plugin)),
+        withStoreLock(PERSON_ORIGIN_STORAGE_KEY, () => loadPersonOriginStoreStrict(plugin)),
     ]);
     return JSON.stringify({
         schemaVersion: BUNDLE_SCHEMA_VERSION,
@@ -304,6 +310,7 @@ export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
             scratchpads,
             socialPreferences,
             lifecycleStage,
+            personOrigins,
         },
     }, null, 2);
 }
@@ -386,6 +393,10 @@ export function previewMigrationImport(text: string): MigrationModulePreview[] {
     if (modules.lifecycleStage) {
         const count = Object.keys(modules.lifecycleStage.records ?? {}).length;
         push("lifecycleStage", "交往生命周期阶段", count);
+    }
+    if (modules.personOrigins) {
+        const count = Object.keys(modules.personOrigins.origins ?? {}).length;
+        push("personOrigins", "初识溯源与引荐", count);
     }
     return previews;
 }
@@ -685,6 +696,13 @@ export async function importMigrationBundle(plugin: Plugin, text: string): Promi
             const incoming = normalizeLifecycleStoreForWrite(modules.lifecycleStage!);
             const summary = await mergeLifecycleStore(plugin, incoming);
             result.modules.push({ key: "lifecycleStage", label: "交往生命周期阶段", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.personOrigins) {
+        await runModule("personOrigins", "初识溯源与引荐", async () => {
+            const incoming = normalizePersonOriginStoreForWrite(modules.personOrigins!);
+            const summary = await mergePersonOriginStore(plugin, incoming);
+            result.modules.push({ key: "personOrigins", label: "初识溯源与引荐", merged: summary.merged, skipped: summary.skipped });
         });
     }
     const pending = new Set([...result.failed.map((module) => module.key), ...result.issues.map((entry) => entry.key)]);

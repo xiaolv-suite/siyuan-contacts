@@ -4,7 +4,8 @@
  * personDocId+source+externalRef 构成幂等身份。
  */
 import type { ContactSummary } from "./person";
-import { isValidDateKey } from "./date-key.ts";
+import { isValidDateKey, toLocalDateKey } from "./date-key.ts";
+export { toLocalDateKey };
 
 export type InteractionSource = "manual" | "diary" | "api";
 
@@ -205,12 +206,6 @@ function parseLocalDay(value: string): Date | undefined {
 
 function daysBetweenLocal(from: Date, to: Date): number {
     return Math.round((to.getTime() - from.getTime()) / 86400000);
-}
-
-/** 本地日 YYYY-MM-DD（唯一实现，禁止毫秒差取整） */
-export function toLocalDateKey(now: Date = new Date()): string {
-    const pad = (value: number) => String(value).padStart(2, "0");
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 /** 对外桥 recordInteraction 的确定性默认幂等键（同批人员+同日 → 同键，与人员顺序无关） */

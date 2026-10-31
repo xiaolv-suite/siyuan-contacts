@@ -108,7 +108,10 @@ export function normalizePersonOriginStore(raw: unknown): PersonOriginStore {
 }
 
 export function normalizePersonOriginStoreForWrite(raw: unknown): PersonOriginStore {
-    if (!raw || typeof raw !== "object") {
+    if (raw == null || raw === "") {
+        return emptyPersonOriginStore();
+    }
+    if (typeof raw !== "object" || Array.isArray(raw)) {
         throw new StoreIntegrityError("初识溯源与引荐", "存储必须为对象结构");
     }
     const record = raw as Record<string, unknown>;

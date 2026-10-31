@@ -1,5 +1,7 @@
 # UI 改造排期表（UI-REFACTOR-PLAN）
 
+> 🔄 **单一事实来源迁移说明（2026-10-31）**：本表历史 UI-01~UI-12 均已落地，后续有效 UI/体验待办统一归入 **[docs/UNIFIED-BACKLOG-POOL.md](UNIFIED-BACKLOG-POOL.md)**。
+
 > **历史排期说明（2026-10-03）**：UI-01～UI-12 保留为历史范围、决策和验收记录，不等同于当前剩余任务。当前全页面设计基准为 [UI-SYSTEM-SPEC.md](UI-SYSTEM-SPEC.md) 与 [ui-prototype.html](ui-prototype.html)，新增设计和实现待办见 [FEEDBACK-BACKLOG.md 的 UX-03](FEEDBACK-BACKLOG.md#ux-03-全产品原型重构与-ui-系统落地高2026-10-03-新增)。本表旧页面清单、版本快照和排期不得覆盖当前源码、页面状态或宿主验收记录。
 
 > 事实源：docs/UI-HANDOFF.md §4；视觉蓝图：docs/ui-prototype.html；令牌：src/style/_tokens.scss。

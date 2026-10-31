@@ -1,5 +1,7 @@
 # 【小驴生态中枢统领指令】小驴人脉 (siyuan-contacts) 专项排查与全方位升级执行手册
 
+> 🔄 **状态与迁移说明（2026-10-31 · 已落地未标记 → 已归档）**：本手册所列 8 项任务（品牌关键词、`settingsWindow: true`、打卡事件名纠偏、雷切小组件注册、顶栏矢量图标、SQL 块 ID 强校验、`visualViewport` 防遮挡、`--lv-brand` 令牌）均已在代码中 100% 落地并通过测试；当前有效待办统一归入 **[docs/UNIFIED-BACKLOG-POOL.md](docs/UNIFIED-BACKLOG-POOL.md)**。
+
 > **统领下发方**：小驴快门中枢（`siyuan-quickgate`）
 > **执行接收方**：小驴人脉（`siyuan-contacts`）开发 Agent
 > **当前状态**：底座测试全绿 (483项) · 规范评分 80% ➔ 目标 100%

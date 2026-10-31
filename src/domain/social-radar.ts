@@ -8,6 +8,7 @@ import type { ContactSummary } from "./person.ts";
 import type { PersonFactItem } from "./doc-section.ts";
 import type { PersonTopicItem } from "./topics.ts";
 import type { FollowUpItem } from "./followups.ts";
+import { toLocalDateKey } from "./date-key.ts";
 
 export interface SocialRadarMetrics {
     /** 互动活跃度 (0-100)：根据上次联系距今的天数评估 */
@@ -115,7 +116,7 @@ export function computeSocialRadar(input: SocialRadarInput): SocialRadarAssessme
         const doneCount = followUps.filter((f) => f.status === "done").length;
         const overdueCount = followUps.filter((f) => {
             if (f.status !== "open" || !f.dueDate) return false;
-            const today = new Date().toISOString().slice(0, 10);
+            const today = toLocalDateKey(new Date());
             return f.dueDate < today;
         }).length;
 

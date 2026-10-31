@@ -8,6 +8,7 @@ import type { ContactsSettings } from "../domain/model.ts";
 import type { ContactSummary } from "../domain/person.ts";
 import { loadAnniversaryStore } from "../data/anniversaries.ts";
 import { getRoster } from "./roster.ts";
+import { toLocalDateKey } from "../domain/date-key.ts";
 import {
     buildIcsFilename,
     serializeBatchAnniversariesToIcs,
@@ -48,7 +49,7 @@ export async function exportAllAnniversariesIcs(
     }));
 
     const content = serializeBatchAnniversariesToIcs(peopleWithAnnivs, options);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDateKey(new Date());
     const filename = `小驴人脉_全量纪念日_${today}.ics`;
 
     return { filename, content };

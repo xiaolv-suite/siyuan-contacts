@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.0** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.0) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.1** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.1) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -19,7 +19,15 @@ English | [简体中文](README.md)
 
 ---
 
-Lv Contacts keeps people, relationships and shared experiences in your SiYuan workspace. Each person is a regular SiYuan document; structured profile fields live in a native database bound to that document, alongside SiYuan search, backlinks, and sync.
+## 🎯 What Problem Does Lv Contacts Solve?
+
+Personal connections are often fragmented across phone address books, chat remarks, and scattered meeting notes — making it easy to forget what you last discussed, who introduced whom, dietary taboos before a dinner, or when an important relationship has quietly gone cold.
+
+**Lv Contacts** brings Local-First Personal Relationship Management (PRM) natively into SiYuan Note:
+- **One Person, One Document**: Every contact is both a native SiYuan document and a structured Attribute View database row, keeping 100% of your data local.
+- **Anti-Drift Relationship Temperature**: Tiered contact cadences (14/30/90/180 days) automatically track warmth and highlight overdue connections.
+- **30-Second Pre-Meeting Brief**: One collapsible card summarizes last conversation, how you met & introducer, preferences/taboos, and shared acquaintances.
+- **Visual Relationship & Organization Graph**: Dual-mode network graph (explicit relations, directed introducer links, co-attendance + native document backlinks) and multi-tenure organization history.
 
 ---
 
@@ -47,22 +55,25 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.0 (2026-10-30)
+## This release: v0.7.1 (2026-10-31)
 
-This release delivers the systemic visual overhaul, 23-module lossless data migration bundle, and complete end-to-end usability closeout:
+This release fuses core PRM capabilities inspired by Monica, Twenty, and Simple-PRM, and completes end-to-end persistence, migration, merge, and UI token calibration:
 
-- **Roster Soft-Delete Trash Bin Drawer (`TrashDrawer.svelte` & `PeopleView.svelte`)**: Integrated "Trash Bin" button in the contact roster toolbar; presents soft-deleted contacts with name, phone, group, and tag snapshots; real-time expiration countdown (`N days remaining`, with urgent badge within 3 days); 1-click restore to the database and roster; 1-click permanent purge with double-confirmation modal.
-- **Group Occasions & Gatherings Hub Console (`OccasionsHubDialog.svelte` & `DashboardView.svelte`)**: Dedicated console on the home dashboard and roster toolbar for multi-attendee gatherings, dinners, weddings, summits, and business trips; metrics summary of total occasions, cumulative attendees, this year's count, and linked documents; filter by occasion type and keyword search; attendee chip ribbons with 1-click "Roster Drilldown" to highlight and filter attendees in the roster.
-- **Lossless 23-Module Data Migration Bundle (`migration-bundle.ts`)**: Expanded migration coverage to all 23 self-managed modules, providing round-trip equivalence, non-destructive backup, current-first merge, and backward compatibility.
-- **Systemic Visual & Perception Modernization**: Warm alabaster base (`#FAF8F6`) with floating pure white cards (2.5% lightness difference), two-color semantic division (Hermes warm cognac orange for actions vs. sunlight amber gold for positive metrics), 16px card radii with 9999px capsules, 4x primary metric hierarchy, and dark accent milestone cards (`#1C1815`).
-- **End-to-End Usability & Lifecycle Hardening**: Added official SiYuan `openSetting` lifecycle hook, actionable retry for facts extraction failures, document strip organization and city drilldowns, and elimination of silent catch blocks.
+- **How We Met / Introducer Link & 30-Second Pre-Meeting Brief (`PersonDetail.svelte` & `person-origin.ts`)**: Record first-met context, in-workspace introducer link (rendering directed dashed introducer edges in the Cytoscape graph), and quick preference notes; added 1-click copyable "30-Second Pre-Meeting Brief" card; fixed initial empty-store write, clear-to-remove, external refresh draft protection, and unsaved close guard.
+- **Cadence Tiers, Overdue Filter & 24-Module Lossless Migration Bundle (`cadence.ts` & `migration-bundle.ts`)**: Added 14/30/90/180-day circle cadence presets and roster "Overdue" filter chip; integrated `person-origins.json` into the 24-module migration bundle and duplicate contact merge service (including introducer pointer redirection, relationship labels, and occasion attendees merge).
+- **Directed Graph Edge Preservation, Timezone Unification & Token Calibration (`graph.ts` & `index.scss`)**: Fixed `orderGraph` reversing directed `introducer` edges when target ID < source ID; eliminated all 26 remaining UTC `toISOString().slice(0, 10)` date slices in favor of local `toLocalDateKey`; added saved-view enum whitelist validation; aligned overdue/starred group tabs, narrow-screen wrapping, and Twenty 12-month sparkline high-contrast styles.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (**1037/1037 PASS**); 3-tier browser UI regressions passing (**529/529**); production build and release checks passed.
+Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (**1075/1075 PASS**); 3-tier browser UI regressions passing (**529/529**); production build and release checks passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.6.58 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.7.0 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.0 · 2026-10-30
+- Roster soft-delete trash bin drawer (`TrashDrawer.svelte`) with 30-day buffer and 1-click restore.
+- Group Occasions & Gatherings Hub console (`OccasionsHubDialog.svelte`) with roster drilldown.
+- 23-module lossless data migration bundle (`migration-bundle.ts`) and systemic visual overhaul.
 
 ### v0.6.58 · 2026-10-29
 - Lunar calendar 30th day and Chinese New Year's Eve (12/30) adaptation to 29th; support for unknown-year `0000-MM-DD` anniversaries.

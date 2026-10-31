@@ -594,7 +594,7 @@
                 return;
             }
             const organizationName = currentOrg?.name ?? "";
-            const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+            const stamp = toLocalDateKey(new Date()).replaceAll("-", "");
             const safeOrganizationName = (organizationName || "组织")
                 .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").trim().replace(/[. ]+$/g, "") || "组织";
             const blob = new Blob([buildOrganizationMemberCsv(exported)], { type: "text/csv;charset=utf-8" });

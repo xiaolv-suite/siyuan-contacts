@@ -6,6 +6,7 @@
         type RelationshipStageKey,
     } from "../../domain/lifecycle-stage.ts";
     import { translateText } from "../../domain/translation";
+    import { toLocalDateKey } from "../../domain/date-key.ts";
     import {
         Milestone,
         ChevronDown,
@@ -31,7 +32,7 @@
     let historyExpanded = $state(false);
     // svelte-ignore state_referenced_locally
     let selectedStage: RelationshipStageKey = $state(record.currentStage || "acquaintance");
-    let transitionDate = $state(new Date().toISOString().slice(0, 10));
+    let transitionDate = $state(toLocalDateKey(new Date()));
     let transitionNote = $state("");
     let saving = $state(false);
     let errorText = $state("");

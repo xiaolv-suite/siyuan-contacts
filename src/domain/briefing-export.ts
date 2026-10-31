@@ -9,6 +9,7 @@ import { formatBirthdayDisplay, nextBirthday } from "./occasions.ts";
 import type { ContactSummary } from "./person.ts";
 import { escapeMarkdown, sanitizeFileName } from "./format.ts";
 import { profileText } from "./people-profiles.ts";
+import { toLocalDateKey } from "./date-key.ts";
 export { escapeMarkdown, sanitizeFileName } from "./format.ts";
 
 export interface BriefingTimelineEntry {
@@ -134,7 +135,7 @@ const KINSHIP_ROLE_LABELS: Record<string, string> = {
 
 export function buildBriefingDocumentHpath(personName: string, dateStr?: string): string {
     const safeName = sanitizeFileName(personName, "联系人");
-    const safeDate = (dateStr || new Date().toISOString().slice(0, 10)).trim();
+    const safeDate = (dateStr || toLocalDateKey(new Date())).trim();
     return `/会面简报/📝 会面准备简报 · ${safeName}（${safeDate}）`;
 }
 
@@ -358,6 +359,6 @@ export function buildBriefingMarkdown(input: BriefingExportInput): string {
  */
 export function buildBriefingFilename(personName: string, stamp: string): string {
     const safeName = sanitizeFileName(personName, "联系人", 50);
-    const safeStamp = sanitizeFileName(stamp, new Date().toISOString().slice(0, 10), 20);
+    const safeStamp = sanitizeFileName(stamp, toLocalDateKey(new Date()), 20);
     return `小驴人脉_简报_${safeName}_${safeStamp}.md`;
 }

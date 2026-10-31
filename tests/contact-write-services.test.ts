@@ -1393,6 +1393,56 @@ test("E-31 merge service: executeContactMerge 完整合并主次人物，迁移�
             { id: "20261004000000-alias01", personDocId: secondaryDocId, alias: "小次", createdAt: 1000, updatedAt: 1000 },
         ],
     });
+    const thirdDocId = "20261004000000-doc0003";
+    state.store.set("person-origins.json", {
+        schemaVersion: 1,
+        origins: {
+            [secondaryDocId]: {
+                personDocId: secondaryDocId,
+                metAt: "2024深圳技术峰会",
+                preferences: "喜欢手冲咖啡",
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+            [thirdDocId]: {
+                personDocId: thirdDocId,
+                metAt: "创业路演",
+                introducedByDocId: secondaryDocId,
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+        },
+    });
+    state.store.set("person-relationship-labels.json", {
+        schemaVersion: 1,
+        labels: [
+            {
+                id: "20261004000000-rlbl001",
+                selfDocId: "20261004000000-self001",
+                personDocId: secondaryDocId,
+                labels: ["导师"],
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+        ],
+    });
+    state.store.set("occasions.json", {
+        schemaVersion: 1,
+        occasions: [
+            {
+                id: "20261004000000-occc001",
+                title: "年度技术晚宴",
+                type: "meal",
+                date: "2026-10-18",
+                attendees: [
+                    { personDocId: secondaryDocId, name: "次要人物" },
+                    { personDocId: thirdDocId, name: "第三人" },
+                ],
+                createdAt: 1000,
+                updatedAt: 1000,
+            },
+        ],
+    });
 
     const primaryContact: ContactSummary = {
         docId: personDocId,
@@ -1446,6 +1496,9 @@ test("E-31 merge service: executeContactMerge 完整合并主次人物，迁移�
     assert.equal(result.migrated.cadences, 1);
     assert.equal(result.migrated.lifecycle, 1);
     assert.equal(result.migrated.aliases, 1);
+    assert.equal(result.migrated.origins, 1);
+    assert.equal(result.migrated.relationshipLabels, 1);
+    assert.equal(result.migrated.occasions, 1);
 
     // 验证互动事件已迁移给 primary
     const intStore = state.store.get("interaction-events.json") as { events: { personDocId: string }[] };
@@ -1474,6 +1527,25 @@ test("E-31 merge service: executeContactMerge 完整合并主次人物，迁移�
     // 验证组织已迁移给 primary
     const orgStore = state.store.get("org-membership.json") as { memberships: { personDocId: string }[] };
     assert.equal(orgStore.memberships[0].personDocId, personDocId);
+
+    // 验证初识溯源与引荐人已迁移给 primary，且第三人的 introducedByDocId 已重定向到 primary
+    const originStore = state.store.get("person-origins.json") as { origins: Record<string, { metAt?: string; introducedByDocId?: string }> };
+    assert.equal(originStore.origins[personDocId]?.metAt, "2024深圳技术峰会");
+    assert.equal(originStore.origins[secondaryDocId], undefined);
+    assert.equal(originStore.origins[thirdDocId]?.introducedByDocId, personDocId);
+
+    // 验证关系称谓已迁移给 primary
+    const relLabelStore = state.store.get("person-relationship-labels.json") as { labels: { personDocId: string; labels: string[] }[] };
+    assert.equal(relLabelStore.labels.length, 1);
+    assert.equal(relLabelStore.labels[0].personDocId, personDocId);
+    assert.deepEqual(relLabelStore.labels[0].labels, ["导师"]);
+
+    // 验证群体活动出席人已将 secondaryDocId 替换为 primaryDocId
+    const occStore = state.store.get("occasions.json") as { occasions: { attendees: { personDocId: string; name: string }[] }[] };
+    assert.deepEqual(
+        occStore.occasions[0].attendees.map((a) => a.personDocId),
+        [personDocId, thirdDocId],
+    );
 
     // 验证次要人物已进入回收站
     const trashStore = state.store.get(TRASH_STORAGE_KEY) as { entries: { docId: string; name: string }[] };

@@ -145,7 +145,7 @@ export function orderGraph(graph: PersonGraph): PersonGraph {
     for (const edge of graph.edges) {
         if (edge.source === edge.target || !byId.has(edge.source) || !byId.has(edge.target)) continue;
         const kind = edge.kind ?? "related";
-        const [source, target] = [edge.source, edge.target].sort();
+        const [source, target] = kind === "introducer" ? [edge.source, edge.target] : [edge.source, edge.target].sort();
         const memberStatus = kind === "member" ? edge.memberStatus ?? "" : "";
         const key = `${kind}:${memberStatus}:${source}:${target}`;
         if (seen.has(key)) continue;
@@ -298,7 +298,7 @@ export function buildOrgAugmentation(
     return { nodes, edges };
 }
 
-export type GraphEdgeKind = "related" | "member" | "ref" | "co_occurrence";
+export type GraphEdgeKind = "related" | "member" | "ref" | "co_occurrence" | "introducer";
 
 /**
  * 交互式图例：按边类型过滤图谱边。

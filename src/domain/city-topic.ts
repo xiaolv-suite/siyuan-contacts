@@ -6,6 +6,7 @@ import type { ContactSummary } from "./person.ts";
 import { profileText } from "./people-profiles.ts";
 import { escapeLinkLabel } from "./format.ts";
 import { extractNormalizedRegion } from "./region.ts";
+import { toLocalDateKey } from "./date-key.ts";
 
 export interface CityTopicInput {
     city: string;
@@ -47,7 +48,7 @@ export interface TripItineraryInput {
 export function buildTripItineraryMarkdown(input: TripItineraryInput): string {
     const cityName = input.city.trim() || "未知地区";
     const ctx = TRIP_CONTEXT_METAS.find((c) => c.id === input.context) ?? TRIP_CONTEXT_METAS[0];
-    const targetDate = input.date || new Date().toISOString().slice(0, 10);
+    const targetDate = input.date || toLocalDateKey(new Date());
     const lines: string[] = [];
 
     lines.push(`# ${ctx.icon} ${ctx.titlePrefix} · ${cityName} (共 ${input.contacts.length} 人)`);

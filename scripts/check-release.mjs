@@ -12,8 +12,15 @@ const check = (name, ok, detail = "") => {
 
 const plugin = JSON.parse(fs.readFileSync(path.join(root, "plugin.json"), "utf8"));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const modelTs = fs.readFileSync(path.join(root, "src/domain/model.ts"), "utf8");
+const readmeMd = fs.readFileSync(path.join(root, "README.md"), "utf8");
+const modelVersionMatch = modelTs.match(/export\s+const\s+PLUGIN_VERSION\s*=\s*"([^"]+)"/);
+const modelVersion = modelVersionMatch ? modelVersionMatch[1] : "";
+const readmeHasVersion = readmeMd.includes(`v${pkg.version}`);
 
 check("版本一致（plugin.json = package.json）", plugin.version === pkg.version, `${plugin.version} / ${pkg.version}`);
+check("版本一致（代码常量 PLUGIN_VERSION = package.json）", modelVersion === pkg.version, `${modelVersion} / ${pkg.version}`);
+check("版本一致（README.md 最新版本 = package.json）", readmeHasVersion, `v${pkg.version}`);
 check("插件名 = 仓库名约定", plugin.name === pkg.name, plugin.name);
 
 const dist = path.join(root, "dist");

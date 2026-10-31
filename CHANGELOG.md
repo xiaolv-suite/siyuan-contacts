@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-10-31
+
+标杆融合与全链路加固版本：融合开源 PRM 三大标杆（Monica / Twenty / Simple-PRM）核心体验，完成 24 模块全要素无损迁移包、重复联系人合并 19 项关联迁移、有向引荐边保真、时区统一与界面令牌校准。
+
+### 新增（Added）
+- **初识溯源与引荐人链路（`person-origin.ts` & `PersonDetail.svelte`）**：支持记录初识场合/时间、库内引荐人双向关联（在 Cytoscape 关系图谱中生成有向 `introducer` 虚线箭头边）与喜好忌口速记。
+- **会前 30 秒破冰速览卡（`pre-meeting-brief.ts` & `PersonDetail.svelte`）**：在人物详情顶部提供可折叠速览卡，聚合上次互动、初识溯源、喜好忌口、禁忌雷区与共同熟人，支持一键复制完整备忘。
+- **圈层联络周期预设与名册「待问候」筛选胶囊（`cadence.ts` & `PeopleView.svelte`）**：支持核心圈（14天）/熟人圈（30天）/合作圈（90天）/常青圈（180天）一键设定，名册提供「⌛ 待问候」与「❄️ 渐冷」温度筛选，支持向小驴管家输出逾期问候备忘。
+- **Twenty 风格近一年月度互动分布图（`interactions.ts` & `PersonDetail.svelte`）**：在互动时间轴顶部展示近 12 个月互动次数分布柱状图与月峰值统计。
+- **全要素 24 模块无损迁移覆盖（`migration-bundle.ts`）**：将 `person-origins.json` 纳入导出、预览与现状优先合并恢复，升级至 24 模块全覆盖。
+
+### 修复（Fixed）
+- **初识溯源首次空库保存与清空移除（`person-origin.ts` & `person-origins.ts`）**：修复全新工作区 `person-origins.json` 尚未创建（`null`）时首次保存抛出 `StoreIntegrityError` 的缺陷；支持清空三项内容后自动移除条目；补齐编辑态错误提示、外部刷新草稿保护与未保存关闭守卫。
+- **关系图谱有向引荐边方向保真（`graph.ts`）**：修复 `orderGraph` 对有向 `introducer` 边执行无向字典序排序，导致当被引荐人 ID 小于引荐人 ID 时箭头与悬停说明颠倒的缺陷。
+- **重复联系人合并补齐 3 类关联数据迁移（`duplicate-merge.ts`）**：合并联系人时新增迁移 `person-origins.json`（含全库第三人 `introducedByDocId` 自动重定向与防自环）、`person-relationship-labels.json` 与 `occasions.json` 出席人名单。
+- **已保存视图枚举白名单与全仓本地时区统一（`saved-views.ts` & `date-key.ts`）**：为 `normalizeSavedViews` 补齐 `lifecycleStage` 与 `heatLevel` 白名单校验；清零全仓残留的 26 处 `new Date().toISOString().slice(0, 10)` UTC 切片，消除凌晨跨时区差一天偏差。
+- **界面设计令牌与窄屏/高对比度适配（`index.scss` & `PeopleView.svelte`）**：修复名册星标与待问候胶囊误用不存在的 `--lvct-heat-*` 变量，对齐真实 `--lv-heat-cool` 与 `--lv-heat-cold` 令牌；补齐会前速览卡焦点环与窄屏折行；将 Twenty 月度互动分布柱对齐 `--lv-data-amber` 数据金令牌与 `forced-colors` 高对比度保护。
+
 ## [0.7.0] — 2026-10-30
 
 里程碑版本：软删除回收站、群体活动大事记大盘、23模块全要素无损数据迁移包、高奢现代设计感知体系与全入口可用性闭环。

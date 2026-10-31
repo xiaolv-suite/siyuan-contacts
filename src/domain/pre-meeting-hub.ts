@@ -9,6 +9,7 @@ import type { ContactSummary } from "./person.ts";
 import type { PersonSocialPreferenceItem } from "./social-preferences.ts";
 import type { PersonPromiseItem } from "./promises.ts";
 import type { PersonTopicItem } from "./topics.ts";
+import { toLocalDateKey } from "./date-key.ts";
 
 export interface ContactPreMeetingDossier {
     person: ContactSummary;
@@ -24,7 +25,7 @@ export function buildContactPreMeetingDossier(
     allPreferences: readonly PersonSocialPreferenceItem[] = [],
     allPromises: readonly PersonPromiseItem[] = [],
     allTopics: readonly PersonTopicItem[] = [],
-    todayStr = new Date().toISOString().slice(0, 10),
+    todayStr = toLocalDateKey(new Date()),
 ): ContactPreMeetingDossier {
     const taboos: PersonSocialPreferenceItem[] = [];
     const normalPreferences: PersonSocialPreferenceItem[] = [];

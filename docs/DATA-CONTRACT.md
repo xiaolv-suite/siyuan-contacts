@@ -184,8 +184,17 @@ vCard 同名项默认跳过，但允许逐项人工确认“作为独立人物�
 | `trash-bin.json` | 1 | 联系人软删除回收站（E-33）：`{schemaVersion: 1, entries: [{id, docId, itemId, name, snapshot, removedAt, expiresAt}]}`。联系人从名册移除时保留完整元数据快照 30 天，支持一键撤销与无损恢复；最多保留 200 条，过期自动清理；严格读取 + Web Lock + 写后回读校验；坏数据抛出 `StoreIntegrityError` 保护原库。属于本工作区安全缓冲区，不跨工作区迁移。 |
 | `gift-ideas.json` | 1 | 礼物点子与喜好偏好（E-26）：`{schemaVersion: 1, ideas: {"<personDocId>": [{id, type, status, title, priceEstimate?, url?, note?, targetOccasion?, createdAt, updatedAt}]}}`。记录联系人的喜好偏好与送礼点子（构思中/已采购/已送出）；单人最多 30 条；未送出点子不计入往来账本财务统计；送出后可一键转换为正式往来账本记录；严格读 + Web Lock + 写后回读校验；坏数据抛出 `StoreIntegrityError` 保护原库。 |
 | `occasions.json` | 1 | 群体活动与场合实体（E-30）：`{schemaVersion: 1, occasions: [{id, title, type, date, endDate?, place?, sourceDocId?, attendees: [{personDocId, name, role?}], exchangeIds?, note?, createdAt, updatedAt}]}`。记录多参与者群体活动（会议、聚餐、婚礼、聚会等），一次性关联参与者名单、往来账本与笔记双链；自动派生各参与者的时间线互动事件；全库最多保留 500 条；严格读 + Web Lock + 写后回读校验；坏数据抛出 `StoreIntegrityError` 保护原库。 |
+| `person-anniversaries.json` | 1 | 重要纪念日（E-35）：`{schemaVersion: 1, anniversaries: {"<personDocId>": [{id, personDocId, title, category, date, isLunar, note?, createdAt, updatedAt}]}}`。支持相识、合作、结婚与特别纪念，兼容 `0000-MM-DD` 未知年份与农历；严格读 + Web Lock + 写后回读。 |
+| `person-promises.json` | 1 | 双向信诺约定（E-36）：`{schemaVersion: 1, promises: {"<personDocId>": [{id, personDocId, direction, title, detail?, promisedOn, dueOn?, fulfilledOn?, status, createdAt, updatedAt}]}}`。区分我方承诺与对方承诺；严格读 + Web Lock + 写后回读。 |
+| `person-kinship.json` | 1 | 家庭亲属谱系（E-37）：`{schemaVersion: 1, kinships: {"<personDocId>": [{id, personDocId, role, name, linkedDocId?, note?, createdAt}]}}`。五代角色分类，支持链接库内联系人文档；严格读 + Web Lock + 写后回读。 |
+| `person-projects.json` | 1 | 协作项目记录（E-38）：`{schemaVersion: 1, projects: {"<personDocId>": [{id, personDocId, title, role?, status, startDate?, endDate?, note?, createdAt, updatedAt}]}}`。支持进行中/已结项/已归档三态流转；严格读 + Web Lock + 写后回读。 |
+| `person-itineraries.json` | 1 | 会客拜访行程（E-39）：`{schemaVersion: 1, itineraries: {"<personDocId>": [{id, personDocId, title, targetDate, targetTime?, location?, attendees?, note?, checklists: [{id, text, done}], status, createdAt, updatedAt}]}}`。支持行前准备清单与一键派生互动；严格读 + Web Lock + 写后回读。 |
+| `person-scratchpads.json` | 1 | 闪念速记便签（E-40）：`{schemaVersion: 1, notes: {"<personDocId>": [{id, personDocId, content, pinned, color, createdAt, updatedAt}]}}`。支持置顶、色彩分类与一键转正式互动；严格读 + Web Lock + 写后回读。 |
+| `person-social-preferences.json` | 1 | 社交偏好与忌口（E-41）：`{schemaVersion: 1, preferences: {"<personDocId>": [{id, personDocId, category, content, isTaboo, createdAt, updatedAt}]}}`。涵盖饮食、茶酒、习惯与禁忌雷区；严格读 + Web Lock + 写后回读。 |
+| `person-lifecycle-stage.json` | 1 | 交往生命周期阶段（E-42）：`{schemaVersion: 1, records: {"<personDocId>": {personDocId, currentStage, history: [{stage, changedAt, note?, timestamp}], updatedAt}}}`。五阶演进与历史追踪；严格读 + Web Lock + 写后回读。 |
+| `person-origins.json` | 1 | 初识溯源与引荐人链路（Monica 标杆融合）：`{schemaVersion: 1, origins: {"<personDocId>": {personDocId, metAt?, introducedByDocId?, preferences?, createdAt?, updatedAt?}}}`。记录初识场合/时间、引荐人稳定文档 ID（禁止自环，自动在图谱生成有向 `introducer` 虚线边）与偏好速记；首次空库写入自动初始化，全空保存自动移除条目；严格读 + Web Lock + 写后回读。 |
 | 人物独立备注 | 原生人物文档标记块 `custom-lvct-person-note="1"` | 每个人物文档最多一个备注标记块；备注为独立自由文本，不属于 AV 字段、互动事件或 `follow-ups.json`，不计入首页统计。读取要求标记块唯一，重复/格式未知/文档不可达均报告未知，不按空备注处理。保存先核实当前备注（可带 expected），写后回读精确核对；空备注只删除该标记块，保留人物正文和原生跟进任务。备注随人物文档保留，当前迁移 JSON 不单独导出。 |
-| （导出包）`lvct-migration-bundle` | 1 | 插件数据迁移包（C08/FUNC-01.6，**导出文件而非存储键**）：`{schemaVersion: 1, exportedAt, storageKey: "lvct-migration-bundle", coverage?, modules: {interactions?, followUps?, cadences?, reminderDismissals?, registry?, templates?, exchanges?, aliases?, selfIdentity?, orgMemberships?, organizationProfiles?, relationshipLabels?, topics?, giftIdeas?, occasions?}}`。15 个可迁移模块分别覆盖互动、跟进、联系节奏、提醒暂缓、收编索引、模板、往来账本、人物别名、本人身份、组织成员、组织资料、与我的关系、会面谈资备忘、礼物点子偏好和群体活动场合；`coverage` 记录本包实际包含及排除的插件存储项。互动/跟进沿用各自导出对象；其余模块按对应 store/schema 读取与校验。**不含**数据库锚点、`view-preferences.json`、本工作区的组织投影/创建操作断点和外部桥请求断点；人物备注在原生人物文档中，不单独复制进迁移包。迁移包不包含联系人文档或原生数据库，跨工作区仍须先通过思源迁移文档与数据库，再重绑数据库锚点。恢复先预览（零写入），确认后逐模块合并；显示每个模块结果和失败原因，不把部分失败报告为整包成功。互动/跟进按 ID、现状和墓碑规则合并；其他模块遵循各自存储的冲突策略。所有 JSON 写入仍遵循对应存储锁与写后回读纪律；这不是思源原生数据的字节级备份。 |
+| （导出包）`lvct-migration-bundle` | 1 | 插件数据迁移包（C08/FUNC-01.6，**导出文件而非存储键**）：`{schemaVersion: 1, exportedAt, storageKey: "lvct-migration-bundle", coverage?, modules: {interactions?, followUps?, cadences?, reminderDismissals?, registry?, templates?, exchanges?, aliases?, selfIdentity?, orgMemberships?, organizationProfiles?, relationshipLabels?, topics?, giftIdeas?, occasions?, anniversaries?, promises?, kinships?, projects?, itineraries?, scratchpads?, socialPreferences?, lifecycleStage?, personOrigins?}}`。**24 个**可迁移模块完整覆盖全部自管业务事实；`coverage` 记录本包实际包含（24 项）及排除（6 项）的插件存储项。互动/跟进沿用各自导出对象；其余模块按对应 store/schema 读取与校验。**不含**数据库锚点、`view-preferences.json`、`trash-bin.json`、本工作区的组织投影/创建操作断点和外部桥请求断点；人物备注在原生人物文档中，不单独复制进迁移包。迁移包不包含联系人文档或原生数据库，跨工作区仍须先通过思源迁移文档与数据库，再重绑数据库锚点。恢复先预览（零写入），确认后逐模块合并；显示每个模块结果和失败原因，不把部分失败报告为整包成功。互动/跟进按 ID、现状和墓碑规则合并；其他模块遵循各自存储的冲突策略。所有 JSON 写入仍遵循对应存储锁与写后回读纪律；这不是思源原生数据的字节级备份。 |
 
 **跟进恢复的严格边界（2026-10-16 横向审查）**：`follow-ups.json` 的严格展示与写入读取遇到重复事项 ID 也整体报错，不按首项去重后覆盖。独立跟进备份的裸库、字符串 `rawStore`、对象 `rawStore` 与迁移包共用严格条目校验；任一损坏条目、重复事项 ID 或非法 `personDocId` 都整批拒绝，预览和确认均不部分过滤。数据合并入口再次校验后才进入存储锁；合法输入仍按现有事项 ID 优先跳过，新增与跳过数之和等于输入条数。
 
@@ -235,6 +244,15 @@ vCard 同名项默认跳过，但允许逐项人工确认“作为独立人物�
 | person-topics.json | topics | 按人物文档 ID 和话题条目 ID 合并，现状优先；坏条目整批拒绝 |
 | gift-ideas.json | giftIdeas | 按人物文档 ID 和点子 ID 合并，现状优先；坏条目整批拒绝 |
 | occasions.json | occasions | 按场合实体 ID 合并，现状优先；全库上限 500 条 |
+| person-anniversaries.json | anniversaries | 按人物文档 ID 与纪念日 ID/标题日期合并，现状优先 |
+| person-promises.json | promises | 按人物文档 ID 与承诺 ID 合并，现状优先 |
+| person-kinship.json | kinships | 按人物文档 ID 与亲属条目 ID 合并，现状优先 |
+| person-projects.json | projects | 按人物文档 ID 与项目 ID 合并，现状优先 |
+| person-itineraries.json | itineraries | 按人物文档 ID 与行程 ID 合并，现状优先 |
+| person-scratchpads.json | scratchpads | 按人物文档 ID 与便签 ID 合并，现状优先 |
+| person-social-preferences.json | socialPreferences | 按人物文档 ID 与偏好 ID 合并，现状优先 |
+| person-lifecycle-stage.json | lifecycleStage | 按人物文档 ID 合并当前阶段与变迁历史，现状优先 |
+| person-origins.json | personOrigins | 按人物文档 ID 合并初识场合、引荐人与偏好速记，现状优先补齐缺失子字段 |
 | view-preferences.json | 排除 | 个人界面配置，业务事实恢复不改偏好 |
 | trash-bin.json | 排除 | 本工作区软删除缓冲；跨库重放会误恢复已在新库重建的联系人，恢复动作须在新工作区重新判定 |
 | contacts-settings.json | 排除 | 数据库锚点需显式重绑，不能覆盖当前锚点 |

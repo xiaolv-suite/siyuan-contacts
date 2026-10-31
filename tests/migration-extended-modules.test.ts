@@ -24,7 +24,7 @@ const hooks = registerHooks({
 });
 test.after(() => hooks.deregister());
 
-const { exportMigrationBundle, previewMigrationImport, importMigrationBundle } = await import("../src/services/migration-bundle.ts");
+const { exportMigrationBundle, previewMigrationImport, importMigrationBundle, MIGRATION_COVERAGE } = await import("../src/services/migration-bundle.ts");
 const { ANNIVERSARIES_STORAGE_KEY } = await import("../src/data/anniversaries.ts");
 const { PERSON_PROMISES_STORAGE_KEY } = await import("../src/data/promises.ts");
 const { PERSON_KINSHIP_STORAGE_KEY } = await import("../src/data/kinship.ts");
@@ -33,6 +33,7 @@ const { ITINERARIES_STORAGE_KEY } = await import("../src/data/itineraries.ts");
 const { PERSON_SCRATCHPAD_STORAGE_KEY } = await import("../src/data/person-scratchpad.ts");
 const { PERSON_SOCIAL_PREFERENCES_STORAGE_KEY } = await import("../src/data/social-preferences.ts");
 const { PERSON_LIFECYCLE_STORAGE_KEY } = await import("../src/data/lifecycle-stage.ts");
+const { PERSON_ORIGIN_STORAGE_KEY } = await import("../src/data/person-origins.ts");
 
 const personDocId = "20261029000000-doc0001";
 
@@ -134,3 +135,39 @@ test("P0 数据迁移：恢复导入支持现状优先合并，旧包无新增�
     assert.ok(prefResult);
     assert.equal(prefResult.merged, 1, "合并新增的 1 条忌口记录");
 });
+
+test("BUG-02 回归：24 模块全要素迁移包包含初识溯源与引荐 (personOrigins) 的导出、预览与现状优先恢复", async () => {
+    const plugin = mockPlugin();
+    const introducerDocId = "20261029000000-doc0002";
+
+    assert.ok(
+        MIGRATION_COVERAGE.some((c) => c.key === PERSON_ORIGIN_STORAGE_KEY && c.status === "included"),
+        "MIGRATION_COVERAGE 必须包含 person-origins.json",
+    );
+
+    plugin._memory.set(PERSON_ORIGIN_STORAGE_KEY, {
+        schemaVersion: 1,
+        origins: {
+            [personDocId]: {
+                personDocId,
+                metAt: "2025春季技术峰会",
+                introducedByDocId: introducerDocId,
+                preferences: "喜欢浅烘手冲",
+            },
+        },
+    });
+
+    const bundleText = await exportMigrationBundle(plugin);
+    const previews = previewMigrationImport(bundleText);
+    const originPreview = previews.find((p) => p.key === "personOrigins");
+    assert.ok(originPreview, "预览应包含 personOrigins 模块");
+    assert.equal(originPreview.count, 1);
+
+    const targetPlugin = mockPlugin();
+    const importRes = await importMigrationBundle(targetPlugin, bundleText);
+    assert.equal(importRes.failed.length, 0);
+    const originMod = importRes.modules.find((m) => m.key === "personOrigins");
+    assert.ok(originMod);
+    assert.equal(originMod.merged, 1);
+});
+

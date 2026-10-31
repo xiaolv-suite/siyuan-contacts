@@ -15,6 +15,7 @@ import {
 import { getRoster } from "./roster";
 import { createDocWithMd } from "../api/client";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks";
+import { toLocalDateKey } from "../domain/date-key.ts";
 import type { ContactsSettings } from "../domain/model";
 import type {
     ExchangeDirection,
@@ -94,7 +95,7 @@ export async function createExchangesLedgerDoc(
     if (!settings.notebookId) return null;
 
     const summary = await loadExchangesSummary(plugin, settings);
-    const title = options.title?.trim() || `人情礼尚往来大账簿 · ${new Date().toISOString().slice(0, 10)}`;
+    const title = options.title?.trim() || `人情礼尚往来大账簿 · ${toLocalDateKey(new Date())}`;
     const md = buildExchangesLedgerMarkdown(summary, title);
     const hpath = `/人情账本/🧧 ${title}`;
 

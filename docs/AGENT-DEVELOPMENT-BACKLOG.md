@@ -1,5 +1,7 @@
 # 小驴人脉 Agent 开发待办
 
+> 🔄 **单一事实来源迁移说明（2026-10-31）**：本文件的有效待办已整合归入单一事实来源池 **[docs/UNIFIED-BACKLOG-POOL.md](UNIFIED-BACKLOG-POOL.md)**，本文件保留作为历史溯源快照。
+
 > **唯一执行入口。** 本文件只收录仍需开发、补证据或做决策的原子任务，供 AI Agent 直接认领。旧任务编号、产品背景和历史证据仍以 [FEEDBACK-BACKLOG](FEEDBACK-BACKLOG.md)、[NEXT-DEVELOPMENT-PLAN](NEXT-DEVELOPMENT-PLAN.md)、[PRODUCT-PLAN](PRODUCT-PLAN.md)、[UI-SYSTEM-SPEC](UI-SYSTEM-SPEC.md) 与 [DATA-CONTRACT](DATA-CONTRACT.md) 为来源；旧文档中的 `✅` 不会自动变成当前待办。
 >
 > **更新规则：** 一个任务只允许一个 Agent 认领；先更新本卡状态，再开始编码。完成代码不等于真实宿主完成，`host_pending` 必须保留到真内核、真机或多窗口证据齐全。版本号、`CHANGELOG`、README 徽章、`docs/PROGRESS.md` 是普通实现任务的保护文件；用户明确要求校准状态文档时，仅按该文档任务范围更新。

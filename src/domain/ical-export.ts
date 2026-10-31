@@ -8,6 +8,7 @@
 import type { ContactSummary } from "./person.ts";
 import { ANNIVERSARY_CATEGORY_LABELS, type AnniversaryItem } from "./anniversaries.ts";
 import { sanitizeFileName } from "./format.ts";
+import { toLocalDateKey } from "./date-key.ts";
 
 export interface IcsEventItem {
     uid: string;
@@ -201,12 +202,12 @@ export function serializeBatchAnniversariesToIcs(
 
 export function buildIcsFilename(personName: string, dateStr?: string): string {
     const safeName = sanitizeFileName(personName, "联系人", 40);
-    const safeDate = (dateStr || new Date().toISOString().slice(0, 10)).trim();
+    const safeDate = (dateStr || toLocalDateKey(new Date())).trim();
     return `小驴人脉_纪念日_${safeName}_${safeDate}.ics`;
 }
 
 export function buildBatchIcsFilename(label = "全量纪念日", dateStr?: string): string {
     const safeLabel = sanitizeFileName(label, "纪念日", 40);
-    const safeDate = (dateStr || new Date().toISOString().slice(0, 10)).trim();
+    const safeDate = (dateStr || toLocalDateKey(new Date())).trim();
     return `小驴人脉_${safeLabel}_${safeDate}.ics`;
 }

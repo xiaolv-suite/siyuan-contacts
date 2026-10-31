@@ -16,3 +16,10 @@ export function isValidDateKey(value: unknown): value is string {
     return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
+/** 本地日 YYYY-MM-DD（消除 UTC toISOString 凌晨跨时区差一天偏差） */
+export function toLocalDateKey(now: Date = new Date()): string {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+

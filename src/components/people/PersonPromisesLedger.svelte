@@ -6,6 +6,7 @@
         type PromiseStatus,
     } from "../../domain/promises.ts";
     import { translateText } from "../../domain/translation";
+    import { toLocalDateKey } from "../../domain/date-key.ts";
     import {
         Handshake,
         Plus,
@@ -45,13 +46,13 @@
     let newDirection: PromiseDirection = $state("i_promised");
     let newTitle = $state("");
     let newDetail = $state("");
-    let newPromisedOn = $state(new Date().toISOString().slice(0, 10));
+    let newPromisedOn = $state(toLocalDateKey(new Date()));
     let newDueOn = $state("");
     let saving = $state(false);
     let busyActionId = $state<string | null>(null);
     let errorText = $state("");
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = toLocalDateKey(new Date());
 
     const filteredItems = $derived(
         items.filter((item) => {

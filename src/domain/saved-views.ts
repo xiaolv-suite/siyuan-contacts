@@ -51,6 +51,29 @@ function isPeopleSortMode(value: unknown): value is PeopleSortMode {
     return value === "name" || value === "group" || value === "birthday" || value === "recent" || value === "frequency" || value === "created";
 }
 
+function isLifecycleStageFilter(value: unknown): value is NonNullable<SavedViewQuery["lifecycleStage"]> {
+    return (
+        value === "acquaintance" ||
+        value === "connection" ||
+        value === "collaboration" ||
+        value === "close_ally" ||
+        value === "dormant"
+    );
+}
+
+function isHeatLevelFilter(value: unknown): value is NonNullable<SavedViewQuery["heatLevel"]> {
+    return (
+        value === "hot" ||
+        value === "warm" ||
+        value === "cool" ||
+        value === "cold" ||
+        value === "unknown" ||
+        value === "paused" ||
+        value === "cooling" ||
+        value === "overdue"
+    );
+}
+
 function normalizeQuery(raw: unknown): SavedViewQuery | null {
     if (raw === null || typeof raw !== "object") return null;
     const record = raw as Record<string, unknown>;
@@ -74,8 +97,8 @@ function normalizeQuery(raw: unknown): SavedViewQuery | null {
         ...(typeof record.educationQuery === "string" && record.educationQuery.trim() ? { educationQuery: record.educationQuery.trim().slice(0, 200) } : {}),
         ...(typeof record.relationshipLabel === "string" && record.relationshipLabel.trim() ? { relationshipLabel: record.relationshipLabel.trim().slice(0, 80) } : {}),
         ...(typeof record.region === "string" && record.region.trim() ? { region: record.region.trim().slice(0, 50) } : {}),
-        ...(typeof record.lifecycleStage === "string" && record.lifecycleStage.trim() ? { lifecycleStage: record.lifecycleStage as any } : {}),
-        ...(typeof record.heatLevel === "string" && record.heatLevel.trim() ? { heatLevel: record.heatLevel as any } : {}),
+        ...(isLifecycleStageFilter(record.lifecycleStage) ? { lifecycleStage: record.lifecycleStage } : {}),
+        ...(isHeatLevelFilter(record.heatLevel) ? { heatLevel: record.heatLevel } : {}),
     };
 }
 

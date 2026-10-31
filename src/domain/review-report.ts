@@ -12,7 +12,7 @@
  */
 import type { ContactSummary } from "./person.ts";
 import type { InteractionEvent } from "./interactions.ts";
-import { isValidDateKey } from "./date-key.ts";
+import { isValidDateKey, toLocalDateKey } from "./date-key.ts";
 import { escapeLinkLabel } from "./format.ts";
 
 export interface ReviewRange {
@@ -183,7 +183,7 @@ export function buildReviewReportMarkdown(report: ReviewReport): string {
 
     lines.push(`# 人脉交往回顾 · ${dateRangeStr}`);
     lines.push("");
-    lines.push(`> 统计周期：${dateRangeStr} · 生成时间：${new Date().toISOString().slice(0, 10)}`);
+    lines.push(`> 统计周期：${dateRangeStr} · 生成时间：${toLocalDateKey(new Date())}`);
     lines.push("");
 
     lines.push("## 📊 核心指标概览");

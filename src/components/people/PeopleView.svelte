@@ -37,6 +37,7 @@
     import { useCloseGuard } from "../close-guard";
     import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check, Sparkles, Clock } from "@lucide/svelte";
     import { computeRelationshipHealth } from "../../domain/cadence.ts";
+    import { toLocalDateKey } from "../../domain/date-key.ts";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
@@ -1760,7 +1761,7 @@
         try {
             const text = await exportVcfText(settings, selectedIds);
             if (!text) return;
-            const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+            const stamp = toLocalDateKey(new Date()).replaceAll("-", "");
             const blob = new Blob([text], { type: "text/vcard;charset=utf-8" });
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement("a");
@@ -1784,7 +1785,7 @@
         if (hiddenSelectionCount > 0 && !window.confirm(text("batchConfirmExportHidden", "导出手动选中的 {total} 人，包含筛选外 {hidden} 人；继续导出吗？", { total: selectedPeople.length, hidden: hiddenSelectionCount }))) return;
         try {
             const csvText = exportContactsToCsv(selectedPeople);
-            const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+            const stamp = toLocalDateKey(new Date()).replaceAll("-", "");
             const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement("a");
@@ -2192,7 +2193,7 @@
                     class:lvct-people__group-tab--active={filterStarredOnly}
                     onclick={() => { filterStarredOnly = !filterStarredOnly; visibleCount = PAGE_SIZE; }}
                     title={text("starredOnlyTip", "只看星标常用联系人")}
-                ><Star size={12} strokeWidth={1.6} class="lvct-icon-inline" fill={filterStarredOnly ? "#f59e0b" : "none"} color={filterStarredOnly ? "#ffffff" : "#d97706"} />{text("starredGroupTab", "常用 ({n})", { n: starredCount })}</button>
+                ><Star size={12} strokeWidth={1.6} class="lvct-icon-inline" fill={filterStarredOnly ? "currentColor" : "none"} />{text("starredGroupTab", "常用 ({n})", { n: starredCount })}</button>
             {/if}
             {#if overduePeopleCount > 0}
                 <button

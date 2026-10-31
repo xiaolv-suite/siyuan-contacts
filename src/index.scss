@@ -2843,29 +2843,29 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     }
 
     &--starred {
-        color: var(--lvct-heat-chill, #d97706);
-        border-color: color-mix(in srgb, var(--lvct-heat-cool, #f59e0b) 40%, transparent);
+        color: var(--lv-heat-cool, #d97706);
+        border-color: color-mix(in srgb, var(--lv-heat-cool, #d97706) 40%, transparent);
 
         &.lvct-people__group-tab--active {
-            background: var(--lvct-heat-cool, #f59e0b);
-            color: var(--lvct-color-white, #ffffff);
-            border-color: var(--lvct-heat-cool, #f59e0b);
+            background: var(--lv-heat-cool, #d97706);
+            color: var(--lvct-on-accent, #ffffff);
+            border-color: var(--lv-heat-cool, #d97706);
             font-weight: 600;
-            box-shadow: 0 1px 4px color-mix(in srgb, var(--lvct-heat-cool, #f59e0b) 25%, transparent);
+            box-shadow: 0 1px 4px color-mix(in srgb, var(--lv-heat-cool, #d97706) 25%, transparent);
         }
     }
 
     &--overdue,
     &.lvct-people__group-tab--overdue {
-        color: var(--lvct-heat-cool, #2563eb);
-        border-color: color-mix(in srgb, var(--lvct-heat-cool, #2563eb) 40%, transparent);
+        color: var(--lv-heat-cold, #0284c7);
+        border-color: color-mix(in srgb, var(--lv-heat-cold, #0284c7) 40%, transparent);
 
         &.lvct-people__group-tab--active {
-            background: var(--lvct-heat-cool, #2563eb);
-            color: #ffffff;
-            border-color: var(--lvct-heat-cool, #2563eb);
+            background: var(--lv-heat-cold, #0284c7);
+            color: var(--lvct-on-accent, #ffffff);
+            border-color: var(--lv-heat-cold, #0284c7);
             font-weight: 600;
-            box-shadow: 0 1px 4px color-mix(in srgb, var(--lvct-heat-cool, #2563eb) 25%, transparent);
+            box-shadow: 0 1px 4px color-mix(in srgb, var(--lv-heat-cold, #0284c7) 25%, transparent);
         }
     }
 }
@@ -11814,9 +11814,20 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         user-select: none;
         font-size: 13px;
         gap: 10px;
+        transition: background-color var(--lvct-dur-fast, 120ms) var(--lvct-ease, ease);
 
         &::-webkit-details-marker {
             display: none;
+        }
+
+        &:hover {
+            background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-surface));
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--lv-brand, #ea580c);
+            outline-offset: -2px;
+            border-radius: var(--lvct-r-card, 14px);
         }
     }
 
@@ -11837,6 +11848,7 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         padding: 2px 8px;
         border-radius: var(--lv-r-pill, 9999px);
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     &__headline {
@@ -11845,6 +11857,14 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
+        flex: 1;
+
+        @media (max-width: 640px) {
+            white-space: normal;
+            flex-basis: 100%;
+            line-height: 1.4;
+        }
     }
 
     &__copy-btn {
@@ -11939,8 +11959,12 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     gap: 8px;
     margin-top: 8px;
 
-    input, select, textarea {
-        border-radius: var(--lvct-r-card, 8px);
+    input, select {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+
+    textarea {
+        border-radius: var(--lvct-r-md, 12px);
     }
 }
 
@@ -12000,7 +12024,12 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     transition: all 0.2s ease;
 
     &--active {
-        background: linear-gradient(180deg, var(--lv-brand, #ea580c), color-mix(in srgb, var(--lv-brand, #ea580c) 70%, transparent));
+        background: linear-gradient(180deg, var(--lv-data-amber, #d97706), color-mix(in srgb, var(--lv-data-amber, #d97706) 68%, transparent));
+    }
+
+    @media (forced-colors: active) {
+        forced-color-adjust: none;
+        border: 1px solid CanvasText;
     }
 }
 

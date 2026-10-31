@@ -9,6 +9,7 @@ import { getStageMeta, type RelationshipStageKey } from "./lifecycle-stage.ts";
 import { ANNIVERSARY_CATEGORY_LABELS, type AnniversaryCategory } from "./anniversaries.ts";
 import type { ContactSummary } from "./person.ts";
 import { escapeMarkdown, sanitizeFileName } from "./format.ts";
+import { toLocalDateKey } from "./date-key.ts";
 
 export type MilestoneType =
     | "first_contact"      // 初识相聚（最早一条互动）
@@ -224,7 +225,7 @@ export function buildMilestonesDocumentMarkdown(
     generatedAt?: string,
 ): string {
     const personName = escapeMarkdown(person.name.trim() || "联系人");
-    const stamp = generatedAt || new Date().toISOString().slice(0, 10);
+    const stamp = generatedAt || toLocalDateKey(new Date());
     const lines: string[] = [];
 
     lines.push(`# 📜 人脉交往编年史 · ${personName}`);

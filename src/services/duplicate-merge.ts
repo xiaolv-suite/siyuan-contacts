@@ -35,6 +35,9 @@ import { PERSON_PROJECTS_STORAGE_KEY, loadPersonProjectsStoreStrict } from "../d
 import { CADENCE_STORAGE_KEY, loadCadenceMapStrict } from "../data/cadences.ts";
 import { PERSON_LIFECYCLE_STORAGE_KEY, loadLifecycleStoreStrict } from "../data/lifecycle-stage.ts";
 import { PERSON_ALIAS_STORAGE_KEY, loadPersonAliasStore } from "../data/person-aliases.ts";
+import { PERSON_ORIGIN_STORAGE_KEY, loadPersonOriginStoreStrict } from "../data/person-origins.ts";
+import { RELATIONSHIP_LABEL_STORAGE_KEY, loadRelationshipLabelStore } from "../data/person-relationship-labels.ts";
+import { OCCASIONS_STORAGE_KEY, loadOccasionStoreStrict } from "../data/occasions.ts";
 
 export interface ExecuteMergeResult {
     primaryDocId: string;
@@ -58,6 +61,9 @@ export interface ExecuteMergeResult {
         cadences: number;
         lifecycle: number;
         aliases: number;
+        origins: number;
+        relationshipLabels: number;
+        occasions: number;
     };
 }
 
@@ -104,6 +110,9 @@ export async function executeContactMerge(
         cadences: 0,
         lifecycle: 0,
         aliases: 0,
+        origins: 0,
+        relationshipLabels: 0,
+        occasions: 0,
     };
 
     // 2. 迁移互动事件（interaction-events.json）
@@ -404,7 +413,125 @@ export async function executeContactMerge(
         }
     });
 
-    // 18. 将次人物移入回收站缓冲 30 天，并从主库解绑
+    // 18. 迁移初识溯源与引荐人链路（person-origins.json）
+    await withStoreLock(PERSON_ORIGIN_STORAGE_KEY, async () => {
+        const store = await loadPersonOriginStoreStrict(plugin);
+        let changed = false;
+        const secondaryOrigin = store.origins[secondary.docId];
+        if (secondaryOrigin) {
+            const primaryOrigin = store.origins[primary.docId];
+            const safeIntroducer = secondaryOrigin.introducedByDocId === primary.docId
+                ? undefined
+                : secondaryOrigin.introducedByDocId;
+            if (!primaryOrigin) {
+                if (secondaryOrigin.metAt || safeIntroducer || secondaryOrigin.preferences) {
+                    store.origins[primary.docId] = {
+                        personDocId: primary.docId,
+                        metAt: secondaryOrigin.metAt,
+                        introducedByDocId: safeIntroducer,
+                        preferences: secondaryOrigin.preferences,
+                        createdAt: secondaryOrigin.createdAt ?? Date.now(),
+                        updatedAt: Date.now(),
+                    };
+                    migrated.origins += 1;
+                }
+            } else {
+                const nextMetAt = primaryOrigin.metAt || secondaryOrigin.metAt;
+                const nextIntroducer = primaryOrigin.introducedByDocId || safeIntroducer;
+                const nextPrefs = primaryOrigin.preferences || secondaryOrigin.preferences;
+                if (
+                    nextMetAt !== primaryOrigin.metAt ||
+                    nextIntroducer !== primaryOrigin.introducedByDocId ||
+                    nextPrefs !== primaryOrigin.preferences
+                ) {
+                    store.origins[primary.docId] = {
+                        ...primaryOrigin,
+                        metAt: nextMetAt,
+                        introducedByDocId: nextIntroducer,
+                        preferences: nextPrefs,
+                        updatedAt: Date.now(),
+                    };
+                    migrated.origins += 1;
+                }
+            }
+            delete store.origins[secondary.docId];
+            changed = true;
+        }
+        for (const [docId, entry] of Object.entries(store.origins)) {
+            if (entry.introducedByDocId === secondary.docId) {
+                entry.introducedByDocId = docId === primary.docId ? undefined : primary.docId;
+                entry.updatedAt = Date.now();
+                changed = true;
+            }
+        }
+        if (changed) {
+            await saveJsonVerified(plugin, PERSON_ORIGIN_STORAGE_KEY, store);
+        }
+    });
+
+    // 19. 迁移与我的关系称谓（person-relationship-labels.json）
+    await withStoreLock(RELATIONSHIP_LABEL_STORAGE_KEY, async () => {
+        const store = await loadRelationshipLabelStore(plugin);
+        const secondaryRecords = store.labels.filter((r) => r.personDocId === secondary.docId);
+        if (secondaryRecords.length > 0) {
+            const nextLabels = store.labels.filter((r) => r.personDocId !== secondary.docId);
+            for (const secRec of secondaryRecords) {
+                const priRec = nextLabels.find(
+                    (r) => r.selfDocId === secRec.selfDocId && r.personDocId === primary.docId,
+                );
+                if (!priRec) {
+                    nextLabels.push({
+                        ...secRec,
+                        personDocId: primary.docId,
+                        updatedAt: Date.now(),
+                    });
+                    migrated.relationshipLabels += 1;
+                } else {
+                    const mergedSet = new Set([...priRec.labels, ...secRec.labels]);
+                    if (mergedSet.size > priRec.labels.length) {
+                        priRec.labels = [...mergedSet];
+                        priRec.updatedAt = Date.now();
+                        migrated.relationshipLabels += 1;
+                    }
+                }
+            }
+            await saveJsonVerified(plugin, RELATIONSHIP_LABEL_STORAGE_KEY, {
+                schemaVersion: 1,
+                labels: nextLabels,
+            });
+        }
+    });
+
+    // 20. 迁移群体活动与场合出席人（occasions.json）
+    await withStoreLock(OCCASIONS_STORAGE_KEY, async () => {
+        const store = await loadOccasionStoreStrict(plugin);
+        let changed = false;
+        for (const occ of store.occasions) {
+            if (occ.attendees.some((a) => a.personDocId === secondary.docId)) {
+                const seen = new Set<string>();
+                const nextAttendees = [];
+                for (const att of occ.attendees) {
+                    const targetId = att.personDocId === secondary.docId ? primary.docId : att.personDocId;
+                    if (seen.has(targetId)) continue;
+                    seen.add(targetId);
+                    nextAttendees.push(
+                        att.personDocId === secondary.docId
+                            ? { ...att, personDocId: primary.docId, name: draft.name || primary.name }
+                            : att,
+                    );
+                }
+                occ.attendees = nextAttendees;
+                occ.updatedAt = Date.now();
+                migrated.occasions += 1;
+                changed = true;
+            }
+        }
+        if (changed) {
+            await saveJsonVerified(plugin, OCCASIONS_STORAGE_KEY, store);
+        }
+    });
+
+    // 21. 将次人物移入回收站缓冲 30 天，并从主库解绑
     await removeContactToTrash(plugin, settings, secondary);
 
     // 9. 失效名册缓存并广播变更
