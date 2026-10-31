@@ -95,10 +95,16 @@
 </script>
 
 <section class="lvct-detail__section lvct-relationship-labels">
-    <div class="lvct-detail__section-head" style="margin-bottom: 8px;">
-        <div>
+    <div class="lvct-detail__section-head" style="margin-bottom: 6px;">
+        <div class="fn__flex" style="align-items: center; gap: 8px; flex-wrap: wrap;">
             <h4 style="margin: 0;">与我的关系</h4>
-            <p class="ft__smaller ft__on-surface" style="margin: 2px 0 0;">人工填写称谓（如：同事、朋友、表哥，多个用顿号分隔），仅对当前本人档案生效。</p>
+            {#if (snapshot?.record?.labels ?? []).length > 0}
+                {#each snapshot?.record?.labels ?? [] as label}
+                    <span class="lvct-chip lvct-chip--group font-size-11" style="border-radius: var(--lv-r-pill, 9999px);">
+                        {label}
+                    </span>
+                {/each}
+            {/if}
         </div>
         <button class="b3-button b3-button--text b3-button--small" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy || loading || (dirty && !unknown)} onclick={() => void load()}>重新读取核实称谓</button>
     </div>
@@ -106,22 +112,12 @@
     {:else if readError}<p role="alert" class="lvct-form__error">{readError}</p>
     {:else if !snapshot?.selfDocId}<p class="ft__smaller">请先在设置中设置本人档案。</p>
     {:else}
-        {#if (snapshot?.record?.labels ?? []).length > 0}
-            <div class="fn__flex" style="gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
-                <span class="ft__smaller ft__on-surface">当前称谓：</span>
-                {#each snapshot?.record?.labels ?? [] as label}
-                    <span class="lvct-chip lvct-chip--group font-size-11" style="border-radius: var(--lv-r-pill, 9999px);">
-                        {label}
-                    </span>
-                {/each}
-            </div>
-        {/if}
         <div class="fn__flex" style="gap: 8px; align-items: center; flex-wrap: wrap;">
             <input
                 class="b3-text-field fn__flex-1"
                 style="border-radius: var(--lv-r-pill, 9999px);"
                 type="text"
-                placeholder="填写与我的关系称谓，如：同事、朋友"
+                placeholder="填写与我的关系称谓（顿号分隔，如：同事、朋友）"
                 aria-label="与我的关系称谓"
                 bind:value={draft}
                 disabled={busy || unknown}

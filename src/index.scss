@@ -73,6 +73,14 @@
     padding: var(--lvct-sp-4) var(--lvct-sp-2);
     border-right: 1px solid var(--lvct-color-border-200);
     background: var(--lvct-bg-app);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    max-height: 100%;
+    align-self: flex-start;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 }
 
 .lvct-workbench__brand {
@@ -128,6 +136,8 @@
 }
 
 .lvct-workbench__main {
+    flex: 1 1 0%;
+    width: 100%;
     min-width: 0;
     min-height: 0;
     display: flex;
@@ -140,8 +150,8 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--lvct-sp-3);
-    min-height: 96px;
-    padding: 28px clamp(18px, 3vw, 42px) 20px;
+    min-height: 60px;
+    padding: 16px clamp(18px, 3vw, 42px) 14px;
     box-sizing: border-box;
 
     h1 {
@@ -355,10 +365,10 @@ html[data-theme-mode="dark"] .lvct-workbench__nav-item--active {
     flex: 1;
     overflow: auto;
     width: 100%;
-    max-width: 1180px;
+    max-width: none;
     box-sizing: border-box;
-    margin: 0 auto;
-    padding: 0 clamp(18px, 3vw, 42px) 36px;
+    margin: 0;
+    padding: 0 clamp(18px, 2.5vw, 36px) 36px;
 }
 
 .lvct-tab-root,
@@ -2715,53 +2725,123 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
 }
 
 .lvct-person-card--compact {
-    min-height: 52px;
-    padding: 8px 12px;
+    min-height: 46px;
+    padding: 5px 8px;
     gap: 0;
 
-    .lvct-person-card__compact-row {
+    .lvct-person-card__compact-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .lvct-person-card__compact-line {
         display: flex;
         align-items: center;
-        gap: 10px;
         width: 100%;
+        min-width: 0;
+        gap: 5px;
+
+        &--primary {
+            justify-content: space-between;
+        }
+
+        &--secondary {
+            justify-content: space-between;
+            padding-top: 0;
+            border-top: none;
+        }
     }
 
     .lvct-person-card__avatar--sm {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
-        border-radius: 8px;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+        border-radius: 4px;
+        overflow: hidden;
         flex-shrink: 0;
     }
 
-    .lvct-person-card__compact-info {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
+    .lvct-person-card__compact-name-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         min-width: 0;
-        gap: 2px;
+        flex: 1;
+
+        strong {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--lvct-text-1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     }
 
-    .lvct-person-card__name-row {
-        display: flex;
+    .lvct-person-card__compact-pills {
+        display: inline-flex;
         align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
+        gap: 3px;
+        flex-shrink: 0;
+    }
+
+    .lvct-person-card__compact-meta {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--lvct-text-3);
+        font-size: 10.5px;
+    }
+
+    .lvct-person-card__compact-org {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--lvct-text-2);
+        font-size: 10.5px;
     }
 
     .lvct-person-card__compact-phone {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 2px;
         color: var(--b3-theme-on-surface);
-        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 10.5px;
     }
 
     .lvct-person-card__compact-actions {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 1px;
+        flex-shrink: 0;
         margin-left: auto;
+
+        .lvct-person-card__open-doc {
+            width: 18px;
+            height: 18px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            color: var(--lvct-text-3);
+
+            &:hover {
+                color: var(--lv-brand, #ea580c);
+                background: var(--lvct-bg-hover);
+            }
+        }
     }
 }
 
@@ -3127,6 +3207,7 @@ html[data-theme-mode="dark"] .lvct-notice {
     width: 42px;
     height: 42px;
     border-radius: 12px;
+    overflow: hidden;
     display: grid;
     place-items: center;
     font-size: 16px;
@@ -4654,6 +4735,12 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     background: var(--lvct-bg-elevated);
     border: 1px solid var(--lvct-border-subtle);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+
+    &--taboo {
+        background: color-mix(in srgb, #e11d48 8%, var(--lvct-bg-surface)) !important;
+        border-color: color-mix(in srgb, #e11d48 40%, transparent) !important;
+        box-shadow: 0 1px 4px rgba(225, 29, 72, 0.08) !important;
+    }
 }
 
 .lvct-facts-content {
@@ -5441,7 +5528,33 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     }
 }
 
-/* UX-01.6：详情头部 56px Squircle 柔光渐变大头像 */
+/* UX-01.6：详情头部 56px Squircle 柔光渐变大头像与真人照片 */
+.lvct-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    display: block;
+}
+
+.lvct-detail__avatar-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(0, 0, 0, 0.45);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+.lvct-detail__avatar:hover .lvct-detail__avatar-overlay {
+    opacity: 1;
+}
+
 .lvct-detail__avatar {
     position: relative;
     width: var(--lvct-avatar-lg);
@@ -7118,6 +7231,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     width: 32px;
     height: 32px;
     border-radius: 9px;
+    overflow: hidden;
     display: grid;
     place-items: center;
     font-size: 13.5px;
@@ -8282,14 +8396,14 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-org-manager__member-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
-    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    font-weight: 600;
     color: #ffffff;
     display: inline-grid;
     place-items: center;
-    border-radius: 8px;
+    border-radius: 6px;
     flex-shrink: 0;
     background: linear-gradient(135deg, color-mix(in srgb, var(--b3-theme-primary) 70%, #ffffff 30%), var(--b3-theme-primary));
 }
@@ -8355,13 +8469,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        padding: 12px 14px;
+        padding: 9px 12px;
         background: var(--lvct-bg-surface);
         border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-        border-radius: var(--lvct-r-lg);
+        border-radius: var(--lvct-r-md, 10px);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         border-bottom: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-        gap: var(--lvct-sp-2);
+        gap: 6px;
         box-sizing: border-box;
         transition: border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 
@@ -8487,29 +8601,35 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-org-manager__member-primary strong {
-    font-weight: 650;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--lvct-text-1);
     overflow-wrap: anywhere;
 }
 
-.lvct-org-manager__member-meta,
-.lvct-org-manager__member-period {
+.lvct-org-manager__member-meta {
     color: var(--lvct-text-2);
-    font-size: var(--lvct-fs-caption);
+    font-size: 11px;
+    line-height: 1.35;
 }
 
 .lvct-org-manager__member-period {
     color: var(--lvct-text-3);
+    font-size: 10.5px;
+    line-height: 1.25;
 }
 
 .lvct-org-manager__member-status {
     display: inline-flex;
     align-items: center;
-    min-height: 20px;
-    padding: 1px 7px;
+    min-height: 18px;
+    padding: 0 6px;
     border-radius: var(--lvct-r-pill);
     background: var(--lvct-danger-soft);
     color: var(--lvct-danger);
-    font-size: var(--lvct-fs-micro);
+    font-size: 10px;
+    font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
 }
@@ -8892,11 +9012,11 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     &__member-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
+        gap: 6px;
+        padding: 6px 10px;
         background: var(--lvct-bg-app);
         border: 1px solid var(--lvct-color-border-200);
-        border-radius: var(--lv-r-md, 12px);
+        border-radius: var(--lv-r-md, 8px);
         transition: all 0.15s ease;
 
         &:hover {
@@ -8907,14 +9027,14 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     &__avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 13px;
-        font-weight: 700;
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+        font-weight: 600;
         color: #ffffff;
         display: grid;
         place-items: center;
-        border-radius: 8px;
+        border-radius: 6px;
         background: linear-gradient(135deg, color-mix(in srgb, var(--b3-theme-primary) 70%, #ffffff 30%), var(--b3-theme-primary));
         flex-shrink: 0;
     }
@@ -8927,7 +9047,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         gap: 1px;
 
         b {
-            font-size: 12.5px;
+            font-size: 12px;
+            font-weight: 600;
             color: var(--b3-theme-on-background);
             white-space: nowrap;
             overflow: hidden;
@@ -8936,21 +9057,21 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     &__status {
-        font-size: 11px;
-        padding: 2px 6px;
+        font-size: 10px;
+        padding: 1px 5px;
         border-radius: var(--lv-r-pill, 9999px);
         background: transparent;
         color: var(--lvct-text-3);
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 3px;
 
         &::before {
             content: "";
             display: inline-block;
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
             background: currentColor;
             flex-shrink: 0;
@@ -9332,8 +9453,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-workbench__header {
     position: relative;
     z-index: 2;
-    min-height: 88px;
-    padding: 20px clamp(16px, 2.5vw, 36px) 16px;
+    min-height: 58px;
+    padding: 12px clamp(16px, 2.5vw, 36px) 12px;
     border-bottom: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 68%, transparent);
     background: color-mix(in srgb, var(--lvct-bg-canvas) 85%, var(--lvct-bg-surface));
 
@@ -9364,9 +9485,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-workbench__body {
-    max-width: 1400px;
+    max-width: none;
     padding-bottom: 48px;
-    scrollbar-gutter: stable;
 }
 
 .lvct-home__card,
@@ -9386,12 +9506,12 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-week-glance {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin: 8px 0 12px;
-    padding: 10px 14px;
+    gap: 6px;
+    margin: 6px 16px 4px;
+    padding: 8px 12px;
     background: var(--lvct-bg-app);
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 75%, transparent);
-    border-radius: var(--lvct-r-lg);
+    border-radius: var(--lvct-r-md);
 }
 
 .lvct-week-glance__header {
@@ -9435,7 +9555,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8px 4px;
+    padding: 5px 4px;
     border-radius: var(--lvct-r-md);
     background: var(--lvct-bg-surface);
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
@@ -9514,17 +9634,17 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-dash {
-    gap: 18px;
+    gap: 12px;
 }
 
 .lvct-dash__stats,
 .lvct-dash__grid {
-    gap: 16px;
+    gap: 12px;
 }
 
 .lvct-dash__stat {
-    min-height: 138px;
-    padding: 14px;
+    min-height: 96px;
+    padding: 10px 16px;
     overflow: clip;
     background: var(--lvct-bg-surface);
     transition: border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
@@ -9536,36 +9656,36 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         transform: translateY(-1px);
     }
 
-    b { font-size: 30px; }
+    b { font-size: 26px; }
     > span { font-size: var(--lvct-fs-body); }
 }
 
 .lvct-dash__stat-ic {
-    width: 30px;
-    height: 30px;
-    border-radius: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
 }
 
 .lvct-dash__actions {
     border-radius: var(--lvct-r-lg);
 
     .lvct-dash__actions-head {
-        min-height: 58px;
-        padding-inline: 20px;
+        min-height: 46px;
+        padding-inline: 16px;
         background: var(--lvct-surface-2);
     }
 
-    > .lvct-dash__groups { padding: 14px 20px 20px; }
+    > .lvct-dash__groups { padding: 6px 16px 10px; }
 }
 
 .lvct-dash__group-head {
-    padding-block: 7px;
+    padding-block: 4px;
     font-size: var(--lvct-fs-body);
 }
 
 .lvct-dash__row {
-    min-height: 46px;
-    padding: 10px;
+    min-height: 38px;
+    padding: 6px 8px;
     border-radius: 10px;
 }
 
@@ -10576,13 +10696,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     > .lvct-dash__groups {
         display: flex;
         flex-direction: column;
-        gap: 0;
-        padding: var(--lvct-sp-2) 20px var(--lvct-sp-3);
+        gap: 2px;
+        padding: 4px 16px 10px;
     }
 
     .lvct-dash__group {
         min-width: 0;
-        padding-block: var(--lvct-sp-1);
+        padding-block: 2px;
     }
 
     .lvct-dash__group + .lvct-dash__group {
@@ -10591,10 +10711,10 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     .lvct-dash__group-head {
         width: 100%;
-        min-height: var(--lvct-control-h);
+        min-height: 28px;
         box-sizing: border-box;
         justify-content: flex-start;
-        padding: var(--lvct-sp-2) 0;
+        padding: 3px 0;
         font-size: var(--lvct-fs-caption);
     }
 
@@ -10615,34 +10735,41 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         align-items: center;
         gap: var(--lvct-sp-2);
         min-width: 0;
-        padding: var(--lvct-sp-3) 0;
+        min-height: 38px;
+        padding: 5px 4px;
         border-radius: var(--lvct-r-sm);
 
         .lvct-dash__row-main {
-            display: grid;
-            grid-template-columns: minmax(180px, .85fr) minmax(0, 1.15fr);
-            gap: var(--lvct-sp-3);
+            display: flex;
             align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px var(--lvct-sp-3);
             min-width: 0;
             width: 100%;
-            min-height: var(--lvct-control-h);
+            min-height: 34px;
         }
 
         .lvct-dash__row-primary {
-            display: block;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
             min-width: 0;
+            flex: 0 1 auto;
             overflow-wrap: anywhere;
 
-            > b { display: block; font-size: var(--lvct-fs-body); line-height: var(--lvct-lh-body); }
-            .lvct-profile-summary--compact { margin: var(--lvct-sp-1) 0 0; line-height: var(--lvct-lh-body); }
+            > b { display: inline; font-size: var(--lvct-fs-body); line-height: var(--lvct-lh-body); }
+            .lvct-profile-summary--compact { margin: 0; line-height: var(--lvct-lh-body); }
         }
 
         .lvct-dash__reasons {
             display: flex;
+            flex-wrap: wrap;
             width: auto;
             min-width: 0;
-            flex: initial;
-            align-items: flex-start;
+            flex: 0 1 auto;
+            align-items: center;
             gap: var(--lvct-sp-2);
 
             .lvct-action-chip {
@@ -10736,13 +10863,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
  * 页面内容面保持白色与轻描边，阴影只承担浮层层级；首页把阅读重点留给
  * 今日行动，普通卡片不再用悬浮位移或顶部高光制造过重的视觉噪声。 */
 .lvct-workbench__body {
-    max-width: 1240px;
+    max-width: none;
 }
 
 .lvct-workbench__header {
-    min-height: 72px;
-    padding-top: 18px;
-    padding-bottom: 16px;
+    min-height: 58px;
+    padding-top: 12px;
+    padding-bottom: 12px;
 }
 
 .lvct-workbench__header--settings {
@@ -12219,4 +12346,676 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     color: var(--lvct-text-3);
     font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+ * 浏览器实测三图 UI 专项精修（首页卡片、名册标签折叠分组与卡片对齐、人物详情模块卡片化）
+ * ========================================================================== */
+
+/* 图1：首页「近期生日」「久未联系」「待办跟进」布局与按钮对齐 */
+@media (min-width: 641px) {
+    .lvct-dash__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .lvct-dash__followup-card {
+        grid-column: 1 / -1;
+    }
+}
+
+.lvct-dash__row--contact {
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+
+    .lvct-dash__row-main {
+        flex: 1 1 0%;
+        min-width: 0;
+        align-items: center;
+    }
+
+    .lvct-dash__person-header {
+        gap: 6px;
+        align-items: center;
+    }
+
+    > .lvct-dash__quick-button {
+        flex-shrink: 0;
+    }
+}
+
+.lvct-dash__followup-card {
+    .lvct-dash__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        padding: 8px 10px;
+    }
+
+    .lvct-dash__row-main {
+        flex: 1 1 260px;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 10px;
+
+        > b {
+            flex: 0 1 auto;
+            min-width: 0;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            font-size: 13px;
+            color: var(--lvct-text-1);
+        }
+    }
+
+    .lvct-dash__fu-actions {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 6px;
+        margin-left: auto;
+        padding-bottom: 0;
+    }
+}
+
+/* 图2：名册标签折叠与按维度分组面板 + 联系人卡片对齐 */
+.lvct-people__filter-toggle {
+    font-weight: 600 !important;
+    color: var(--lv-brand, #ea580c) !important;
+    border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent) !important;
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-surface)) !important;
+}
+
+.lvct-people__filters--grouped {
+    display: block !important;
+    padding: 10px 14px !important;
+    background: var(--lvct-bg-surface);
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-card, 12px);
+    box-shadow: var(--lvct-shadow-1);
+}
+
+.lvct-people__tag-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.lvct-people__tag-groups-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--lvct-border-hairline);
+}
+
+.lvct-people__tag-group-row {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 8px;
+
+    @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}
+
+.lvct-people__tag-group-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--lvct-text-2);
+    line-height: 24px;
+    white-space: nowrap;
+}
+
+.lvct-people__tag-group-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+/* 修复联系人卡片 meta 四子项在双列 grid 下把 (N次) 挤成竖排的问题 */
+.lvct-person-card__meta > div {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
+
+    > span[aria-hidden] {
+        flex: 0 0 16px;
+        width: 16px;
+    }
+
+    .lvct-person-card__meta-value {
+        flex: 0 1 auto;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .lvct-person-card__heat-pill {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+}
+
+.lvct-person-card__footer {
+    border-top: 1px solid var(--lvct-border-hairline);
+    padding-top: 8px;
+    margin-top: auto;
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+.lvct-person-card__tags {
+    border-top: none !important;
+    padding-top: 0 !important;
+    flex: 1 1 0%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* 图3：人物详情弹窗模块卡片化与表单网格规整 */
+.lvct-detail__profile-strip {
+    margin: 4px 0 6px;
+}
+
+#lvct-detail-panel-overview > .lvct-detail__section,
+#lvct-detail-panel-activity > .lvct-detail__section,
+#lvct-detail-panel-relations > .lvct-detail__section,
+.lvct-detail__advanced > section {
+    background: var(--lvct-bg-surface, #ffffff);
+    border: 1px solid var(--lvct-color-border-200, rgba(0, 0, 0, 0.08));
+    border-radius: var(--lvct-r-card, 14px);
+    padding: 14px 18px;
+    margin-top: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 3px 8px rgba(0, 0, 0, 0.015);
+    transition: border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+    &:hover {
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, var(--lvct-border-subtle));
+    }
+
+    > h4 {
+        margin: 0 0 12px 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--lvct-text-1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 8px;
+        border-left: 3.5px solid var(--lv-brand, #ea580c);
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+    }
+}
+
+.lvct-detail__comm-section .lvct-detail__fields {
+    margin: 8px 0 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 8px 12px;
+
+    div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: color-mix(in srgb, var(--lvct-bg-app) 55%, var(--lvct-bg-surface));
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.4;
+        transition: border-color var(--lvct-dur-fast) var(--lvct-ease);
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, var(--lvct-border-subtle));
+        }
+    }
+
+    dt {
+        color: var(--lvct-text-3);
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 500;
+        width: 3.2em;
+    }
+
+    dd {
+        margin: 0;
+        min-width: 0;
+        flex: 1;
+        overflow-wrap: anywhere;
+        color: var(--lvct-text-1);
+        font-weight: 600;
+        font-size: 12.5px;
+    }
+}
+
+.lvct-detail__relationship-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 118px), 1fr));
+    gap: 8px;
+
+    > div {
+        padding: 8px 12px;
+        border-radius: 10px;
+    }
+}
+
+.lvct-org-add {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--lvct-bg-app);
+    border: 1px solid var(--lvct-border-hairline);
+    border-radius: 10px;
+
+    > p {
+        grid-column: 1 / -1;
+        margin: 2px 0;
+        font-size: 11.5px;
+        color: var(--lvct-text-3);
+    }
+}
+
+/* 彻底隐藏人物文档中补充资料存储块的裸露 JSON，防止用户视作乱码 */
+.protyle-wysiwyg [custom-lvct-person-fields="1"] {
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    user-select: none;
+    margin: 6px 0 !important;
+    padding: 0 !important;
+    border: none !important;
+
+    &::before {
+        content: "🗃️ 补充资料（由小驴人脉详情弹窗集中管理）";
+        display: inline-flex;
+        align-items: center;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--b3-theme-on-surface-light, #6b7280);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--b3-theme-surface, #f9fafb));
+        border: 1px dashed color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
+        border-radius: 6px;
+        padding: 3px 10px;
+    }
+}
+
+/* =====================================================================
+   多通讯条目与多维度信息条目（支持多手机号、多微信号、多邮箱、地址、自定义）
+   ===================================================================== */
+.lvct-channels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.lvct-channel-empty {
+    font-size: 12px;
+    color: var(--b3-theme-on-surface-light, #9ca3af);
+    text-align: center;
+    padding: 16px 0;
+    border: 1px dashed color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--b3-theme-surface) 50%, transparent);
+}
+
+.lvct-channel-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: var(--lvct-bg-surface, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
+    transition: all 0.15s ease;
+
+    &:hover {
+        border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 35%, var(--lvct-border-subtle));
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+        .lvct-channel-item__actions {
+            opacity: 1;
+        }
+    }
+
+    &__lead {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    &__actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        flex-shrink: 0;
+        opacity: 0.65;
+        transition: opacity 0.15s ease;
+    }
+}
+
+.lvct-channel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    background: var(--b3-theme-surface-lighter, #f3f4f6);
+    color: var(--b3-theme-on-surface, #374151);
+
+    &--phone {
+        background: color-mix(in srgb, #0284c7 12%, var(--b3-theme-surface));
+        color: #0284c7;
+    }
+    &--wechat {
+        background: color-mix(in srgb, #16a34a 12%, var(--b3-theme-surface));
+        color: #16a34a;
+    }
+    &--email {
+        background: color-mix(in srgb, #9333ea 12%, var(--b3-theme-surface));
+        color: #9333ea;
+    }
+    &--landline {
+        background: color-mix(in srgb, #475569 12%, var(--b3-theme-surface));
+        color: #475569;
+    }
+    &--im {
+        background: color-mix(in srgb, #2563eb 12%, var(--b3-theme-surface));
+        color: #2563eb;
+    }
+    &--social {
+        background: color-mix(in srgb, #0891b2 12%, var(--b3-theme-surface));
+        color: #0891b2;
+    }
+    &--address {
+        background: color-mix(in srgb, #ea580c 12%, var(--b3-theme-surface));
+        color: #ea580c;
+    }
+    &--custom {
+        background: color-mix(in srgb, #6b7280 12%, var(--b3-theme-surface));
+        color: #6b7280;
+    }
+}
+
+.lvct-channel-primary-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 15%, var(--b3-theme-surface));
+    color: var(--lv-brand, #ea580c);
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
+    line-height: 1.2;
+}
+
+.lvct-channel-val-link {
+    color: var(--b3-theme-primary, #ea580c);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.lvct-channel-val-text {
+    font-size: 13px;
+    color: var(--lvct-text-1, #1f2937);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lvct-channel-action-btn {
+    padding: 3px 6px;
+    height: auto;
+    line-height: 1;
+    border-radius: 4px;
+    color: var(--b3-theme-on-surface-light, #6b7280);
+
+    &:hover {
+        color: var(--b3-theme-on-surface, #111827);
+        background: var(--b3-theme-surface-lighter, #f3f4f6);
+    }
+}
+
+.lvct-channel-form-card {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 4%, var(--b3-theme-surface));
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 25%, transparent);
+    margin-bottom: 10px;
+
+    &--edit {
+        background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--b3-theme-surface));
+        border-color: color-mix(in srgb, var(--b3-theme-primary) 30%, transparent);
+    }
+}
+
+.lvct-channel-form__types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.lvct-channel-type-btn {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 2px 8px;
+
+    &.is-active {
+        background: var(--lv-brand, #ea580c) !important;
+        color: #ffffff !important;
+        border-color: var(--lv-brand, #ea580c) !important;
+        font-weight: 600;
+    }
+}
+
+.lvct-channel-form__presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.lvct-channel-form__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lvct-channel-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* =====================================================================
+   实体纸质名片模块与全屏大图查看器
+   ===================================================================== */
+.lvct-detail__business-card-section {
+    margin-top: 14px;
+}
+
+.lvct-card-upload-dropzone {
+    border: 1.5px dashed color-mix(in srgb, var(--lv-brand, #ea580c) 40%, var(--lvct-border-subtle));
+    border-radius: 10px;
+    padding: 22px 16px;
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 2%, var(--b3-theme-surface));
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: var(--lv-brand, #ea580c);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 6%, var(--b3-theme-surface));
+        transform: translateY(-1px);
+    }
+}
+
+.lvct-card-upload-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.lvct-card-upload-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lvct-text-1, #1f2937);
+    margin-bottom: 4px;
+}
+
+.lvct-card-upload-desc {
+    font-size: 11.5px;
+    color: var(--b3-theme-on-surface-light, #9ca3af);
+    max-width: 420px;
+    line-height: 1.4;
+}
+
+.lvct-card-preview-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.lvct-card-preview-box {
+    position: relative;
+    max-width: 480px;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+        transform: scale(1.015);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+
+        .lvct-card-preview-overlay {
+            opacity: 1;
+        }
+    }
+}
+
+.lvct-card-preview-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    background: #f8fafc;
+}
+
+.lvct-card-preview-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+.lvct-card-viewer-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.lvct-card-viewer-dialog {
+    background: var(--b3-theme-surface, #ffffff);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 70%, transparent);
+}
+
+.lvct-card-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter, #e5e7eb);
+    font-size: 13.5px;
+}
+
+.lvct-card-viewer-body {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f172a;
+}
+
+.lvct-card-viewer-img {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
 

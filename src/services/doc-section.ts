@@ -11,7 +11,6 @@ import { loadExchangeStore } from "../data/exchanges";
 import { loadAnniversaryStore } from "../data/anniversaries";
 import { syncFollowUpTasksToDoc } from "./followup-sync";
 import { loadPersonFields } from "./person-fields";
-import { buildPersonFieldsMarkdown, PERSON_FIELDS_ATTR } from "../domain/person-fields.ts";
 import type { Plugin } from "siyuan";
 import {
     RELATED_SECTION_ATTR,
@@ -162,16 +161,11 @@ export async function savePersonFactsToDoc(personDocId: string, items: readonly 
     await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
 }
 
-/** 同步人物文档的补充资料受控 Markdown 区块（两层人类可读分组列表） */
+/** 同步人物文档的补充资料受控区块（由 savePersonFields 直接维护于文档内，此处仅核实可达与无损读取） */
 export async function syncPersonFieldsDocSection(personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
     if (!personDocId) return;
     try {
-        const state = await loadPersonFields(personDocId);
-        if (!state?.snapshot?.items?.length) return;
-        const markdown = buildPersonFieldsMarkdown(state.snapshot);
-        const existing = await readMarkedBlocks(personDocId, PERSON_FIELDS_ATTR);
-        if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
-        await upsertMarkedBlock(personDocId, PERSON_FIELDS_ATTR, markdown, existing[0]?.id);
+        await loadPersonFields(personDocId);
     } catch (err) {
         if (options.strict) throw err;
         console.warn("[LvContacts] 补充资料同步到正文未完成", err);

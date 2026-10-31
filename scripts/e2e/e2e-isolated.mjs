@@ -441,6 +441,74 @@ try {
     await evalJs(`[...document.querySelectorAll('.lvct-detail__person-facts button')].find((b) => b.textContent.includes('记录事实')).click()`);
     await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-detail__micro-prefs-ribbon')?.textContent.includes('花生严重过敏'))`), "忌口红线同步至详情头部微标签");
 
+    // 3.1 真实测试头像照片上传与稳定呈现（防一闪而过与持久化落盘）
+    await evalJs(`(() => {
+        const inp = document.querySelector('.lvct-detail__avatar-wrap input[type="file"]');
+        if (!inp) return false;
+        const dt = new DataTransfer();
+        const bin = atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const file = new File([arr], "test-avatar.png", { type: "image/png" });
+        dt.items.add(file);
+        inp.files = dt.files;
+        inp.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+    })()`);
+    await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-detail__avatar img.lvct-avatar-img'))`), "王浩然头像照片上传成功并稳定呈现");
+    console.log("  PASS 联系人真人头像照片上传与防冲刷回显通过");
+
+    // 3.2 真实测试多通讯条目创建与修改（如添加工作手机号）
+    await evalJs(`(() => {
+        const addBtn = [...document.querySelectorAll('.lvct-detail__comm-section button')].find((b) => b.textContent.includes('添加条目'));
+        addBtn?.click();
+        return Boolean(addBtn);
+    })()`);
+    await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-channel-form-card'))`), "展开多通讯条目添加表单");
+    await setField("document.querySelector('.lvct-channel-form-card input[placeholder=\"标签名称\"]')", "工作手机");
+    await setField("document.querySelector('.lvct-channel-form-card input[placeholder*=\"手机号码\"]')", "13800998877");
+    await evalJs(`[...document.querySelectorAll('.lvct-channel-form-card button')].find((b) => b.textContent.includes('确认添加')).click()`);
+    await waitUntil(deadline, () => evalJs(`Boolean([...document.querySelectorAll('.lvct-channel-item')].some((el) => el.textContent.includes('13800998877') && el.textContent.includes('工作手机')))`), "新增工作手机条目渲染上墙").catch(async (err) => {
+        const diag = await evalJs(`({
+            formCardText: document.querySelector('.lvct-channel-form-card')?.innerText,
+            channelsListText: document.querySelector('.lvct-channels-list')?.innerText,
+            errorMsg: document.querySelector('.lvct-channel-form-card .lvct-text-danger')?.textContent,
+        })`);
+        throw new Error(`${err.message} | diag=${JSON.stringify(diag)}`);
+    });
+    console.log("  PASS 联系人多通讯条目（添加多个手机号/条目）通过");
+
+    // 3.3 真实测试实体名片照片上传、长宽比自适应缩略图与大图查看器
+    await evalJs(`(() => {
+        const inp = document.querySelector('.lvct-detail__business-card-section input[type="file"]');
+        if (!inp) return false;
+        const dt = new DataTransfer();
+        const canvas = document.createElement("canvas");
+        canvas.width = 100;
+        canvas.height = 60;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#e0f2fe";
+        ctx.fillRect(0, 0, 100, 60);
+        ctx.fillStyle = "#0369a1";
+        ctx.font = "12px sans-serif";
+        ctx.fillText("王浩然名片", 15, 35);
+        const dataUrl = canvas.toDataURL("image/png");
+        const bin = atob(dataUrl.split(",")[1]);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const file = new File([arr], "business-card.png", { type: "image/png" });
+        dt.items.add(file);
+        inp.files = dt.files;
+        inp.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+    })()`);
+    await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-card-preview-img'))`), "实体名片上传并生成自适应缩略图");
+    await evalJs(`document.querySelector('.lvct-card-preview-box').click()`);
+    await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-card-viewer-modal'))`), "全屏名片大图查看器弹出");
+    await evalJs(`document.querySelector('.lvct-card-viewer-header button[title=\"关闭查看器\"]').click()`);
+    await waitUntil(deadline, () => evalJs(`!document.querySelector('.lvct-card-viewer-modal')`), "名片大图查看器正常关闭");
+    console.log("  PASS 实体名片上传、长宽比缩略图与大图查看器全链路通过");
+
     await evalJs("document.querySelector('.lvct-premeeting-brief > summary').click()");
     await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-premeeting-brief[open]')?.textContent.includes('花生严重过敏'))"), "忌口红线同步至会前 30 秒速览卡");
     await shoot("03-real-siyuan-detail-taboo-and-brief.png");
@@ -564,9 +632,11 @@ try {
     // 首页打开「群体活动」大盘 → 点击「记录新活动」→ 核验直接打开新建群体活动弹窗
     await evalJs("[...document.querySelectorAll('[data-navigation-view=home]')].find((el) => el.getBoundingClientRect().width > 0).click()");
     await waitUntil(deadline, () => evalJs("[...document.querySelectorAll('.lvct-dash')].some((el) => el.getBoundingClientRect().width > 0)"), "返回首页测试活动大盘");
-    await evalJs("if (!document.querySelector('.lvct-dash__lowfreq')?.hasAttribute('open')) document.querySelector('.lvct-dash__lowfreq > summary')?.click()");
-    await pause(200);
-    await evalJs(`[...document.querySelectorAll('.lvct-dash button')].find((b) => b.getBoundingClientRect().width > 0 && (b.textContent || '').includes('群体活动')).click()`);
+    await waitUntil(deadline, async () => {
+        await evalJs("if (!document.querySelector('.lvct-dash__lowfreq')?.hasAttribute('open')) document.querySelector('.lvct-dash__lowfreq > summary')?.click()");
+        return evalJs("Boolean([...document.querySelectorAll('.lvct-dash__occasions-btn, .lvct-dash button')].find((b) => b.getBoundingClientRect().width > 0 && (b.textContent || '').includes('群体活动')))");
+    }, "展开低频区并定位群体活动按钮");
+    await evalJs(`[...document.querySelectorAll('.lvct-dash__occasions-btn, .lvct-dash button')].find((b) => b.getBoundingClientRect().width > 0 && (b.textContent || '').includes('群体活动')).click()`);
     await waitUntil(deadline, () => evalJs(`Boolean([...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('记录新活动')))`), "打开首页群体活动大盘");
     await evalJs(`[...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('记录新活动')).click()`);
     await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-dialog-panel') && /群体活动|出席|活动名称|活动主题/.test(document.querySelector('.lvct-dialog-panel')?.textContent || '') && !/大事记大盘/.test(document.querySelector('.lvct-dialog-panel__title')?.textContent || ''))`), "首页活动大盘点击记录新活动直接弹出新建活动窗口");
@@ -575,15 +645,10 @@ try {
     report.checks.push({ step: "首页统计/热力图零溢出、热力图点击下钻与活动大盘新建直达", ok: true });
     console.log("  PASS 首页统计/热力图零溢出、热力图点击下钻与活动大盘新建直达核验");
 
-    // 7. 右侧速览栏（ContextPanel）删除当前预览联系人后立即清理（不残留已删人物）并支持回收站恢复
-    await evalJs(`(() => {
-        const toggle = [...document.querySelectorAll('.lvct-workbench button')].find((b) => /速览|侧栏|Context/i.test((b.getAttribute('title') || '') + (b.getAttribute('aria-label') || '')));
-        if (toggle && !document.querySelector('.lvct-workbench__context')) toggle.click();
-    })()`);
-    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-workbench__context'))"), "展开右侧速览栏");
+    // 7. 联系人删除后名册立即清空已删人物，并通过回收站成功恢复（方案 A 全宽无侧栏主线）
     await waitUntil(deadline, () => evalJs(`[...document.querySelectorAll('.lvct-person-card')].some((el) => el.getBoundingClientRect().width > 0 && el.textContent.includes('林知夏'))`), "联系人名册加载林知夏卡片");
     await evalJs(`[...document.querySelectorAll('.lvct-person-card')].find((el) => el.getBoundingClientRect().width > 0 && el.textContent.includes('林知夏')).click()`);
-    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-detail')?.textContent.includes('林知夏')) && Boolean(document.querySelector('.lvct-workbench__context')?.textContent.includes('林知夏'))"), "右侧速览栏同步显示林知夏");
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-detail')?.textContent.includes('林知夏'))"), "点击卡片直接打开林知夏详情弹窗");
 
     // 拦截 confirmDialog 自动确认删除，点击「从人脉移除」
     await evalJs(`(() => {
@@ -591,10 +656,10 @@ try {
         window.confirm = () => true;
         [...document.querySelectorAll('.lvct-detail button')].find((b) => (b.textContent || '').includes('从人脉移除'))?.click();
     })()`);
-    await waitUntil(deadline, () => evalJs("!document.querySelector('.lvct-detail') && !document.querySelector('.lvct-workbench__context')?.textContent.includes('林知夏')"), "删除联系人后右侧速览栏立即清空已删人物");
+    await waitUntil(deadline, () => evalJs("!document.querySelector('.lvct-detail') && ![...document.querySelectorAll('.lvct-person-card')].some((el) => el.textContent.includes('林知夏'))"), "删除联系人后名册立即清空已删人物");
     await evalJs(`if (window.__origConfirm) { window.confirm = window.__origConfirm; delete window.__origConfirm; }`);
 
-    // 从回收站恢复林知夏并收起右侧速览栏
+    // 从回收站恢复林知夏
     await evalJs(`(() => {
         const fold = [...document.querySelectorAll('.lvct-people__tools-fold')].find((el) => el.getBoundingClientRect().width > 0);
         if (fold && !fold.hasAttribute('open')) fold.querySelector('summary')?.click();
@@ -605,9 +670,8 @@ try {
     await evalJs(`[...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('恢复')).click()`);
     await waitUntil(deadline, () => evalJs(`[...document.querySelectorAll('.lvct-person-card')].some((el) => el.textContent.includes('林知夏'))`), "从回收站成功恢复林知夏");
     await evalJs("document.querySelector('.lvct-dialog-panel__close')?.click()");
-    await evalJs(`document.querySelector('.lvct-workbench__context button[aria-label*="收起"], .lvct-workbench__context button[title*="关闭"], .lvct-context-panel__close')?.click()`);
-    report.checks.push({ step: "右侧速览栏删人即时清理与回收站恢复", ok: true });
-    console.log("  PASS 右侧速览栏删人即时清理与回收站恢复核验");
+    report.checks.push({ step: "联系人删除后名册即时清理与回收站恢复", ok: true });
+    console.log("  PASS 联系人删除后名册即时清理与回收站恢复核验");
 
     // 8. 真实思源编辑器顶部浮动档案条（.lvct-doc-strip）：打开王浩然文档并点击「编辑资料」核验组织与称谓完整回调
     await evalJs(`(() => {

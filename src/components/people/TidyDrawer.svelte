@@ -41,14 +41,14 @@
 
     function adoptGroup(itemId: string, group: string) {
         const cur = drafts[itemId] || { group: "", tags: [] };
-        drafts[itemId] = { ...cur, group };
+        drafts = { ...drafts, [itemId]: { ...cur, group } };
     }
 
     function toggleTag(itemId: string, tag: string) {
         const cur = drafts[itemId] || { group: "", tags: [] };
         const has = cur.tags.includes(tag);
         const nextTags = has ? cur.tags.filter((t) => t !== tag) : [...cur.tags, tag];
-        drafts[itemId] = { ...cur, tags: nextTags };
+        drafts = { ...drafts, [itemId]: { ...cur, tags: nextTags } };
     }
 
     function adoptAllForPerson(item: TidyPlanItem) {
@@ -57,7 +57,7 @@
         const tags = item.isMissingTags && item.suggestedTags.length > 0
             ? Array.from(new Set([...cur.tags, ...item.suggestedTags]))
             : cur.tags;
-        drafts[item.person.itemId] = { group, tags };
+        drafts = { ...drafts, [item.person.itemId]: { group, tags } };
     }
 
     function adoptAllBatch() {
@@ -142,6 +142,7 @@
         {:else}
             {#each plan as item (item.person.itemId)}
                 {@const d = getDraft(item)}
+                {@const isFullyAdopted = (!item.isMissingGroup || d.group === item.suggestedGroup) && (!item.isMissingTags || item.suggestedTags.every((st) => d.tags.includes(st)))}
                 {@const rawWork = (item.person as any).company || (item.person.profile ? profileText(item.person.profile, "work") : "")}
                 {@const workStr = rawWork !== "未填写" && rawWork !== "尚未核实" && rawWork !== "组织归属尚未核实" ? rawWork : ""}
                 <div class="tidy-item-card">
@@ -205,10 +206,15 @@
                         <button
                             type="button"
                             class="b3-button b3-button--text b3-button--small btn-adopt-person"
+                            class:b3-button--primary={isFullyAdopted}
                             onclick={() => adoptAllForPerson(item)}
                             title={text("adoptPersonTip", "采纳该联系人的全部推荐信息")}
                         >
-                            {text("adoptSingle", "全部采纳")}
+                            {#if isFullyAdopted}
+                                <Check size={12} class="lvct-icon-inline" /> 已采纳
+                            {:else}
+                                {text("adoptSingle", "全部采纳")}
+                            {/if}
                         </button>
                     </div>
                 </div>

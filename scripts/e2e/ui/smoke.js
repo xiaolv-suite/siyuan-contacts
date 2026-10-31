@@ -3476,7 +3476,7 @@ await test("R54 视觉基线：工作台尺度、白色内容面与设置页单�
         assert(getComputedStyle(body).maxWidth === "none", "移动端工作区未铺满可用宽度");
     } else {
         assert(Math.round(sidebar.getBoundingClientRect().width) === 192, `桌面侧栏未对齐 R54 尺度：${sidebar.getBoundingClientRect().width}px`);
-        assert(getComputedStyle(body).maxWidth === "1240px", "工作区内容宽度未对齐原型基线");
+        assert(getComputedStyle(body).maxWidth === "none", "右侧隐藏时工作区内容未自适应拉伸铺满宽度");
     }
     assert(getComputedStyle(actionPanel).boxShadow === "none", "普通行动面板不应带浮层阴影");
     button("设置").click();

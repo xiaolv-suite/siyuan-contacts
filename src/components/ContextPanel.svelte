@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Maximize2, ChevronRight, Star, Phone, MessageSquare, Cake, Sparkles } from "@lucide/svelte";
+    import { Maximize2, ChevronRight, Star, Phone, MessageSquare, Cake, Sparkles, Copy, Check } from "@lucide/svelte";
     import type { ContactSummary } from "../domain/person";
     import type { ContactsPluginFacade } from "../types";
     import { translateText } from "../domain/translation";
@@ -7,12 +7,16 @@
     import { isPersonStarred } from "../domain/preferences";
     import type { ViewPreferences } from "../domain/preferences";
     import { maskPhone, maskWechat } from "../domain/privacy-mask.ts";
+    import { copyPlainText } from "../shared/clipboard.ts";
+    import type { InteractionType } from "../domain/interactions.ts";
 
     let {
         facade,
         i18n,
         preferences,
         person = null,
+        people = [],
+        onSelectPerson,
         onOpenDetail,
         onClose,
         onRecordSuccess,
@@ -21,6 +25,8 @@
         i18n?: Readonly<Record<string, string>>;
         preferences: ViewPreferences;
         person: ContactSummary | null;
+        people?: readonly ContactSummary[];
+        onSelectPerson?: (person: ContactSummary) => void;
         onOpenDetail: (person: ContactSummary) => void;
         onClose: () => void;
         onRecordSuccess?: () => void;
@@ -32,10 +38,22 @@
     let quickNote = $state("");
     let quickBusy = $state(false);
     let quickError = $state("");
+    let selectedType = $state<InteractionType>("meeting");
+    let copiedPhone = $state(false);
+    let copiedWechat = $state(false);
+    let searchQuery = $state("");
     let recentInteractions = $state<Array<{ eventId: string; date: string; content: string }>>([]);
     let loadingInteractions = $state(false);
     let personCadence = $state<PersonCadence | null>(null);
+    let globalEvents = $state<Array<{ id: string; personDocId: string; personName: string; date: string; note: string; type: string }>>([]);
+    let loadingGlobal = $state(false);
     const isMasked = $derived(Boolean(preferences?.privacyShieldEnabled));
+
+    const switcherCandidates = $derived.by(() => {
+        if (!searchQuery.trim()) return people.slice(0, 12);
+        const q = searchQuery.trim().toLowerCase();
+        return people.filter((p) => p.name.toLowerCase().includes(q) || (p.group && p.group.toLowerCase().includes(q))).slice(0, 12);
+    });
 
     // 关系温度求值：按人物真实节奏（无独立配置时回退全局久未联系天数）与暂停态计算
     const health = $derived.by(() => {
@@ -66,7 +84,7 @@
         });
         facade.loadPersonInsights?.(docId).then((ins) => {
             if (person?.docId === docId) {
-                recentInteractions = (ins?.timeline || []).slice(0, 3).map((item) => ({
+                recentInteractions = (ins?.timeline || []).slice(0, 4).map((item) => ({
                     eventId: item.eventId,
                     date: item.localDate,
                     content: item.note || "",
@@ -79,16 +97,53 @@
         });
     });
 
+    // 未选中人物时，加载全库最近的互动动态流
+    $effect(() => {
+        if (person || !facade.loadInteractionEvents) return;
+        loadingGlobal = true;
+        facade.loadInteractionEvents().then((events) => {
+            const map = new Map(people.map((p) => [p.docId, p.name]));
+            const valid = [...events]
+                .sort((a, b) => (b.occurredAt ?? 0) - (a.occurredAt ?? 0))
+                .slice(0, 5)
+                .map((e) => ({
+                    id: e.id,
+                    personDocId: e.personDocId,
+                    personName: map.get(e.personDocId) || "联系人",
+                    date: e.localDate,
+                    note: e.note || "常规交往记录",
+                    type: e.type || "meeting",
+                }));
+            globalEvents = valid;
+        }).catch(() => {
+            globalEvents = [];
+        }).finally(() => {
+            loadingGlobal = false;
+        });
+    });
+
+    async function handleCopy(val: string, kind: "phone" | "wechat") {
+        if (!val) return;
+        await copyPlainText(val);
+        if (kind === "phone") {
+            copiedPhone = true;
+            setTimeout(() => (copiedPhone = false), 1500);
+        } else {
+            copiedWechat = true;
+            setTimeout(() => (copiedWechat = false), 1500);
+        }
+    }
+
     async function handleQuickRecord() {
         if (!person?.docId || !quickNote.trim() || quickBusy) return;
         quickBusy = true;
         quickError = "";
         try {
-            await facade.recordInteraction(person.docId, quickNote.trim(), "meeting");
+            await facade.recordInteraction(person.docId, quickNote.trim(), selectedType);
             quickNote = "";
             onRecordSuccess?.();
             const ins = await facade.loadPersonInsights?.(person.docId);
-            recentInteractions = (ins?.timeline || []).slice(0, 3).map((item) => ({
+            recentInteractions = (ins?.timeline || []).slice(0, 4).map((item) => ({
                 eventId: item.eventId,
                 date: item.localDate,
                 content: item.note || "",
@@ -101,7 +156,7 @@
     }
 </script>
 
-<aside class="lvct-context-panel" aria-label={text("contextPanelAria", "联系人上下文与速览面板")}>
+<aside class="lvct-context-panel" aria-label={text("contextPanelAria", "联系人伴随速览与速记面板")}>
     <!-- 头部栏 -->
     <header class="lvct-context-panel__header">
         <div class="lvct-context-panel__title-wrap">
@@ -113,8 +168,11 @@
                 {/if}
             </span>
             <div class="lvct-context-panel__title-text">
-                <h3 class="lvct-context-panel__title">{person ? person.name : text("contextPanelOverview", "人脉速览与动态")}</h3>
-                <span class="lvct-context-panel__sub">{person ? (person.group || "未分组") : "今日聚焦"}</span>
+                <div class="fn__flex" style="align-items: center; gap: 6px;">
+                    <h3 class="lvct-context-panel__title">{person ? person.name : text("contextPanelOverview", "人脉速览与动态")}</h3>
+                    <span class="lvct-context-panel__badge">{person ? "伴随速览" : "人脉脉搏"}</span>
+                </div>
+                <span class="lvct-context-panel__sub">{person ? (person.group || "未分组") : "即点即看的侧边副驾驶"}</span>
             </div>
         </div>
         <div class="lvct-context-panel__header-actions">
@@ -142,6 +200,33 @@
     </header>
 
     <div class="lvct-context-panel__body">
+        <!-- 快速人物切换与搜索条 -->
+        {#if people.length > 0 && onSelectPerson}
+            <div class="lvct-context-panel__search-row">
+                <input
+                    class="b3-text-field fn__block font-size-11"
+                    style="border-radius: 9999px; padding: 3px 10px; height: 26px;"
+                    type="search"
+                    placeholder="快速切人…"
+                    bind:value={searchQuery}
+                    aria-label="快速切换速览联系人"
+                />
+            </div>
+            <div class="lvct-context-panel__switcher" role="group" aria-label={text("contextQuickSwitchAria", "切换速览联系人")}>
+                {#each switcherCandidates as item (item.docId)}
+                    <button
+                        type="button"
+                        class="lvct-context-panel__switch-chip"
+                        class:is-active={person?.docId === item.docId}
+                        onclick={() => onSelectPerson(item)}
+                        title={`在右侧速览 ${item.name}`}
+                    >
+                        {item.name}
+                    </button>
+                {/each}
+            </div>
+        {/if}
+
         {#if person}
             <!-- 联系人卡片画像 -->
             <div class="lvct-context-panel__section lvct-context-card">
@@ -157,10 +242,42 @@
                             {/if}
                         </div>
                         {#if person.phone}
-                            <span class="lvct-context-card__meta"><Phone size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {isMasked ? maskPhone(person.phone) : person.phone}</span>
+                            <div class="lvct-context-card__meta-item">
+                                <span class="lvct-context-card__meta">
+                                    <Phone size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {isMasked ? maskPhone(person.phone) : person.phone}
+                                </span>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-context-card__copy-btn"
+                                    onclick={() => handleCopy(person.phone, "phone")}
+                                    title="复制电话号码"
+                                >
+                                    {#if copiedPhone}
+                                        <Check size={11} color="#059669" />
+                                    {:else}
+                                        <Copy size={11} />
+                                    {/if}
+                                </button>
+                            </div>
                         {/if}
                         {#if person.wechat}
-                            <span class="lvct-context-card__meta"><MessageSquare size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {isMasked ? maskWechat(person.wechat) : person.wechat}</span>
+                            <div class="lvct-context-card__meta-item">
+                                <span class="lvct-context-card__meta">
+                                    <MessageSquare size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {isMasked ? maskWechat(person.wechat) : person.wechat}
+                                </span>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-context-card__copy-btn"
+                                    onclick={() => handleCopy(person.wechat, "wechat")}
+                                    title="复制微信号"
+                                >
+                                    {#if copiedWechat}
+                                        <Check size={11} color="#059669" />
+                                    {:else}
+                                        <Copy size={11} />
+                                    {/if}
+                                </button>
+                            </div>
                         {/if}
                     </div>
                 </div>
@@ -186,12 +303,44 @@
 
             <!-- 快捷互动记录 -->
             <div class="lvct-context-panel__section lvct-context-quick">
-                <span class="lvct-context-panel__section-title">{text("quickRecordTitle", "随手记一笔互动")}</span>
+                <div class="lvct-context-panel__section-header">
+                    <span class="lvct-context-panel__section-title">{text("quickRecordTitle", "随手记一笔互动")}</span>
+                    <div class="lvct-context-quick__type-selector">
+                        <button
+                            type="button"
+                            class="lvct-context-quick__type-chip"
+                            class:is-active={selectedType === "meeting"}
+                            onclick={() => (selectedType = "meeting")}
+                            title="会面"
+                        >🤝</button>
+                        <button
+                            type="button"
+                            class="lvct-context-quick__type-chip"
+                            class:is-active={selectedType === "call"}
+                            onclick={() => (selectedType = "call")}
+                            title="电话"
+                        >📞</button>
+                        <button
+                            type="button"
+                            class="lvct-context-quick__type-chip"
+                            class:is-active={selectedType === "message"}
+                            onclick={() => (selectedType = "message")}
+                            title="微信/消息"
+                        >💬</button>
+                        <button
+                            type="button"
+                            class="lvct-context-quick__type-chip"
+                            class:is-active={selectedType === "meal"}
+                            onclick={() => (selectedType = "meal")}
+                            title="聚餐"
+                        >🍽️</button>
+                    </div>
+                </div>
                 <div class="lvct-context-quick__input-box">
                     <input
                         class="b3-text-field fn__block"
                         type="text"
-                        placeholder="记录会面、电话或交流随想…"
+                        placeholder="记录交流内容、随想或下一步…"
                         aria-label={text("quickRecordTitle", "随手记一笔互动")}
                         bind:value={quickNote}
                         disabled={quickBusy}
@@ -208,7 +357,7 @@
                         disabled={!quickNote.trim() || quickBusy}
                         onclick={() => void handleQuickRecord()}
                     >
-                        {quickBusy ? "记录中…" : "快捷记录"}
+                        {quickBusy ? "记录中…" : "记录"}
                     </button>
                 </div>
                 {#if quickError}
@@ -220,7 +369,7 @@
             <div class="lvct-context-panel__section">
                 <div class="lvct-context-panel__section-header">
                     <span class="lvct-context-panel__section-title">{text("recentInteractionsTitle", "近期交往时间线")}</span>
-                    <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => onOpenDetail(person)}>全部</button>
+                    <button type="button" class="b3-button b3-button--text b3-button--small font-size-11" onclick={() => onOpenDetail(person)}>查看全部 &gt;</button>
                 </div>
                 {#if loadingInteractions}
                     <p class="ft__smaller ft__on-surface">加载交往动态…</p>
@@ -249,15 +398,53 @@
                     style="border-radius: var(--lv-r-pill, 9999px);"
                     onclick={() => onOpenDetail(person)}
                 >
-                    <Sparkles size={14} strokeWidth={1.6} class="lvct-icon-inline" /> {text("viewFullDossier", "进入完整交往档案")}
+                    <Sparkles size={14} strokeWidth={1.6} class="lvct-icon-inline" /> {text("viewFullDossier", "展开完整交往档案与关系图 ↗")}
                 </button>
             </div>
         {:else}
-            <!-- 未选人时的今日大盘速览 -->
+            <!-- 未选人时的全局交往动态与聚焦 -->
             <div class="lvct-context-panel__section">
-                <span class="lvct-context-panel__section-title">💡 使用小贴士</span>
+                <div class="lvct-context-panel__section-header">
+                    <span class="lvct-context-panel__section-title">⏱️ 全库最新交往动态</span>
+                </div>
+                {#if loadingGlobal}
+                    <p class="ft__smaller ft__on-surface">正在读取最新动态…</p>
+                {:else if globalEvents.length === 0}
+                    <p class="ft__smaller ft__on-surface" style="line-height: 1.6; margin-top: 6px;">
+                        暂无交往动态。在左侧名册中点击任意联系人，此处将即时呈现其完整画像、电话微信与时间线。
+                    </p>
+                {:else}
+                    <ul class="lvct-context-timeline">
+                        {#each globalEvents as event (event.id)}
+                            {@const matched = people.find((p) => p.docId === event.personDocId)}
+                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                            <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
+                            <li
+                                class="lvct-context-timeline__item lvct-context-timeline__item--clickable"
+                                role="button"
+                                tabindex="0"
+                                onclick={() => { if (matched && onSelectPerson) onSelectPerson(matched); }}
+                                title={`点击在侧栏速览 ${event.personName}`}
+                            >
+                                <span class="lvct-context-timeline__dot"></span>
+                                <div class="lvct-context-timeline__content">
+                                    <div class="fn__flex" style="align-items: center; justify-content: space-between;">
+                                        <b class="font-size-11 lvct-text-accent">{event.personName}</b>
+                                        <span class="lvct-context-timeline__date">{event.date}</span>
+                                    </div>
+                                    <p class="lvct-context-timeline__text">{event.note}</p>
+                                </div>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+            </div>
+
+            <!-- 使用指导小卡 -->
+            <div class="lvct-context-panel__section">
+                <span class="lvct-context-panel__section-title">💡 伴随速览小贴士</span>
                 <p class="ft__smaller ft__on-surface" style="line-height: 1.6; margin-top: 6px;">
-                    在名册中点击联系人，右侧面板将即时展示其画像、关系温度与近期交往；随时在此快速记录互动或一键展开全屏档案。
+                    侧栏开启时，名册中的联系人点击即伴随速览，无需等待弹窗遮挡；随手记互动、查电话、看温度更加自如。
                 </p>
             </div>
         {/if}
@@ -281,7 +468,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 16px;
+        padding: 12px 14px;
         border-bottom: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         background: var(--lvct-bg-surface, #ffffff);
     }
@@ -289,20 +476,20 @@
     .lvct-context-panel__title-wrap {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         min-width: 0;
     }
 
     .lvct-context-panel__icon-badge {
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         border-radius: 9999px;
         background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
         color: var(--lv-brand, #EA580C);
         display: grid;
         place-items: center;
         font-weight: 700;
-        font-size: 13px;
+        font-size: 12px;
         flex-shrink: 0;
     }
 
@@ -312,7 +499,7 @@
 
     .lvct-context-panel__title {
         margin: 0;
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 650;
         line-height: 1.2;
         color: var(--lvct-text-1);
@@ -321,19 +508,28 @@
         text-overflow: ellipsis;
     }
 
+    .lvct-context-panel__badge {
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 9999px;
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        color: var(--lv-brand, #EA580C);
+        font-weight: 600;
+    }
+
     .lvct-context-panel__sub {
-        font-size: 11px;
+        font-size: 10.5px;
         color: var(--lvct-text-3);
     }
 
     .lvct-context-panel__header-actions {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 2px;
     }
 
     .lvct-context-panel__icon-btn {
-        padding: 4px;
+        padding: 3px;
         border-radius: 9999px;
         color: var(--lvct-text-3);
 
@@ -346,28 +542,62 @@
     .lvct-context-panel__body {
         flex: 1;
         overflow-y: auto;
-        padding: 14px 16px;
+        padding: 12px 14px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
+    }
+
+    .lvct-context-panel__search-row {
+        margin-bottom: -4px;
+    }
+
+    .lvct-context-panel__switcher {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding-bottom: 2px;
+    }
+
+    .lvct-context-panel__switch-chip {
+        border: 1px solid var(--lvct-border-subtle, rgba(44, 28, 16, 0.1));
+        background: var(--lvct-bg-surface, #ffffff);
+        color: var(--lvct-text-2);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+            border-color: var(--lv-brand, #EA580C);
+            color: var(--lvct-text-1);
+        }
+
+        &.is-active {
+            background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+            border-color: var(--lv-brand, #EA580C);
+            color: var(--lv-brand, #EA580C);
+            font-weight: 600;
+        }
     }
 
     .lvct-context-panel__section {
         background: var(--lvct-bg-surface, #ffffff);
-        border-radius: 12px;
-        padding: 12px 14px;
-        box-shadow: 0 1px 4px rgba(28, 24, 21, 0.03);
+        border-radius: 10px;
+        padding: 10px 12px;
+        box-shadow: 0 1px 3px rgba(28, 24, 21, 0.03);
     }
 
     .lvct-context-panel__section-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .lvct-context-panel__section-title {
-        font-size: 12px;
+        font-size: 11.5px;
         font-weight: 600;
         color: var(--lvct-text-2);
     }
@@ -375,17 +605,17 @@
     .lvct-context-card__row {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
 
     .lvct-context-card__avatar {
-        width: 38px;
-        height: 38px;
-        border-radius: 11px;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
         background: var(--lvct-brand-gradient);
         color: #ffffff;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 15px;
         display: grid;
         place-items: center;
         flex-shrink: 0;
@@ -400,58 +630,93 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 15px;
+        font-size: 14px;
         color: var(--lvct-text-1);
     }
 
+    .lvct-context-card__meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 2px;
+    }
+
     .lvct-context-card__meta {
-        display: block;
         font-size: 11px;
         color: var(--lvct-text-3);
-        margin-top: 2px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .lvct-context-card__copy-btn {
+        padding: 1px 3px;
+        border-radius: 4px;
+        color: var(--lvct-text-3);
+        min-height: 18px;
+
+        &:hover {
+            color: var(--lv-brand, #EA580C);
+        }
     }
 
     .lvct-context-card__heat-line {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-top: 10px;
-        padding-top: 8px;
+        margin-top: 8px;
+        padding-top: 6px;
         border-top: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
     }
 
     .lvct-context-card__bday {
-        font-size: 11px;
+        font-size: 10.5px;
         color: var(--lv-data-amber, #D97706);
     }
 
     .lvct-context-card__tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 5px;
-        margin-top: 10px;
-        padding-top: 6px;
+        gap: 4px;
+        margin-top: 8px;
+        padding-top: 4px;
+    }
+
+    .lvct-context-quick__type-selector {
+        display: flex;
+        gap: 3px;
+    }
+
+    .lvct-context-quick__type-chip {
+        border: 1px solid var(--lvct-border-subtle, rgba(44, 28, 16, 0.1));
+        background: transparent;
+        border-radius: 6px;
+        padding: 1px 5px;
+        font-size: 11px;
+        cursor: pointer;
+
+        &.is-active {
+            background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+            border-color: var(--lv-brand, #EA580C);
+        }
     }
 
     .lvct-context-quick__input-box {
         display: flex;
         gap: 6px;
-        margin-top: 8px;
+        margin-top: 6px;
 
         input {
             flex: 1;
-            font-size: 12px;
+            font-size: 11.5px;
             border-radius: 9999px;
-            padding: 4px 12px;
+            padding: 3px 10px;
         }
 
         button {
             border-radius: 9999px;
-            padding: 4px 12px;
-            font-size: 12px;
+            padding: 3px 10px;
+            font-size: 11.5px;
             white-space: nowrap;
         }
     }
@@ -459,16 +724,28 @@
     .lvct-context-timeline {
         list-style: none;
         padding: 0;
-        margin: 6px 0 0;
+        margin: 4px 0 0;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
     }
 
     .lvct-context-timeline__item {
         display: flex;
-        gap: 8px;
+        gap: 7px;
         align-items: flex-start;
+
+        &--clickable {
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            margin-inline: -6px;
+            transition: background 0.12s ease;
+
+            &:hover {
+                background: var(--lvct-bg-hover, rgba(0, 0, 0, 0.03));
+            }
+        }
     }
 
     .lvct-context-timeline__dot {
@@ -494,9 +771,9 @@
 
     .lvct-context-timeline__text {
         margin: 2px 0 0;
-        font-size: 12px;
+        font-size: 11.5px;
         color: var(--lvct-text-1);
-        line-height: 1.4;
+        line-height: 1.35;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         line-clamp: 2;
@@ -505,11 +782,10 @@
     }
 
     .lvct-context-empty {
-        margin: 6px 0;
+        margin: 4px 0;
     }
 
-    .lvct-context-panel__footer {
-        margin-top: auto;
-        padding-top: 6px;
+    .lvct-text-accent {
+        color: var(--lv-brand, #ea580c);
     }
 </style>

@@ -1,5 +1,7 @@
 <script lang="ts">
     /** 联系人视图：未过滤名册渐进读取，搜索与筛选共用本地投影；详情弹窗由 Workbench 统一承载 */
+    import { querySql, assertKernelRecord } from "../../api/client";
+    import { organizationIalAttributes } from "../../domain/organization-operations";
     import { batchUpdateContacts, createContactListProjection, listContactPage, PAGE_SIZE, removeContacts, updateContactFields } from "../../services/contacts";
     import type { ContactPage } from "../../services/contacts";
     import { filterContactSearch } from "../../domain/contact-search";
@@ -48,7 +50,7 @@
     import { buildVirtualRows, estimateVirtualHeight, virtualRowAtOffset, virtualRowRange } from "../../domain/virtual-list";
     import { createDebouncer } from "../../domain/debounce";
     import { groupPeopleByAlphabet, getPersonNameInitial, ALPHABET_LETTERS } from "../../domain/pinyin.ts";
-    import { extractNormalizedRegion } from "../../domain/region";
+    import { extractNormalizedRegion, extractCityFromAddress } from "../../domain/region";
     import { LIFECYCLE_STAGES, type RelationshipStageKey } from "../../domain/lifecycle-stage.ts";
     import BatchLifecycleStageModal from "./BatchLifecycleStageModal.svelte";
     import TidyDrawer from "./TidyDrawer.svelte";
@@ -712,6 +714,34 @@
     });
     $effect(() => { onGroupsChange?.([...groups]); });
     const tags = $derived([...new Set(people.flatMap((person) => person.tags))].sort((a, b) => a.localeCompare(b, "zh-CN")));
+    const TAG_PREVIEW_LIMIT = 10;
+    let tagsExpanded = $state(false);
+    const previewTags = $derived.by(() => {
+        if (tags.length <= TAG_PREVIEW_LIMIT || tagsExpanded) return tags;
+        const base = tags.slice(0, TAG_PREVIEW_LIMIT);
+        const activeExtras = tagFilter.filter((t) => tags.includes(t) && !base.includes(t));
+        return [...base, ...activeExtras];
+    });
+    const groupedTags = $derived.by(() => {
+        const regionTags: string[] = [];
+        const roleDomainTags: string[] = [];
+        const interestTags: string[] = [];
+        const roleDomainRegex = /总监|经理|合伙人|顾问|律师|博导|教授|校友|室友|至亲|主理|投资|创投|架构|算法|生态|开发|大咖|维护|体验|增长|基础设施|科研|合规/;
+        for (const tag of tags) {
+            if (extractCityFromAddress(tag)) {
+                regionTags.push(tag);
+            } else if (roleDomainRegex.test(tag)) {
+                roleDomainTags.push(tag);
+            } else {
+                interestTags.push(tag);
+            }
+        }
+        const groupsList: Array<{ key: string; label: string; items: string[] }> = [];
+        if (regionTags.length > 0) groupsList.push({ key: "region", label: "📍 城市地区", items: regionTags });
+        if (roleDomainTags.length > 0) groupsList.push({ key: "role", label: "💼 身份与领域", items: roleDomainTags });
+        if (interestTags.length > 0) groupsList.push({ key: "interest", label: "✨ 兴趣与特征", items: interestTags });
+        return groupsList;
+    });
 
     const filtered = $derived.by(() => {
         const focus = new Set(focusIds);
@@ -1310,6 +1340,31 @@
         }
     }
 
+    async function enrichPageAvatars(contacts: readonly ContactSummary[]) {
+        const missing = contacts.filter((c) => !c.avatar && c.docId);
+        if (missing.length === 0) return;
+        const docIds = missing.map((c) => c.docId);
+        try {
+            const inList = [...new Set(docIds)].map((id) => `'${id}'`).join(",");
+            const rows = await querySql<unknown>(`SELECT id, ial FROM blocks WHERE id IN (${inList}) AND type = 'd'`);
+            if (!Array.isArray(rows)) return;
+            const map = new Map<string, string>();
+            for (const r of rows) {
+                try {
+                    const rec = assertKernelRecord("/api/query/sql", r);
+                    if (typeof rec.id === "string" && typeof rec.ial === "string") {
+                        const attrs = organizationIalAttributes(rec.ial);
+                        const av = attrs["custom-lvct-avatar"] || attrs["icon"];
+                        if (av) map.set(rec.id, av);
+                    }
+                } catch {}
+            }
+            if (map.size > 0 && peopleAlive) {
+                people = people.map((p) => map.has(p.docId) ? { ...p, avatar: map.get(p.docId) } : p);
+            }
+        } catch {}
+    }
+
     async function refresh() {
         const request = ++refreshGeneration;
         rosterAbortController?.abort();
@@ -1336,6 +1391,7 @@
             if (request !== refreshGeneration || pageGeneration !== rosterLoadGeneration || !peopleAlive || abortController.signal.aborted) return;
             verifyRosterPage(next, 1, PAGE_SIZE, []);
             people = next.people;
+            void enrichPageAvatars(next.people);
             selectedPeopleCache = { ...selectedPeopleCache, ...Object.fromEntries(next.people.map((person) => [person.itemId, person])) };
             rosterPage = next.page;
             rosterPageSize = next.pageSize;
@@ -1372,6 +1428,7 @@
                 if (request !== refreshGeneration || expectedGeneration !== rosterLoadGeneration || !peopleAlive || abortController.signal.aborted) return;
                 verifyRosterPage(next, requestedPage, rosterPageSize, people);
                 people = [...people, ...next.people];
+                void enrichPageAvatars(next.people);
                 selectedPeopleCache = { ...selectedPeopleCache, ...Object.fromEntries(next.people.map((person) => [person.itemId, person])) };
                 rosterPage = next.page;
                 rosterTotal = Math.max(rosterTotal, next.total);
@@ -2125,8 +2182,8 @@
                             class:lvct-seg__item--active={cardDensity === "comfortable"}
                             aria-pressed={cardDensity === "comfortable"}
                             onclick={() => (cardDensity = "comfortable")}
-                            title="舒适卡片视图"
-                        >舒适</button>
+                            title="详细卡片视图"
+                        >详细</button>
                         <button
                             type="button"
                             class="lvct-seg__item"
@@ -2394,13 +2451,47 @@
     {/if}
 
     {#if tags.length > 0}
-        <div class="lvct-people__filters" aria-label="标签筛选">
-            <span class="ft__smaller ft__on-surface">{text("peopleTags", "标签")}</span>
-            {#each tags as tag (tag)}
-                <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
-            {/each}
-            {#if tagFilter.length > 0}
-                <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选</button>
+        <div class="lvct-people__filters" class:lvct-people__filters--grouped={tagsExpanded && tags.length > TAG_PREVIEW_LIMIT} aria-label="标签筛选">
+            {#if !tagsExpanded || tags.length <= TAG_PREVIEW_LIMIT}
+                <span class="ft__smaller ft__on-surface">{text("peopleTags", "标签")}</span>
+                {#each previewTags as tag (tag)}
+                    <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
+                {/each}
+                {#if tags.length > TAG_PREVIEW_LIMIT}
+                    <button
+                        type="button"
+                        class="lvct-people__filter lvct-people__filter-toggle"
+                        onclick={() => (tagsExpanded = true)}
+                        title="展开全部标签并按维度分组查看"
+                    >
+                        +{tags.length - previewTags.length} 个标签 · 分组展开 ▾
+                    </button>
+                {/if}
+                {#if tagFilter.length > 0}
+                    <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选</button>
+                {/if}
+            {:else}
+                <div class="lvct-people__tag-groups">
+                    <div class="lvct-people__tag-groups-head">
+                        <span class="ft__smaller ft__on-surface"><b>{text("peopleTags", "标签分组筛选")}</b>（共 {tags.length} 个）</span>
+                        <div class="fn__flex" style="gap: 8px; align-items: center;">
+                            {#if tagFilter.length > 0}
+                                <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选 ({tagFilter.length})</button>
+                            {/if}
+                            <button type="button" class="lvct-people__filter lvct-people__filter-toggle" onclick={() => (tagsExpanded = false)}>收起标签 ▴</button>
+                        </div>
+                    </div>
+                    {#each groupedTags as grp (grp.key)}
+                        <div class="lvct-people__tag-group-row">
+                            <span class="lvct-people__tag-group-label">{grp.label}</span>
+                            <div class="lvct-people__tag-group-items">
+                                {#each grp.items as tag (tag)}
+                                    <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
+                                {/each}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
             {/if}
         </div>
     {/if}

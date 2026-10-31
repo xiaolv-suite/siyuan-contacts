@@ -117,6 +117,7 @@ import { loadPersonKinships, addPersonKinship, removePersonKinship } from "./dat
 import { loadPersonPromises, addPersonPromise, updatePersonPromise, removePersonPromise } from "./data/promises.ts";
 import { loadPersonLifecycleStage, updatePersonLifecycleStage, loadAllLifecycleStages, batchUpdatePersonLifecycleStages } from "./data/lifecycle-stage.ts";
 import { loadPersonScratchpads, savePersonScratchpad, updatePersonScratchpad, removePersonScratchpad } from "./data/person-scratchpad.ts";
+import { normalizeChannels, type ContactChannel } from "./domain/person-channels.ts";
 import { loadPersonSocialPreferences, addPersonSocialPreference, updatePersonSocialPreference, removePersonSocialPreference } from "./data/social-preferences.ts";
 import { loadPersonOrigin, savePersonOrigin, loadAllPersonOrigins } from "./data/person-origins.ts";
 import type { PersonOrigin } from "./domain/person-origin.ts";
@@ -137,6 +138,9 @@ import { openSiYuanDocument } from "./libs/open-document";
 import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation, subscribeDataChanged } from "./libs/data-events";
 import { schedulePersonDocMirror, disposeDocMirrorScheduler } from "./services/doc-mirror";
 import type { ContactsSettings } from "./domain/model";
+import { setBlockAttrs, flushBlockIndex } from "./api/blocks";
+import { querySql, assertKernelRecord } from "./api/client";
+import { organizationIalAttributes } from "./domain/organization-operations";
 import type { ContactSummary } from "./domain/person";
 import { emptyDraft } from "./domain/person";
 import { DEFAULT_VIEW_PREFERENCES, type ViewPreferences } from "./domain/preferences";
@@ -1146,6 +1150,84 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async updatePersonFields(personItemId: string, draft: import("./domain/person").ContactDraft) {
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         return updateContactFields(this.settings, personItemId, draft);
+    }
+
+    async savePersonAvatar(personDocId: string, avatarDataUrl: string): Promise<void> {
+        await setBlockAttrs(personDocId, {
+            "custom-lvct-avatar": avatarDataUrl,
+            icon: avatarDataUrl,
+        });
+        await flushBlockIndex();
+        invalidateRoster();
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
+    }
+
+    async loadPersonAvatar(personDocId: string): Promise<string> {
+        await flushBlockIndex();
+        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${personDocId}' AND type = 'd' LIMIT 1`);
+        if (!rows.length) return "";
+        const row = assertKernelRecord("/api/query/sql", rows[0]);
+        const attrs = organizationIalAttributes(typeof row.ial === "string" ? row.ial : "");
+        return attrs["custom-lvct-avatar"] || attrs["icon"] || "";
+    }
+
+    async savePersonChannels(personDocId: string, channels: ContactChannel[]): Promise<void> {
+        const encoded = encodeURIComponent(JSON.stringify(channels));
+        await setBlockAttrs(personDocId, {
+            "custom-lvct-channels": encoded,
+        });
+        await flushBlockIndex();
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
+    }
+
+    async loadPersonChannels(personDocId: string): Promise<ContactChannel[]> {
+        await flushBlockIndex();
+        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${personDocId}' AND type = 'd' LIMIT 1`);
+        if (!rows.length) return [];
+        const row = assertKernelRecord("/api/query/sql", rows[0]);
+        let attrs: Record<string, string> = {};
+        try {
+            attrs = organizationIalAttributes(typeof row.ial === "string" ? row.ial : "");
+        } catch {
+            const ialStr = typeof row.ial === "string" ? row.ial : "";
+            const m = ialStr.match(/custom-lvct-channels="([^"]*)"/);
+            if (m) attrs["custom-lvct-channels"] = m[1];
+        }
+        const raw = attrs["custom-lvct-channels"];
+        if (!raw) return [];
+        try {
+            return normalizeChannels(JSON.parse(decodeURIComponent(raw)));
+        } catch {
+            try {
+                return normalizeChannels(JSON.parse(raw));
+            } catch {
+                return [];
+            }
+        }
+    }
+
+    async savePersonBusinessCard(personDocId: string, cardDataUrl: string): Promise<void> {
+        await setBlockAttrs(personDocId, {
+            "custom-lvct-business-card": cardDataUrl || "",
+        });
+        await flushBlockIndex();
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
+    }
+
+    async loadPersonBusinessCard(personDocId: string): Promise<string> {
+        await flushBlockIndex();
+        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${personDocId}' AND type = 'd' LIMIT 1`);
+        if (!rows.length) return "";
+        const row = assertKernelRecord("/api/query/sql", rows[0]);
+        let attrs: Record<string, string> = {};
+        try {
+            attrs = organizationIalAttributes(typeof row.ial === "string" ? row.ial : "");
+        } catch {
+            const ialStr = typeof row.ial === "string" ? row.ial : "";
+            const m = ialStr.match(/custom-lvct-business-card="([^"]*)"/);
+            if (m) attrs["custom-lvct-business-card"] = m[1];
+        }
+        return attrs["custom-lvct-business-card"] || "";
     }
 
     /** B11：本人身份读取（null = 未建立） */

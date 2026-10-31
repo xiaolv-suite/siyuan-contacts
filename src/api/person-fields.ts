@@ -49,12 +49,12 @@ export async function readPersonFieldsBlocks(docId: string): Promise<PersonField
     if (roots.length !== 1 || assertKernelRecord("/api/query/sql", roots[0]).id !== docId) {
         throw new KernelProtocolError("/api/query/sql", "人物文档不可达，补充资料尚未核实");
     }
-    const rows = await freshSql(`SELECT id, root_id, parent_id, type, content, ial FROM blocks WHERE root_id = '${docId}' AND (ial LIKE '%${PERSON_FIELDS_ATTR}="%' OR content LIKE '补充资料' || char(10) || '{%') ORDER BY id LIMIT 2`);
+    const rows = await freshSql(`SELECT id, root_id, parent_id, type, content, ial FROM blocks WHERE root_id = '${docId}' AND parent_id = '${docId}' AND (ial LIKE '%${PERSON_FIELDS_ATTR}="%' OR content LIKE '补充资料' || char(10) || '{%') ORDER BY id LIMIT 2`);
     if (rows.length > 1) throw new KernelProtocolError("/api/query/sql", "人物文档存在多个补充资料候选块，未自动选择或追加");
     return rows.map((raw): PersonFieldsBlock => {
         const row = assertKernelRecord("/api/query/sql", raw);
         if (typeof row.id !== "string" || !NODE_ID.test(row.id) || row.id === docId
-            || row.root_id !== docId || row.parent_id !== docId || row.type !== "p"
+            || row.root_id !== docId || row.parent_id !== docId || (row.type !== "p" && row.type !== "s")
             || typeof row.content !== "string" || typeof row.ial !== "string") {
             throw new KernelProtocolError("/api/query/sql", "补充资料块身份、类型或直接归属尚未核实");
         }

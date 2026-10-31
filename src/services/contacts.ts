@@ -2,7 +2,8 @@
  * 联系人服务：新建（文档+绑行+写值）与列表查询。
  * 语义决策见 docs/DATA-CONTRACT.md §1.3 与 D-0007。
  */
-import { KernelPermissionError, KernelResponseError, listNotebooks, newNodeId } from "../api/client";
+import { KernelPermissionError, KernelResponseError, listNotebooks, newNodeId, querySql, assertKernelRecord } from "../api/client";
+import { organizationIalAttributes } from "../domain/organization-operations";
 import { documentHPath } from "../domain/format";
 import { ATTRIBUTE_VIEW_BATCH_SIZE, bindDocsAsRows, mapBoundDocIds, renderView, renderViewPage, setCell, unbindRows } from "../api/av";
 import type { AvRenderResult, CellValue } from "../api/av";
@@ -75,6 +76,35 @@ export type ContactListProjection = (people: ContactSummary[]) => Promise<Contac
 export interface ContactPageOptions {
     signal?: AbortSignal;
     project?: ContactListProjection;
+}
+
+/** 批量装配联系人头像照片（从人物文档属性 custom-lvct-avatar / icon 回读） */
+export async function enrichContactAvatars(people: ContactSummary[]): Promise<ContactSummary[]> {
+    const docIds = people.map((p) => p.docId).filter(Boolean);
+    if (docIds.length === 0) return people;
+    try {
+        const inList = [...new Set(docIds)].map((id) => `'${id}'`).join(",");
+        const rows = await querySql<unknown>(`SELECT id, ial FROM blocks WHERE id IN (${inList}) AND type = 'd'`);
+        if (!Array.isArray(rows) || rows.length === 0) return people;
+        const avatarMap = new Map<string, string>();
+        for (const r of rows) {
+            try {
+                const rec = assertKernelRecord("/api/query/sql", r);
+                if (typeof rec.id === "string" && typeof rec.ial === "string") {
+                    const attrs = organizationIalAttributes(rec.ial);
+                    const av = attrs["custom-lvct-avatar"] || attrs["icon"];
+                    if (av) avatarMap.set(rec.id, av);
+                }
+            } catch {}
+        }
+        if (avatarMap.size === 0) return people;
+        return people.map((person) => {
+            const av = avatarMap.get(person.docId);
+            return av ? { ...person, avatar: av } : person;
+        });
+    } catch {
+        return people;
+    }
 }
 
 /** 一次名册读取共享扩展资料快照；搜索条件变化仅在当前名册上做投影。 */

@@ -1283,17 +1283,18 @@ export async function verifyRealFrontend({
         if (!await clickButton('.lvct-detail', (text) => text.includes('添加计划') || text.includes('再加一条') || text.includes('Add plan') || text.includes('Add another'))) throw new Error('跟进计划添加按钮不可定位');
         await waitUntil(deadline, async () => Boolean(await browserSession.evaluate(`(${followUpSection})?.textContent?.includes(${json(followUpTitle)})`)), "跟进计划保存回读");
         evidence.followUpCreated = true;
-        const followUpCompleted = await browserSession.evaluate(`(()=>{
-            const section = ${followUpSection};
-            const row = [...(section?.querySelectorAll('.lvct-detail__timeline-row') ?? [])].find((item) => item.textContent?.includes(${json(followUpTitle)}));
-            const actions = row?.nextElementSibling?.classList.contains('lvct-detail__followup-actions')
-                ? row.nextElementSibling : row?.nextElementSibling?.nextElementSibling;
-            const button = [...(actions?.querySelectorAll('button') ?? [])].find((item) => item.textContent?.trim() === '完成' || item.textContent?.trim() === 'Complete');
-            if (!button || button.disabled) return false;
-            button.click();
-            return true;
-        })()`);
-        if (!followUpCompleted) throw new Error('跟进计划完成按钮不可定位');
+        await waitUntil(deadline, async () => {
+            return browserSession.evaluate(`(()=>{
+                const section = ${followUpSection};
+                const row = [...(section?.querySelectorAll('.lvct-detail__timeline-row') ?? [])].find((item) => item.textContent?.includes(${json(followUpTitle)}));
+                const actions = row?.nextElementSibling?.classList.contains('lvct-detail__followup-actions')
+                    ? row.nextElementSibling : row?.nextElementSibling?.nextElementSibling;
+                const button = [...(actions?.querySelectorAll('button') ?? [])].find((item) => item.textContent?.trim() === '完成' || item.textContent?.trim() === 'Complete');
+                if (!button || button.disabled) return false;
+                button.click();
+                return true;
+            })()`);
+        }, "跟进计划完成按钮可用并点击");
         await waitUntil(deadline, async () => Boolean(await browserSession.evaluate(`(${followUpSection})?.textContent?.includes(${json(followUpTitle)}) && (${followUpSection})?.textContent?.includes('已完成')`)), "跟进计划完成回读");
         evidence.followUpCompleted = true;
         const followUpRows = await unwrapKernelResult(await request('/api/query/sql', {

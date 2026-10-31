@@ -13,8 +13,7 @@
     import OrgManagerDialog from "./org/OrgManagerDialog.svelte";
     import OrganizationProfileEditor from "./org/OrganizationProfileEditor.svelte";
     import { createCloseScope, anyDirtyChanges } from "./close-guard";
-    import { House, UsersRound, Network, Settings, Building2, UserPlus, Search, PanelRightClose, PanelRightOpen } from "@lucide/svelte";
-    import ContextPanel from "./ContextPanel.svelte";
+    import { House, UsersRound, Network, Settings, Building2, UserPlus, Search } from "@lucide/svelte";
     import SettingsView from "./SettingsView.svelte";
     import { getContext, onDestroy, onMount, tick } from "svelte";
     import { translateText } from "../domain/translation";
@@ -148,8 +147,6 @@
         return preferenceRequests.save(next, effectiveBaseline);
     }
     let detailPerson: ContactSummary | null = $state(null);
-    let contextPerson: ContactSummary | null = $state(null);
-    let contextPanelOpen = $state(false);
     let peopleGroups: string[] = $state([]);
     let detailReturn = $state<PersonReturnContext | null>(null);
     let organizationOpen = $state(false);
@@ -407,7 +404,6 @@
 
     async function openDetail(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
         if (!lifecycleToken.isAlive()) return;
-        contextPerson = person;
         if (detailPerson && !(await canLeave.requestClose())) return;
         if (!lifecycleToken.isAlive()) return;
         detailInitialTab = initialTab;
@@ -634,13 +630,6 @@
                 return;
             }
             dataRevision += 1;
-            if (contextPerson && typeof facade.listContacts === "function") {
-                const targetDocId = contextPerson.docId;
-                void facade.listContacts().then((latest) => {
-                    if (!lifecycleToken.isAlive() || contextPerson?.docId !== targetDocId) return;
-                    contextPerson = latest.find((item) => item.docId === targetDocId) ?? null;
-                }).catch(() => {});
-            }
             void preferenceRequests.load().catch(() => {});
             if (anyDirtyChanges()) {
                 dataChangeNotice = text("dataChangedWhileEditing", "数据已在其他窗口更新：列表已刷新，未保存的草稿已保留。");
@@ -713,22 +702,6 @@
                     <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><Search size={16}/>{text("homeSearchAction", "搜索")}</button>
                     <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
                 </div>{/if}
-                {#if !isMobile && current !== "settings"}
-                    <button
-                        type="button"
-                        class="b3-button b3-button--text b3-button--small lvct-workbench__toggle-context-btn"
-                        class:is-active={contextPanelOpen}
-                        title={contextPanelOpen ? text("collapseContextPanel", "收起右侧速览面板") : text("expandContextPanel", "展开右侧速览面板")}
-                        aria-label={contextPanelOpen ? text("collapseContextPanel", "收起右侧速览面板") : text("expandContextPanel", "展开右侧速览面板")}
-                        onclick={() => (contextPanelOpen = !contextPanelOpen)}
-                    >
-                        {#if contextPanelOpen}
-                            <PanelRightClose size={16} />
-                        {:else}
-                            <PanelRightOpen size={16} />
-                        {/if}
-                    </button>
-                {/if}
             </div>
         </header>
         <StatusNotice message={dataChangeNotice} onDismiss={() => (dataChangeNotice = "")} />
@@ -776,9 +749,9 @@
                     {regionExplorerRequested}
                     {regionExplorerInitialCity}
                     onClearFocus={clearPeopleFocus}
-                    revision={dataRevision}
-                    onOpenDetail={openDetail}
-                    activePersonId={detailPerson?.itemId ?? (contextPanelOpen ? contextPerson?.itemId : "") ?? ""}
+		                    revision={dataRevision}
+		                    onOpenDetail={openDetail}
+		                    activePersonId={detailPerson?.itemId ?? ""}
                     onOrderChange={(ordered) => {
                         if (ordered.map((person) => person.itemId).join("|") !== peopleOrder.map((person) => person.itemId).join("|")) peopleOrder = ordered;
                     }}
@@ -917,20 +890,6 @@
         </div>
 
     </main>
-
-    {#if contextPanelOpen && !isMobile && current !== "settings"}
-        <div class="lvct-workbench__context">
-            <ContextPanel
-                {facade}
-                i18n={facade.i18n}
-                preferences={currentPreferences}
-                person={contextPerson}
-                onOpenDetail={openDetail}
-                onClose={() => (contextPanelOpen = false)}
-                onRecordSuccess={() => (dataRevision += 1)}
-            />
-        </div>
-    {/if}
 </div>
 
 {#if organizationOpen}
@@ -974,8 +933,14 @@
             onSavePersonNote={(docId, note, expected) => facade.savePersonNote(docId, note, expected)}
             onInspectLegacyPersonNote={facade.inspectLegacyPersonNote ? (docId) => facade.inspectLegacyPersonNote(docId) : undefined}
             onDetachLegacyPersonNote={facade.detachLegacyPersonNote ? (docId, expected) => facade.detachLegacyPersonNote(docId, expected) : undefined}
-            onSyncDocProfile={facade.syncPersonDocument ? (person) => facade.syncPersonDocument!(person) : undefined}
-            onLoadPersonFields={facade.loadPersonFields ? (docId) => facade.loadPersonFields(docId) : undefined}
+		            onSyncDocProfile={facade.syncPersonDocument ? (person) => facade.syncPersonDocument!(person) : undefined}
+			            onSaveAvatar={facade.savePersonAvatar ? (docId, url) => facade.savePersonAvatar!(docId, url) : undefined}
+			            onLoadAvatar={facade.loadPersonAvatar ? (docId) => facade.loadPersonAvatar!(docId) : undefined}
+			            onSaveChannels={facade.savePersonChannels ? (docId, channels) => facade.savePersonChannels!(docId, channels) : undefined}
+			            onLoadChannels={facade.loadPersonChannels ? (docId) => facade.loadPersonChannels!(docId) : undefined}
+			            onSaveBusinessCard={facade.savePersonBusinessCard ? (docId, url) => facade.savePersonBusinessCard!(docId, url) : undefined}
+			            onLoadBusinessCard={facade.loadPersonBusinessCard ? (docId) => facade.loadPersonBusinessCard!(docId) : undefined}
+		            onLoadPersonFields={facade.loadPersonFields ? (docId) => facade.loadPersonFields(docId) : undefined}
             onSavePersonFields={facade.savePersonFields ? (docId, snapshot, expected) => facade.savePersonFields(docId, snapshot, expected) : undefined}
             onLoadPersonFacts={facade.loadPersonFacts ? (docId) => facade.loadPersonFacts!(docId) : undefined}
             onSavePersonFacts={facade.savePersonFacts ? (docId, items) => facade.savePersonFacts!(docId, items) : undefined}
@@ -1059,7 +1024,6 @@
             navigationOrder={current === "people" ? peopleOrder : undefined}
             onChanged={() => (dataRevision += 1)}
             onDeleted={() => {
-                if (contextPerson?.docId === detailPerson?.docId) contextPerson = null;
                 void closeDetail();
                 dataRevision += 1;
             }}

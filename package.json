@@ -1,6 +1,6 @@
 {
   "name": "siyuan-contacts",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "type": "module",
   "description": "小驴人脉 (Lv Contacts)：在思源笔记里管理人脉与人际关系——一人一文档，数据库主干，关系图谱与农历生日提醒",
   "repository": "https://github.com/ai68298100/siyuan-contacts",
@@ -31,6 +31,7 @@
     "test:ui:host": "cross-env LVCT_UI_HOST=1 node scripts/e2e/ui-smoke.mjs",
     "e2e:isolated": "node scripts/e2e/e2e-isolated.mjs",
     "preview:isolated": "cross-env TEST_ISOLATED_PORT=43920 node scripts/e2e/e2e-isolated.mjs --stage2-only --keep",
+    "seed:isolated": "node scripts/e2e/seed-isolated-preview.mjs",
     "test:e2e:parallel": "node scripts/e2e/parallel-runner.mjs --config scripts/e2e/parallel.example.json",
     "spike": "node scripts/spike/av-spike.mjs",
     "spike:init": "node scripts/spike/init-resume-spike.mjs",

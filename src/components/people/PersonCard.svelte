@@ -131,66 +131,84 @@
     onclick={(event) => { event.currentTarget.focus({ preventScroll: true }); onOpen(person); }}
 >
     {#if compact}
-        <!-- 紧凑单行模式：极高密度展示 -->
-        <div class="lvct-person-card__compact-row">
-            {#if onToggleSelected}
-                <label class="lvct-person-card__select-hit-area" onclick={(event) => event.stopPropagation()}>
-                    <input
-                        class="lvct-person-card__select"
-                        type="checkbox"
-                        aria-label={`选择 ${person.name}`}
-                        checked={selected}
-                        onclick={(event) => event.stopPropagation()}
-                        onchange={(event) => onToggleSelected?.((event.currentTarget as HTMLInputElement).checked)}
-                    />
-                </label>
-            {/if}
-            <span class="lvct-person-card__avatar lvct-person-card__avatar--sm" data-group={person.group || "未分组"}>
-                {person.name.slice(0, 1)}
-            </span>
-            <div class="lvct-person-card__compact-info">
-                <div class="lvct-person-card__name-row">
+        <!-- 紧凑模式：双行精致微卡，零挤压零溢出 -->
+        <div class="lvct-person-card__compact-body">
+            <!-- 第一行：头像 + 姓名 + 标签 + 关系温度/生日 -->
+            <div class="lvct-person-card__compact-line lvct-person-card__compact-line--primary">
+                {#if onToggleSelected}
+                    <label class="lvct-person-card__select-hit-area" onclick={(event) => event.stopPropagation()}>
+                        <input
+                            class="lvct-person-card__select"
+                            type="checkbox"
+                            aria-label={`选择 ${person.name}`}
+                            checked={selected}
+                            onclick={(event) => event.stopPropagation()}
+                            onchange={(event) => onToggleSelected?.((event.currentTarget as HTMLInputElement).checked)}
+                        />
+                    </label>
+                {/if}
+                <span class="lvct-person-card__avatar lvct-person-card__avatar--sm" data-group={person.group || "未分组"}>
+                    {#if person.avatar}
+                        <img src={person.avatar} alt="" class="lvct-avatar-img" />
+                    {:else}
+                        {person.name.slice(0, 1)}
+                    {/if}
+                </span>
+                <span class="lvct-person-card__compact-name-wrap">
                     <strong class="lvct-person-card__name" title={person.name}>{person.name}</strong>
-                    {#if person.isSelf}<span class="lvct-chip lvct-bucket--today">本人</span>{/if}
-                    {#if person.group}<span class="lvct-chip lvct-chip--group font-size-11">{person.group}</span>{/if}
-                    {#if birthday}<span class="lvct-person-card__bday font-size-11" style="display: inline-flex; align-items: center;"><Cake size={11} strokeWidth={1.6} class="lvct-icon-inline" /> {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天后`}</span>{/if}
+                    {#if person.isSelf}<span class="lvct-chip lvct-bucket--today font-size-10">本人</span>{/if}
+                    {#if person.group}<span class="lvct-chip lvct-chip--group font-size-10">{person.group}</span>{/if}
+                </span>
+                <span class="lvct-person-card__compact-pills">
+                    {#if birthday}
+                        <span class="lvct-person-card__bday font-size-10" style="display: inline-flex; align-items: center;">
+                            <Cake size={11} strokeWidth={1.6} class="lvct-icon-inline" /> {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil}天`}
+                        </span>
+                    {/if}
                     {#if recent && health.level !== "unknown"}
-                        <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-11 lvct-person-card__heat-pill`} title={recent.count ? `共交往 ${recent.count} 次` : undefined}>
+                        <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-10 lvct-person-card__heat-pill`} title={recent.count ? `共交往 ${recent.count} 次` : undefined}>
                             {health.level === "hot" ? "温热" : health.level === "warm" ? "常温" : health.level === "cool" ? "微凉" : health.level === "cold" ? "渐冻" : "暂停"}
                         </span>
                     {/if}
-                </div>
-                {#if orgLine || (person.profile && person.profile.affiliations?.state === "known")}
-                    <div class="lvct-person-card__org lvct-text-muted font-size-11" title={orgLine}>
-                        {orgLine || "已登记组织经历"}
-                    </div>
-                {/if}
-            </div>
-            {#if person.phone}
-                <span class="lvct-person-card__compact-phone font-size-11">
-                    <Phone size={11} strokeWidth={1.6} class="lvct-text-muted" />
-                    <span>{person.phone}</span>
                 </span>
-            {/if}
-            <span class="lvct-person-card__compact-actions" role="presentation" onclick={(event) => event.stopPropagation()}>
-                {#if onToggleStarred}
-                    <button
-                        type="button"
-                        class="lvct-person-card__open-doc lvct-person-card__star-btn"
-                        class:lvct-person-card__star-btn--active={starred}
-                        title={starred ? "取消星标" : "设为星标常用"}
-                        aria-label={starred ? `取消 ${person.name} 的星标` : `将 ${person.name} 设为星标`}
-                        onclick={(event) => { event.stopPropagation(); onToggleStarred?.(!starred); }}
-                    >
-                        <Star size={14} strokeWidth={1.6} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
-                    </button>
-                {/if}
-                {#if onOpenActivity}
-                    <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={() => onOpenActivity?.(person)}><MessageSquarePlus size={14} strokeWidth={1.6} /></button>
-                {/if}
-                {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={() => onOpenGraphPerson?.(person.docId)}><Network size={14} strokeWidth={1.6} /></button>{/if}
-                {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={() => onOpenPersonDoc(person.docId)}><ExternalLink size={14} strokeWidth={1.6} /></button>{/if}
-            </span>
+            </div>
+
+            <!-- 第二行：单位/电话（单行截断省略） + 快捷操作按钮组 -->
+            <div class="lvct-person-card__compact-line lvct-person-card__compact-line--secondary">
+                <div class="lvct-person-card__compact-meta">
+                    {#if orgLine || (person.profile && person.profile.affiliations?.state === "known")}
+                        <span class="lvct-person-card__compact-org font-size-11" title={orgLine || "已登记组织经历"}>
+                            {orgLine || "已登记组织经历"}
+                        </span>
+                    {:else if person.phone}
+                        <span class="lvct-person-card__compact-phone font-size-11" title={person.phone}>
+                            <Phone size={11} strokeWidth={1.6} class="lvct-text-muted" />
+                            <span>{person.phone}</span>
+                        </span>
+                    {:else}
+                        <span class="lvct-text-muted font-size-11">{recentLabel}</span>
+                    {/if}
+                </div>
+                <div class="lvct-person-card__compact-actions" role="presentation" onclick={(event) => event.stopPropagation()}>
+                    {#if onToggleStarred}
+                        <button
+                            type="button"
+                            class="lvct-person-card__open-doc lvct-person-card__star-btn"
+                            class:lvct-person-card__star-btn--active={starred}
+                            title={starred ? "取消星标" : "设为星标常用"}
+                            aria-label={starred ? `取消 ${person.name} 的星标` : `将 ${person.name} 设为星标`}
+                            onclick={(event) => { event.stopPropagation(); onToggleStarred?.(!starred); }}
+                        >
+                            <Star size={14} strokeWidth={1.6} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
+                        </button>
+                    {/if}
+                    {#if onOpenActivity}
+                        <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={() => onOpenActivity?.(person)}><MessageSquarePlus size={14} strokeWidth={1.6} /></button>
+                    {/if}
+                    {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={() => onOpenGraphPerson?.(person.docId)}><Network size={14} strokeWidth={1.6} /></button>{/if}
+                    {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={() => onOpenPersonDoc(person.docId)}><ExternalLink size={14} strokeWidth={1.6} /></button>{/if}
+                </div>
+            </div>
         </div>
     {:else}
         <!-- 舒适模式：呼吸感与完整字段展示 -->
@@ -209,7 +227,11 @@
             {/if}
             <button type="button" class="lvct-person-card__details" aria-label={`查看 ${person.name} 的详情`} onclick={(event) => { event.stopPropagation(); onOpen(person); }}>
                 <span class="lvct-person-card__avatar" data-group={person.group || "未分组"}>
-                    {person.name.slice(0, 1)}
+                    {#if person.avatar}
+                        <img src={person.avatar} alt="" class="lvct-avatar-img" />
+                    {:else}
+                        {person.name.slice(0, 1)}
+                    {/if}
                 </span>
                 <span class="lvct-person-card__main">
                     <span class="lvct-person-card__name" title={person.name}>
@@ -294,7 +316,10 @@
                 {#if person.group || person.tags.length > 0}
                     <div class="lvct-person-card__tags">
                         {#if person.group}<span class="lvct-chip lvct-chip--group">{person.group}</span>{/if}
-                        {#each person.tags as tag (tag)}<span class="lvct-chip"># {tag}</span>{/each}
+                        {#each person.tags.slice(0, 3) as tag (tag)}<span class="lvct-chip"># {tag}</span>{/each}
+                        {#if person.tags.length > 3}
+                            <span class="lvct-chip" title={person.tags.slice(3).join("、")}>+{person.tags.length - 3}</span>
+                        {/if}
                     </div>
                 {/if}
                 {#if onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}

@@ -68,7 +68,12 @@
         flex-wrap: wrap;
         gap: 4px;
         max-width: 100%;
-        margin: 2px 0;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
         vertical-align: middle;
     }
     .lvct-profile-summary--compact > span {
@@ -77,10 +82,10 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 100%;
+        max-width: min(100%, 260px);
         font-size: 11px;
         line-height: 1.4;
-        padding: 2px 9px;
+        padding: 2px 8px;
         border-radius: var(--lv-r-pill, 9999px);
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-app));
         border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 15%, transparent);

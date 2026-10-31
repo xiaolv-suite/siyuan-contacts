@@ -22,6 +22,8 @@
         MessageSquare,
         FileText,
     } from "@lucide/svelte";
+    import { querySql, assertKernelRecord } from "../../api/client";
+    import { organizationIalAttributes } from "../../domain/organization-operations";
     import { pickActions, pickSummaryCounts } from "../../services/dashboard";
     import { newFollowUpRequestId } from "../../services/followups";
     import type { DashboardData } from "../../services/dashboard";
@@ -625,6 +627,39 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         }
     }
 
+    async function enrichDashboardAvatars(docIds: (string | undefined)[]) {
+        const validIds = [...new Set(docIds.filter((id): id is string => Boolean(id)))];
+        if (validIds.length === 0) return;
+        try {
+            const inList = validIds.map((id) => `'${id}'`).join(",");
+            const rows = await querySql<unknown>(`SELECT id, ial FROM blocks WHERE id IN (${inList}) AND type = 'd'`);
+            if (!Array.isArray(rows)) return;
+            const map = new Map<string, string>();
+            for (const r of rows) {
+                try {
+                    const rec = assertKernelRecord("/api/query/sql", r);
+                    if (typeof rec.id === "string" && typeof rec.ial === "string") {
+                        const attrs = organizationIalAttributes(rec.ial);
+                        const av = attrs["custom-lvct-avatar"] || attrs["icon"];
+                        if (av) map.set(rec.id, av);
+                    }
+                } catch {}
+            }
+            if (map.size > 0 && alive && data) {
+                for (const b of (data.birthdays ?? [])) {
+                    if (map.has(b.person.docId)) b.person.avatar = map.get(b.person.docId);
+                }
+                for (const s of (data.stale ?? [])) {
+                    if (map.has(s.person.docId)) s.person.avatar = map.get(s.person.docId);
+                }
+                for (const f of (data.followUps ?? [])) {
+                    if (f.person && map.has(f.person.docId)) f.person.avatar = map.get(f.person.docId);
+                }
+                data = { ...data };
+            }
+        } catch {}
+    }
+
     async function refresh() {
         const version = ++refreshVersion;
         refreshing = true;
@@ -637,6 +672,14 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             });
             if (alive && version === refreshVersion) {
                 data = result;
+                if (result) {
+                    const candidateDocs = [
+                        ...(result.birthdays ?? []).map((b) => b.person.docId),
+                        ...(result.stale ?? []).map((s) => s.person.docId),
+                        ...(result.followUps ?? []).map((f) => f.person?.docId),
+                    ];
+                    void enrichDashboardAvatars(candidateDocs);
+                }
             }
         } catch (error) {
             if (alive && version === refreshVersion) errorText = requestErrorMessage(error);
@@ -1408,7 +1451,11 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             <button type="button" class="lvct-dash__row-main" aria-label={`查看 ${card.person.name} 的详情`} onclick={() => onOpenDetail(card.person)}>
                                 <span class="lvct-dash__row-primary">
                                     <span class="lvct-dash__person-avatar" data-group={card.person.group || "未分组"}>
-                                        {card.person.name.slice(0, 1)}
+                                        {#if card.person.avatar}
+                                            <img src={card.person.avatar} alt="" class="lvct-avatar-img" />
+                                        {:else}
+                                            {card.person.name.slice(0, 1)}
+                                        {/if}
                                     </span>
                                     <b>{card.person.name}</b>
                                     <PersonProfileSummary profile={card.person.profile} compact hideEmpty />
@@ -1549,7 +1596,11 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             <div class="lvct-dash__row lvct-dash__row--contact">
                                 <button type="button" class="lvct-dash__row-main" aria-label={`查看 ${item.person.name} 的详情`} onclick={() => onOpenDetail(item.person)}>
                                     <span class="lvct-dash__person-avatar" data-group={item.person.group || "未分组"}>
-                                        {item.person.name.slice(0, 1)}
+                                        {#if item.person.avatar}
+                                            <img src={item.person.avatar} alt="" class="lvct-avatar-img" />
+                                        {:else}
+                                            {item.person.name.slice(0, 1)}
+                                        {/if}
                                     </span>
                                     <div class="lvct-dash__person-info">
                                         <div class="lvct-dash__person-header">
@@ -1624,7 +1675,11 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                             <div class="lvct-dash__row lvct-dash__row--contact">
                                 <button type="button" class="lvct-dash__row-main" aria-label={`查看 ${item.person.name} 的详情`} onclick={() => onOpenDetail(item.person)}>
                                     <span class="lvct-dash__person-avatar" data-group={item.person.group || "未分组"}>
-                                        {item.person.name.slice(0, 1)}
+                                        {#if item.person.avatar}
+                                            <img src={item.person.avatar} alt="" class="lvct-avatar-img" />
+                                        {:else}
+                                            {item.person.name.slice(0, 1)}
+                                        {/if}
                                     </span>
                                     <div class="lvct-dash__person-info">
                                         <div class="lvct-dash__person-header">

@@ -37,7 +37,23 @@
         Clock,
         Image,
         Pencil,
+        Camera,
+        CreditCard,
+        Trash2,
+        Edit3,
+        Maximize2,
+        Upload,
     } from "@lucide/svelte";
+    import { processAvatarFile, processBusinessCardFile } from "../../shared/avatar-processor.ts";
+    import {
+        CHANNEL_TYPES,
+        CHANNEL_TYPE_MAP,
+        newChannelId,
+        alignChannelsWithContact,
+        getChannelActionHref,
+        type ChannelType,
+        type ContactChannel,
+    } from "../../domain/person-channels.ts";
     import { exportSinglePersonVcf } from "../../domain/vcard.ts";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { inferPersonaTags, adoptSuggestedTags } from "../../domain/tag-inference.ts";
@@ -158,7 +174,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onInspectLegacyPersonNote,
         onDetachLegacyPersonNote,
         onSyncDocProfile,
-        onLoadPersonFields,
+	        onSaveAvatar,
+	        onLoadAvatar,
+	        onSaveChannels,
+	        onLoadChannels,
+	        onSaveBusinessCard,
+	        onLoadBusinessCard,
+	        onLoadPersonFields,
         onSavePersonFields,
         onLoadPersonFacts,
         onSavePersonFacts,
@@ -259,7 +281,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onInspectLegacyPersonNote?: (docId: string) => Promise<LegacyPersonNoteSnapshot>;
         onDetachLegacyPersonNote?: (docId: string, expected: LegacyPersonNoteSnapshot) => Promise<void>;
         onSyncDocProfile?: (person: ContactSummary) => Promise<void>;
-        onLoadPersonFields?: (docId: string) => Promise<PersonFieldsState>;
+	        onSaveAvatar?: (personDocId: string, avatarDataUrl: string) => Promise<void>;
+	        onLoadAvatar?: (personDocId: string) => Promise<string>;
+	        onSaveChannels?: (personDocId: string, channels: import("../../domain/person-channels").ContactChannel[]) => Promise<void>;
+	        onLoadChannels?: (personDocId: string) => Promise<import("../../domain/person-channels").ContactChannel[]>;
+	        onSaveBusinessCard?: (personDocId: string, cardDataUrl: string) => Promise<void>;
+	        onLoadBusinessCard?: (personDocId: string) => Promise<string>;
+	        onLoadPersonFields?: (docId: string) => Promise<PersonFieldsState>;
         onSavePersonFields?: (docId: string, snapshot: PersonFieldsSnapshot, expected: PersonFieldsState) => Promise<PersonFieldsState>;
         onLoadPersonFacts?: (docId: string) => Promise<import("../../domain/doc-section").PersonFactItem[]>;
         onSavePersonFacts?: (docId: string, items: readonly import("../../domain/doc-section").PersonFactItem[]) => Promise<void>;
@@ -845,6 +873,282 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     loadItineraries();
     loadOrigin();
 
+    // ---- 多通讯条目与多维度信息条目（支持多手机号、多微信号、多邮箱、地址、自定义等） ----
+    let channels = $state<ContactChannel[]>([]);
+    let channelsSaving = $state(false);
+    let channelsError = $state("");
+    let addingChannel = $state(false);
+    let editingChannelId = $state<string | null>(null);
+
+    // 新增条目表单
+    let draftType = $state<ChannelType>("phone");
+    let draftLabel = $state("工作手机");
+    let draftValue = $state("");
+    let draftIsPrimary = $state(false);
+
+    // 编辑条目表单
+    let editType = $state<ChannelType>("phone");
+    let editLabel = $state("");
+    let editValue = $state("");
+    let editIsPrimary = $state(false);
+
+    async function loadChannels() {
+        if (!onLoadChannels || !current?.docId) {
+            channels = alignChannelsWithContact(current, []);
+            return;
+        }
+        const targetDocId = current.docId;
+        channelsError = "";
+        try {
+            const raw = await onLoadChannels(targetDocId);
+            if (detailAlive && current.docId === targetDocId) {
+                if (raw.length > 0 || channels.length === 0) {
+                    channels = alignChannelsWithContact(current, raw);
+                }
+            }
+        } catch (err) {
+            if (detailAlive && current.docId === targetDocId && channels.length === 0) {
+                channels = alignChannelsWithContact(current, []);
+            }
+        }
+    }
+
+    function openAddChannel(type: ChannelType = "phone") {
+        draftType = type;
+        const meta = CHANNEL_TYPE_MAP[type];
+        draftLabel = meta.presetLabels[0] || meta.label;
+        draftValue = "";
+        draftIsPrimary = false;
+        channelsError = "";
+        editingChannelId = null;
+        addingChannel = true;
+    }
+
+    function changeDraftType(nextType: ChannelType) {
+        draftType = nextType;
+        const meta = CHANNEL_TYPE_MAP[nextType];
+        draftLabel = meta.presetLabels[0] || meta.label;
+    }
+
+    async function handleSaveNewChannel() {
+        const val = draftValue.trim();
+        if (!val) {
+            channelsError = "请输入条目内容";
+            return;
+        }
+        if (!onSaveChannels || channelsSaving) return;
+        channelsSaving = true;
+        channelsError = "";
+        try {
+            const newEntry: ContactChannel = {
+                id: newChannelId(),
+                type: draftType,
+                label: draftLabel.trim() || CHANNEL_TYPE_MAP[draftType].label,
+                value: val,
+                isPrimary: draftIsPrimary,
+                createdAt: Date.now(),
+            };
+            const nextList = draftIsPrimary
+                ? [newEntry, ...channels.map((c) => (c.type === draftType ? { ...c, isPrimary: false } : c))]
+                : [...channels, newEntry];
+            await onSaveChannels(current.docId, nextList);
+            channels = nextList;
+            addingChannel = false;
+            draftValue = "";
+
+            if (draftIsPrimary) {
+                await syncPrimaryChannelToDatabase(draftType, val);
+            }
+            onChanged();
+        } catch (err) {
+            channelsError = `保存条目失败：${requestErrorMessage(err)}`;
+        } finally {
+            channelsSaving = false;
+        }
+    }
+
+    function startEditChannel(channel: ContactChannel) {
+        addingChannel = false;
+        editingChannelId = channel.id;
+        editType = channel.type;
+        editLabel = channel.label;
+        editValue = channel.value;
+        editIsPrimary = channel.isPrimary ?? false;
+        channelsError = "";
+    }
+
+    async function handleSaveEditedChannel(id: string) {
+        const val = editValue.trim();
+        if (!val) {
+            channelsError = "条目内容不能为空";
+            return;
+        }
+        if (!onSaveChannels || channelsSaving) return;
+        channelsSaving = true;
+        channelsError = "";
+        try {
+            const nextList = channels.map((c) => {
+                if (c.id === id) {
+                    return {
+                        ...c,
+                        type: editType,
+                        label: editLabel.trim() || CHANNEL_TYPE_MAP[editType].label,
+                        value: val,
+                        isPrimary: editIsPrimary,
+                    };
+                }
+                if (editIsPrimary && c.type === editType) {
+                    return { ...c, isPrimary: false };
+                }
+                return c;
+            });
+            await onSaveChannels(current.docId, nextList);
+            channels = nextList;
+            editingChannelId = null;
+
+            if (editIsPrimary) {
+                await syncPrimaryChannelToDatabase(editType, val);
+            }
+            onChanged();
+        } catch (err) {
+            channelsError = `修改条目失败：${requestErrorMessage(err)}`;
+        } finally {
+            channelsSaving = false;
+        }
+    }
+
+    async function handleRemoveChannel(id: string) {
+        if (!onSaveChannels || channelsSaving) return;
+        channelsSaving = true;
+        channelsError = "";
+        try {
+            const nextList = channels.filter((c) => c.id !== id);
+            await onSaveChannels(current.docId, nextList);
+            channels = nextList;
+            if (editingChannelId === id) editingChannelId = null;
+            onChanged();
+        } catch (err) {
+            channelsError = `删除条目失败：${requestErrorMessage(err)}`;
+        } finally {
+            channelsSaving = false;
+        }
+    }
+
+    async function syncPrimaryChannelToDatabase(type: ChannelType, val: string) {
+        try {
+            if (type === "phone" && current.phone !== val) {
+                await updateContactFields(settings, current.itemId, {
+                    name: current.name,
+                    phone: val,
+                    email: current.email,
+                    wechat: current.wechat,
+                    website: current.website,
+                    birthday: current.birthday,
+                    isLunar: current.isLunar,
+                    group: current.group,
+                    tags: current.tags,
+                });
+                current.phone = val;
+            } else if (type === "wechat" && current.wechat !== val) {
+                await updateContactFields(settings, current.itemId, {
+                    name: current.name,
+                    phone: current.phone,
+                    email: current.email,
+                    wechat: val,
+                    website: current.website,
+                    birthday: current.birthday,
+                    isLunar: current.isLunar,
+                    group: current.group,
+                    tags: current.tags,
+                });
+                current.wechat = val;
+            } else if (type === "email" && current.email !== val) {
+                await updateContactFields(settings, current.itemId, {
+                    name: current.name,
+                    phone: current.phone,
+                    email: val,
+                    wechat: current.wechat,
+                    website: current.website,
+                    birthday: current.birthday,
+                    isLunar: current.isLunar,
+                    group: current.group,
+                    tags: current.tags,
+                });
+                current.email = val;
+            }
+        } catch (e) {
+            console.warn("[LvContacts] 同步主条目到总表异常：", e);
+        }
+    }
+
+    // ---- 实体纸质名片档案（保持原图比例、长边 1200px 高清压缩、点击放大查阅） ----
+    let businessCardUrl = $state("");
+    let cardSaving = $state(false);
+    let cardError = $state("");
+    let cardViewerOpen = $state(false);
+    let cardFileInput: HTMLInputElement | undefined = $state();
+
+    async function loadBusinessCard() {
+        if (!onLoadBusinessCard || !current?.docId) return;
+        const targetDocId = current.docId;
+        cardError = "";
+        try {
+            const url = await onLoadBusinessCard(targetDocId);
+            if (detailAlive && current.docId === targetDocId) {
+                if (url || !businessCardUrl) {
+                    businessCardUrl = url;
+                }
+            }
+        } catch (err) {
+            if (detailAlive && current.docId === targetDocId && !businessCardUrl) businessCardUrl = "";
+        }
+    }
+
+    async function handleBusinessCardUpload(e: Event) {
+        const input = e.currentTarget as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file || cardSaving || !onSaveBusinessCard) return;
+        cardSaving = true;
+        cardError = "";
+        try {
+            const processed = await processBusinessCardFile(file, 1200);
+            await onSaveBusinessCard(current.docId, processed.dataUrl);
+            businessCardUrl = processed.dataUrl;
+            onChanged();
+        } catch (err) {
+            cardError = `上传名片失败：${requestErrorMessage(err)}`;
+        } finally {
+            cardSaving = false;
+            input.value = "";
+        }
+    }
+
+    async function handleDeleteBusinessCard() {
+        const ok = await confirmDialog({
+            title: "删除实体名片",
+            message: `确定删除 ${current.name} 的名片照片吗？`,
+            confirmLabel: "删除名片",
+            cancelLabel: "保留",
+            danger: true,
+        });
+        if (!ok || !onSaveBusinessCard || cardSaving) return;
+        cardSaving = true;
+        cardError = "";
+        try {
+            await onSaveBusinessCard(current.docId, "");
+            businessCardUrl = "";
+            cardViewerOpen = false;
+            onChanged();
+        } catch (err) {
+            cardError = `删除名片失败：${requestErrorMessage(err)}`;
+        } finally {
+            cardSaving = false;
+        }
+    }
+
+    loadChannels();
+    loadBusinessCard();
+
     let kinships = $state<KinshipMemberItem[]>([]);
 
     async function loadKinships() {
@@ -1312,7 +1616,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             if (!detailAlive || request !== othersRequest || current.docId !== target.docId || current.itemId !== target.itemId) return;
             others = people;
             const matches = people.filter((item) => item.docId === target.docId || item.itemId === target.itemId);
-            if (matches.length === 1 && matches[0].docId === target.docId && matches[0].itemId === target.itemId) current = matches[0];
+            if (matches.length === 1 && matches[0].docId === target.docId && matches[0].itemId === target.itemId) {
+                if (current.avatar && !matches[0].avatar) matches[0].avatar = current.avatar;
+                current = matches[0];
+            }
             else othersError = "原人物的文档与行绑定已变化或不唯一，当前详情保留；请重新核对稳定文档 ID";
         } catch (error) {
             if (detailAlive && request === othersRequest && current.docId === target.docId && current.itemId === target.itemId) {
@@ -1362,7 +1669,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             onChanged();
             const fresh = await refreshPerson(settings, current);
             if (!detailAlive) return;
-            if (fresh) current = fresh;
+            if (fresh) {
+                if (current.avatar && !fresh.avatar) fresh.avatar = current.avatar;
+                current = fresh;
+            }
             if (isRelationMutationReport(result)) {
                 rememberRelationProjections(result.projections);
                 await loadOthers();
@@ -2798,6 +3108,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             void loadAnniversaries();
             void loadProjects();
             if (!cadenceDirty) void loadCadence();
+            void loadChannels();
+            void loadBusinessCard();
         }
         if (orgRefreshPending && !addOrgBusy && !editingOrgMembershipId && !removingOrgMembershipId && !addOrgDocId) {
             orgRefreshPending = false;
@@ -3046,7 +3358,78 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
+    let avatarFileInput: HTMLInputElement | undefined = $state();
+    let avatarSaving = $state(false);
+    let avatarError = $state("");
+
+    $effect(() => {
+        const docId = current.docId;
+        if (docId && !current.avatar && onLoadAvatar) {
+            onLoadAvatar(docId).then((av) => {
+                if (detailAlive && current.docId === docId && av) {
+                    current = { ...current, avatar: av };
+                }
+            }).catch(() => {});
+        }
+    });
+
+    async function handleAvatarUpload(event: Event) {
+        const input = event.currentTarget as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file || avatarSaving) return;
+        avatarSaving = true;
+        avatarError = "";
+        try {
+            const processed = await processAvatarFile(file, 160);
+            if (onSaveAvatar) {
+                await onSaveAvatar(current.docId, processed.dataUrl);
+            }
+            current = { ...current, avatar: processed.dataUrl };
+            onChanged();
+        } catch (err) {
+            avatarError = requestErrorMessage(err);
+        } finally {
+            avatarSaving = false;
+            input.value = "";
+        }
+    }
+
+    async function handleClearAvatar() {
+        if (avatarSaving) return;
+        avatarSaving = true;
+        avatarError = "";
+        try {
+            if (onSaveAvatar) {
+                await onSaveAvatar(current.docId, "");
+            }
+            current = { ...current, avatar: "" };
+            onChanged();
+        } catch (err) {
+            avatarError = requestErrorMessage(err);
+        } finally {
+            avatarSaving = false;
+        }
+    }
+
     function handleDetailGlobalKeydown(event: KeyboardEvent) {
+        if (cardViewerOpen && event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            cardViewerOpen = false;
+            return;
+        }
+        if (addingChannel && event.key === "Escape") {
+            event.preventDefault();
+            addingChannel = false;
+            channelsError = "";
+            return;
+        }
+        if (editingChannelId && event.key === "Escape") {
+            event.preventDefault();
+            editingChannelId = null;
+            channelsError = "";
+            return;
+        }
         if (editing || deleting || (typeof document !== "undefined" && document.querySelector(".lvct-dialog-mask:not(.lvct-detail)"))) return;
         if (event.altKey && (event.key === "ArrowLeft" || event.key === "Left")) {
             if (previousPerson && !busy) {
@@ -3066,9 +3449,50 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
 <div class="lvct-detail">
     <div class="lvct-detail__header" class:lvct-detail__header--starred={isStarred}>
-        <div class="lvct-detail__avatar" data-group={current.group || "未分组"}>
-            {current.name.slice(0, 1)}
-            {#if isStarred}<span class="lvct-detail__avatar-star" title="星标联系人">⭐</span>{/if}
+        <div class="lvct-detail__avatar-wrap" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_interactive_supports_focus -->
+            <div
+                class="lvct-detail__avatar"
+                data-group={current.group || "未分组"}
+                role="button"
+                tabindex="0"
+                title="点击上传或更换真人头像照片"
+                style="cursor: pointer; position: relative;"
+                onclick={() => avatarFileInput?.click()}
+            >
+                {#if current.avatar}
+                    <img src={current.avatar} alt={current.name} class="lvct-avatar-img" />
+                {:else}
+                    {current.name.slice(0, 1)}
+                {/if}
+                <span class="lvct-detail__avatar-overlay">
+                    <Camera size={13} strokeWidth={1.6} />
+                </span>
+                {#if isStarred}<span class="lvct-detail__avatar-star" title="星标联系人">⭐</span>{/if}
+            </div>
+            {#if current.avatar}
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small"
+                    style="font-size: 10px; padding: 0 4px; line-height: 1.2; color: var(--lvct-text-3);"
+                    title="移除照片，恢复默认单字头像"
+                    disabled={avatarSaving}
+                    onclick={handleClearAvatar}
+                >移除照片</button>
+            {/if}
+            {#if avatarError}
+                <span class="ft__smaller ft__error" role="alert">{avatarError}</span>
+            {/if}
+            <input
+                bind:this={avatarFileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                style="display: none;"
+                onchange={handleAvatarUpload}
+                disabled={avatarSaving}
+                aria-label="上传联系人头像"
+            />
         </div>
         <div class="lvct-detail__id">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -3397,11 +3821,12 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     {#if activeTab === "overview"}
     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -- tabpanel semantics are required for the tablist contract. -->
     <section id="lvct-detail-panel-overview" role="tabpanel" aria-labelledby="lvct-detail-tab-overview" tabindex="0">
-    <PersonProfileSummary profile={current.profile} compact hideEmpty />
-
-    {#if onLoadRelationshipLabels && onSaveRelationshipLabels && !current.isSelf}
-        <RelationshipLabels personDocId={current.docId} {revision} onLoad={onLoadRelationshipLabels} onSave={onSaveRelationshipLabels} {onChanged} />
+    {#if current.profile}
+        <div class="lvct-detail__profile-strip">
+            <PersonProfileSummary profile={current.profile} compact hideEmpty />
+        </div>
     {/if}
+
     <section class="lvct-detail__section lvct-detail__relationship-snapshot" aria-labelledby="lvct-relationship-snapshot-title">
         {#if !current.isSelf && (relationshipHealth.level === "cold" || (relationshipHealth.overdue && relationshipHealth.overdueDays >= 14))}
             <div class="lvct-detail__cooling-alert" role="status" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; margin-bottom: 12px; background: color-mix(in srgb, #0284c7 10%, var(--lvct-bg-surface)); border: 1px solid color-mix(in srgb, #0284c7 35%, transparent); border-radius: var(--lvct-r-md);">
@@ -3442,7 +3867,6 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         <div class="lvct-detail__section-head">
             <div>
                 <h4 id="lvct-relationship-snapshot-title">关系摘要</h4>
-                <p class="ft__smaller ft__on-surface">把联系背景集中在这里；互动记录会更新“久未联系”提醒，跟进完成不会自动记为互动。</p>
             </div>
             {#if insightsError}
                 <button type="button" class="b3-button b3-button--text" disabled={insightsLoading} onclick={loadInsights}>重试互动</button>
@@ -3513,176 +3937,374 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             <button class="b3-button b3-button--outline b3-button--small" onclick={() => (editing = true)}>{text("detailAddContactFields", "+ 补充资料")}</button>
         </div>
     {/if}
-    <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-top: 14px; margin-bottom: 6px;">
-        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">{text("detailBasicCommSection", "通讯与基础资料")}</h4>
-        <button
-            type="button"
-            class="b3-button b3-button--text b3-button--small lvct-privacy-shield-btn"
-            style="padding: 2px 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;"
-            title={privacyMaskActive ? (revealSeconds > 0 ? text("detailPrivacyRevealedTip", "已临时显形，将在 {seconds} 秒后重新自动掩盖", { seconds: revealSeconds }) : text("detailPrivacyClickToReveal", "点击暂时显形 5 秒，或长按关闭遮罩")) : text("detailPrivacyMaskTip", "开启离席隐私保护盾（投屏/录屏或离席时对电话、微信、邮箱自动打码遮罩）")}
-            onclick={togglePrivacyMask}
-        >
-            {#if privacyMaskActive && revealSeconds === 0}
-                <EyeOff size={13} style="color: var(--lv-brand, #ea580c);" />
-                <span style="color: var(--lv-brand, #ea580c); font-weight: 500;">{text("detailPrivacyShieldActive", "隐私盾保护中")}</span>
-            {:else if privacyMaskActive && revealSeconds > 0}
-                <Eye size={13} style="color: var(--lvct-success, #16a34a);" />
-                <span style="color: var(--lvct-success, #16a34a); font-weight: 500;">已显形 ({revealSeconds}s)</span>
-            {:else}
-                <Shield size={13} />
-                <span>隐私盾</span>
-            {/if}
-        </button>
-    </div>
-    <dl class="lvct-detail__fields">
-        {#if current.phone}
-            {@const isMasked = privacyMaskActive && revealSeconds === 0}
-            {@const displayPhone = isMasked ? maskPhone(current.phone) : current.phone}
-            <div>
-                <dt>电话</dt>
-                <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <a href={`tel:${current.phone}`} title={isMasked ? "隐私遮罩中（点击拨打电话）" : "拨打电话"}>{displayPhone}</a>
-                    <button
-                        type="button"
-                        class="b3-button b3-button--text lvct-detail__copy-btn"
-                        title={copiedField === "phone" ? "已复制到剪贴板" : "复制电话号码"}
-                        aria-label="复制电话号码"
-                        onclick={() => handleCopyField(current.phone, "phone")}
-                    >
-                        {#if copiedField === "phone"}
-                            <span class="lvct-text-success ft__smaller">已复制 ✓</span>
-                        {:else}
-                            <Copy size={12} />
-                        {/if}
-                    </button>
-                </dd>
+    <section class="lvct-detail__section lvct-detail__comm-section">
+        <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="fn__flex" style="align-items: center; gap: 8px;">
+                <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">通讯与多维资料条目</h4>
+                <span class="lvct-chip font-size-11" style="padding: 1px 6px;">{channels.length} 项</span>
             </div>
-        {/if}
-        {#if current.email}
-            {@const isMasked = privacyMaskActive && revealSeconds === 0}
-            {@const displayEmail = isMasked ? maskEmail(current.email) : current.email}
-            <div>
-                <dt>邮箱</dt>
-                <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <a href={`mailto:${current.email}`} title={isMasked ? "隐私遮罩中（点击发送邮件）" : "发送邮件"}>{displayEmail}</a>
-                    <button
-                        type="button"
-                        class="b3-button b3-button--text lvct-detail__copy-btn"
-                        title={copiedField === "email" ? "已复制到剪贴板" : "复制邮箱地址"}
-                        aria-label="复制邮箱地址"
-                        onclick={() => handleCopyField(current.email, "email")}
-                    >
-                        {#if copiedField === "email"}
-                            <span class="lvct-text-success ft__smaller">已复制 ✓</span>
-                        {:else}
-                            <Copy size={12} />
-                        {/if}
-                    </button>
-                </dd>
+            <div class="fn__flex" style="align-items: center; gap: 6px;">
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small lvct-privacy-shield-btn"
+                    style="padding: 2px 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;"
+                    title={privacyMaskActive ? (revealSeconds > 0 ? text("detailPrivacyRevealedTip", "已临时显形，将在 {seconds} 秒后重新自动掩盖", { seconds: revealSeconds }) : text("detailPrivacyClickToReveal", "点击暂时显形 5 秒，或长按关闭遮罩")) : text("detailPrivacyMaskTip", "开启离席隐私保护盾（投屏/录屏或离席时对电话、微信、邮箱自动打码遮罩）")}
+                    onclick={togglePrivacyMask}
+                >
+                    {#if privacyMaskActive && revealSeconds === 0}
+                        <EyeOff size={13} style="color: var(--lv-brand, #ea580c);" />
+                        <span style="color: var(--lv-brand, #ea580c); font-weight: 500;">{text("detailPrivacyShieldActive", "隐私盾保护中")}</span>
+                    {:else if privacyMaskActive && revealSeconds > 0}
+                        <Eye size={13} style="color: var(--lvct-success, #16a34a);" />
+                        <span style="color: var(--lvct-success, #16a34a); font-weight: 500;">已显形 ({revealSeconds}s)</span>
+                    {:else}
+                        <Shield size={13} />
+                        <span>隐私盾</span>
+                    {/if}
+                </button>
+                <button
+                    type="button"
+                    class="b3-button b3-button--outline b3-button--small"
+                    style="padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px;"
+                    onclick={() => openAddChannel("phone")}
+                    title="添加新的手机号、微信号、邮箱或自定义条目"
+                >
+                    <Plus size={12} /> 添加条目
+                </button>
             </div>
-        {/if}
-        {#if current.wechat}
-            {@const isMasked = privacyMaskActive && revealSeconds === 0}
-            {@const displayWechat = isMasked ? maskWechat(current.wechat) : current.wechat}
-            <div>
-                <dt>微信</dt>
-                <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <span>{displayWechat}</span>
-                    <button
-                        type="button"
-                        class="b3-button b3-button--text lvct-detail__copy-btn"
-                        title={copiedField === "wechat" ? "已复制到剪贴板" : "复制微信号"}
-                        aria-label="复制微信号"
-                        onclick={() => handleCopyField(current.wechat, "wechat")}
-                    >
-                        {#if copiedField === "wechat"}
-                            <span class="lvct-text-success ft__smaller">已复制 ✓</span>
-                        {:else}
-                            <Copy size={12} />
-                        {/if}
-                    </button>
-                </dd>
-            </div>
-        {/if}
-        {#if current.website}
-            <div>
-                <dt>网站</dt>
-                <dd class="fn__flex fn__flex-1" style="align-items: center; gap: 6px;">
-                    <a
-                        class="fn__flex"
-                        style="align-items: center; gap: 4px;"
-                        href={current.website.startsWith("http") ? current.website : `https://${current.website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="在浏览器中打开网址"
-                    >
-                        <span>{current.website}</span>
-                        <ExternalLink size={12} />
-                    </a>
-                    <button
-                        type="button"
-                        class="b3-button b3-button--text lvct-detail__copy-btn"
-                        title={copiedField === "website" ? "已复制到剪贴板" : "复制网址"}
-                        aria-label="复制网址"
-                        onclick={() => handleCopyField(current.website, "website")}
-                    >
-                        {#if copiedField === "website"}
-                            <span class="lvct-text-success ft__smaller">已复制 ✓</span>
-                        {:else}
-                            <Copy size={12} />
-                        {/if}
-                    </button>
-                </dd>
-            </div>
-        {/if}
-        <div>
-            <dt>标签</dt>
-            <dd>
-                {#if current.tags.length > 0}
-                    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
-                        {#each current.tags as tag}
-                            <span class="lvct-chip lvct-chip--tag">{tag}</span>
-                        {/each}
-                    </div>
-                {:else}
-                    <span class="ft__smaller ft__on-surface">暂无标签</span>
-                {/if}
-                {#if detailSuggestedTags.length > 0}
-                    <div class="lvct-detail__suggested-tags" style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 6px;">
-                        <span class="ft__smaller" style="color: var(--lv-brand, #ea580c); display: inline-flex; align-items: center; gap: 3px;">
-                            <Sparkles size={11} /> {text("detailTagInferenceTitle", "画像标签推断：")}
-                        </span>
-                        {#each detailSuggestedTags as stag}
-                            <button
-                                type="button"
-                                class="b3-chip font-size-11 lvct-detail__suggested-tag-btn"
-                                style="cursor: pointer;"
-                                disabled={adoptingTags}
-                                title={text("detailAdoptTagTip", "点击直接采纳此画像标签")}
-                                onclick={() => void handleAdoptTag(stag)}
-                            >+ {stag}</button>
-                        {/each}
-                        {#if detailSuggestedTags.length > 1}
-                            <button
-                                type="button"
-                                class="b3-button b3-button--text b3-button--small lvct-detail__adopt-all-btn"
-                                style="padding: 1px 6px; font-size: 11px; color: var(--lv-brand, #ea580c);"
-                                disabled={adoptingTags}
-                                onclick={handleAdoptAllTags}
-                                title={text("detailAdoptAllTagsTip", "一键采纳全部推荐画像标签")}
-                            >
-                                {text("detailAdoptAllTags", "全部采纳 ({n})", { n: detailSuggestedTags.length })}
-                            </button>
-                        {/if}
-                    </div>
-                {/if}
-            </dd>
         </div>
-        {#if birthday}<div><dt>下次生日</dt><dd>{birthday.date.toLocaleDateString("zh-CN")}（公历{current.isLunar ? `，对应${birthday.label}` : ""}） · {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil} 天后`}</dd></div>{/if}
-    </dl>
-    {#if copyFieldError}
-        <p class="b3-label b3-label--error ft__smaller" style="margin: 4px 0;">{copyFieldError}</p>
-    {/if}
+
+        {#if addingChannel}
+            <!-- 新增条目卡片 -->
+            <div class="lvct-channel-form-card" role="region" aria-label="添加新条目">
+                <div class="lvct-channel-form__types">
+                    {#each CHANNEL_TYPES as meta}
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11 lvct-channel-type-btn {draftType === meta.type ? 'is-active' : ''}"
+                            onclick={() => changeDraftType(meta.type)}
+                        >
+                            <span>{meta.icon}</span>
+                            <span>{meta.label}</span>
+                        </button>
+                    {/each}
+                </div>
+                <div class="lvct-channel-form__presets">
+                    <span class="ft__smaller ft__on-surface">常用标签：</span>
+                    {#each CHANNEL_TYPE_MAP[draftType].presetLabels as plabel}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text b3-button--small font-size-11"
+                            style="padding: 1px 5px;"
+                            onclick={() => (draftLabel = plabel)}
+                        >
+                            {plabel}
+                        </button>
+                    {/each}
+                </div>
+                <div class="lvct-channel-form__row">
+                    <input
+                        type="text"
+                        class="b3-text-field b3-text-field--small"
+                        style="width: 120px;"
+                        placeholder="标签名称"
+                        bind:value={draftLabel}
+                    />
+                    <input
+                        type="text"
+                        class="b3-text-field b3-text-field--small fn__flex-1"
+                        placeholder={CHANNEL_TYPE_MAP[draftType].placeholder}
+                        bind:value={draftValue}
+                        onkeydown={(e) => { if (e.key === "Enter") void handleSaveNewChannel(); }}
+                    />
+                    <label class="fn__flex" style="align-items: center; gap: 4px; font-size: 11.5px; cursor: pointer;">
+                        <input type="checkbox" bind:checked={draftIsPrimary} />
+                        <span>设为主条目</span>
+                    </label>
+                </div>
+                {#if channelsError}
+                    <div class="ft__smaller lvct-text-danger" style="margin-top: 4px;">{channelsError}</div>
+                {/if}
+                <div class="lvct-channel-form__actions">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--primary b3-button--small"
+                        disabled={channelsSaving}
+                        onclick={handleSaveNewChannel}
+                    >
+                        {channelsSaving ? "保存中…" : "确认添加"}
+                    </button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--cancel b3-button--small"
+                        disabled={channelsSaving}
+                        onclick={() => { addingChannel = false; channelsError = ""; }}
+                    >
+                        取消
+                    </button>
+                </div>
+            </div>
+        {/if}
+
+        <div class="lvct-channels-list">
+            {#if channels.length === 0}
+                <div class="lvct-channel-empty">暂无通讯条目，点击上方“添加条目”进行扩充</div>
+            {:else}
+                {#each channels as ch (ch.id)}
+                    {@const isMasked = privacyMaskActive && revealSeconds === 0 && (ch.type === "phone" || ch.type === "wechat" || ch.type === "email")}
+                    {@const displayValue = isMasked
+                        ? (ch.type === "phone" ? maskPhone(ch.value) : ch.type === "wechat" ? maskWechat(ch.value) : maskEmail(ch.value))
+                        : ch.value}
+                    {@const actionHref = getChannelActionHref(ch)}
+                    {@const meta = CHANNEL_TYPE_MAP[ch.type] || CHANNEL_TYPE_MAP.custom}
+
+                    {#if editingChannelId === ch.id}
+                        <!-- 行内编辑条目 -->
+                        <div class="lvct-channel-form-card lvct-channel-form-card--edit">
+                            <div class="lvct-channel-form__row">
+                                <span class="lvct-chip font-size-11">{meta.icon} {meta.label}</span>
+                                <input
+                                    type="text"
+                                    class="b3-text-field b3-text-field--small"
+                                    style="width: 110px;"
+                                    placeholder="标签"
+                                    bind:value={editLabel}
+                                />
+                                <input
+                                    type="text"
+                                    class="b3-text-field b3-text-field--small fn__flex-1"
+                                    placeholder="条目内容"
+                                    bind:value={editValue}
+                                    onkeydown={(e) => { if (e.key === "Enter") void handleSaveEditedChannel(ch.id); }}
+                                />
+                                <label class="fn__flex" style="align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
+                                    <input type="checkbox" bind:checked={editIsPrimary} />
+                                    <span>主条目</span>
+                                </label>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--primary b3-button--small"
+                                    disabled={channelsSaving}
+                                    onclick={() => void handleSaveEditedChannel(ch.id)}
+                                >
+                                    保存
+                                </button>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--cancel b3-button--small"
+                                    disabled={channelsSaving}
+                                    onclick={() => { editingChannelId = null; channelsError = ""; }}
+                                >
+                                    取消
+                                </button>
+                            </div>
+                            {#if channelsError}
+                                <div class="ft__smaller lvct-text-danger" style="margin-top: 4px;">{channelsError}</div>
+                            {/if}
+                        </div>
+                    {:else}
+                        <!-- 正常条目卡片 -->
+                        <div class="lvct-channel-item">
+                            <div class="lvct-channel-item__lead">
+                                <span class="lvct-channel-badge lvct-channel-badge--{ch.type}">
+                                    <span class="lvct-channel-icon">{meta.icon}</span>
+                                    <span class="lvct-channel-label">{ch.label}</span>
+                                </span>
+                                {#if ch.isPrimary}
+                                    <span class="lvct-channel-primary-tag" title="主要联系方式">主</span>
+                                {/if}
+                            </div>
+                            <div class="lvct-channel-item__body">
+                                {#if actionHref}
+                                    <a
+                                        href={actionHref}
+                                        class="lvct-channel-val-link"
+                                        target={ch.type === "social" || (ch.type === "custom" && actionHref.startsWith("http")) ? "_blank" : undefined}
+                                        rel="noopener noreferrer"
+                                        title={actionHref.startsWith("tel:") ? "点击呼叫拨号" : actionHref.startsWith("mailto:") ? "点击撰写邮件" : "点击打开外部链接"}
+                                    >
+                                        {displayValue}
+                                    </a>
+                                {:else}
+                                    <span class="lvct-channel-val-text">{displayValue}</span>
+                                {/if}
+                            </div>
+                            <div class="lvct-channel-item__actions">
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-channel-action-btn"
+                                    title={copiedField === ch.id ? "已复制到剪贴板" : `复制${ch.label}`}
+                                    onclick={() => handleCopyField(ch.value, ch.id)}
+                                >
+                                    {#if copiedField === ch.id}
+                                        <span class="lvct-text-success ft__smaller">已复制 ✓</span>
+                                    {:else}
+                                        <Copy size={12} />
+                                    {/if}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-channel-action-btn"
+                                    title="编辑此条目"
+                                    onclick={() => startEditChannel(ch)}
+                                >
+                                    <Edit3 size={12} />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-channel-action-btn lvct-text-danger"
+                                    title="删除此条目"
+                                    onclick={() => void handleRemoveChannel(ch.id)}
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    {/if}
+                {/each}
+            {/if}
+        </div>
+
+        <!-- 标签与生日等其余基础信息保持并存 -->
+        <dl class="lvct-detail__fields" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--b3-theme-surface-lighter);">
+            <div>
+                <dt>标签</dt>
+                <dd>
+                    {#if current.tags.length > 0}
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+                            {#each current.tags as tag}
+                                <span class="lvct-chip lvct-chip--tag">{tag}</span>
+                            {/each}
+                        </div>
+                    {:else}
+                        <span class="ft__smaller ft__on-surface">暂无标签</span>
+                    {/if}
+                    {#if detailSuggestedTags.length > 0}
+                        <div class="lvct-detail__suggested-tags" style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 6px;">
+                            <span class="ft__smaller" style="color: var(--lv-brand, #ea580c); display: inline-flex; align-items: center; gap: 3px;">
+                                <Sparkles size={11} /> {text("detailTagInferenceTitle", "画像标签推断：")}
+                            </span>
+                            {#each detailSuggestedTags as stag}
+                                <button
+                                    type="button"
+                                    class="b3-chip font-size-11 lvct-detail__suggested-tag-btn"
+                                    style="cursor: pointer;"
+                                    disabled={adoptingTags}
+                                    title={text("detailAdoptTagTip", "点击直接采纳此画像标签")}
+                                    onclick={() => void handleAdoptTag(stag)}
+                                >+ {stag}</button>
+                            {/each}
+                            {#if detailSuggestedTags.length > 1}
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small lvct-detail__adopt-all-btn"
+                                    style="padding: 1px 6px; font-size: 11px; color: var(--lv-brand, #ea580c);"
+                                    disabled={adoptingTags}
+                                    onclick={() => void handleAdoptAllTags()}
+                                    title={text("detailAdoptAllTagsTip", "一键采纳全部推荐画像标签")}
+                                >
+                                    {adoptingTags ? "采纳中…" : text("detailAdoptAllTags", "全部采纳 ({n})", { n: detailSuggestedTags.length })}
+                                </button>
+                            {/if}
+                        </div>
+                    {/if}
+                </dd>
+            </div>
+            {#if birthday}
+                <div>
+                    <dt>下次生日</dt>
+                    <dd>{birthday.date.toLocaleDateString("zh-CN")}（公历{current.isLunar ? `，对应${birthday.label}` : ""}） · {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil} 天后`}</dd>
+                </div>
+            {/if}
+        </dl>
+    </section>
+
+    <!-- 🪪 实体名片档案卡片模块 -->
+    <section class="lvct-detail__section lvct-detail__business-card-section">
+        <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="fn__flex" style="align-items: center; gap: 6px;">
+                <CreditCard size={14} style="color: var(--lv-brand, #ea580c);" />
+                <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">实体纸质名片</h4>
+            </div>
+            {#if businessCardUrl}
+                <div class="fn__flex" style="align-items: center; gap: 6px;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small font-size-11"
+                        style="padding: 2px 7px;"
+                        onclick={() => (cardViewerOpen = true)}
+                    >
+                        <Maximize2 size={12} /> 查看大图
+                    </button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small font-size-11"
+                        style="padding: 2px 7px;"
+                        onclick={() => cardFileInput?.click()}
+                        disabled={cardSaving}
+                    >
+                        <Upload size={12} /> 更换
+                    </button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small font-size-11 lvct-text-danger"
+                        style="padding: 2px 7px;"
+                        onclick={handleDeleteBusinessCard}
+                        disabled={cardSaving}
+                    >
+                        <Trash2 size={12} />
+                    </button>
+                </div>
+            {/if}
+        </div>
+
+        <input
+            type="file"
+            accept="image/*"
+            style="display: none;"
+            bind:this={cardFileInput}
+            onchange={handleBusinessCardUpload}
+        />
+
+        {#if cardError}
+            <div class="ft__smaller lvct-text-danger" style="margin-bottom: 6px;">{cardError}</div>
+        {/if}
+
+        {#if businessCardUrl}
+            <div class="lvct-card-preview-container">
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="lvct-card-preview-box"
+                    onclick={() => (cardViewerOpen = true)}
+                    title="点击查看名片高清原图"
+                >
+                    <img src={businessCardUrl} alt={`${current.name} 的实体名片`} class="lvct-card-preview-img" />
+                    <div class="lvct-card-preview-overlay">
+                        <Maximize2 size={18} />
+                        <span>点击放大查看名片</span>
+                    </div>
+                </div>
+            </div>
+        {:else}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+                class="lvct-card-upload-dropzone"
+                onclick={() => cardFileInput?.click()}
+                title="点击选择名片照片上传"
+            >
+                <div class="lvct-card-upload-inner">
+                    <CreditCard size={28} style="color: var(--b3-theme-on-surface-light); margin-bottom: 6px;" />
+                    <span class="lvct-card-upload-title">上传纸质名片照片</span>
+                    <span class="lvct-card-upload-desc">支持 PNG/JPG/WebP，智能保持原图比例并高清压缩，随时点击放大查阅</span>
+                </div>
+            </div>
+        {/if}
+        {#if copyFieldError}
+            <p class="b3-label b3-label--error ft__smaller" style="margin: 8px 0 0;">{copyFieldError}</p>
+        {/if}
+    </section>
 
     <section class="lvct-detail__section">
         <h4>{text("detailRecordTitle", "记一笔互动")}</h4>
@@ -3715,7 +4337,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 </button>
             {/each}
         </div>
-        <div class="lvct-detail__record fn__flex">
+        <div class="lvct-detail__record fn__flex" style="gap: 8px; align-items: center;">
             <input
                 bind:this={recordInputEl}
                 class="b3-text-field fn__flex-1"
@@ -3725,9 +4347,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 bind:value={noteText}
                 oninput={() => (recorded = false)}
                 disabled={busy}
+                onkeydown={(e) => {
+                    if (e.key === "Enter" || ((e.ctrlKey || e.metaKey) && e.key === "Enter")) {
+                        e.preventDefault();
+                        if (!busy) void mutate(persistNote);
+                    }
+                }}
             />
             <button
-                class="b3-button b3-button--text"
+                class="b3-button b3-button--primary"
+                style="border-radius: var(--lv-r-pill, 9999px); padding: 4px 16px; white-space: nowrap; font-size: 12px;"
                 disabled={busy}
                 onclick={() =>
                     mutate(persistNote)}
@@ -3814,7 +4443,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     {#if facts.length > 0}
                         <ul class="lvct-facts-list">
                             {#each facts as fact (fact.id)}
-                                <li class="lvct-facts-item">
+                                <li class="lvct-facts-item" class:lvct-facts-item--taboo={fact.category === "preference" && fact.isTaboo}>
                                     {#if fact.category === "preference" && fact.isTaboo}
                                         <span class="lvct-chip lvct-chip--error">🚫 忌口红线</span>
                                     {:else}
@@ -4169,6 +4798,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             <p class="ft__smaller ft__on-surface">{text("orgCommonNote", "依据为组织成员记录；加入时间未知者只标「同组织」，不推断同期。")}</p>
         {/if}
     </section>
+    {/if}
+
+    {#if onLoadRelationshipLabels && onSaveRelationshipLabels && !current.isSelf}
+        <RelationshipLabels personDocId={current.docId} {revision} onLoad={onLoadRelationshipLabels} onSave={onSaveRelationshipLabels} {onChanged} />
     {/if}
 
     {#if followUpSupported}
@@ -5676,4 +6309,40 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             {i18n}
         />
     </LvctDialog>
+{/if}
+
+{#if cardViewerOpen && businessCardUrl}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="lvct-card-viewer-modal" onclick={() => (cardViewerOpen = false)}>
+        <div class="lvct-card-viewer-dialog" onclick={(e) => e.stopPropagation()}>
+            <div class="lvct-card-viewer-header">
+                <div class="fn__flex" style="align-items: center; gap: 8px;">
+                    <CreditCard size={16} />
+                    <span style="font-weight: 600;">{current.name} 的实体纸质名片</span>
+                </div>
+                <div class="fn__flex" style="align-items: center; gap: 6px;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small"
+                        onclick={() => cardFileInput?.click()}
+                    >
+                        更换名片
+                    </button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small"
+                        style="font-size: 16px; padding: 0 6px;"
+                        onclick={() => (cardViewerOpen = false)}
+                        title="关闭查看器"
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+            <div class="lvct-card-viewer-body">
+                <img src={businessCardUrl} alt={`${current.name} 的实体名片`} class="lvct-card-viewer-img" />
+            </div>
+        </div>
+    </div>
 {/if}

@@ -58,6 +58,15 @@ export interface ContactsPluginFacade {
     /** 人物独立备注：写入对应人物文档的 custom-lvct-person-note 标记块，不计入互动统计 */
     loadPersonNote(personDocId: string): Promise<string>;
     savePersonNote(personDocId: string, note: string, expected?: string): Promise<string>;
+    /** 联系人头像与照片：保存至思源文档属性（带尺寸压缩） */
+    savePersonAvatar?(personDocId: string, avatarDataUrl: string): Promise<void>;
+    loadPersonAvatar?(personDocId: string): Promise<string>;
+    /** 联系人多通讯条目与多维度资料条目：保存至思源文档属性 custom-lvct-channels */
+    savePersonChannels?(personDocId: string, channels: import("./domain/person-channels").ContactChannel[]): Promise<void>;
+    loadPersonChannels?(personDocId: string): Promise<import("./domain/person-channels").ContactChannel[]>;
+    /** 联系人实体名片照片：保存至思源文档属性 custom-lvct-business-card */
+    savePersonBusinessCard?(personDocId: string, cardDataUrl: string): Promise<void>;
+    loadPersonBusinessCard?(personDocId: string): Promise<string>;
     syncPersonDocument?(person: ContactSummary): Promise<void>;
     inspectLegacyPersonNote(personDocId: string): Promise<import("./domain/person-note").LegacyPersonNoteSnapshot>;
     detachLegacyPersonNote(personDocId: string, expected: import("./domain/person-note").LegacyPersonNoteSnapshot): Promise<void>;
