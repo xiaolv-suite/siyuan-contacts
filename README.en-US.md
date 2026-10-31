@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.2** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.2) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.3** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.3) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -54,20 +54,23 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.2 (2026-10-31)
+## This release: v0.7.3 (2026-10-31)
 
-Core-loop focus and first-screen consolidation (`D-0040`: Find → Pre-Meeting Review → Log Interaction → Next Follow-Up):
+Full-stack isolated SiYuan `v3.8.9` kernel + real Chrome desktop browser hardening (`pnpm e2e:isolated`):
 
-- **In-Place Interaction Editing (`interactions.ts` & `PersonDetail.svelte`)**: Edit date, type, and note on any recorded interaction; atomically tombstones the old event and appends the amended event under store lock while preserving source and `externalRef`, syncing the person document section and guarding unsaved edits.
-- **Preferences & Taboo Red Lines Unified in Person Document (`doc-section.ts` & `pre-meeting.ts`)**: The person document facts section now natively supports `🚫 Taboo` flags and automatically feeds the header ribbon, 30-second Pre-Meeting Brief, and workspace Pre-Meeting Hub; fixed silent read/write failure handling on document fact blocks.
-- **First-Screen Consolidation & Removal of Groundless Scores (`PersonCard.svelte`, `PersonDetail.svelte` & `DashboardView.svelte`)**: Fixed narrow roster card squeezing and multi-row toolbar overflow; removed arbitrary 0–100 reciprocity/radar scores, lifecycle conversion rates, and cheerleader banners; promoted "Log Interaction + Things to Remember" and "Today's Actions" above the fold while folding low-frequency panels; fixed ContextPanel privacy-shield masking, real cadence lookup, and cold-start hub drilldowns.
+- **SiYuan 3.8.9 Real-Host Transport & Nested Document Creation (`src/api/client.ts`)**: Switched real-host kernel calls to `fetchSyncPost` so `code === -1` responses resolve immediately instead of hanging 10s in `fetchPost`; added automatic ancestor document creation when `createDocWithMd` hits SiYuan 3.8.9's `document metadata is not ready` on nested paths.
+- **Atomic SuperBlock Document Sections (`src/api/blocks.ts`)**: Multi-block controlled sections (facts, interactions, etc.) are persisted as atomic SiYuan `{{{row ... }}}` superblocks, preventing Lute block-splitting and orphan headings.
+- **Detail Refresh Race Fixes & `pnpm e2e:isolated`**: Prevented background refreshes from wiping alias drafts, flashing skeletons, or blocking tab switches; added `pnpm e2e:isolated` full-stack kernel + Chrome desktop verification with screenshots.
 
-Validation: `pnpm check` (0 errors / 0 warnings), all unit tests passing (**1082/1082 PASS**); 3-tier browser UI regressions passing (**528/528**); production build, release gate, and isolated kernel load checks passed.
+Validation: `pnpm check` (0/0), unit tests (**1084/1084 PASS**), 3-tier UI regressions (**528/528**), and `pnpm e2e:isolated` (11/11 kernel services + real SiYuan desktop browser walkthrough) all passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.7.1 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.7.2 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.2 · 2026-10-31
+- In-place interaction editing (`amendInteraction`), preferences & `🚫 Taboo` red lines unified into the person document facts section, removal of groundless 0–100 scores, and first-screen consolidation across Roster, Person Detail, and Home.
 
 ### v0.7.1 · 2026-10-31
 - How We Met / Introducer Link (`person-origin.ts`), 30-Second Pre-Meeting Brief card, 14/30/90/180-day cadence tiers, 24-module lossless migration bundle, duplicate merge 19-step completion, directed `introducer` edge preservation, and local timezone unification.

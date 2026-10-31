@@ -51,8 +51,10 @@ export {
 export class RelatedProjectionUnknownError extends Error {}
 
 function contentWithoutIal(markdown: string): string {
-    return markdown.replace(/\r\n/g, "\n").trim()
+    const withoutIal = markdown.replace(/\r\n/g, "\n").trim()
         .replace(/\n\s*\{:[^}]*\}\s*$/g, "").trim();
+    const superMatch = withoutIal.match(/^\{\{\{(?:row|col)\n([\s\S]*?)\n*\}\}\}$/);
+    return superMatch ? superMatch[1].trim() : withoutIal;
 }
 
 /** 同步某人物文档的正文基本资料档案区块（真实落盘到思源笔记正文） */

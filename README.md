@@ -9,7 +9,7 @@
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.7.2** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.2) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.7.3** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.3) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -54,7 +54,22 @@
 
 ---
 
-## 最新版本（v0.7.2 · 2026-10-31）
+## 最新版本（v0.7.3 · 2026-10-31）
+
+本版本通过隔离真实思源 `v3.8.9` 内核 + 真实 Chrome 思源桌面网页全链路实测（`pnpm e2e:isolated`），修复 5 个模拟测试无法发现的真宿主问题：
+
+- **思源 3.8.9 真宿主传输与建档兼容（`src/api/client.ts`）**：修复真实宿主 `fetchPost` 在 `code === -1` 时不回调导致 10 秒超时的问题（切为 `fetchSyncPost` 即时返回真实内核响应）；修复思源 3.8.9 多级路径 `createDocWithMd` 因父文档未建而持续报 `document metadata is not ready` 的问题。
+- **人物文档受控区块原子超级块落盘（`src/api/blocks.ts`）**：多段受控 Markdown（含 `谈资与关键事实`、`往来记录` 等）自动以思源 `{{{row ... }}}` 原子超级块写入，杜绝 Lute 拆块导致的孤立重复标题与回读校验失败。
+- **详情页真机交互竞态修复与 `pnpm e2e:isolated` 全栈验收脚本**：修复后台刷新清空别名草稿、跟进与备注闪回加载态，以及只读刷新锁死「概览/互动」页签切换的问题；新增 `pnpm e2e:isolated` 一键运行真内核 + 真浏览器端到端走查并输出桌面截图。
+
+验证：本地 `pnpm check` 0 errors / 0 warnings，全量单测 **1084/1084** 通过；三套浏览器 UI 回归 **528/528** 通过；`pnpm e2e:isolated`（11/11 真内核服务 + 真实思源桌面浏览器全链路）全部通过。
+
+---
+
+<details>
+<summary><b>📜 历史版本更新记录（v0.7.2 ~ v0.5.2 点击展开）</b></summary>
+
+### v0.7.2 · 2026-10-31
 
 本版本围绕「查人 → 会前回顾 → 记一笔 → 下次联系」核心主线做收敛与加固（`D-0040`）：
 
@@ -63,11 +78,6 @@
 - **名册、人物详情与首页一屏收敛及去伪评分（`PersonCard.svelte`、`PersonDetail.svelte` & `DashboardView.svelte`）**：修复名册卡片姓名/生日窄列挤压与工具栏多行遮挡；清除无数据依据的互惠指数、社交资产雷达分、生命周期合作率与状态极佳横幅；将详情「记一笔互动 + 记住的事」与首页「今日行动」提至首屏，低频扩展默认折叠收纳；补齐右侧速览面板隐私盾打码、真实联系节奏与首页大盘冷启动下钻。
 
 验证：本地 `pnpm check` 0 errors / 0 warnings，全量单元测试 **1082/1082** 100% 通过；三套浏览器 UI 回归全绿（**528/528**）；`pnpm build`、`pnpm check:release` 与隔离内核加载验证全部通过。
-
----
-
-<details>
-<summary><b>📜 历史版本更新记录（v0.7.1 ~ v0.5.2 点击展开）</b></summary>
 
 ### v0.7.1 · 2026-10-31
 

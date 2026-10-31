@@ -226,15 +226,31 @@ export async function readMarkedBlocksByRoots(
     return out;
 }
 
-/** 去掉目标属性对应的末尾 IAL 行，保留正文作为写后核验事实。 */
-function markedBlockContent(markdown: string, attrName?: string): string {
+function unwrapSuperBlockBody(text: string): string {
+    const trimmed = text.trim();
+    const match = trimmed.match(/^\{\{\{(?:row|col)\n([\s\S]*?)\n*\}\}\}$/);
+    return match ? match[1].trim() : trimmed;
+}
+
+function wrapMultiBlockMarkdown(markdown: string): string {
+    const trimmed = markdown.replace(/\r\n/g, "\n").trim();
+    const isMultiBlock = trimmed.includes("\n\n") || /\n(?:#{1,6}\s|[-*+]\s|\d+\.\s)/.test(trimmed);
+    if (!trimmed || !isMultiBlock || /^\{\{\{(?:row|col)\n/.test(trimmed)) return trimmed;
+    return `{{{row\n${trimmed}\n\n}}}`;
+}
+
+/** 去掉目标属性对应的末尾 IAL 行及多段原子超级块外壳，保留正文作为写后核验事实。 */
+export function markedBlockContent(markdown: string, attrName?: string): string {
     const normalized = markdown.replace(/\r\n/g, "\n").trim();
     // The marker is appended as the final line by upsertMarkedBlock. Keep
     // IAL-looking lines in the body: they may be literal user text.
-    if (!attrName) return normalized;
-    const escapedAttr = attrName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const marker = new RegExp(`\\n\\s*\\{:[^\\n]*\\b${escapedAttr}="[^"\\n]*"[^}\\n]*\\}\\s*$`);
-    return normalized.replace(marker, "").trim();
+    const withoutIal = !attrName
+        ? normalized
+        : normalized.replace(
+            new RegExp(`\\n\\s*\\{:[^\\n]*\\b${attrName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}="[^"\\n]*"[^}\\n]*\\}\\s*$`),
+            "",
+        ).trim();
+    return unwrapSuperBlockBody(withoutIal);
 }
 
 /** 回读拒绝不能作为原写请求被拒绝的证据。 */
@@ -553,7 +569,8 @@ export async function upsertMarkedBlock(
     attrValue: string = "1",
 ): Promise<void> {
     if (!/^[\w-]+$/.test(attrValue)) throw new Error("attrValue 只允许字母数字下划线连字符");
-    const marked = markdown.length > 0 ? `${markdown}\n{: ${attrName}="${attrValue}"}` : "";
+    const atomicBody = markdown.length > 0 ? wrapMultiBlockMarkdown(markdown) : "";
+    const marked = atomicBody.length > 0 ? `${atomicBody}\n{: ${attrName}="${attrValue}"}` : "";
     if (!marked) {
         if (existingId) await deleteBlock(existingId);
         await verifyMarkedBlockWrite(rootId, attrName, "");

@@ -596,7 +596,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         const targetDocId = current.docId;
         const targetItemId = current.itemId;
         const draftRevision = personNoteDraftRevision;
-        personNoteLoading = true;
+        if (!preserveSaved || Boolean(personNoteError)) {
+            personNoteLoading = true;
+        }
         personNoteError = "";
         personNoteErrorKind = "";
         try {
@@ -644,7 +646,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
     useCloseGuard({
-        busy: () => busy || deleting || personNoteSaving || personNoteLoading || personNoteLegacyBusy || followUpBusy || cadenceSaving,
+        busy: () => busy || deleting || personNoteSaving || personNoteLegacyBusy || followUpBusy || cadenceSaving,
         dirty: () => noteText.trim().length > 0 || personNoteDraft !== personNote || cadenceDirty,
         changes: () => [
             ...(noteText.trim() ? [text("guardNoteDraft", "互动备注尚未记录：{text}", { text: noteText.trim() })] : []),
@@ -2386,6 +2388,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     const orgSectionSupported = $derived(Boolean(onLoadOrgMemberships));
     let followUps: FollowUpItem[] = $state([]);
     let followUpsLoading = $state(true);
+    let followUpsLoadedDocId = $state("");
     const initialFollowUpDate = toLocalDateKey(new Date());
     let followUpTitle = $state("");
     let followUpDate = $state(initialFollowUpDate);
@@ -2418,7 +2421,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     /* 跟进输入没有「保存并离开」：离开确认只能放弃或取消，避免隐式创建/推迟。 */
     useCloseGuard({
-        busy: () => busy || deleting || personNoteSaving || personNoteLoading || followUpBusy || cadenceSaving,
+        busy: () => busy || deleting || personNoteSaving || followUpBusy || cadenceSaving,
         dirty: () => followUpDraftDirty,
         changes: () => [
             ...(followUpPlanDirty ? [text("guardFollowUpDraft", "跟进计划草稿尚未添加")] : []),
@@ -2430,18 +2433,22 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         if (!onListFollowUps) return false;
         const request = ++followUpRequest;
         const targetDocId = current.docId;
-        followUpsLoading = true;
+        if (followUpsLoadedDocId !== targetDocId || Boolean(followUpError)) {
+            followUpsLoading = true;
+        }
         followUpError = ""; /* FUNC-01.12：重试先清错误态，成功后不得残留旧错误分支 */
         try {
             const next = await onListFollowUps(targetDocId);
             /* 旧请求被新请求取代时，交给当前请求继续显示结果，不制造假失败。 */
             if (!detailAlive || request !== followUpRequest || current.docId !== targetDocId) return true;
             followUps = next;
+            followUpsLoadedDocId = targetDocId;
             followUpRefreshWarning = "";
             return true;
         } catch (error) {
             if (detailAlive && request === followUpRequest && current.docId === targetDocId) {
                 followUpError = requestErrorMessage(error);
+                followUpsLoadedDocId = "";
                 return false;
             }
             return true;
@@ -2539,7 +2546,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         return orgMemberships.some((membership) => membership.orgDocId === orgDocId && membership.status === "active");
     }
     useCloseGuard({
-        busy: () => addOrgBusy || orgLoading || orgCandidatesLoading,
+        busy: () => addOrgBusy,
         dirty: () => Boolean(addOrgDocId || addOrgDepartment.trim() || addOrgTitle.trim() || addOrgJoinedOn || addOrgLeftOn || addOrgStatusLabel.trim() || addOrgNote.trim() || addOrgStatus !== "active" || addOrgAffiliationKind !== "unspecified"
             || editingOrgMembershipId || removingOrgMembershipId),
         changes: () => [text("orgUnsaved", "组织管理中的修改尚未完成")],
@@ -3068,13 +3075,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <span class="lvct-chip lvct-bucket--today">本人</span>
                 {/if}
                 {#if relationshipHealth.level !== "unknown"}
-                    <span class={`lvct-heat ${heatLevelColorClass(relationshipHealth.level)}`} style="font-size: 11px; padding: 2px 7px; border-radius: 9999px;" title={text("heatScoreLabel", "关系温度 {score}%", { score: relationshipHealth.score })}>
+                    <span class={`lvct-heat ${heatLevelColorClass(relationshipHealth.level)}`} style="font-size: 11px; padding: 2px 7px; border-radius: 9999px;">
                         {relationshipHealth.level === "hot" ? text("heatHot", "温热")
                         : relationshipHealth.level === "warm" ? text("heatWarm", "常温")
                         : relationshipHealth.level === "cool" ? text("heatCool", "微凉")
                         : relationshipHealth.level === "cold" ? text("heatCold", "渐冻")
                         : relationshipHealth.level === "paused" ? text("heatPaused", "已暂停")
-                        : text("heatUnknown", "从未联系")} · {relationshipHealth.score}%
+                        : text("heatUnknown", "从未联系")}
                     </span>
                 {/if}
             </div>

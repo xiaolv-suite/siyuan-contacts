@@ -1134,6 +1134,9 @@ export async function verifyRealFrontend({
             const control = await browserSession.evaluate(`(()=>{
                 const input = ${target};
                 if (!input || input.disabled) return null;
+                for (let fold = input.closest('details'); fold; fold = fold.parentElement?.closest('details')) {
+                    if (!fold.open) fold.open = true;
+                }
                 input.focus();
                 if (typeof input.select === 'function') input.select();
                 return { type: input.type || input.tagName.toLowerCase(), value: input.value };
@@ -1256,7 +1259,7 @@ export async function verifyRealFrontend({
         const alias = `Real UI alias ${randomUUID().slice(0, 8)}`;
         if (!await setValue(`${aliasSection} input[aria-label="新增别名"], ${aliasSection} input[aria-label="Add alias"]`, alias)) throw new Error('别名输入框不可写');
         if (!await clickButton(aliasSection, (text) => text.trim() === '添加' || text.trim() === 'Add')) throw new Error('别名添加按钮不可定位');
-        await waitUntil(deadline, async () => Boolean(await browserSession.evaluate(`document.querySelector(${json(aliasSection)})?.textContent?.includes(${json(alias)})`)), "别名保存回读");
+        await waitUntil(deadline, async () => Boolean(await browserSession.evaluate(`document.querySelector(${json(aliasSection)})?.textContent?.includes(${json(alias)}) && !document.querySelector(${json(`${aliasSection} input[aria-label="新增别名"], ${aliasSection} input[aria-label="Add alias"]`)})?.disabled`)), "别名保存回读");
         evidence.aliasSaved = true;
         if (!await setValue(`${aliasSection} input[aria-label="新增别名"], ${aliasSection} input[aria-label="Add alias"]`, '王总')) throw new Error('泛称测试输入框不可写');
         if (!await clickButton(aliasSection, (text) => text.trim() === '添加' || text.trim() === 'Add')) throw new Error('泛称拒绝按钮不可定位');

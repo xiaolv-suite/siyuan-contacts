@@ -4,7 +4,7 @@
  * CODE-02.6 API 边界：统一超时/取消与错误解码；仅登记的只读端点允许并发去重，
  * 仅传输失败可限次重试。写入不自动去重或重试，避免把未知结果变成重复数据。
  */
-import { fetchPost } from "siyuan";
+import * as siyuanSdk from "siyuan";
 import { AsyncAbortError, AsyncTimeoutError, withTimeout } from "../shared/async";
 import { newNodeId, validateDocumentTitle } from "../domain/format.ts";
 import {
@@ -13,6 +13,7 @@ import {
     decodeKernelResponse,
     decodeNodeId,
     KernelProtocolError,
+    KernelResponseError,
     KernelTransportError,
 } from "./kernel-contract.ts";
 
@@ -121,13 +122,25 @@ function kernelPost<T>(
             };
 
             try {
-                fetchPost(
-                    route,
-                    body,
-                    handleResponse,
-                    undefined,
-                    handleFailure,
-                );
+                const isRealHost = typeof window !== "undefined"
+                    && Boolean((window as unknown as { siyuan?: { ws?: unknown } }).siyuan?.ws)
+                    && typeof siyuanSdk.fetchSyncPost === "function";
+                if (isRealHost) {
+                    (siyuanSdk.fetchSyncPost as (
+                        url: string,
+                        data?: unknown,
+                        headers?: unknown,
+                        showMsg?: boolean,
+                    ) => Promise<unknown>)(route, body, undefined, false).then(handleResponse, handleFailure);
+                } else {
+                    siyuanSdk.fetchPost(
+                        route,
+                        body,
+                        handleResponse,
+                        undefined,
+                        handleFailure,
+                    );
+                }
             } catch (error) {
                 reject(new KernelTransportError(route, error));
             }
@@ -254,17 +267,74 @@ export async function createNotebook(name: string): Promise<NotebookMeta> {
     return created;
 }
 
+/**
+ * SiYuan 3.8.8+/3.8.9 真内核实证：
+ * 1) 刚启动或 createNotebook 后异步初始化 docMetadata，短暂返回 code=-1 "document metadata is not ready"；
+ * 2) 3.8.9 起对父路径尚不存在的多级 hPath（如 "/人脉/张三"）直接调 createDocWithMd，内核自动补建父级时
+ *    因父级 docMetadata 尚未刷入索引会持续返回 "document metadata is not ready"（零落盘）。
+ * 正常路径零额外请求；仅在命中该明确拒绝错误时按需逐级确保父文档就绪并重试。
+ */
+async function ensureAncestorHPathsReady(notebookId: string, hPath: string): Promise<void> {
+    const segments = hPath.split("/").map((s) => s.trim()).filter(Boolean);
+    if (segments.length <= 1) return;
+    let prefix = "";
+    for (let i = 0; i < segments.length - 1; i++) {
+        const seg = segments[i];
+        prefix += `/${seg}`;
+        const ids = await kernelPost<string[]>("/api/filetree/getIDsByHPath", { notebook: notebookId, path: prefix }, {
+            decode: (data) => Array.isArray(data) ? data.filter((item): item is string => typeof item === "string") : [],
+        });
+        if (ids.length === 0) {
+            await retryWhileDocMetadataNotReady(() =>
+                kernelPost("/api/filetree/createDocWithMd", { notebook: notebookId, path: prefix, markdown: `# ${seg}\n\n` }, {
+                    decode: (data) => decodeNodeId("/api/filetree/createDocWithMd", data),
+                }),
+            );
+            await kernelPost("/api/sqlite/flushTransaction").catch(() => undefined);
+        }
+    }
+}
+
+async function retryWhileDocMetadataNotReady<T>(
+    operation: () => Promise<T>,
+    onNotReady?: (attempt: number) => Promise<void>,
+): Promise<T> {
+    const MAX_ATTEMPTS = 20;
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await operation();
+        } catch (error) {
+            const notReady = error instanceof KernelResponseError
+                && /document metadata is not ready/i.test(error.responseMessage ?? "");
+            if (!notReady || attempt >= MAX_ATTEMPTS) throw error;
+            await new Promise((resolve) => setTimeout(resolve, Math.min(400, 100 * attempt)));
+            if (onNotReady) await onNotReady(attempt);
+        }
+    }
+}
+
 export async function createDocWithMd(notebookId: string, hPath: string, markdown: string): Promise<string> {
-    return kernelPost("/api/filetree/createDocWithMd", { notebook: notebookId, path: hPath, markdown }, {
-        decode: (data) => decodeNodeId("/api/filetree/createDocWithMd", data),
-    });
+    let ancestorsEnsured = false;
+    return retryWhileDocMetadataNotReady(
+        () => kernelPost("/api/filetree/createDocWithMd", { notebook: notebookId, path: hPath, markdown }, {
+            decode: (data) => decodeNodeId("/api/filetree/createDocWithMd", data),
+        }),
+        async () => {
+            if (!ancestorsEnsured) {
+                ancestorsEnsured = true;
+                await ensureAncestorHPathsReady(notebookId, hPath);
+            }
+        },
+    );
 }
 
 /** 创建或获取当天的日记文档（Daily Note） */
 export async function createDailyNote(notebookId: string, app = ""): Promise<string> {
-    return kernelPost("/api/filetree/createDailyNote", { notebook: notebookId, app }, {
-        decode: (data) => decodeNodeId("/api/filetree/createDailyNote", data),
-    });
+    return retryWhileDocMetadataNotReady(() =>
+        kernelPost("/api/filetree/createDailyNote", { notebook: notebookId, app }, {
+            decode: (data) => decodeNodeId("/api/filetree/createDailyNote", data),
+        }),
+    );
 }
 
 /**

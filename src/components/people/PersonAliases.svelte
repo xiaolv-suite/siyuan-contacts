@@ -60,8 +60,11 @@
         }
     }
 
+    let activeDocId = "";
     $effect(() => {
         const docId = personDocId;
+        if (docId === activeDocId) return;
+        activeDocId = docId;
         untrack(() => {
             personGeneration += 1;
             aliases = [];
