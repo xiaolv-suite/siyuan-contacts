@@ -686,13 +686,13 @@
     }
 
     .direction-tag.i_promised {
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        color: var(--lv-brand, #ea580c);
     }
 
     .direction-tag.they_promised {
-        background: var(--b3-theme-info-lightest, rgba(0, 120, 212, 0.1));
-        color: var(--b3-theme-info, #0078d4);
+        background: var(--lvct-info-soft, rgba(2, 132, 199, 0.12));
+        color: var(--lvct-info, #0284c7);
     }
 
     .title-text {
@@ -749,7 +749,7 @@
 
     .item-detail {
         font-size: 12px;
-        color: var(--b3-theme-on-surface-variant);
+        color: var(--lvct-text-3);
         line-height: 1.4;
         white-space: pre-wrap;
         word-break: break-word;

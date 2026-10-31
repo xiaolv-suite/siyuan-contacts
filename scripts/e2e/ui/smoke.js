@@ -7840,15 +7840,25 @@ await test("D-01.1 快捷记互动随路沉淀事实画像（saveAsFact）：勾
         saveData: async (k, v) => { memory.set(k, v); },
     };
     let blockMarkdown = "";
+    const factBlockId = "20261031120000-factb01";
     kernel.handler = async (route, body) => {
         if (route === "/api/query/sql") {
-            return [{ id: "fact-block-1", markdown: blockMarkdown, ial: '{: custom-lvct-facts="1"}' }];
+            const stmt = String(body?.stmt || "");
+            if (stmt.includes("type = 'd'") || stmt.includes("type='d'")) {
+                return [{ id: person.docId }];
+            }
+            if (stmt.includes("custom-lvct-facts")) {
+                return blockMarkdown ? [{ id: factBlockId, markdown: blockMarkdown, ial: '{: custom-lvct-facts="1"}' }] : [];
+            }
+            return [];
         }
         if (route === "/api/block/insertBlock" || route === "/api/block/updateBlock") {
-            blockMarkdown = body.data || body.dataType;
-            return { code: 0, msg: "", data: {} };
+            if (String(body?.data || "").includes("custom-lvct-facts")) {
+                blockMarkdown = body.data;
+            }
+            return [{ doOperations: [{ id: factBlockId, action: route.endsWith("insertBlock") ? "insert" : "update" }] }];
         }
-        return { code: 0, msg: "", data: {} };
+        return {};
     };
 
     mounted = mount(QuickRecordDialog, { target: fixture, props: {
@@ -7879,6 +7889,7 @@ await test("D-01.1 快捷记互动随路沉淀事实画像（saveAsFact）：勾
 
     await until(() => savedTriggered, "未触发 onSaved 回调");
     await until(() => closedTriggered, "保存后未自动触发 onClose 关闭弹窗");
+    assert(blockMarkdown.includes("特别喜欢喝耶加雪菲手冲咖啡"), "应真实将随路事实写入人物文档 custom-lvct-facts 区块");
 });
 
 await test("E-36 纪念日免打扰开关（remindDisabled）：开启后不再提醒，再次点击恢复", async () => {

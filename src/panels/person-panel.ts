@@ -16,7 +16,7 @@ import type { OrganizationSummary } from "../domain/organization-scan";
 import { formatBirthdayDisplay, nextBirthday } from "../domain/occasions";
 import { copyPlainText } from "../shared/clipboard";
 import { svelteDialog } from "../libs/dialog";
-import { requestPersonNavigation, subscribeDataChanged } from "../libs/data-events";
+import { emitDataChanged, requestPersonNavigation, requestWorkbenchNavigation, subscribeDataChanged } from "../libs/data-events";
 import PersonEditDialog from "../components/people/PersonEditDialog.svelte";
 import QuickRecordDialog from "../components/people/QuickRecordDialog.svelte";
 import { translateText } from "../domain/translation";
@@ -277,16 +277,18 @@ function buildOrgStrip(
     filterMembers.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
-        openWorkbench?.call(context.plugin);
-        window.dispatchEvent(new CustomEvent("lvct-workbench-view", {
-            detail: {
+        requestWorkbenchNavigation(
+            context.plugin,
+            {
                 view: "people",
                 focus: {
                     workQuery: org.name,
                     label: `组织 · ${org.name}`,
                 },
             },
-        }));
+            context.lifecycleToken,
+        );
+        openWorkbench?.call(context.plugin);
     });
     actions.appendChild(filterMembers);
 
@@ -297,8 +299,8 @@ function buildOrgStrip(
     openOrgsView.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
+        requestWorkbenchNavigation(context.plugin, { view: "orgs" }, context.lifecycleToken);
         openWorkbench?.call(context.plugin);
-        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "orgs" } }));
     });
     actions.appendChild(openOrgsView);
 
@@ -348,15 +350,17 @@ function buildCityStrip(
     filterCityPeople.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
-        openWorkbench?.call(context.plugin);
-        window.dispatchEvent(new CustomEvent("lvct-workbench-view", {
-            detail: {
+        requestWorkbenchNavigation(
+            context.plugin,
+            {
                 view: "people",
                 focus: {
                     label: `城市 · ${cityName}`,
                 },
             },
-        }));
+            context.lifecycleToken,
+        );
+        openWorkbench?.call(context.plugin);
     });
     actions.appendChild(filterCityPeople);
 
@@ -367,8 +371,15 @@ function buildCityStrip(
     openTripPlanner.addEventListener("click", () => {
         if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
         const openWorkbench = (context.plugin as Plugin & { openWorkbench?: () => void }).openWorkbench;
+        requestWorkbenchNavigation(
+            context.plugin,
+            {
+                view: "people",
+                openRegionExplorer: { city: cityName },
+            },
+            context.lifecycleToken,
+        );
         openWorkbench?.call(context.plugin);
-        window.dispatchEvent(new CustomEvent("lvct-workbench-view", { detail: { view: "home" } }));
     });
     actions.appendChild(openTripPlanner);
 
@@ -598,8 +609,25 @@ function openRecordDialog(context: PanelContext, protyle: ProtyleLike, person: C
 
 function openEditDialog(context: PanelContext, protyle: ProtyleLike, person: ContactSummary): void {
     if (!context.settings || context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
+    const title = t(context, "stripEditDialogTitle", "编辑资料 · {name}", { name: person.name });
+    const hostPlugin = context.plugin as Plugin & {
+        openPersonEditDialog?: (
+            target: ContactSummary,
+            options?: { title?: string; width?: string; onSaved?: () => void },
+        ) => void;
+    };
+    if (typeof hostPlugin.openPersonEditDialog === "function") {
+        hostPlugin.openPersonEditDialog(person, {
+            title,
+            width: "620px",
+            onSaved: () => {
+                void updateStrip(context, protyle, person.docId);
+            },
+        });
+        return;
+    }
     svelteDialog({
-        title: t(context, "stripEditDialogTitle", "编辑资料 · {name}", { name: person.name }),
+        title,
         width: "620px",
         component: PersonEditDialog,
         props: {
@@ -607,6 +635,7 @@ function openEditDialog(context: PanelContext, protyle: ProtyleLike, person: Con
             i18n: context.i18n,
             person,
             onSaved: () => {
+                emitDataChanged({ topics: ["people"], docIds: [person.docId] }, context.lifecycleToken);
                 void updateStrip(context, protyle, person.docId);
             },
         },

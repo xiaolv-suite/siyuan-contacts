@@ -14,6 +14,8 @@ import { withStoreLock } from "../data/storage";
 import { rosterFromRender } from "../domain/roster";
 import type { Plugin } from "siyuan";
 import { loadInteractionStore } from "../data/interactions";
+import { loadOrgMembershipStore } from "../data/org-membership";
+import { scanOrganizations } from "./org";
 import { discoverPotentialConnections } from "../domain/connections-discovery.ts";
 import type { PotentialConnection, DiscoverConnectionsOptions } from "../domain/connections-discovery.ts";
 import {
@@ -250,7 +252,18 @@ export async function discoverConnections(
     settings: ContactsSettings,
     options?: DiscoverConnectionsOptions,
 ): Promise<PotentialConnection[]> {
-    const people = await getRoster(settings);
-    const store = await loadInteractionStore(plugin);
-    return discoverPotentialConnections(people, store.events, options);
+    const [people, store, membershipStore, orgs] = await Promise.all([
+        getRoster(settings),
+        loadInteractionStore(plugin),
+        loadOrgMembershipStore(plugin).catch(() => ({ schema: 1 as const, memberships: [] })),
+        scanOrganizations().catch(() => []),
+    ]);
+    const orgNames = new Map(orgs.filter((o) => !o.removed).map((o) => [o.docId, o.name] as const));
+    const knownOrgMemberships = membershipStore.memberships
+        .map((m) => ({ personDocId: m.personDocId, orgName: orgNames.get(m.orgDocId) ?? "" }))
+        .filter((m) => m.personDocId && m.orgName);
+    return discoverPotentialConnections(people, store.events, {
+        ...options,
+        knownOrgMemberships: [...(options?.knownOrgMemberships ?? []), ...knownOrgMemberships],
+    });
 }

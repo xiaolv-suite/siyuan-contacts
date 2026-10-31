@@ -134,7 +134,7 @@ import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bri
 import { handleProtyleEvent, type PanelContext } from "./panels/person-panel";
 import { svelteDialog } from "./libs/dialog";
 import { openSiYuanDocument } from "./libs/open-document";
-import { emitDataChanged, emitWorkspaceState } from "./libs/data-events";
+import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation } from "./libs/data-events";
 import type { ContactsSettings } from "./domain/model";
 import type { ContactSummary } from "./domain/person";
 import { emptyDraft } from "./domain/person";
@@ -700,25 +700,28 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         });
     }
 
-    /** 识别结果落到既有联系人：编辑弹窗预填勾选值，保存仍走既有 updateContactFields 与 B06 守卫 */
-    private openPersonEditPrefilled(person: ContactSummary, patch: QuickFillPatch): void {
+    /** 统一挂载完整回调的联系人编辑弹窗（供文档档案条与识别补充复用，含组织归属与关系称谓全套回调及数据广播） */
+    openPersonEditDialog(
+        person: ContactSummary,
+        options: {
+            title?: string;
+            width?: string;
+            initialPatch?: Partial<import("./domain/person").ContactDraft>;
+            onSaved?: () => void;
+        } = {},
+    ): void {
         const lifecycleToken = this.lifecycleToken;
         if (!this.isLifecycleActive(lifecycleToken)) return;
         if (!this.settings) return;
-        const { tagsAppend, ...fields } = patch;
-        const initialPatch: Partial<import("./domain/person").ContactDraft> = {
-            ...fields,
-            tags: [...new Set([...person.tags, ...tagsAppend])],
-        };
         this.openOwnedDialog({
-            title: `识别资料 · 补充「${person.name}」`,
-            width: "560px",
+            title: options.title ?? `编辑资料 · ${person.name}`,
+            width: options.width ?? "620px",
             component: PersonEditDialog,
             props: {
                 settings: this.settings,
                 i18n: this.i18n,
                 person,
-                initialPatch,
+                initialPatch: options.initialPatch,
                 onLoadRelationshipLabels: (docId: string) => this.loadPersonRelationshipLabels(docId),
                 onSaveRelationshipLabels: (docId: string, selfDocId: string, labels: string[], expected: import("./domain/person-relationship-labels").PersonRelationshipLabels | null) =>
                     this.savePersonRelationshipLabels(docId, selfDocId, labels, expected),
@@ -727,10 +730,31 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 onCreateOrganization: (initialName?: string) => this.openCreateOrganizationForContact(initialName),
                 onAddOrgMembership: (personDocId: string, orgDocId: string, extra?: { department?: string; title?: string; joinedOn?: string; leftOn?: string; status?: import("./domain/org-membership").OrgMembershipStatus; statusLabel?: string; affiliationKind?: import("./domain/org-membership").OrgAffiliationKind; note?: string }) =>
                     this.addOrganizationMember(orgDocId, personDocId, extra),
+                onUpdateOrgMembership: (membershipId: string, patch: import("./domain/org-membership").OrgMembershipPatch, expected?: import("./domain/org-membership").OrgMembership) =>
+                    this.updateOrganizationMember(membershipId, patch, expected),
+                onRemoveOrgMembership: (membershipId: string, expected?: import("./domain/org-membership").OrgMembership) =>
+                    this.removeOrganizationMember(membershipId, expected),
                 onSaved: () => {
-                    if (this.isLifecycleActive(lifecycleToken)) emitDataChanged({}, lifecycleToken);
+                    if (this.isLifecycleActive(lifecycleToken)) {
+                        emitDataChanged({ topics: ["people"], docIds: [person.docId] }, lifecycleToken);
+                        options.onSaved?.();
+                    }
                 },
             },
+        });
+    }
+
+    /** 识别结果落到既有联系人：编辑弹窗预填勾选值，保存仍走既有 updateContactFields 与 B06 守卫 */
+    private openPersonEditPrefilled(person: ContactSummary, patch: QuickFillPatch): void {
+        const { tagsAppend, ...fields } = patch;
+        const initialPatch: Partial<import("./domain/person").ContactDraft> = {
+            ...fields,
+            tags: [...new Set([...person.tags, ...tagsAppend])],
+        };
+        this.openPersonEditDialog(person, {
+            title: `识别资料 · 补充「${person.name}」`,
+            width: "560px",
+            initialPatch,
         });
     }
 
@@ -1353,6 +1377,10 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 i18n: this.i18n,
                 initialOrgDocId,
                 onCreated,
+                onEditOrganization: (docId: string) => {
+                    requestWorkbenchNavigation(this, { view: "orgs", editOrgDocId: docId }, this.lifecycleToken);
+                    this.openWorkbench();
+                },
                 onOpenPerson: (person: unknown) => {
                     /* 组织弹窗为宿主级弹窗，人物详情 Peek 由工作台承载：
                        经窗口事件交给已挂载的工作台打开（组织弹窗先于 Peek 关闭，避免遮挡） */

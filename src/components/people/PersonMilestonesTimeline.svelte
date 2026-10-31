@@ -356,18 +356,18 @@
     }
 
     .rail-icon-node.stage_advance {
-        border-color: var(--b3-theme-primary);
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
+        border-color: var(--lv-brand, #ea580c);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
     }
 
     .rail-icon-node.promise_fulfilled {
-        border-color: var(--b3-theme-success);
-        background: var(--b3-theme-success-lightest, rgba(46, 204, 113, 0.1));
+        border-color: var(--lvct-success, #059669);
+        background: var(--lvct-success-soft, rgba(5, 150, 105, 0.12));
     }
 
     .rail-icon-node.first_contact {
-        border-color: var(--b3-theme-info);
-        background: var(--b3-theme-info-lightest, rgba(0, 120, 212, 0.1));
+        border-color: var(--lvct-info, #0284c7);
+        background: var(--lvct-info-soft, rgba(2, 132, 199, 0.12));
     }
 
     .rail-connector {
@@ -468,7 +468,7 @@
 
     .event-detail {
         font-size: 12px;
-        color: var(--b3-theme-on-surface-variant);
+        color: var(--lvct-text-3);
         line-height: 1.4;
     }
 </style>

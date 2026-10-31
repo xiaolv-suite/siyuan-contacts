@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { acceptDataChange, mergeDataChanges, normalizeDataChange, personReturnContext, resolveNavigationPerson } from "../src/domain/navigation.ts";
 import { emptyDraft } from "../src/domain/person.ts";
-import { requestPersonNavigation, subscribePersonNavigation } from "../src/libs/data-events.ts";
+import { requestPersonNavigation, requestWorkbenchNavigation, subscribePersonNavigation, subscribeWorkbenchNavigation } from "../src/libs/data-events.ts";
 import { createLifecycleToken } from "../src/domain/lifecycle.ts";
 
 const person = { ...emptyDraft(), name: "同名", docId: "20261004000000-person1", itemId: "20261004000000-item001", relatedItemIds: [] };
@@ -62,6 +62,32 @@ test("文档导航请求支持冷挂载，只由同插件消费一次，销毁�
         requestPersonNavigation(owner, { docId: person.docId, source: "document" }, token);
         cleanups.push(subscribePersonNavigation(owner, () => { received += 1; }));
         assert.equal(received, 1);
+    } finally {
+        for (const cleanup of cleanups) cleanup();
+        token.invalidate();
+        if (descriptor) Object.defineProperty(globalThis, "window", descriptor);
+        else Reflect.deleteProperty(globalThis, "window");
+    }
+});
+
+test("工作台视图与行程助手导航请求支持冷启动挂载（组织/城市浮动档案条不丢事件）", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+    Object.defineProperty(globalThis, "window", { configurable: true, value: new EventTarget() });
+    const token = createLifecycleToken();
+    const owner = {};
+    const delivered: Array<{ view: string; city?: string }> = [];
+    const cleanups: Array<() => void> = [];
+    try {
+        requestWorkbenchNavigation(owner, { view: "people", openRegionExplorer: { city: "上海" } }, token);
+        cleanups.push(subscribeWorkbenchNavigation(owner, (req) => {
+            delivered.push({ view: req.view, city: req.openRegionExplorer?.city });
+        }, token));
+        assert.deepEqual(delivered, [{ view: "people", city: "上海" }]);
+
+        // 已挂载态实时投递
+        requestWorkbenchNavigation(owner, { view: "orgs", editOrgDocId: "20261004000000-org0001" }, token);
+        assert.equal(delivered.length, 2);
+        assert.equal(delivered[1].view, "orgs");
     } finally {
         for (const cleanup of cleanups) cleanup();
         token.invalidate();

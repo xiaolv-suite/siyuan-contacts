@@ -11,6 +11,7 @@
 
     let {
         personDocId,
+        reloadKey = 0,
         i18n,
         onLoad,
         onCreate,
@@ -18,6 +19,7 @@
         onChanged,
     }: {
         personDocId: string;
+        reloadKey?: number;
         i18n?: Readonly<Record<string, string>>;
         onLoad: (personDocId: string) => Promise<ExchangeRecord[]>;
         onCreate: (input: {
@@ -121,6 +123,17 @@
             if (alive && generation === loadGeneration && docId === personDocId) loading = false;
         }
     }
+
+    let lastReloadKey = untrack(() => reloadKey);
+    $effect(() => {
+        const nextKey = reloadKey;
+        if (nextKey !== lastReloadKey) {
+            lastReloadKey = nextKey;
+            if (!busy && initializedPersonDocId === personDocId) {
+                untrack(() => void load(personDocId));
+            }
+        }
+    });
 
     $effect(() => {
         const docId = personDocId;

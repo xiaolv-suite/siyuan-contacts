@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [0.7.4] — 2026-10-31
+
+真实思源桌面宿主（v3.8.9）+ 真实 Chrome 浏览器二轮全界面、按钮与跨弹窗交互链路梳理修复版本（`pnpm e2e:isolated` 扩容至 9 大真机验收环节）。
+
+### 修复（Fixed）
+- **文档浮动档案条与独立编辑弹窗回调补齐及冷启动队列（`src/panels/person-panel.ts`、`src/index.ts` & `src/libs/data-events.ts`）**：统一封装 `openPersonEditDialog` 注入完整组织归属、关系称谓回调与 `emitDataChanged` 广播；新增 `requestWorkbenchNavigation` 冷启动队列，解决工作台未打开时点击组织/城市档案条丢失跳转事件的问题，并使城市档案条「行程规划」直开城市与行程助手弹窗；`QuickRecordDialog` 随路写事实改为等待落盘并具备防重复记互动幂等保护。
+- **首页活动大盘新建直达与年度活跃热力图点击下钻（`DashboardView.svelte` & `activity-heatmap.ts`）**：修复首页群体活动大盘点击「记录新活动」仅切页不弹窗的断链；为热力图每日节点补齐 `personDocIds` 并接入点击下钻互动联系人与详情。
+- **共同机构潜在关联推荐与详情状态闭环（`connections-discovery.ts`、`relations.ts` & `PersonDetail.svelte`）**：移除将普通分组（如“朋友”）误判为共同机构的缺陷，接入 `org-membership.json` 与 `commonOrgs` 真实机构归属；礼物点子「转入账本」自动防重并原地刷新往来账本；手动「同步档案到正文」开启严格错误透传；首页潜在关联弹窗区分读取失败与正常空态。
+- **右侧速览栏删人即时清理与确认框统一（`Workbench.svelte` & `confirmDialog`）**：删除或外部变更联系人时同步清空/刷新右侧 `ContextPanel`，消除已删人物残留；全站剩余 7 处原生 `window.confirm` 统一收口至 `confirmDialog`。
+- **宿主窄分栏/150% 缩放零溢出、新建弹窗主按钮吸底与令牌校准（`src/index.scss` 等）**：修复思源左侧文档树/右侧速览并存时首页统计卡与热力图网格横向溢出、150% 系统缩放（等效 `853×533`）与 `390px` 窄视口下名册工具栏/底部导航截断；新建/编辑联系人弹窗底部主操作栏吸底固定（125%/150% 缩放首屏直达「创建联系人」）；清理 5 个组件的未定义 `--b3-theme-*` 变量、双图标重叠（`粘贴并识别` / `本周日程视窗`）及无标签输入框 `aria-label`。
+
 ## [0.7.3] — 2026-10-31
 
 真实隔离思源内核（v3.8.9）+ 真实 Chrome 桌面浏览器全栈实测加固版本（`pnpm e2e:isolated`）：修复 5 个仅在真实思源宿主/真内核运行期暴露的阻塞性缺陷。

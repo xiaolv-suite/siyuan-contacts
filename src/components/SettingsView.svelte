@@ -41,6 +41,7 @@ import { toLocalDateKey } from "../domain/date-key.ts";
         onBack,
         onInteractionsUpdated = () => {},
         onOpenPeople,
+        onOpenDoc,
     }: {
         facade: ContactsPluginFacade;
         i18n?: Readonly<Record<string, string>>;
@@ -52,6 +53,7 @@ import { toLocalDateKey } from "../domain/date-key.ts";
         onInteractionsUpdated?: () => void;
         /** C03：体检「查看」跳转联系人页（按人物 itemIds 聚焦筛选） */
         onOpenPeople?: (focus: { itemIds?: readonly string[]; memberDocIds?: readonly string[]; label: string }) => void;
+        onOpenDoc?: (docId: string) => void;
     } = $props();
     const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) => translateText(i18n, key, fallback, values));
 
@@ -968,7 +970,7 @@ import { toLocalDateKey } from "../domain/date-key.ts";
 
     async function runImportFollowUps() {
         if (fuImporting || fuPreviewing || !fuImportPreview) return;
-        if (!window.confirm("将合并所选跟进备份：现状优先按事项 ID，只新增缺失条目，不覆盖已有内容。确认继续吗？")) return;
+        if (!(await confirmDialog({ message: "将合并所选跟进备份：现状优先按事项 ID，只新增缺失条目，不覆盖已有内容。确认继续吗？" }))) return;
         fuImporting = true;
         errorText = "";
         fuImportMessage = "";
@@ -1027,7 +1029,7 @@ import { toLocalDateKey } from "../domain/date-key.ts";
 
     async function runImportInteractions() {
         if (importingInteractions || previewingImport || !importPreview) return;
-        if (!window.confirm("将合并所选互动备份，不覆盖整个库、不创建联系人文档。备份中的删除标记会移除对应互动，已删除记录不会复活。确认继续吗？")) return;
+        if (!(await confirmDialog({ message: "将合并所选互动备份，不覆盖整个库、不创建联系人文档。备份中的删除标记会移除对应互动，已删除记录不会复活。确认继续吗？" }))) return;
         importingInteractions = true;
         errorText = "";
         importMessage = "";
@@ -1795,7 +1797,7 @@ import { toLocalDateKey } from "../domain/date-key.ts";
                         {#if !auditOpen}<button class="b3-button b3-button--outline" onclick={() => (auditOpen = true)}>运行资料体检</button>{/if}
                     </div>
                     {#if auditOpen}
-                        <ReviewReportDialog {i18n} buildAuditReport={runDataAudit} retryFailedAuditModules={retryDataAudit} {onOpenPeople} />
+                        <ReviewReportDialog {i18n} buildAuditReport={runDataAudit} retryFailedAuditModules={retryDataAudit} {onOpenPeople} {onOpenDoc} />
                     {:else}
                         <p class="lvct-settings__inline-hint">检查数据内容质量：缺关键字段、悬空关系、跟进/互动指向不存在的人物等。</p>
                     {/if}

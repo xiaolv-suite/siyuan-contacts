@@ -495,6 +495,148 @@ try {
         docBlockSynced: true,
     });
     console.log("  PASS 互动就地修改、整页重载、墓碑落盘、文档同步与会前速查下钻全链路通过");
+
+    // 关闭详情弹窗，继续验证首页按钮链路、右侧速览删人清理、文档浮动档案条与 150% 缩放/窄视口布局
+    await evalJs("document.querySelector('.lvct-dialog-panel__close')?.click()");
+    await waitUntil(deadline, () => evalJs("!document.querySelector('.lvct-detail')"), "关闭人物详情弹窗");
+
+    // 6. 首页低频区：核验统计卡与热力图零溢出、热力图活跃格点击下钻、群体活动大盘「记录新活动」直开弹窗
+    await evalJs("[...document.querySelectorAll('[data-navigation-view=home]')].find((el) => el.getBoundingClientRect().width > 0).click()");
+    await waitUntil(deadline, () => evalJs("[...document.querySelectorAll('.lvct-dash')].some((el) => el.getBoundingClientRect().width > 0)"), "切换回首页");
+    await evalJs("if (!document.querySelector('.lvct-dash__lowfreq')?.hasAttribute('open')) document.querySelector('.lvct-dash__lowfreq > summary')?.click()");
+    await pause(250);
+
+    const dashOverflowCheck = await evalJs(`(() => {
+        const stats = [...document.querySelectorAll('.lvct-dash__stat')].filter((el) => el.getBoundingClientRect().width > 0);
+        const statOverflow = stats.find((el) => el.scrollWidth > el.clientWidth + 4);
+        const hmBody = document.querySelector('.lvct-heatmap__body');
+        const hmBodyOverflow = hmBody ? hmBody.scrollWidth > hmBody.clientWidth + 4 : false;
+        return {
+            statCount: stats.length,
+            statOverflow: statOverflow ? { text: statOverflow.textContent?.trim(), cw: statOverflow.clientWidth, sw: statOverflow.scrollWidth } : null,
+            hmBodyOverflow,
+        };
+    })()`);
+    assert.equal(dashOverflowCheck.statOverflow, null, `首页统计卡仍存在横向溢出：${JSON.stringify(dashOverflowCheck.statOverflow)}`);
+    assert.equal(dashOverflowCheck.hmBodyOverflow, false, "首页热力图内层网格仍溢出自身盒子");
+
+    // 点击热力图今日活跃格 → 核验下钻打开互动人物详情
+    await evalJs(`[...document.querySelectorAll('.lvct-heatmap__cell')].find((b) => !b.disabled && b.getBoundingClientRect().width > 0)?.click()`);
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-detail')?.textContent.includes('王浩然'))"), "热力图活跃日期格点击下钻到互动联系人");
+    await evalJs("document.querySelector('.lvct-dialog-panel__close')?.click()");
+    await waitUntil(deadline, () => evalJs("!document.querySelector('.lvct-detail')"), "关闭下钻详情");
+
+    // 首页打开「群体活动」大盘 → 点击「记录新活动」→ 核验直接打开新建群体活动弹窗
+    await evalJs("[...document.querySelectorAll('[data-navigation-view=home]')].find((el) => el.getBoundingClientRect().width > 0).click()");
+    await waitUntil(deadline, () => evalJs("[...document.querySelectorAll('.lvct-dash')].some((el) => el.getBoundingClientRect().width > 0)"), "返回首页测试活动大盘");
+    await evalJs("if (!document.querySelector('.lvct-dash__lowfreq')?.hasAttribute('open')) document.querySelector('.lvct-dash__lowfreq > summary')?.click()");
+    await pause(200);
+    await evalJs(`[...document.querySelectorAll('.lvct-dash button')].find((b) => b.getBoundingClientRect().width > 0 && (b.textContent || '').includes('群体活动')).click()`);
+    await waitUntil(deadline, () => evalJs(`Boolean([...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('记录新活动')))`), "打开首页群体活动大盘");
+    await evalJs(`[...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('记录新活动')).click()`);
+    await waitUntil(deadline, () => evalJs(`Boolean(document.querySelector('.lvct-dialog-panel') && /群体活动|出席|活动名称|活动主题/.test(document.querySelector('.lvct-dialog-panel')?.textContent || '') && !/大事记大盘/.test(document.querySelector('.lvct-dialog-panel__title')?.textContent || ''))`), "首页活动大盘点击记录新活动直接弹出新建活动窗口");
+    await evalJs("document.querySelector('.lvct-dialog-panel__close')?.click()");
+    await waitUntil(deadline, () => evalJs("!document.querySelector('.lvct-dialog-panel')"), "关闭新建群体活动弹窗");
+    report.checks.push({ step: "首页统计/热力图零溢出、热力图点击下钻与活动大盘新建直达", ok: true });
+    console.log("  PASS 首页统计/热力图零溢出、热力图点击下钻与活动大盘新建直达核验");
+
+    // 7. 右侧速览栏（ContextPanel）删除当前预览联系人后立即清理（不残留已删人物）并支持回收站恢复
+    await evalJs(`(() => {
+        const toggle = [...document.querySelectorAll('.lvct-workbench button')].find((b) => /速览|侧栏|Context/i.test((b.getAttribute('title') || '') + (b.getAttribute('aria-label') || '')));
+        if (toggle && !document.querySelector('.lvct-workbench__context')) toggle.click();
+    })()`);
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-workbench__context'))"), "展开右侧速览栏");
+    await waitUntil(deadline, () => evalJs(`[...document.querySelectorAll('.lvct-person-card')].some((el) => el.getBoundingClientRect().width > 0 && el.textContent.includes('林知夏'))`), "联系人名册加载林知夏卡片");
+    await evalJs(`[...document.querySelectorAll('.lvct-person-card')].find((el) => el.getBoundingClientRect().width > 0 && el.textContent.includes('林知夏')).click()`);
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-detail')?.textContent.includes('林知夏')) && Boolean(document.querySelector('.lvct-workbench__context')?.textContent.includes('林知夏'))"), "右侧速览栏同步显示林知夏");
+
+    // 拦截 confirmDialog 自动确认删除，点击「从人脉移除」
+    await evalJs(`(() => {
+        window.__origConfirm = window.confirm;
+        window.confirm = () => true;
+        [...document.querySelectorAll('.lvct-detail button')].find((b) => (b.textContent || '').includes('从人脉移除'))?.click();
+    })()`);
+    await waitUntil(deadline, () => evalJs("!document.querySelector('.lvct-detail') && !document.querySelector('.lvct-workbench__context')?.textContent.includes('林知夏')"), "删除联系人后右侧速览栏立即清空已删人物");
+    await evalJs(`if (window.__origConfirm) { window.confirm = window.__origConfirm; delete window.__origConfirm; }`);
+
+    // 从回收站恢复林知夏并收起右侧速览栏
+    await evalJs(`(() => {
+        const fold = [...document.querySelectorAll('.lvct-people__tools-fold')].find((el) => el.getBoundingClientRect().width > 0);
+        if (fold && !fold.hasAttribute('open')) fold.querySelector('summary')?.click();
+    })()`);
+    await pause(150);
+    await evalJs(`[...document.querySelectorAll('.lvct-people button')].find((b) => (b.textContent || '').includes('回收站'))?.click()`);
+    await waitUntil(deadline, () => evalJs(`Boolean([...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('恢复')))`), "打开回收站并定位林知夏");
+    await evalJs(`[...document.querySelectorAll('.lvct-dialog-panel button')].find((b) => (b.textContent || '').includes('恢复')).click()`);
+    await waitUntil(deadline, () => evalJs(`[...document.querySelectorAll('.lvct-person-card')].some((el) => el.textContent.includes('林知夏'))`), "从回收站成功恢复林知夏");
+    await evalJs("document.querySelector('.lvct-dialog-panel__close')?.click()");
+    await evalJs(`document.querySelector('.lvct-workbench__context button[aria-label*="收起"], .lvct-workbench__context button[title*="关闭"], .lvct-context-panel__close')?.click()`);
+    report.checks.push({ step: "右侧速览栏删人即时清理与回收站恢复", ok: true });
+    console.log("  PASS 右侧速览栏删人即时清理与回收站恢复核验");
+
+    // 8. 真实思源编辑器顶部浮动档案条（.lvct-doc-strip）：打开王浩然文档并点击「编辑资料」核验组织与称谓完整回调
+    await evalJs(`(() => {
+        const card = [...document.querySelectorAll('.lvct-person-card')].find((el) => el.getBoundingClientRect().width > 0 && el.textContent.includes('王浩然'));
+        const openDocBtn = [...(card?.querySelectorAll('button') ?? [])].find((b) => /文档|笔记/.test((b.textContent || '') + (b.getAttribute('aria-label') || '') + (b.getAttribute('title') || '')));
+        openDocBtn?.click();
+    })()`);
+    await waitUntil(deadline, () => evalJs("Boolean([...document.querySelectorAll('.lvct-doc-strip')].find((el) => el.getBoundingClientRect().width > 0))"), "思源编辑器顶部渲染人物浮动档案条");
+    await shoot("06-real-siyuan-doc-strip.png");
+    await evalJs(`[...document.querySelectorAll('.lvct-doc-strip button')].find((b) => (b.textContent || '').includes('编辑资料')).click()`);
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.b3-dialog__container .lvct-form'))"), "浮动档案条打开联系人编辑弹窗");
+    await evalJs("document.querySelector('.b3-dialog__container .lvct-form details > summary')?.click()");
+    await waitUntil(deadline, () => evalJs(`(() => {
+        const txt = document.querySelector('.b3-dialog__container .lvct-form')?.textContent || '';
+        return /组织|单位|归属/.test(txt) && /与我的关系|称谓/.test(txt) && !txt.includes('📋 粘贴并识别');
+    })()`), "浮动档案条编辑弹窗完整具备组织归属与关系称谓能力且无双图标重叠");
+    await evalJs("document.querySelector('.b3-dialog__container .b3-button--cancel')?.click()");
+    await pause(250);
+    report.checks.push({ step: "思源编辑器浮动档案条渲染与完整资料编辑回调", ok: true });
+    console.log("  PASS 思源编辑器浮动档案条与完整编辑回调核验");
+
+    // 9. 150% 系统缩放（等效 853×533）与 390×844 窄视口：名册工具栏/底部导航零溢出，新建弹窗主按钮吸底首屏可见
+    await focusWorkbenchTab();
+    await evalJs("[...document.querySelectorAll('[data-navigation-view=people]')].find((el) => el.getBoundingClientRect().width > 0).click()");
+    await waitUntil(deadline, () => evalJs("[...document.querySelectorAll('.lvct-people__create')].some((el) => el.getBoundingClientRect().width > 0)"), "返回联系人名册");
+
+    await call("Emulation.setDeviceMetricsOverride", { width: 853, height: 533, deviceScaleFactor: 1.5, mobile: false });
+    await pause(250);
+    const scale150Toolbar = await evalJs(`(() => {
+        const tb = [...document.querySelectorAll('.lvct-people__toolbar')].find((el) => el.getBoundingClientRect().width > 0);
+        const vt = tb?.querySelector('.lvct-people__viewtoggle');
+        return {
+            tbClientW: tb?.clientWidth ?? 0,
+            tbScrollW: tb?.scrollWidth ?? 0,
+            vtClientW: vt?.clientWidth ?? 0,
+            vtScrollW: vt?.scrollWidth ?? 0,
+        };
+    })()`);
+    assert.ok(scale150Toolbar.tbScrollW <= scale150Toolbar.tbClientW + 4 && scale150Toolbar.vtScrollW <= scale150Toolbar.vtClientW + 4, `150% 缩放下名册工具栏仍横向溢出：${JSON.stringify(scale150Toolbar)}`);
+
+    await evalJs("[...document.querySelectorAll('.lvct-people__create')].find((el) => el.getBoundingClientRect().width > 0).click()");
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-dialog-panel .lvct-form__actions button.b3-button--primary'))"), "150% 缩放下打开新建联系人弹窗");
+    const stickyCtaCheck = await evalJs(`(() => {
+        const dlg = document.querySelector('.lvct-dialog-panel').getBoundingClientRect();
+        const btn = document.querySelector('.lvct-dialog-panel .lvct-form__actions button.b3-button--primary').getBoundingClientRect();
+        return { btnBottom: Math.round(btn.bottom), dlgBottom: Math.round(dlg.bottom), vh: window.innerHeight };
+    })()`);
+    assert.ok(stickyCtaCheck.btnBottom <= stickyCtaCheck.dlgBottom + 2 && stickyCtaCheck.btnBottom <= stickyCtaCheck.vh, `150% 缩放下新建联系人主提交按钮未吸底落在弹窗可视区内：${JSON.stringify(stickyCtaCheck)}`);
+    await shoot("07-real-siyuan-150pct-sticky-cta.png");
+    await evalJs("document.querySelector('.lvct-dialog-panel__close')?.click()");
+    await pause(200);
+
+    await call("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+    await pause(250);
+    const mobile390Check = await evalJs(`(() => {
+        const navOverflows = [...document.querySelectorAll('.lvct-workbench__nav-item')].filter((el) => el.getBoundingClientRect().width > 0 && el.scrollWidth > el.clientWidth + 4).map((el) => ({ text: el.textContent?.trim(), cw: el.clientWidth, sw: el.scrollWidth }));
+        const segOverflows = [...document.querySelectorAll('.lvct-people__viewtoggle .lvct-seg')].filter((el) => el.getBoundingClientRect().width > 0 && el.scrollWidth > el.clientWidth + 4).map((el) => ({ text: el.textContent?.trim(), cw: el.clientWidth, sw: el.scrollWidth }));
+        return { navOverflows, segOverflows };
+    })()`);
+    assert.equal(mobile390Check.navOverflows.length, 0, `390px 窄屏底部导航仍横向溢出：${JSON.stringify(mobile390Check.navOverflows)}`);
+    assert.equal(mobile390Check.segOverflows.length, 0, `390px 窄屏分段切换仍横向溢出：${JSON.stringify(mobile390Check.segOverflows)}`);
+    report.checks.push({ step: "150% 缩放与 390px 窄视口零溢出及新建弹窗主按钮吸底", ...scale150Toolbar, ...stickyCtaCheck });
+    console.log("  PASS 150% 缩放与 390px 窄视口零溢出及新建弹窗主按钮吸底核验");
+
     assert.equal(report.consoleErrors.length, 0, `真实浏览器运行期出现未捕获异常：${report.consoleErrors.join("；")}`);
 } finally {
     try { cdpSocket?.close(); } catch {}
@@ -517,4 +659,4 @@ try {
     fs.writeFileSync(path.join(ARTIFACT_DIR, "summary.json"), JSON.stringify(report, null, 2) + "\n");
 }
 
-console.log(`\n✔ pnpm e2e:isolated 全部通过（内核 v${report.kernelVersion}，零未捕获异常，5 张真实思源桌面截图已输出至 ${ARTIFACT_DIR}）`);
+console.log(`\n✔ pnpm e2e:isolated 全部通过（内核 v${report.kernelVersion}，零未捕获异常，${report.screenshots.length} 张真实思源桌面截图已输出至 ${ARTIFACT_DIR}）`);

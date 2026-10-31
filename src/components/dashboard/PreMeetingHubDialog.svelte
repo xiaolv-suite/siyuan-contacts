@@ -470,9 +470,9 @@
         font-size: 11px;
         padding: 2px 9px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--b3-theme-error-lightest, rgba(235, 77, 75, 0.1));
-        color: var(--b3-theme-error);
-        border: 1px solid rgba(235, 77, 75, 0.3);
+        background: var(--lvct-danger-soft, rgba(235, 77, 75, 0.1));
+        color: var(--lvct-danger, #dc2626);
+        border: 1px solid color-mix(in srgb, var(--lvct-danger, #dc2626) 28%, transparent);
         font-weight: 500;
     }
 
@@ -508,13 +508,13 @@
     }
 
     .promise-tag.i_promised {
-        background: var(--b3-theme-primary-lightest, rgba(0, 120, 212, 0.15));
-        color: var(--b3-theme-primary);
+        background: var(--lv-brand-soft, rgba(234, 88, 12, 0.12));
+        color: var(--lv-brand, #ea580c);
     }
 
     .promise-tag.they_promised {
-        background: var(--b3-theme-info-lightest, rgba(0, 120, 212, 0.1));
-        color: var(--b3-theme-info);
+        background: var(--lvct-info-soft, rgba(2, 132, 199, 0.12));
+        color: var(--lvct-info, #0284c7);
     }
 
     .promise-due {

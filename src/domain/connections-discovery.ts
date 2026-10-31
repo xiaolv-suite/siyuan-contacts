@@ -19,6 +19,8 @@ export interface PotentialConnection {
 export interface DiscoverConnectionsOptions {
     minScore?: number; // 最低门槛分数，默认 2
     maxResults?: number; // 最大返回推荐数，默认 20
+    /** 可选传入来自 org-membership.json 的已知组织归属列表，补齐纯 AV 名册缺失的机构关联 */
+    knownOrgMemberships?: readonly { personDocId: string; orgName: string }[];
 }
 
 /**
@@ -92,6 +94,13 @@ export function discoverPotentialConnections(
         if (typeof raw.company === "string" && raw.company.trim()) orgs.add(raw.company.trim());
         if (typeof raw.school === "string" && raw.school.trim()) orgs.add(raw.school.trim());
         personOrgs.set(p.docId, orgs);
+    }
+    if (options.knownOrgMemberships) {
+        for (const m of options.knownOrgMemberships) {
+            if (!m.personDocId || !m.orgName?.trim()) continue;
+            const set = personOrgs.get(m.personDocId);
+            if (set) set.add(m.orgName.trim());
+        }
     }
 
     // 4. 遍历所有候选人对并打分
@@ -192,6 +201,8 @@ export interface DiscoverPersonTiesOptions {
     maxResults?: number; // 默认 6
     /** 可选传入已知共同出席列表（如 PersonInsights.coAttendance） */
     knownCoAttendance?: readonly { otherDocId: string; count: number }[];
+    /** 可选传入已知共同组织背景（如 listCommonOrgBackground） */
+    knownCommonOrgs?: readonly { orgName: string; peers: readonly { docId: string }[] }[];
 }
 
 /**
@@ -272,11 +283,30 @@ export function discoverPersonTies(
         if (typeof raw.organization === "string" && raw.organization.trim()) orgs.add(raw.organization.trim());
         if (typeof raw.company === "string" && raw.company.trim()) orgs.add(raw.company.trim());
         if (typeof raw.school === "string" && raw.school.trim()) orgs.add(raw.school.trim());
-        if (p.group && p.group.trim()) orgs.add(p.group.trim());
+        const grp = p.group?.trim();
+        if (grp && !/^(?:家人|亲属|亲戚|朋友|好友|同事|同学|校友|客户|战略客户|合作伙伴|熟人|其他|未分组|默认)$/i.test(grp)) {
+            orgs.add(grp);
+        }
         return orgs;
     };
 
     const currentOrgs = extractOrgs(currentPerson);
+    const knownPeerOrgs = new Map<string, Set<string>>();
+    if (options.knownCommonOrgs) {
+        for (const group of options.knownCommonOrgs) {
+            const orgName = group.orgName?.trim();
+            if (!orgName) continue;
+            for (const peer of group.peers) {
+                if (!peer.docId) continue;
+                let set = knownPeerOrgs.get(peer.docId);
+                if (!set) {
+                    set = new Set<string>();
+                    knownPeerOrgs.set(peer.docId, set);
+                }
+                set.add(orgName);
+            }
+        }
+    }
 
     // 4. 评估全库其他非本人联系人
     const recommendations: PersonTieRecommendation[] = [];
@@ -288,11 +318,15 @@ export function discoverPersonTies(
 
         // 共同组织
         const otherOrgs = extractOrgs(other);
-        const commonOrgs: string[] = [];
+        const commonOrgSet = new Set<string>();
         for (const o of currentOrgs) {
-            if (otherOrgs.has(o)) commonOrgs.push(o);
+            if (otherOrgs.has(o)) commonOrgSet.add(o);
         }
-        commonOrgs.sort();
+        const extraPeerOrgs = knownPeerOrgs.get(other.docId);
+        if (extraPeerOrgs) {
+            for (const o of extraPeerOrgs) commonOrgSet.add(o);
+        }
+        const commonOrgs = [...commonOrgSet].sort();
 
         // 共同一度好友（Mutual Connections）
         const mutualConnectionNames: string[] = [];

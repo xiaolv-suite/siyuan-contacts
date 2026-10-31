@@ -1244,11 +1244,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
     loadTemplates();
 
-    function applyTemplate() {
+    async function applyTemplate() {
         if (!templateChoice) return;
         const template = templates.find((item) => item.id === templateChoice);
         if (!template) return;
-        if (noteText.trim() && !window.confirm("应用模板将覆盖当前备注，继续吗？")) {
+        if (noteText.trim() && !(await confirmDialog({ message: "应用模板将覆盖当前备注，继续吗？" }))) {
             templateChoice = "";
             return;
         }
@@ -1290,6 +1290,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         if (!current.docId || others.length === 0) return [];
         return discoverPersonTies(current.docId, others, [], {
             knownCoAttendance: insights?.coAttendance,
+            knownCommonOrgs: commonOrgs,
             minScore: 1,
             maxResults: 6,
         });
@@ -1695,9 +1696,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
+    let convertedGiftIds = $state<string[]>([]);
+    let exchangeReloadKey = $state(0);
+
     async function handleConvertGiftToExchange(item: GiftIdeaItem) {
-        if (!onCreateExchange || Boolean(busyGiftId)) return;
+        if (!onCreateExchange || Boolean(busyGiftId) || convertedGiftIds.includes(item.id)) return;
         busyGiftId = item.id;
+        giftIdeasError = "";
         const todayStr = toLocalDateKey(new Date());
         const exchange = convertGiftIdeaToExchange(item, todayStr);
         try {
@@ -1713,6 +1718,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 dueOn: exchange.dueOn,
                 note: exchange.note,
             });
+            if (item.status !== "given" && onUpdateGiftIdea) {
+                const updated = await onUpdateGiftIdea(current.docId, item.id, { status: "given" });
+                if (detailAlive) giftIdeas = updated;
+            }
+            if (detailAlive) {
+                convertedGiftIds = [...convertedGiftIds, item.id];
+                exchangeReloadKey += 1;
+            }
             onChanged();
         } catch (error) {
             if (detailAlive) giftIdeasError = requestErrorMessage(error);
@@ -2188,6 +2201,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     async function handleSyncDocProfile() {
         if (!onSyncDocProfile || !current?.docId || docSyncing) return;
         docSyncing = true;
+        copyFieldError = "";
         try {
             await onSyncDocProfile(current);
             docSynced = true;
@@ -2196,7 +2210,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 docSynced = false;
             }, 2000);
         } catch (err) {
-            console.warn("[LvContacts] 同步档案到正文未完成", err);
+            copyFieldError = `同步档案到正文未完成：${requestErrorMessage(err)}`;
+            if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
+            copyFieldErrorTimer = setTimeout(() => {
+                copyFieldError = "";
+            }, 4000);
         } finally {
             docSyncing = false;
         }
@@ -2773,6 +2791,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             void loadLifecycleStage();
             void loadScratchpads();
             void loadSocialPreferences();
+            void loadGiftIdeas();
+            exchangeReloadKey += 1;
             void loadItineraries();
             if (!originEditing && !originSaving) void loadOrigin();
             void loadAnniversaries();
@@ -3262,7 +3282,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         disabled={docSyncing}
                     >
                         {#if docSynced}
-                            <Check size={13} class="lvct-text-success" /> {text("detailDocSynced", "已同步到正文 ✓")}
+                            <Check size={13} class="lvct-text-success" /> {text("detailDocSynced", "已同步到正文")}
                         {:else}
                             <RefreshCw size={13} /> {docSyncing ? text("detailDocSyncing", "同步中…") : text("detailSyncDocProfile", "同步档案到正文")}
                         {/if}
@@ -3866,6 +3886,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         <input
                             class="b3-text-field"
                             style="width: 100%; box-sizing: border-box;"
+                            aria-label="记住的事内容"
                             placeholder={newFactCategory === "quote" ? "记录对方的金句或独到见解…" :
                                          newFactCategory === "preference" ? "记录饮食忌口、茶酒偏好或习惯…" :
                                          newFactCategory === "background" ? "记录过往任职、学术背景或家庭情况…" : "记录关键事实备忘…"}
@@ -3877,6 +3898,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                             <input
                                 class="b3-text-field"
                                 style="flex: 1; font-size: 11px;"
+                                aria-label="事实出处（可选）"
                                 placeholder="出处（可选，如：行业峰会、朋友圈）"
                                 bind:value={newFactSource}
                                 disabled={factsSaving}
@@ -4680,9 +4702,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                             <button
                                                 type="button"
                                                 class="b3-button b3-button--outline"
-                                                disabled={Boolean(busyGiftId)}
+                                                disabled={Boolean(busyGiftId) || convertedGiftIds.includes(idea.id)}
                                                 onclick={() => void handleConvertGiftToExchange(idea)}
-                                            >{text("giftsConvertToExchange", "转入账本")}</button>
+                                            >{convertedGiftIds.includes(idea.id) ? text("giftsConvertedToExchange", "已入账") : text("giftsConvertToExchange", "转入账本")}</button>
                                         {/if}
                                     {/if}
                                     <button
@@ -4738,12 +4760,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <input
                         class="b3-text-field fn__flex-1"
                         type="text"
+                        aria-label="纪念日名称"
                         placeholder="纪念日名称（如：结婚十周年、相识纪念）"
                         bind:value={newAnnivTitle}
                         disabled={addingAnniv || anniversariesLoading}
                         onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddAnniversary(); } }}
                     />
-                    <select class="b3-select" bind:value={newAnnivCategory} disabled={addingAnniv || anniversariesLoading}>
+                    <select class="b3-select" aria-label="纪念日分类" bind:value={newAnnivCategory} disabled={addingAnniv || anniversariesLoading}>
                         {#each ANNIVERSARY_CATEGORIES as cat}
                             <option value={cat}>{ANNIVERSARY_CATEGORY_LABELS[cat].icon} {ANNIVERSARY_CATEGORY_LABELS[cat].label}</option>
                         {/each}
@@ -4751,6 +4774,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <input
                         class="b3-text-field"
                         type="date"
+                        aria-label="纪念日日期"
                         style="width: 140px;"
                         bind:value={newAnnivDate}
                         disabled={addingAnniv || anniversariesLoading}
@@ -4843,6 +4867,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <input
                         class="b3-text-field fn__flex-1"
                         type="text"
+                        aria-label="项目或主题名称"
                         placeholder="项目或主题名称（如：Q4 战略复盘、开源人脉）"
                         bind:value={newProjTitle}
                         disabled={addingProj || projectsLoading}
@@ -4852,6 +4877,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         class="b3-text-field"
                         type="text"
                         style="width: 130px;"
+                        aria-label="项目角色分工（可选）"
                         placeholder="角色分工（可选）"
                         bind:value={newProjRole}
                         disabled={addingProj || projectsLoading}
@@ -4860,6 +4886,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         class="b3-text-field"
                         type="text"
                         style="width: 170px;"
+                        aria-label="关联文档 ID（可选）"
                         placeholder="关联文档 ID（可选）"
                         bind:value={newProjDocId}
                         disabled={addingProj || projectsLoading}
@@ -4929,6 +4956,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             {#if onLoadExchanges && onCreateExchange && onChangeExchangeStatus}
                 <ExchangeLedger
                     personDocId={current.docId}
+                    reloadKey={exchangeReloadKey}
                     {i18n}
                     onLoad={onLoadExchanges}
                     onCreate={onCreateExchange}

@@ -58,7 +58,7 @@ function contentWithoutIal(markdown: string): string {
 }
 
 /** 同步某人物文档的正文基本资料档案区块（真实落盘到思源笔记正文） */
-export async function syncPersonProfileDocSection(person: ContactSummary): Promise<void> {
+export async function syncPersonProfileDocSection(person: ContactSummary, options: { strict?: boolean } = {}): Promise<void> {
     if (!person.docId) return;
     const existing = await readMarkedBlocks(person.docId, PROFILE_SECTION_ATTR);
     const markdown = profileSectionMarkdown(person);
@@ -67,12 +67,13 @@ export async function syncPersonProfileDocSection(person: ContactSummary): Promi
     try {
         await upsertMarkedBlock(person.docId, PROFILE_SECTION_ATTR, markdown, existing[0]?.id);
     } catch (err) {
+        if (options.strict) throw err;
         console.warn("[LvContacts] 人脉基本档案同步到正文未完成", err);
     }
 }
 
 /** 同步某人物文档的正文往来记录区块（真实落盘到思源笔记正文） */
-export async function syncInteractionDocSection(plugin: Plugin, personDocId: string): Promise<void> {
+export async function syncInteractionDocSection(plugin: Plugin, personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
     const store = await loadInteractionStore(plugin);
     const tombstones = new Set(store.tombstones);
     const events = store.events
@@ -85,11 +86,12 @@ export async function syncInteractionDocSection(plugin: Plugin, personDocId: str
     try {
         await upsertMarkedBlock(personDocId, INTERACTIONS_SECTION_ATTR, markdown, existing[0]?.id);
     } catch (err) {
+        if (options.strict) throw err;
         console.warn("[LvContacts] 互动记录同步到正文未完成", err);
     }
 }
 
-export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string, personName?: string): Promise<void> {
+export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string, personName?: string, options: { strict?: boolean } = {}): Promise<void> {
     if (!personDocId) return;
     try {
         const store = await loadFollowUpStore(plugin);
@@ -100,11 +102,12 @@ export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: strin
         if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
         await upsertMarkedBlock(personDocId, FOLLOWUPS_SECTION_ATTR, markdown, existing[0]?.id);
     } catch (err) {
+        if (options.strict) throw err;
         console.warn("[LvContacts] 待办跟进同步到正文未完成", err);
     }
 }
 
-export async function syncExchangesDocSection(plugin: Plugin, personDocId: string): Promise<void> {
+export async function syncExchangesDocSection(plugin: Plugin, personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
     if (!personDocId) return;
     try {
         const store = await loadExchangeStore(plugin);
@@ -115,11 +118,12 @@ export async function syncExchangesDocSection(plugin: Plugin, personDocId: strin
         if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
         await upsertMarkedBlock(personDocId, EXCHANGES_SECTION_ATTR, markdown, existing[0]?.id);
     } catch (err) {
+        if (options.strict) throw err;
         console.warn("[LvContacts] 人情往来同步到正文未完成", err);
     }
 }
 
-export async function syncAnniversariesDocSection(plugin: Plugin, personDocId: string): Promise<void> {
+export async function syncAnniversariesDocSection(plugin: Plugin, personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
     if (!personDocId) return;
     try {
         const store = await loadAnniversaryStore(plugin);
@@ -130,6 +134,7 @@ export async function syncAnniversariesDocSection(plugin: Plugin, personDocId: s
         if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
         await upsertMarkedBlock(personDocId, ANNIVERSARIES_SECTION_ATTR, markdown, existing[0]?.id);
     } catch (err) {
+        if (options.strict) throw err;
         console.warn("[LvContacts] 重要纪念日同步到正文未完成", err);
     }
 }
@@ -158,11 +163,11 @@ export async function savePersonFactsToDoc(personDocId: string, items: readonly 
 export async function syncFullPersonDocument(plugin: Plugin, person: ContactSummary): Promise<void> {
     if (!person.docId) return;
     await Promise.all([
-        syncPersonProfileDocSection(person),
-        syncInteractionDocSection(plugin, person.docId),
-        syncFollowUpsDocSection(plugin, person.docId),
-        syncExchangesDocSection(plugin, person.docId),
-        syncAnniversariesDocSection(plugin, person.docId),
+        syncPersonProfileDocSection(person, { strict: true }),
+        syncInteractionDocSection(plugin, person.docId, { strict: true }),
+        syncFollowUpsDocSection(plugin, person.docId, person.name, { strict: true }),
+        syncExchangesDocSection(plugin, person.docId, { strict: true }),
+        syncAnniversariesDocSection(plugin, person.docId, { strict: true }),
     ]);
 }
 
