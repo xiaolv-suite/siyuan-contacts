@@ -981,6 +981,10 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (this.isLifecycleActive(lifecycleToken)) {
             this.workspaceState = { kind: "ready" };
             emitWorkspaceState(this.workspaceState);
+            const wb = document.querySelector(".lvct-workbench");
+            if (!this.isMobile && wb && wb.getBoundingClientRect().width === 0) {
+                this.openWorkbench();
+            }
         }
         return settings;
     }

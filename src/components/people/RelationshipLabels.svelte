@@ -23,7 +23,7 @@
     let alive = true;
     let resultElement: HTMLElement | undefined = $state();
     const dirty = $derived.by(() => draft !== (snapshot?.record?.labels ?? []).join("、"));
-    useCloseGuard({ busy: () => busy || loading, dirty: () => dirty || unknown, changes: () => ["与我的关系称谓有未保存或未核实的修改"] });
+    useCloseGuard({ busy: () => busy, dirty: () => dirty || unknown, changes: () => ["与我的关系称谓有未保存或未核实的修改"] });
     onDestroy(() => { alive = false; request += 1; });
 
     async function load(preserve = unknown): Promise<void> {

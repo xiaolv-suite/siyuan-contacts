@@ -41,7 +41,10 @@ process.on("exit", () => hooks.deregister());
 (globalThis as unknown as { __lvctFactsMock: typeof mockRouteHandler }).__lvctFactsMock = (route, body) => mockRouteHandler(route, body);
 
 const { loadPersonFactsFromDoc, savePersonFactsToDoc } = await import("../src/services/doc-section.ts");
+const { createDocWithMd } = await import("../src/api/client.ts");
+const { markedBlockContent } = await import("../src/api/blocks.ts");
 const DOC = "20261031100000-abcdefg";
+const NB = "20261031100000-nb00001";
 
 test("FUNC-02 loadPersonFactsFromDoc：内核读取失败或多受控块显式抛错，禁止静默返回空数组", async () => {
     mockRouteHandler = () => ({ code: -1, msg: "SQL 查询暂时不可用" });
@@ -77,4 +80,61 @@ test("FUNC-02 savePersonFactsToDoc：写入异常或多受控块显式抛错，�
         savePersonFactsToDoc(DOC, [{ id: "f1", category: "preference", date: "2026-10-31", text: "不吃香菜" }]),
         /块插入失败/,
     );
+});
+
+test("真内核回归 · 多段受控区块以 {{{row ... }}} 原子超级块落盘并无损回读校验", async () => {
+    let appendedData = "";
+    mockRouteHandler = (route, body) => {
+        if (route === "/api/sqlite/flushTransaction") return { code: 0, msg: "", data: null };
+        if (route === "/api/block/appendBlock" || route === "/api/block/insertBlock") {
+            appendedData = String(body.data ?? "");
+            return { code: 0, msg: "", data: [{ doOperations: [{ action: "insert", id: "20261031100000-sblk001" }] }] };
+        }
+        if (route === "/api/query/sql") {
+            const stmt = String(body.stmt ?? "");
+            if (stmt.includes("type = 'd'")) return { code: 0, msg: "", data: [{ id: DOC }] };
+            if (!appendedData) return { code: 0, msg: "", data: [] };
+            // 模拟思源 3.8.9 Lute 落盘超级块后把末尾 IAL 收入 blocks.ial，blocks.markdown 仅保留 {{{row ... }}}
+            const markdownOnly = appendedData.replace(/\n\{:[^\n]*\}\s*$/, "");
+            return { code: 0, msg: "", data: [{ id: "20261031100000-sblk001", markdown: markdownOnly }] };
+        }
+        return { code: 0, msg: "", data: null };
+    };
+
+    await savePersonFactsToDoc(DOC, [
+        { id: "f-taboo", category: "preference", isTaboo: true, date: "2026-10-31", text: "花生严重过敏" },
+    ]);
+    assert.match(appendedData, /^\{\{\{row\n## 谈资与关键事实\n\n- 🚫 \[忌口红线\]/);
+    assert.ok(markedBlockContent(appendedData, "custom-lvct-facts").startsWith("## 谈资与关键事实"));
+
+    const loaded = await loadPersonFactsFromDoc(DOC);
+    assert.equal(loaded.length, 1);
+    assert.equal(loaded[0].isTaboo, true);
+    assert.equal(loaded[0].text, "花生严重过敏");
+});
+
+test("真内核回归 · SiYuan 3.8.9 createDocWithMd 多级路径命中 document metadata is not ready 时自动补建父文档并成功重试", async () => {
+    const existingPaths = new Set<string>();
+    const calls: string[] = [];
+    mockRouteHandler = (route, body) => {
+        calls.push(`${route}:${String(body.path ?? "")}`);
+        if (route === "/api/sqlite/flushTransaction") return { code: 0, msg: "", data: null };
+        if (route === "/api/filetree/getIDsByHPath") {
+            const p = String(body.path ?? "");
+            return { code: 0, msg: "", data: existingPaths.has(p) ? ["20261031100000-parent1"] : [] };
+        }
+        if (route === "/api/filetree/createDocWithMd") {
+            const p = String(body.path ?? "");
+            if (p === "/人脉/王浩然" && !existingPaths.has("/人脉")) {
+                return { code: -1, msg: "document metadata is not ready", data: null };
+            }
+            existingPaths.add(p);
+            return { code: 0, msg: "", data: p === "/人脉" ? "20261031100000-parent1" : "20261031100000-child01" };
+        }
+        return { code: 0, msg: "", data: null };
+    };
+
+    const docId = await createDocWithMd(NB, "/人脉/王浩然", "# 王浩然\n");
+    assert.equal(docId, "20261031100000-child01");
+    assert.ok(existingPaths.has("/人脉"), "应自动补建缺失父路径 /人脉");
 });
