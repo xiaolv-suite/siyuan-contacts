@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [0.7.5] — 2026-10-31
+
+思源笔记原生文档深度联动一期（P0）与常驻隔离浏览器实测体验环境版本。
+
+### 新增（Added）
+- **隔离常驻网页预览机制（`pnpm preview:isolated` & `scripts/e2e/e2e-isolated.mjs --keep`）**：支持将隔离思源内核工作区直接放置于 D 盘（`D:\思源插件\小驴人脉-isolated-preview`），启动并常驻运行中文思源桌面网页（`http://127.0.0.1:43920/stage/build/desktop/`），严格避开日常库端口（`6806`）与小驴管家端口（`43919`），内置样例数据，供用户在宿主浏览器随时体验与交互走查。
+- **全链路自动增量文档镜像调度器（`src/services/doc-mirror.ts`）**：监听名册、互动、账本、纪念日变更，在后台 800ms 防抖更新对应人物文档受控区块；自动感知活跃编辑器键盘输入并在打字期间推迟 3 秒同步，零抢光标、零清撤销栈，内容未变 0 次写入，彻底告别手动点击“同步档案到正文”。
+- **人物别名直通思源原生 `alias` 属性（`src/services/person-aliases.ts`）**：在增删人物别名时自动同步写入人物文档根块的原生 `alias` 属性，打通思源全局 `Ctrl+P` 别名搜索与 `((` 别名双链引用补全。
+
+### 优化（Changed）
+- **补充资料去裸 JSON 化（`src/domain/person-fields.ts` & `src/api/person-fields.ts`）**：将 `custom-lvct-person-fields` 升级为人类可读的两层 Markdown 分组列表（`## 补充资料\n- **分组**\n  - 条目：值`），在思源 Protyle 阅读时排版精致无裸 JSON 乱码，且 100% 兼容无损读取存量 JSON 块。
+- **清理待办跟进双轨重复块（`src/services/doc-section.ts`）**：移除原静态 `## 待办跟进` 冗余超级块，人物文档全量统一归口到带 `custom-lvct-followup` 的原生可勾选任务列表块，解决同一事项重复两遍的问题。
+
 ## [0.7.4] — 2026-10-31
 
 真实思源桌面宿主（v3.8.9）+ 真实 Chrome 浏览器二轮全界面、按钮与跨弹窗交互链路梳理修复版本（`pnpm e2e:isolated` 扩容至 9 大真机验收环节）。

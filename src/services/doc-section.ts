@@ -2,13 +2,16 @@
  * 人物文档各原子区块同步服务：把人脉基本资料、往来记录、跟进事项、人情往来与纪念日同步为文档内的 Markdown 区块。
  * 契约：各区块拥有独立 custom-lvct-* 属性标记，幂等更新，内容未变不触发写入。
  */
-import { readMarkedBlocks, upsertMarkedBlock } from "../api/blocks";
+import { deleteBlock, readMarkedBlocks, upsertMarkedBlock } from "../api/blocks";
 import { KernelPermissionError, KernelResponseError } from "../api/client";
 import type { ContactSummary } from "../domain/person";
 import { loadInteractionStore } from "../data/interactions";
 import { loadFollowUpStore } from "../data/followups";
 import { loadExchangeStore } from "../data/exchanges";
 import { loadAnniversaryStore } from "../data/anniversaries";
+import { syncFollowUpTasksToDoc } from "./followup-sync";
+import { loadPersonFields } from "./person-fields";
+import { buildPersonFieldsMarkdown, PERSON_FIELDS_ATTR } from "../domain/person-fields.ts";
 import type { Plugin } from "siyuan";
 import {
     RELATED_SECTION_ATTR,
@@ -159,13 +162,41 @@ export async function savePersonFactsToDoc(personDocId: string, items: readonly 
     await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
 }
 
-/** 完整同步人脉档案、往来记录、跟进计划、人情账目与纪念日到思源独立文档正文 */
+/** 同步人物文档的补充资料受控 Markdown 区块（两层人类可读分组列表） */
+export async function syncPersonFieldsDocSection(personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
+    if (!personDocId) return;
+    try {
+        const state = await loadPersonFields(personDocId);
+        if (!state?.snapshot?.items?.length) return;
+        const markdown = buildPersonFieldsMarkdown(state.snapshot);
+        const existing = await readMarkedBlocks(personDocId, PERSON_FIELDS_ATTR);
+        if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+        await upsertMarkedBlock(personDocId, PERSON_FIELDS_ATTR, markdown, existing[0]?.id);
+    } catch (err) {
+        if (options.strict) throw err;
+        console.warn("[LvContacts] 补充资料同步到正文未完成", err);
+    }
+}
+
+/** 完整同步人脉档案、往来记录、原生跟进计划、补充资料、人情账目与纪念日到思源独立文档正文 */
 export async function syncFullPersonDocument(plugin: Plugin, person: ContactSummary): Promise<void> {
     if (!person.docId) return;
+
+    // 清理历史遗留的静态双轨待办块（若存在），彻底消除与原生跟进任务块的重复
+    try {
+        const legacyStaticFollowups = await readMarkedBlocks(person.docId, FOLLOWUPS_SECTION_ATTR);
+        if (legacyStaticFollowups.length > 0) {
+            for (const b of legacyStaticFollowups) {
+                await deleteBlock(b.id).catch(() => {});
+            }
+        }
+    } catch {}
+
     await Promise.all([
         syncPersonProfileDocSection(person, { strict: true }),
         syncInteractionDocSection(plugin, person.docId, { strict: true }),
-        syncFollowUpsDocSection(plugin, person.docId, person.name, { strict: true }),
+        syncFollowUpTasksToDoc(plugin, person.docId).catch((e) => console.warn("[LvContacts] 原生跟进同步未完成:", e)),
+        syncPersonFieldsDocSection(person.docId, { strict: true }),
         syncExchangesDocSection(plugin, person.docId, { strict: true }),
         syncAnniversariesDocSection(plugin, person.docId, { strict: true }),
     ]);

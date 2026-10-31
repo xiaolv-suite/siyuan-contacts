@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.4** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.4) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.5** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.5) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -54,20 +54,24 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.4 (2026-10-31)
+## This release: v0.7.5 (2026-10-31)
 
-Second-pass real SiYuan `v3.8.9` Desktop + real Chrome UI, button, and cross-dialog interaction sweep (`pnpm e2e:isolated`):
+Native SiYuan Document Linkage Phase 1 (P0) & Live Isolated Preview Environment:
 
-- **Floating Doc Strip & Cross-Dialog Action Repairs (`person-panel.ts`, `DashboardView.svelte`, `Workbench.svelte`)**: Wired full organization & relationship-label callbacks and live data broadcast into document strip `PersonEditDialog`; added cold-start `requestWorkbenchNavigation` queueing for organization/city strips and wired City「Trip Planner」directly to `RegionExplorerDialog`; fixed Home `OccasionsHubDialog`「Record New Occasion」button, `ActivityHeatmap` active day drill-down, and immediate `ContextPanel` cleanup on contact deletion.
-- **Shared-Organization Tie Discovery & Detail State Closure (`connections-discovery.ts`, `PersonDetail.svelte`, `doc-section.ts`)**: Connected `org-membership.json` to potential connection discovery (and stopped misclassifying contact groups like `"Friend"` as shared organizations); prevented duplicate Gift-to-Ledger conversion with live `ExchangeLedger` refresh; enforced strict error reporting on manual document sync and unified all remaining `window.confirm` calls into `confirmDialog`.
-- **Narrow Host Pane / 150% Scale Layout & Sticky Dialog Primary CTA (`src/index.scss`)**: Eliminated horizontal overflows on Home stat cards, 52-week heatmap, 150% desktop-scaled roster toolbar (`853×533`), and `390px` mobile navigation; made form dialog footers sticky so `"Create Contact"` remains visible above the fold at 125%/150% display scaling; removed undefined `--b3-theme-*` CSS variables and duplicate SVG+emoji icons.
+- **Isolated Live Web Preview (`pnpm preview:isolated`)**: Spins up an isolated SiYuan kernel on Drive D (`D:\思源插件\小驴人脉-isolated-preview`) serving desktop web UI at `http://127.0.0.1:43920/stage/build/desktop/` (strictly avoiding 6806 and 43919) with pre-populated sample contacts for live testing and inspection.
+- **Incremental Document Mirror Scheduler (`src/services/doc-mirror.ts`)**: Automatically debounces updates (800ms) to native person document sections upon changes to interactions, ledger, anniversaries, and profile; evades active typing in editor (3s delay) to preserve cursor and undo history with 0 writes when content is unchanged.
+- **Direct SiYuan Native `alias` Sync (`src/services/person-aliases.ts`)**: Synchronizes contact aliases into native document `alias` block attributes, immediately enabling SiYuan global `Ctrl+P` alias search and `((` autocompletion.
+- **Human-Readable Supplementary Fields & Deduplicated Follow-Ups (`person-fields.ts` & `doc-section.ts`)**: Upgraded `custom-lvct-person-fields` to clean two-tier Markdown lists (`## 补充资料\n- **Group**\n  - Label: Value`) without raw JSON clutter while preserving 100% backward compatibility; eliminated redundant static follow-up blocks in favor of interactive native task items.
 
-Validation: `pnpm check` (0/0), unit tests (**1086/1086 PASS**), 3-tier UI regressions (**528/528**), and `pnpm e2e:isolated` (11/11 kernel services + 9-stage real SiYuan desktop & scaling walkthrough) all passed.
+Validation: `pnpm check` (0/0), unit tests (**1090/1090 PASS**), 3-tier UI regressions (**528/528**), and `pnpm e2e:isolated` (11/11 kernel services + 9-stage real SiYuan desktop & scaling walkthrough) all passed.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.7.3 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.7.4 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.4 · 2026-10-31
+- Document strip & cross-dialog button link repairs, cold-start `requestWorkbenchNavigation` queue, shared-org tie discovery, immediate ContextPanel cleanup on deletion, and 150% scaling sticky CTA.
 
 ### v0.7.3 · 2026-10-31
 - Switched real-host transport to `fetchSyncPost`, added nested-path ancestor doc creation for SiYuan `3.8.9`, wrapped multi-block controlled sections in atomic `{{{row ... }}}` SuperBlocks, fixed detail refresh draft/tab races, and added `pnpm e2e:isolated`.

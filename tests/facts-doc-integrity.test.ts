@@ -40,7 +40,7 @@ process.on("exit", () => hooks.deregister());
 
 (globalThis as unknown as { __lvctFactsMock: typeof mockRouteHandler }).__lvctFactsMock = (route, body) => mockRouteHandler(route, body);
 
-const { loadPersonFactsFromDoc, savePersonFactsToDoc } = await import("../src/services/doc-section.ts");
+const { loadPersonFactsFromDoc, savePersonFactsToDoc, syncFullPersonDocument, syncPersonFieldsDocSection } = await import("../src/services/doc-section.ts");
 const { createDocWithMd } = await import("../src/api/client.ts");
 const { markedBlockContent } = await import("../src/api/blocks.ts");
 const DOC = "20261031100000-abcdefg";
@@ -138,3 +138,67 @@ test("真内核回归 · SiYuan 3.8.9 createDocWithMd 多级路径命中 documen
     assert.equal(docId, "20261031100000-child01");
     assert.ok(existingPaths.has("/人脉"), "应自动补建缺失父路径 /人脉");
 });
+
+test("思源文档深度联动 · syncFullPersonDocument 自动清理历史静态跟进超级块，避免与原生跟进任务块重复", async () => {
+    let deletedBlockId = "";
+    const memory = new Map<string, unknown>();
+    memory.set("interaction-events.json", { schemaVersion: 1, events: [], tombstones: [] });
+    memory.set("follow-ups.json", { schemaVersion: 1, items: [] });
+    memory.set("exchange-records.json", { schemaVersion: 1, records: [] });
+    memory.set("person-anniversaries.json", { schemaVersion: 1, anniversaries: {} });
+    memory.set("contacts-settings.json", { schemaVersion: 1, notebookId: NB, hostDocId: "doc-h", dbBlockId: "blk-d", avId: "av-1", fieldMap: {} });
+
+    const dummyPlugin = {
+        loadData: async (k: string) => memory.get(k) ?? null,
+        saveData: async (k: string, v: unknown) => { memory.set(k, v); },
+    } as any;
+
+    const blocksMap = new Map<string, { id: string; markdown: string }>();
+    blocksMap.set("custom-lvct-followups", { id: "20261031100000-legacfu", markdown: "## 待办跟进\n- [ ] 历史遗留" });
+
+    mockRouteHandler = (route, body) => {
+        if (route === "/api/sqlite/flushTransaction") return { code: 0, msg: "", data: null };
+        if (route === "/api/block/deleteBlock") {
+            deletedBlockId = String(body.id ?? "");
+            blocksMap.delete("custom-lvct-followups");
+            return { code: 0, msg: "", data: null };
+        }
+        if (route === "/api/block/insertBlock" || route === "/api/block/appendBlock" || route === "/api/block/updateBlock") {
+            const data = String(body.data ?? "");
+            const matchAttr = data.match(/custom-lvct-[a-z-]+/);
+            const attr = matchAttr ? matchAttr[0] : "unknown";
+            const id = `20261031100000-b${String(blocksMap.size + 1).padStart(6, "0")}`;
+            const markdownOnly = data.replace(/\n\{:[^\n]*\}\s*$/, "");
+            blocksMap.set(attr, { id, markdown: markdownOnly });
+            return { code: 0, msg: "", data: [{ doOperations: [{ action: "insert", id }] }] };
+        }
+        if (route === "/api/query/sql") {
+            const stmt = String(body.stmt ?? "");
+            if (stmt.includes("type = 'd'")) return { code: 0, msg: "", data: [{ id: DOC }] };
+            for (const [attr, blk] of blocksMap.entries()) {
+                if (stmt.includes(attr)) return { code: 0, msg: "", data: [blk] };
+            }
+            return { code: 0, msg: "", data: [] };
+        }
+        return { code: 0, msg: "", data: [] };
+    };
+
+    const person = {
+        docId: DOC,
+        itemId: "item-1",
+        name: "王浩然",
+        phone: "13800000000",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "",
+        isLunar: false,
+        group: "",
+        tags: [],
+        relatedItemIds: [],
+    };
+
+    await syncFullPersonDocument(dummyPlugin, person);
+    assert.equal(deletedBlockId, "20261031100000-legacfu", "应自动调用 deleteBlock 删除历史静态双轨跟进块");
+});
+
