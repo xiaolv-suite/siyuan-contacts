@@ -10341,7 +10341,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     .lvct-person-card {
         min-height: 0;
-        padding: 14px;
+        padding: 12px 14px;
+        gap: 6px;
+    }
+
+    .lvct-person-card__footer:not(:has(.lvct-person-card__tags)) {
+        margin-top: -28px;
+        pointer-events: none;
+
+        .lvct-person-card__actions { pointer-events: auto; }
     }
 
     .lvct-person-card__tags {
