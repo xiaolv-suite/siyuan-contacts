@@ -17,7 +17,7 @@
             return hideEmpty && value === "未填写" ? [] : [{ label, value }];
         });
         if (hideEmpty && profile.affiliations.state === "known") {
-            const { history, unresolved } = profile.affiliations.value;
+            const { history = [], unresolved = [] } = profile.affiliations.value;
             if (history.length) rows.push({ label: "历史组织", value: `${history.length} 条经历，详情可查看` });
             if (unresolved.length) rows.push({ label: "待核对组织", value: `${unresolved.length} 条，详情可核对` });
         }

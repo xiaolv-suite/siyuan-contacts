@@ -4,8 +4,8 @@
  */
 import type { Plugin } from "siyuan";
 import { loadJson, loadJsonStrict, saveJsonVerified, withStoreLock } from "./storage.ts";
-import { appendEvent, emptyStore, normalizeInteractionStore, normalizeInteractionStoreForWrite, removeEvent, toLocalDateKey } from "../domain/interactions.ts";
-import type { InteractionEvent, InteractionStore } from "../domain/interactions.ts";
+import { amendEvent, appendEvent, emptyStore, normalizeInteractionStore, normalizeInteractionStoreForWrite, removeEvent, toLocalDateKey } from "../domain/interactions.ts";
+import type { InteractionAmendment, InteractionEvent, InteractionStore } from "../domain/interactions.ts";
 import { newNodeId } from "../domain/format.ts";
 
 function assertPersonDocId(value: unknown): asserts value is string {
@@ -83,6 +83,26 @@ export async function deleteInteraction(plugin: Plugin, eventId: string, expecte
             await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, next);
         }
         return next;
+    });
+}
+
+/** 修改一条互动：锁内墓碑旧事件并追加修正后的新事件（契约见 DATA-CONTRACT §3），写后回读。 */
+export async function amendInteraction(
+    plugin: Plugin,
+    eventId: string,
+    expectedPersonDocId: string,
+    amendment: InteractionAmendment,
+): Promise<{ store: InteractionStore; event: InteractionEvent }> {
+    assertPersonDocId(expectedPersonDocId);
+    return withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+        const store = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+        const original = store.events.find((item) => item.id === eventId);
+        if (original && original.personDocId !== expectedPersonDocId) {
+            throw new Error("互动记录不属于当前人物，操作已停止");
+        }
+        const result = amendEvent(store, eventId, amendment, newNodeId());
+        await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, result.store);
+        return result;
     });
 }
 

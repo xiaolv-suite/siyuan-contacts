@@ -137,6 +137,61 @@ export function removeEvent(store: InteractionStore, eventId: string): Interacti
     };
 }
 
+export interface InteractionAmendment {
+    note?: string;
+    type?: InteractionType;
+    /** 新的本地日 YYYY-MM-DD；与原日期相同则保留原时刻 */
+    localDate?: string;
+}
+
+/**
+ * 修改一条互动（纯函数）：不原地改写，墓碑旧 id 并追加修正后的新事件，
+ * 保留 personDocId、source 与 externalRef，因此同步重放、迁移合并都不会复活旧内容。
+ * 新日期沿用原事件当天的时分秒，避免同日排序跳动。
+ */
+export function amendEvent(
+    store: InteractionStore,
+    eventId: string,
+    amendment: InteractionAmendment,
+    newId: string,
+): { store: InteractionStore; event: InteractionEvent } {
+    const original = store.events.find((event) => event.id === eventId);
+    if (!original) throw new Error("这条互动已不存在，可能已被删除或在别处修改");
+    if (!newId || newId === eventId || store.tombstones.includes(newId) || store.events.some((event) => event.id === newId)) {
+        throw new Error("互动修改的新标识无效，操作已停止");
+    }
+    if (amendment.type !== undefined && !INTERACTION_TYPES.includes(amendment.type)) {
+        throw new Error("互动类型无效，未保存修改");
+    }
+    let occurredAt = original.occurredAt;
+    let localDate = original.localDate;
+    if (amendment.localDate !== undefined && amendment.localDate !== original.localDate) {
+        if (!isValidDateKey(amendment.localDate)) throw new Error("互动日期无效，未保存修改");
+        const [year, month, day] = amendment.localDate.split("-").map(Number);
+        const time = new Date(original.occurredAt);
+        const moved = new Date(year, month - 1, day, time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds());
+        if (Number.isNaN(moved.getTime()) || toLocalDateKey(moved) !== amendment.localDate) {
+            throw new Error("互动日期无效，未保存修改");
+        }
+        occurredAt = moved.getTime();
+        localDate = amendment.localDate;
+    }
+    const note = amendment.note !== undefined ? amendment.note.trim() : original.note;
+    const type = amendment.type ?? original.type;
+    const event: InteractionEvent = {
+        id: newId,
+        personDocId: original.personDocId,
+        occurredAt,
+        localDate,
+        source: original.source,
+        ...(type !== undefined ? { type } : {}),
+        ...(original.externalRef !== undefined ? { externalRef: original.externalRef } : {}),
+        ...(note ? { note } : {}),
+    };
+    const removed = removeEvent(store, eventId);
+    return { store: { ...removed, events: [...removed.events, event] }, event };
+}
+
 export interface StalenessInfo {
     person: ContactSummary;
     /** 最近一次互动的本地日；从未互动为 undefined */

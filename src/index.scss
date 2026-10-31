@@ -876,6 +876,40 @@ html[data-theme-mode="dark"] .lvct-wizard {
     }
 }
 
+.lvct-people__tools-fold {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+
+    > summary {
+        list-style: none;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--lvct-sp-1_5);
+        cursor: pointer;
+        user-select: none;
+
+        &::-webkit-details-marker { display: none; }
+    }
+}
+
+.lvct-people__tools-popover {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 220px;
+    padding: 8px;
+
+    > .b3-button {
+        width: 100%;
+        justify-content: flex-start;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--lvct-sp-2);
+    }
+}
+
 /* 桌面窄宽度下工具动作会独立换行；右对齐让“整理/导入”成为同一组次要工具，
    保留“新建联系人”作为唯一高强调动作，避免换行后出现左侧孤立按钮。 */
 @media (min-width: 641px) {
@@ -3137,11 +3171,29 @@ html[data-theme-mode="dark"] .lvct-notice {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
-    margin: -3px;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    margin: 0;
     cursor: pointer;
+}
+
+.lvct-person-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--lvct-sp-2);
+    flex-wrap: wrap;
+    margin-top: auto;
+    min-width: 0;
+}
+
+.lvct-person-card__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-inline-start: auto;
+    flex: 0 0 auto;
 }
 
 .lvct-person-card__name {
@@ -5944,6 +5996,34 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     white-space: normal;
 }
 
+.lvct-detail__timeline-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+
+    textarea { width: 100%; min-height: 64px; resize: vertical; box-sizing: border-box; }
+}
+
+.lvct-detail__timeline-edit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    input[type="date"] { width: 150px; max-width: 100%; }
+}
+
+.lvct-detail__timeline-edit-error {
+    color: var(--lvct-danger);
+    font-size: 12px;
+}
+
+.lvct-detail__timeline-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .lvct-detail__timeline-source {
     display: inline-flex;
     align-items: center;
@@ -6915,17 +6995,58 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: var(--lvct-sp-2);
 }
 
-/* B09-7：工作空间/联动低频区块——桌面强制展开隐藏 summary；移动端 details 默认收起可展开 */
+/* D-0040 R4：低频统计走势与工作空间统一默认收起，点击按需展开 */
 .lvct-dash__lowfreq > summary {
     cursor: pointer;
     color: var(--lvct-text-2);
     font-size: var(--lvct-fs-caption);
-    padding: var(--lvct-sp-1) 0;
+    font-weight: var(--lvct-fw-medium);
+    padding: var(--lvct-sp-2) var(--lvct-sp-3);
+    border: 1px dashed var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-md);
+    background: var(--lvct-bg-surface);
+    user-select: none;
 }
 
-@media (min-width: 641px) {
-    .lvct-dash__lowfreq > summary { display: none; }
-    .lvct-dash__lowfreq:not([open]) > .lvct-dash__grid { display: grid; }
+.lvct-dash__lowfreq[open] > summary {
+    margin-bottom: var(--lvct-sp-3);
+}
+
+.lvct-detail__more-tools,
+.lvct-dash__more-tools {
+    position: relative;
+    display: inline-flex;
+
+    > summary {
+        list-style: none;
+        cursor: pointer;
+        user-select: none;
+
+        &::-webkit-details-marker { display: none; }
+    }
+}
+
+.lvct-detail__more-tools-panel,
+.lvct-dash__more-tools-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: var(--lvct-z-popover, 40);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 196px;
+    padding: 8px;
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-md);
+    background: var(--lvct-bg-elevated);
+    box-shadow: var(--lvct-shadow-2);
+
+    > .b3-button {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 
 .lvct-dash__row {
@@ -10220,7 +10341,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     .lvct-person-card {
         min-height: 0;
-        padding: 14px;
+        padding: 12px 14px;
+        gap: 6px;
+    }
+
+    .lvct-person-card__footer:not(:has(.lvct-person-card__tags)) {
+        margin-top: -28px;
+        pointer-events: none;
+
+        .lvct-person-card__actions { pointer-events: auto; }
     }
 
     .lvct-person-card__tags {

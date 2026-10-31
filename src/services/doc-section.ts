@@ -132,31 +132,24 @@ export async function syncAnniversariesDocSection(plugin: Plugin, personDocId: s
     }
 }
 
-/** 读取人物文档中的谈资与关键事实 */
+/** 读取人物文档中的谈资与关键事实（读取异常或存在多个受控块时显式抛错，禁止静默返回空数组导致后续写入覆盖） */
 export async function loadPersonFactsFromDoc(personDocId: string): Promise<PersonFactItem[]> {
     if (!personDocId) return [];
-    try {
-        const blocks = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
-        if (blocks.length === 0) return [];
-        return parseFactsSectionMarkdown(blocks[0].markdown);
-    } catch (err) {
-        console.warn("[LvContacts] 读取人物谈资与事实区块失败：", err);
-        return [];
-    }
+    const blocks = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
+    if (blocks.length > 1) throw new Error("存在多个事实画像标记区块，未自动读取；请先核对文档");
+    if (blocks.length === 0) return [];
+    return parseFactsSectionMarkdown(blocks[0].markdown);
 }
 
 /** 保存/更新人物文档中的谈资与关键事实区块 */
 export async function savePersonFactsToDoc(personDocId: string, items: readonly PersonFactItem[]): Promise<void> {
     if (!personDocId) return;
     const existing = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
+    if (existing.length > 1) throw new Error("存在多个事实画像标记区块，未自动覆盖；请先核对文档");
     const markdown = buildFactsSectionMarkdown(items);
     if (existing.length === 0 && !markdown) return;
     if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
-    try {
-        await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
-    } catch (err) {
-        console.warn("[LvContacts] 保存人物谈资与事实区块失败：", err);
-    }
+    await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
 }
 
 /** 完整同步人脉档案、往来记录、跟进计划、人情账目与纪念日到思源独立文档正文 */

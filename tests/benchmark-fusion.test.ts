@@ -377,6 +377,10 @@ test("标杆融合 · 会前 30 秒破冰速览卡 (Pre-Meeting Brief) 组装与
                 groupSize: 1,
             },
         ],
+        facts: [
+            { id: "f-1", category: "preference", date: "2023-11-10", text: "喜欢坐靠窗安静位" },
+            { id: "f-2", category: "preference", isTaboo: true, date: "2023-11-10", text: "酒精过敏不饮酒" },
+        ],
         coAttendance: [
             { name: "林知夏", count: 4 },
             { name: "许嘉", count: 2 },
@@ -391,7 +395,10 @@ test("标杆融合 · 会前 30 秒破冰速览卡 (Pre-Meeting Brief) 组装与
     assert.ok(brief.originText.includes("初识于 2023年开源技术大会 · 由 王伟 引荐"));
     assert.ok(brief.dietAndPreferences.some((p) => p.includes("浅烘手冲")));
     assert.ok(brief.dietAndPreferences.some((p) => p.includes("海鲜严重过敏")));
+    assert.ok(brief.dietAndPreferences.some((p) => p.includes("喜欢坐靠窗安静位")));
     assert.ok(brief.taboos.some((t) => t.includes("避开前东家诉讼敏感话题")));
+    assert.ok(brief.taboos.some((t) => t.includes("酒精过敏不饮酒")));
+    assert.ok(!brief.statusSummary.includes("健康度"), "会前速览不应展示无依据健康度分数");
     assert.ok(brief.sharedNetwork.some((n) => n.includes("引荐人: 王伟")));
     assert.ok(brief.sharedNetwork.some((n) => n.includes("林知夏 (同场 4 次)")));
 

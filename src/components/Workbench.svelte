@@ -149,7 +149,7 @@
     }
     let detailPerson: ContactSummary | null = $state(null);
     let contextPerson: ContactSummary | null = $state(null);
-    let contextPanelOpen = $state(true);
+    let contextPanelOpen = $state(false);
     let peopleGroups: string[] = $state([]);
     let detailReturn = $state<PersonReturnContext | null>(null);
     let organizationOpen = $state(false);
@@ -475,9 +475,11 @@
         let targetItemIds: string[] = [];
         if (focus?.itemIds && focus.itemIds.length > 0) {
             targetItemIds = [...focus.itemIds];
-        } else if (focus?.memberDocIds && focus.memberDocIds.length > 0 && peopleOrder.length > 0) {
+        } else if (focus?.memberDocIds && focus.memberDocIds.length > 0) {
             const docIdSet = new Set(focus.memberDocIds);
-            targetItemIds = peopleOrder.filter((p) => docIdSet.has(p.docId)).map((p) => p.itemId);
+            const source = peopleOrder.length > 0 ? peopleOrder : await facade.listContacts().catch(() => []);
+            if (!lifecycleToken.isAlive()) return;
+            targetItemIds = source.filter((p) => docIdSet.has(p.docId)).map((p) => p.itemId);
         }
 
         peopleFocusIds = targetItemIds;
@@ -924,6 +926,7 @@
             }}
             onRecord={(personDocId, note, type, options) => facade.recordInteraction(personDocId, note, type, options)}
             onDeleteInteraction={(personDocId, eventId) => facade.deleteInteraction(personDocId, eventId)}
+            onAmendInteraction={(personDocId, eventId, amendment) => facade.amendInteraction(personDocId, eventId, amendment)}
             onLoadInsights={(docId) => facade.loadPersonInsights(docId)}
             onLoadPersonNote={(docId) => facade.loadPersonNote(docId)}
             onSavePersonNote={(docId, note, expected) => facade.savePersonNote(docId, note, expected)}
