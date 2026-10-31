@@ -28,8 +28,9 @@ import { initializeWorkspace, inspectWorkspace, readSettingsState, scanAnchorCan
 import { configureCloseGuardI18n } from "./components/close-guard";
 import type { InitProgressStep, WorkspaceSnapshot } from "./services/init";
 import { loadDashboard, DEFAULT_DASHBOARD_OPTIONS } from "./services/dashboard";
-import { deleteInteraction, recordInteraction, loadInteractionStoreStrict } from "./data/interactions";
+import { amendInteraction, deleteInteraction, recordInteraction, loadInteractionStoreStrict } from "./data/interactions";
 import { toLocalDateKey } from "./domain/interactions";
+import type { InteractionAmendment } from "./domain/interactions";
 import { captureFromDoc, previewCapture, resolveRecognizeTarget } from "./services/capture";
 import { extractFromDoc, prepareAiExtraction } from "./services/ai-extract";
 import type { AiExtractionConfirmation } from "./services/ai-extract";
@@ -1036,6 +1037,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async deleteInteraction(personDocId: string, eventId: string): Promise<void> {
         await deleteInteraction(this, eventId, personDocId);
+        void syncInteractionDocSection(this, personDocId).catch(() => {});
+        emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
+    }
+
+    async amendInteraction(personDocId: string, eventId: string, amendment: InteractionAmendment): Promise<void> {
+        await amendInteraction(this, eventId, personDocId, amendment);
         void syncInteractionDocSection(this, personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
     }

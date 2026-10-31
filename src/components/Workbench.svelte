@@ -924,6 +924,7 @@
             }}
             onRecord={(personDocId, note, type, options) => facade.recordInteraction(personDocId, note, type, options)}
             onDeleteInteraction={(personDocId, eventId) => facade.deleteInteraction(personDocId, eventId)}
+            onAmendInteraction={(personDocId, eventId, amendment) => facade.amendInteraction(personDocId, eventId, amendment)}
             onLoadInsights={(docId) => facade.loadPersonInsights(docId)}
             onLoadPersonNote={(docId) => facade.loadPersonNote(docId)}
             onSavePersonNote={(docId, note, expected) => facade.savePersonNote(docId, note, expected)}

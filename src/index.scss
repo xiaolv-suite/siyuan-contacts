@@ -5944,6 +5944,34 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     white-space: normal;
 }
 
+.lvct-detail__timeline-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+
+    textarea { width: 100%; min-height: 64px; resize: vertical; box-sizing: border-box; }
+}
+
+.lvct-detail__timeline-edit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    input[type="date"] { width: 150px; max-width: 100%; }
+}
+
+.lvct-detail__timeline-edit-error {
+    color: var(--lvct-danger);
+    font-size: 12px;
+}
+
+.lvct-detail__timeline-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .lvct-detail__timeline-source {
     display: inline-flex;
     align-items: center;

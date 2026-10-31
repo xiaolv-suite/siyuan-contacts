@@ -157,6 +157,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         onLoadCommonOrgs,
         onRecord,
         onDeleteInteraction,
+        onAmendInteraction,
         onLoadInsights,
         onLoadPersonNote,
         onSavePersonNote,
@@ -257,6 +258,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             options?: { occurredAt?: number; source?: import("../../domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean },
         ) => Promise<void>;
         onDeleteInteraction?: (personDocId: string, eventId: string) => Promise<void>;
+        onAmendInteraction?: (personDocId: string, eventId: string, amendment: import("../../domain/interactions").InteractionAmendment) => Promise<void>;
         /** 人物洞察（时间线+共同出席） */
         onLoadInsights: (docId: string) => Promise<import("../../services/insights").PersonInsights>;
         onLoadPersonNote?: (docId: string) => Promise<string>;
@@ -753,6 +755,62 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             await loadInsights();
         } catch (error) {
             errorText = requestErrorMessage(error);
+        } finally { busy = false; }
+    }
+
+    let editingTimeline = $state<{ eventId: string; date: string; type: InteractionType; note: string; initial: string } | null>(null);
+    let timelineEditError = $state("");
+    const timelineEditDirty = $derived(editingTimeline !== null
+        && JSON.stringify([editingTimeline.date, editingTimeline.type, editingTimeline.note.trim()]) !== editingTimeline.initial);
+    $effect(() => {
+        void current.docId;
+        untrack(() => {
+            editingTimeline = null;
+            timelineEditError = "";
+        });
+    });
+    useCloseGuard({
+        busy: () => false,
+        dirty: () => timelineEditDirty,
+        changes: () => (timelineEditDirty ? ["互动修改尚未保存"] : []),
+        save: async () => {
+            await commitEditTimelineItem();
+            if (editingTimeline) throw new Error(timelineEditError || "互动修改尚未保存");
+        },
+    });
+
+    function startEditTimelineItem(item: { eventId: string; localDate: string; type: InteractionType; note?: string }) {
+        timelineEditError = "";
+        const note = item.note ?? "";
+        editingTimeline = {
+            eventId: item.eventId,
+            date: item.localDate,
+            type: item.type,
+            note,
+            initial: JSON.stringify([item.localDate, item.type, note.trim()]),
+        };
+    }
+
+    async function commitEditTimelineItem() {
+        const draft = editingTimeline;
+        if (busy || !draft || !onAmendInteraction) return;
+        if (!timelineEditDirty) {
+            editingTimeline = null;
+            return;
+        }
+        if (!draft.date) {
+            timelineEditError = "请选择互动日期";
+            return;
+        }
+        busy = true;
+        timelineEditError = "";
+        try {
+            await onAmendInteraction(current.docId, draft.eventId, { localDate: draft.date, type: draft.type, note: draft.note });
+            editingTimeline = null;
+            onChanged();
+            await loadInsights();
+        } catch (error) {
+            timelineEditError = requestErrorMessage(error);
         } finally { busy = false; }
     }
 
@@ -5187,14 +5245,46 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                                 {/if}
                                             </button>
                                         {/if}
+                                        {#if onAmendInteraction}
+                                            <button class="b3-button b3-button--text b3-button--small" title="修改这条互动" aria-label={`修改 ${item.localDate} 的互动`} disabled={busy || editingTimeline?.eventId === item.eventId} onclick={() => startEditTimelineItem(item)}>编辑</button>
+                                        {/if}
                                         {#if onDeleteInteraction}
                                             <button class="b3-button b3-button--text b3-button--small" title="删除这条互动" aria-label={`删除 ${item.localDate} 的互动`} disabled={busy} onclick={() => deleteTimelineItem(item.eventId)}>删除</button>
                                         {/if}
                                     </div>
                                 </div>
+                                {#if editingTimeline && editingTimeline.eventId === item.eventId}
+                                    <form class="lvct-detail__timeline-edit" onsubmit={(event) => { event.preventDefault(); void commitEditTimelineItem(); }}>
+                                        <div class="lvct-detail__timeline-edit-row">
+                                            <input class="b3-text-field" type="date" required bind:value={editingTimeline.date} aria-label="互动日期" max={toLocalDateKey(new Date())} />
+                                            <select class="b3-select" bind:value={editingTimeline.type} aria-label="互动类型">
+                                                {#each INTERACTION_TYPES as itype}
+                                                    <option value={itype}>{INTERACTION_TYPE_LABELS[itype].icon} {INTERACTION_TYPE_LABELS[itype].label}</option>
+                                                {/each}
+                                            </select>
+                                        </div>
+                                        <textarea
+                                            class="b3-text-field"
+                                            rows="3"
+                                            bind:value={editingTimeline.note}
+                                            aria-label="互动内容"
+                                            aria-invalid={timelineEditError ? "true" : undefined}
+                                            aria-describedby={timelineEditError ? `lvct-timeline-edit-error-${item.eventId}` : undefined}
+                                            onkeydown={(event) => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); void commitEditTimelineItem(); } else if (event.key === "Escape") { event.stopPropagation(); editingTimeline = null; } }}
+                                        ></textarea>
+                                        {#if timelineEditError}
+                                            <div class="lvct-detail__timeline-edit-error" id={`lvct-timeline-edit-error-${item.eventId}`} role="alert">{timelineEditError}</div>
+                                        {/if}
+                                        <div class="lvct-detail__timeline-edit-actions">
+                                            <button type="button" class="b3-button b3-button--text b3-button--small" disabled={busy} onclick={() => { editingTimeline = null; timelineEditError = ""; }}>取消</button>
+                                            <button type="submit" class="b3-button b3-button--small" disabled={busy}>{busy ? "保存中…" : "保存修改"}</button>
+                                        </div>
+                                    </form>
+                                {:else}
                                 <div class="lvct-detail__timeline-note lvct-bubble-note">
                                     {item.note || "互动"}
                                 </div>
+                                {/if}
                             </div>
                         </div>
                     {/each}
