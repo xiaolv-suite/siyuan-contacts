@@ -6995,17 +6995,58 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: var(--lvct-sp-2);
 }
 
-/* B09-7：工作空间/联动低频区块——桌面强制展开隐藏 summary；移动端 details 默认收起可展开 */
+/* D-0040 R4：低频统计走势与工作空间统一默认收起，点击按需展开 */
 .lvct-dash__lowfreq > summary {
     cursor: pointer;
     color: var(--lvct-text-2);
     font-size: var(--lvct-fs-caption);
-    padding: var(--lvct-sp-1) 0;
+    font-weight: var(--lvct-fw-medium);
+    padding: var(--lvct-sp-2) var(--lvct-sp-3);
+    border: 1px dashed var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-md);
+    background: var(--lvct-bg-surface);
+    user-select: none;
 }
 
-@media (min-width: 641px) {
-    .lvct-dash__lowfreq > summary { display: none; }
-    .lvct-dash__lowfreq:not([open]) > .lvct-dash__grid { display: grid; }
+.lvct-dash__lowfreq[open] > summary {
+    margin-bottom: var(--lvct-sp-3);
+}
+
+.lvct-detail__more-tools,
+.lvct-dash__more-tools {
+    position: relative;
+    display: inline-flex;
+
+    > summary {
+        list-style: none;
+        cursor: pointer;
+        user-select: none;
+
+        &::-webkit-details-marker { display: none; }
+    }
+}
+
+.lvct-detail__more-tools-panel,
+.lvct-dash__more-tools-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: var(--lvct-z-popover, 40);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 196px;
+    padding: 8px;
+    border: 1px solid var(--lvct-border-subtle);
+    border-radius: var(--lvct-r-md);
+    background: var(--lvct-bg-elevated);
+    box-shadow: var(--lvct-shadow-2);
+
+    > .b3-button {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 
 .lvct-dash__row {

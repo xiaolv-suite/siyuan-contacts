@@ -6,9 +6,11 @@
 import type { Plugin } from "siyuan";
 import type { ContactsSettings } from "../domain/model.ts";
 import { getRoster } from "./roster.ts";
+import { readMarkedBlocksByRoots } from "../api/blocks.ts";
 import { loadSocialPreferencesStore } from "../data/social-preferences.ts";
 import { loadPromisesStore } from "../data/promises.ts";
 import { loadTopicsStore } from "../data/topics.ts";
+import { FACTS_SECTION_ATTR, parseFactsSectionMarkdown } from "../domain/doc-section.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
 import {
     buildContactPreMeetingDossier,
@@ -26,15 +28,54 @@ export async function loadAllPreMeetingDossiers(
         loadTopicsStore(plugin).catch((): import("../domain/topics.ts").PersonTopicStore => ({ schemaVersion: 1, topics: {} })),
     ]);
 
+    const factBlocksByDoc = await readMarkedBlocksByRoots(roster.map((p) => p.docId), FACTS_SECTION_ATTR).catch(() => ({} as Record<string, string>));
     const todayStr = toLocalDateKey(new Date());
     const dossiers: ContactPreMeetingDossier[] = [];
 
     for (const person of roster) {
-        const prefs = prefsStore.preferences[person.docId] ?? [];
+        const legacyPrefs = prefsStore.preferences[person.docId] ?? [];
         const promises = promisesStore.promises[person.docId] ?? [];
-        const topics = topicsStore.topics[person.docId] ?? [];
+        const legacyTopics = topicsStore.topics[person.docId] ?? [];
+        const docFacts = factBlocksByDoc[person.docId] ? parseFactsSectionMarkdown(factBlocksByDoc[person.docId]) : [];
 
-        const dossier = buildContactPreMeetingDossier(person, prefs, promises, topics, todayStr);
+        const seenPref = new Set(legacyPrefs.map((item) => item.content.trim()));
+        const docPrefs: import("../domain/social-preferences.ts").PersonSocialPreferenceItem[] = [];
+        const seenTopic = new Set(legacyTopics.map((item) => item.text.trim()));
+        const docTopics: import("../domain/topics.ts").PersonTopicItem[] = [];
+
+        for (const fact of docFacts) {
+            const text = fact.text.trim();
+            if (!text) continue;
+            if (fact.category === "preference") {
+                if (!seenPref.has(text)) {
+                    seenPref.add(text);
+                    docPrefs.push({
+                        id: fact.id,
+                        personDocId: person.docId,
+                        category: fact.isTaboo ? "taboos" : "dietary",
+                        content: text,
+                        isTaboo: Boolean(fact.isTaboo),
+                        createdAt: 0,
+                        updatedAt: 0,
+                    });
+                }
+            } else if (!seenTopic.has(text)) {
+                seenTopic.add(text);
+                docTopics.push({
+                    id: fact.id,
+                    text,
+                    createdAt: Date.parse(fact.date) || 0,
+                });
+            }
+        }
+
+        const dossier = buildContactPreMeetingDossier(
+            person,
+            [...docPrefs, ...legacyPrefs],
+            promises,
+            [...docTopics, ...legacyTopics],
+            todayStr,
+        );
         dossiers.push(dossier);
     }
 

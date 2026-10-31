@@ -8656,53 +8656,53 @@ await test("F-16 首页仪表盘：全库人情礼尚往来大账本（Exchanges
     fixture.remove();
 });
 
-await test("D-04 联系人详情页：六维社交资本雷达图（Social Radar）渲染与多维指标", async () => {
+await test("D-0040 人物详情：互动时间线可就地编辑（修改内容、类型与日期并刷新时间线）", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);
 
-    const person = {
-        docId: "doc-radar-ui-1",
-        itemId: "item-radar-ui-1",
-        name: "方总",
-        phone: "13600002222",
-        email: "fang@example.com",
-        wechat: "fang_wx",
-        website: "",
-        birthday: "1985-05-15",
-        isLunar: false,
-        group: "投资人",
-        tags: ["先进制造"],
-        relatedItemIds: ["item-rel-1", "item-rel-2"],
-        company: "深创投",
-        profile: {
-            readAt: Date.now(),
-            affiliations: {
-                state: "known",
-                value: {
-                    work: [{ orgName: "深创投", title: "副总裁" }],
-                    education: [],
-                    family: [],
-                    unspecified: [],
-                },
-            },
-            relationship: { state: "unknown", message: "" },
-        },
-    };
+    let timelineItems = [
+        { eventId: "ev-edit-1", occurredAt: Date.now() - 86400000, localDate: "2026-10-27", source: "manual", type: "meeting", note: "原备注内容", groupSize: 1 },
+    ];
+    let amendedArgs = null;
 
     mounted = mount(PersonDetail, {
         target: fixture,
         props: {
-            person,
+            person: {
+                docId: "doc-amend-ui-1",
+                itemId: "item-amend-ui-1",
+                name: "方总",
+                phone: "13600002222",
+                email: "fang@example.com",
+                wechat: "fang_wx",
+                website: "",
+                birthday: "1985-05-15",
+                isLunar: false,
+                group: "投资人",
+                tags: ["先进制造"],
+                relatedItemIds: [],
+            },
             settings,
+            initialTab: "activity",
             onClose() {},
             onChanged() {},
             onRecord: async () => {},
+            onAmendInteraction: async (docId, eventId, amendment) => {
+                amendedArgs = { docId, eventId, amendment };
+                timelineItems = [
+                    {
+                        ...timelineItems[0],
+                        eventId: "ev-edit-2",
+                        localDate: amendment.localDate ?? timelineItems[0].localDate,
+                        type: amendment.type ?? timelineItems[0].type,
+                        note: amendment.note ?? timelineItems[0].note,
+                    },
+                ];
+            },
             onLoadInsights: async () => ({
-                timeline: [
-                    { id: "e1", occurredAt: Date.now() - 86400000, localDate: "2026-10-27", source: "manual", note: "项目交流" },
-                ],
-                coAttendance: [{ otherDocId: "doc-rel-1", count: 2, name: "李总" }],
-                totalEvents: 4,
+                timeline: timelineItems,
+                coAttendance: [],
+                totalEvents: timelineItems.length,
                 backlinks: [],
             }),
             onOpenPersonDoc() {},
@@ -8710,13 +8710,20 @@ await test("D-04 联系人详情页：六维社交资本雷达图（Social Radar
         },
     });
 
-    await until(() => fixture.querySelector(".lvct-social-radar"), "未渲染六维社交资本雷达图");
-    assert(fixture.querySelector(".lvct-social-radar__polygon"), "未渲染雷达图 SVG 数据多边形");
-    assert(fixture.querySelector(".lvct-social-radar__tier-chip"), "未渲染社交层级芯片");
-    assert(fixture.textContent.includes("社交资产"), "未渲染社交资产综合得分");
-    assert(fixture.textContent.includes("活跃度"), "未渲染活跃度指标");
-    assert(fixture.textContent.includes("连接度"), "未渲染连接度指标");
-    assert(fixture.textContent.includes("记忆度"), "未渲染记忆度指标");
+    await until(() => fixture.textContent.includes("原备注内容"), "未渲染初始互动备注");
+    const editBtn = fixture.querySelector('button[aria-label="修改 2026-10-27 的互动"]');
+    assert(editBtn, "时间线条目缺少编辑按钮");
+    editBtn.click();
+    await until(() => fixture.querySelector(".lvct-detail__timeline-edit textarea"), "未打开互动就地编辑框");
+
+    input(fixture.querySelector(".lvct-detail__timeline-edit textarea"), "修正后：敲定下周二面谈细节");
+    await tick();
+    const saveBtn = [...fixture.querySelectorAll(".lvct-detail__timeline-edit button")].find((b) => b.textContent.includes("保存修改"));
+    assert(saveBtn, "缺少保存修改按钮");
+    saveBtn.click();
+
+    await until(() => amendedArgs !== null && fixture.textContent.includes("修正后：敲定下周二面谈细节"), "保存修改后未调用 onAmendInteraction 或未刷新时间线");
+    assert(amendedArgs.docId === "doc-amend-ui-1" && amendedArgs.eventId === "ev-edit-1", "传递的互动归属或事件 ID 不匹配");
 
     fixture.remove();
 });
@@ -9005,105 +9012,47 @@ await test("D-07 联系人详情页：会面全景简报沉淀为思源实体文
     fixture.remove();
 });
 
-await test("D-08 联系人详情页：交往生命周期阶段（RelationshipStageTracker）步骤条渲染与推进流转", async () => {
+await test("D-0040 人物详情：偏好忌口并入人物文档事实段，同步头部微标签与会前速览，且不展示无依据评分", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);
 
-    let stageUpdateCalled = false;
-    let targetStage = "";
-
-    const person = {
-        docId: "doc-stage-ui-1",
-        itemId: "item-stage-ui-1",
-        name: "阶段测试人物",
-        phone: "13500135000",
-        email: "stage@example.com",
-        wechat: "wx_stage",
-        website: "",
-        birthday: "1992-02-02",
-        isLunar: false,
-        group: "业务伙伴",
-        tags: ["投资"],
-        relatedItemIds: [],
-        company: "某创投",
-        profile: {
-            readAt: Date.now(),
-            affiliations: {
-                state: "known",
-                value: {
-                    work: [{ orgName: "某创投", title: "投资经理" }],
-                    education: [],
-                    family: [],
-                    unspecified: [],
-                },
-            },
-            relationship: { state: "unknown", message: "" },
-        },
-    };
-
-    const mockRecord = {
-        personDocId: "doc-stage-ui-1",
-        currentStage: "connection",
-        history: [
-            {
-                stage: "connection",
-                changedAt: "2026-10-15",
-                note: "常态沟通开启",
-                timestamp: 1000,
-            },
-            {
-                stage: "acquaintance",
-                changedAt: "2026-09-01",
-                note: "活动相识",
-                timestamp: 500,
-            },
-        ],
-        updatedAt: 1000,
-    };
+    let storedFacts = [
+        { id: "f-taboo-1", category: "preference", isTaboo: true, date: "2026-10-30", text: "花生严重过敏" },
+        { id: "f-pref-1", category: "preference", date: "2026-10-30", text: "喜浅烘手冲" },
+    ];
 
     mount(PersonDetail, {
         target: fixture,
         props: {
-            person,
+            person: {
+                docId: "doc-facts-taboo-1",
+                itemId: "item-facts-taboo-1",
+                name: "陈予安",
+                phone: "13500135000",
+                email: "chen@example.com",
+                wechat: "wx_chen",
+                website: "",
+                birthday: "1992-02-02",
+                isLunar: false,
+                group: "业务伙伴",
+                tags: ["投资"],
+                relatedItemIds: [],
+            },
             settings,
             onClose() {},
             onChanged() {},
             onRecord: async () => {},
             onLoadInsights: async () => emptyInsights(),
+            onLoadPersonFacts: async () => storedFacts,
+            onSavePersonFacts: async (_docId, items) => { storedFacts = [...items]; },
             onOpenPersonDoc() {},
             onNavigate() {},
-            onLoadLifecycleStage: async () => mockRecord,
-            onUpdateLifecycleStage: async (_docId, stage, _date, _note) => {
-                stageUpdateCalled = true;
-                targetStage = stage;
-                return { ...mockRecord, currentStage: stage };
-            },
         },
     });
 
-    await until(() => fixture.querySelector(".lvct-stage-tracker"), "未渲染交往生命周期追踪组件");
-    assert(fixture.textContent.includes("交往生命周期阶段"), "未渲染生命周期标题");
-    assert(fixture.textContent.includes("常交流"), "未渲染当前阶段标签");
-
-    // 点击「推进/变更阶段」按钮
-    const changeBtn = fixture.querySelector(".lvct-stage-tracker__header button");
-    assert(changeBtn, "未找到推进变更阶段按钮");
-    changeBtn.click();
-
-    await until(() => fixture.querySelector(".stage-edit-form"), "未展开阶段变更表单");
-
-    // 选中「共创」（collaboration）阶段
-    const collabBtn = Array.from(fixture.querySelectorAll(".stage-select-btn")).find((b) => b.textContent.includes("共创"));
-    assert(collabBtn, "未找到共创阶段选择按钮");
-    collabBtn.click();
-
-    // 点击确认变迁按钮
-    const saveBtn = Array.from(fixture.querySelectorAll(".stage-edit-form .form-actions button")).find((b) => b.textContent.includes("确认变迁"));
-    assert(saveBtn, "未找到确认变迁保存按钮");
-    saveBtn.click();
-
-    await until(() => stageUpdateCalled, "点击确认未触发 onUpdateLifecycleStage");
-    assert(targetStage === "collaboration", "目标阶段传递错误");
+    await until(() => fixture.querySelector(".lvct-detail__micro-prefs-ribbon")?.textContent.includes("花生严重过敏"), "文档事实段忌口红线未同步至头部微标签");
+    assert(fixture.querySelector(".lvct-premeeting-brief")?.textContent.includes("花生严重过敏"), "文档事实段忌口未同步至会前 30 秒破冰速览");
+    assert(!fixture.textContent.includes("社交资产") && !fixture.textContent.includes("互惠指数") && !fixture.textContent.includes("交往生命周期阶段") && !fixture.textContent.includes("健康度 "), "详情页仍残留已删除的无依据评分或生命周期区块");
 
     fixture.remove();
 });
@@ -10685,66 +10634,13 @@ await test("G-17 关系图谱：网络核心枢纽与跨圈层引荐桥梁人分
     fixture.remove();
 });
 
-await test("F-19 首页仪表盘：人脉交往生命周期漏斗（LifecycleFunnelCard）与阶段筛选联动", async () => {
+await test("D-0040 首页首屏收敛：不展示无依据激励横幅与深度合作率，今日行动位于首屏且低频走势默认收起", async () => {
     const fixture = document.createElement("div");
     document.body.appendChild(fixture);
 
-    let filteredLabel = "";
-    let filteredItemIds = [];
-
-    const mockFunnel = {
-        totalContacts: 3,
-        healthyMaturityRate: 33,
-        activeProgressCount: 2,
-        activeProgressPercentage: 67,
-        keyInsight: "深度盟友与合作人脉占比达 33%，梯队健康",
-        stages: [
-            {
-                key: "acquaintance",
-                meta: { key: "acquaintance", label: "初相识 · 浅交探索", shortLabel: "初识", icon: "🌱", description: "", suggestedCadenceDays: 30 },
-                count: 1,
-                percentage: 33,
-                personDocIds: ["doc-f-1"],
-                personItemIds: ["item-funnel-1"],
-            },
-            {
-                key: "connection",
-                meta: { key: "connection", label: "常交流 · 互信升温", shortLabel: "交流", icon: "💬", description: "", suggestedCadenceDays: 14 },
-                count: 1,
-                percentage: 33,
-                personDocIds: ["doc-f-2"],
-                personItemIds: ["item-funnel-2"],
-            },
-            {
-                key: "collaboration",
-                meta: { key: "collaboration", label: "共合作 · 价值共创", shortLabel: "共创", icon: "🚀", description: "", suggestedCadenceDays: 7 },
-                count: 1,
-                percentage: 33,
-                personDocIds: ["doc-f-3"],
-                personItemIds: ["item-funnel-3"],
-            },
-            {
-                key: "close_ally",
-                meta: { key: "close_ally", label: "核心挚友 · 深度盟友", shortLabel: "挚友", icon: "⭐", description: "", suggestedCadenceDays: 10 },
-                count: 0,
-                percentage: 0,
-                personDocIds: [],
-                personItemIds: [],
-            },
-            {
-                key: "dormant",
-                meta: { key: "dormant", label: "沉睡维护 · 适时问候", shortLabel: "沉睡", icon: "💤", description: "", suggestedCadenceDays: 90 },
-                count: 0,
-                percentage: 0,
-                personDocIds: [],
-                personItemIds: [],
-            },
-        ],
-    };
-
     const testDashboardData = {
         people: 3,
-        relations: 0,
+        relations: 1,
         birthdays: [],
         birthdaysThisWeek: 0,
         stale: [],
@@ -10754,8 +10650,9 @@ await test("F-19 首页仪表盘：人脉交往生命周期漏斗（LifecycleFun
         followUps: [],
         actions: [],
         neverOrder: {},
+        topRegions: [],
         heatDistribution: {
-            hot: { count: 3, percentage: 100, itemIds: ["item-funnel-1", "item-funnel-2", "item-funnel-3"] },
+            hot: { count: 3, percentage: 100, itemIds: ["item-1", "item-2", "item-3"] },
             warm: { count: 0, percentage: 0, itemIds: [] },
             cool: { count: 0, percentage: 0, itemIds: [] },
             cold: { count: 0, percentage: 0, itemIds: [] },
@@ -10763,88 +10660,33 @@ await test("F-19 首页仪表盘：人脉交往生命周期漏斗（LifecycleFun
             unknown: { count: 0, percentage: 0, itemIds: [] },
             total: 3,
         },
-        lifecycleFunnel: mockFunnel,
-    };
-
-    const facade = {
-        settings,
-        viewPreferences: DEFAULT_VIEW_PREFERENCES,
-        loadDashboard: async () => testDashboardData,
-        loadReminderDismissals: async () => [],
-        openPersonDoc() {},
     };
 
     mount(DashboardView, {
         target: fixture,
         props: {
-            facade,
+            facade: {
+                settings,
+                viewPreferences: DEFAULT_VIEW_PREFERENCES,
+                loadDashboard: async () => testDashboardData,
+                loadReminderDismissals: async () => [],
+                loadCoolingRadarSummary: async () => ({ items: [], totalCooling: 0, starredCooling: 0, coldCount: 0, coolCount: 0 }),
+                loadAllPreMeetingDossiers: async () => [],
+                openPersonDoc() {},
+            },
             settings,
             preferences: DEFAULT_VIEW_PREFERENCES,
-            onOpenPeople: ({ itemIds, label }) => {
-                filteredLabel = label;
-                filteredItemIds = itemIds;
-            },
+            onOpenPeople() {},
             onOpenDetail() {},
         },
     });
 
-    await until(() => fixture.querySelector(".lvct-dash__lifecycle-card"), "未渲染交往生命周期漏斗卡片");
-    assert(fixture.textContent.includes("交往生命周期阶段"), "未渲染生命周期阶段标题");
-    assert(fixture.textContent.includes("深度合作率 33%"), "未渲染深度合作率指标");
-    assert(fixture.textContent.includes("初识"), "未渲染初识阶段");
-    assert(fixture.textContent.includes("共创"), "未渲染共创阶段");
-    assert(fixture.textContent.includes("深度盟友与合作人脉占比达 33%"), "未渲染阶段洞察说明");
-
-    // 点击「共创」行筛选
-    const collabRow = Array.from(fixture.querySelectorAll(".lifecycle-funnel-row")).find((b) => b.textContent.includes("共创"));
-    assert(collabRow, "未找到共创阶段按钮行");
-    collabRow.click();
-
-    assert(filteredLabel === "共合作 · 价值共创", "点击阶段未传递正确标签名");
-    assert(filteredItemIds?.[0] === "item-funnel-3", "点击阶段未传递正确的 itemIds 列表");
-
-    fixture.remove();
-});
-
-await test("D-19 联系人详情页：交往互惠与双向平衡透视（PersonReciprocityCard）渲染与对账闭环", async () => {
-    const fixture = document.createElement("div");
-    document.body.appendChild(fixture);
-
-    const mockPromises = [
-        { id: "prm-1", personDocId: person.docId, direction: "i_promised", title: "分享AI研报", status: "fulfilled", createdAt: 1000, updatedAt: 1000 },
-        { id: "prm-2", personDocId: person.docId, direction: "they_promised", title: "引荐技术总监", status: "fulfilled", createdAt: 1000, updatedAt: 1000 },
-    ];
-
-    const mockExchanges = [
-        { id: "ex-1", personDocId: person.docId, kind: "money", direction: "receivable", amount: 500, status: "settled", currency: "CNY", occurredOn: "2026-10-01", dueOn: "2026-10-05", settledOn: "2026-10-05", description: "项目评审费", note: "", createdAt: 1000, updatedAt: 1000 },
-        { id: "ex-2", personDocId: person.docId, kind: "money", direction: "payable", amount: 500, status: "settled", currency: "CNY", occurredOn: "2026-10-02", dueOn: "2026-10-06", settledOn: "2026-10-06", description: "回请商务餐叙", note: "", createdAt: 1000, updatedAt: 1000 },
-    ];
-
-    mount(PersonDetail, {
-        target: fixture,
-        props: {
-            person,
-            settings,
-            onClose() {},
-            onChanged() {},
-            onRecord: async () => {},
-            onLoadInsights: async () => emptyInsights(),
-            onOpenPersonDoc() {},
-            onNavigate() {},
-            onLoadPromises: async () => mockPromises,
-            onLoadExchanges: async () => mockExchanges,
-        },
-    });
-
-    await until(() => fixture.querySelector(".lvct-reciprocity-card"), "未渲染交往互惠与双向平衡卡片");
-    assert(fixture.textContent.includes("交往互惠与双向平衡"), "未渲染互惠卡片标题");
-    assert(fixture.textContent.includes("互利共赢 · 往来均衡"), "未渲染平衡状态标签");
-    assert(fixture.textContent.includes("互惠指数 100 分"), "未渲染互惠指数评分");
-    assert(fixture.textContent.includes("我方付出与承诺 (50%)"), "未渲染我方付出占比");
-    assert(fixture.textContent.includes("对方关照与信诺 (50%)"), "未渲染对方关照占比");
-    assert(fixture.textContent.includes("我方履约："), "未渲染我方履约行");
-    assert(fixture.textContent.includes("对方履约："), "未渲染对方履约行");
-    assert(fixture.textContent.includes("¥0 均衡"), "未渲染净往来差额均衡指示");
+    await until(() => fixture.querySelector(".lvct-dash__actions"), "未渲染今日行动卡片");
+    assert(!fixture.textContent.includes("人脉连接状态极佳") && !fixture.textContent.includes("深度合作率"), "首页仍渲染已删除的无依据激励文案或生命周期合作率");
+    assert(!fixture.textContent.includes("城市与行程"), "空城市列表不应渲染空盒子卡片");
+    const lowfreq = fixture.querySelector(".lvct-dash__lowfreq");
+    assert(lowfreq && !lowfreq.hasAttribute("open"), "低频统计走势与工作空间应默认收起");
+    assert(fixture.querySelector(".lvct-dash__cooling-radar-btn") && fixture.querySelector(".lvct-dash__pre-meeting-btn"), "首页应直接保留降温预警与会前速查两个核心中枢入口");
 
     fixture.remove();
 });

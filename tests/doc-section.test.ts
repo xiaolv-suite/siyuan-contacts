@@ -265,4 +265,15 @@ test("buildFactsSectionMarkdown & parseFactsSectionMarkdown：谈资与事实画
     assert.equal(parsedHandwritten[0].text, "本地优先才是个人知识库的终局");
     assert.equal(parsedHandwritten[1].category, "preference");
     assert.equal(parsedHandwritten[1].text, "不吃海鲜");
+
+    // D-0040：忌口红线标记往返
+    const tabooMd = buildFactsSectionMarkdown([
+        { id: "fact-taboo-1", category: "preference", isTaboo: true, date: "2026-10-31", text: "花生严重过敏" },
+    ]);
+    assert.ok(tabooMd.includes("🚫 [忌口红线] 2026-10-31：花生严重过敏"));
+    const parsedTaboo = parseFactsSectionMarkdown(tabooMd);
+    assert.equal(parsedTaboo.length, 1);
+    assert.equal(parsedTaboo[0].category, "preference");
+    assert.equal(parsedTaboo[0].isTaboo, true);
+    assert.equal(parsedTaboo[0].text, "花生严重过敏");
 });

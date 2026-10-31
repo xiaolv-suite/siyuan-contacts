@@ -200,6 +200,32 @@ export async function readMarkedBlocks(rootId: string, attrName: string): Promis
     });
 }
 
+/** 批量读取多篇人物文档中带指定 custom-* 标记的首个区块正文（单次 SQL，仅限合法节点 ID）。 */
+export async function readMarkedBlocksByRoots(
+    rootIds: readonly string[],
+    attrName: string,
+): Promise<Record<string, string>> {
+    if (!/^custom-[a-z0-9-]+$/.test(attrName)) throw new Error("attrName 必须是 custom- 前缀的小写属性名");
+    const validIds = [...new Set(rootIds.filter((id) => /^\d{14}-[0-9a-z]{7}$/.test(id)))];
+    if (validIds.length === 0) return {};
+    const out: Record<string, string> = {};
+    const CHUNK = 200;
+    for (let i = 0; i < validIds.length; i += CHUNK) {
+        const slice = validIds.slice(i, i + CHUNK);
+        const inList = slice.map((id) => `'${id}'`).join(",");
+        const rows = await querySql<unknown>(
+            `SELECT root_id, markdown FROM blocks WHERE root_id IN (${inList}) AND ial LIKE '%${attrName}="%' ORDER BY id`,
+        );
+        for (const raw of rows) {
+            const row = assertKernelRecord("/api/query/sql", raw);
+            if (typeof row.root_id === "string" && typeof row.markdown === "string" && !(row.root_id in out)) {
+                out[row.root_id] = row.markdown;
+            }
+        }
+    }
+    return out;
+}
+
 /** 去掉目标属性对应的末尾 IAL 行，保留正文作为写后核验事实。 */
 function markedBlockContent(markdown: string, attrName?: string): string {
     const normalized = markdown.replace(/\r\n/g, "\n").trim();

@@ -26,6 +26,8 @@ export interface PersonFactItem {
     category: FactCategory;
     date: string;
     sourceRef?: string;
+    /** 当 category === "preference" 且为饮食过敏或社交敏感禁忌时为 true */
+    isTaboo?: boolean;
 }
 
 export const FACT_CATEGORY_META: Record<FactCategory, { label: string; icon: string }> = {
@@ -158,8 +160,11 @@ export function buildFactsSectionMarkdown(items: readonly PersonFactItem[]): str
         const cat = FACT_CATEGORY_META[item.category] || FACT_CATEGORY_META.fact;
         const cleanText = cleanMarkdownLine(item.text);
         if (!cleanText) continue;
+        const isTaboo = item.category === "preference" && Boolean(item.isTaboo);
+        const icon = isTaboo ? "🚫" : cat.icon;
+        const label = isTaboo ? "忌口红线" : cat.label;
         const source = item.sourceRef ? ` （出处：${escapeLinkLabel(item.sourceRef)}）` : "";
-        lines.push(`- ${cat.icon} [${cat.label}] ${item.date}：${cleanText}${source} <!-- id:${item.id} -->`);
+        lines.push(`- ${icon} [${label}] ${item.date}：${cleanText}${source} <!-- id:${item.id} -->`);
     }
     return lines.join("\n");
 }
@@ -171,9 +176,10 @@ export function parseFactsSectionMarkdown(markdown: string): PersonFactItem[] {
     for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith("- ")) continue;
-        const match = trimmed.match(/^- (?:(💡|❤️|💼|📌)\s*)?\[(.*?)\]\s*(\d{4}-\d{2}-\d{2})[：:]\s*(.*?)(?:\s*<!--\s*id:([a-zA-Z0-9_-]+)\s*-->)?$/);
+        const match = trimmed.match(/^- (?:(💡|❤️|💼|📌|🚫)\s*)?\[(.*?)\]\s*(\d{4}-\d{2}-\d{2})[：:]\s*(.*?)(?:\s*<!--\s*id:([a-zA-Z0-9_-]+)\s*-->)?$/);
         if (match) {
-            const label = match[2]?.trim();
+            const leadIcon = match[1]?.trim();
+            const label = match[2]?.trim() || "";
             const date = match[3]?.trim();
             let rawContent = match[4]?.trim() || "";
             const id = match[5]?.trim() || `fact-${date}-${Math.random().toString(36).slice(2, 8)}`;
@@ -185,8 +191,10 @@ export function parseFactsSectionMarkdown(markdown: string): PersonFactItem[] {
                 rawContent = rawContent.replace(/（出处：(.*?)）$/, "").trim();
             }
 
+            const isTaboo = leadIcon === "🚫" || label.includes("忌口红线") || label.includes("禁忌");
             let category: FactCategory = "fact";
-            if (label.includes("观点")) category = "quote";
+            if (isTaboo) category = "preference";
+            else if (label.includes("观点")) category = "quote";
             else if (label.includes("喜好") || label.includes("忌口") || label.includes("偏好")) category = "preference";
             else if (label.includes("背景") || label.includes("经历")) category = "background";
 
@@ -196,6 +204,7 @@ export function parseFactsSectionMarkdown(markdown: string): PersonFactItem[] {
                 category,
                 text: rawContent,
                 ...(sourceRef ? { sourceRef } : {}),
+                ...(isTaboo ? { isTaboo: true } : {}),
             });
         }
     }

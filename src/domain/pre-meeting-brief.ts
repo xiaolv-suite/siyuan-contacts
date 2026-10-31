@@ -6,6 +6,7 @@
 import type { ContactSummary } from "./person.ts";
 import type { PersonOrigin } from "./person-origin.ts";
 import type { PersonSocialPreferenceItem } from "./social-preferences.ts";
+import type { PersonFactItem } from "./doc-section.ts";
 import type { TimelineItem } from "./interactions.ts";
 import { computeRelationshipHealth } from "./cadence.ts";
 
@@ -29,6 +30,7 @@ export interface BuildPreMeetingBriefOptions {
     person: ContactSummary;
     origin?: PersonOrigin;
     socialPreferences?: readonly PersonSocialPreferenceItem[];
+    facts?: readonly PersonFactItem[];
     timeline?: readonly TimelineItem[];
     coAttendance?: readonly { name: string; count: number }[];
     introducerName?: string;
@@ -41,6 +43,7 @@ export function buildPreMeetingBrief(options: BuildPreMeetingBriefOptions): PreM
         person,
         origin,
         socialPreferences = [],
+        facts = [],
         timeline = [],
         coAttendance = [],
         introducerName,
@@ -79,7 +82,7 @@ export function buildPreMeetingBrief(options: BuildPreMeetingBriefOptions): PreM
         const t = item.occurredAt ?? (item.localDate ? new Date(item.localDate).getTime() : 0);
         return t >= thirtyDaysAgo;
     }).length;
-    const statusSummary = `${levelMap[health.level] || "良好"} (健康度 ${health.score}分) · 过去30天互动 ${recent30dCount} 次`;
+    const statusSummary = `${levelMap[health.level] || "良好"} · 过去30天互动 ${recent30dCount} 次`;
 
     // 3. 初识溯源
     const originParts: string[] = [];
@@ -91,20 +94,47 @@ export function buildPreMeetingBrief(options: BuildPreMeetingBriefOptions): PreM
     }
     const originText = originParts.length > 0 ? originParts.join(" · ") : "尚未记录初识场合与引荐人";
 
-    // 4. 喜好忌口与雷区
+    // 4. 喜好忌口与雷区（合并人物文档事实段 preference/isTaboo 与存量社交偏好）
     const dietAndPreferences: string[] = [];
     const taboos: string[] = [];
+    const seenPrefTexts = new Set<string>();
+    const seenTabooTexts = new Set<string>();
 
     if (origin?.preferences) {
-        dietAndPreferences.push(origin.preferences);
+        const trimmed = origin.preferences.trim();
+        if (trimmed) {
+            seenPrefTexts.add(trimmed);
+            dietAndPreferences.push(trimmed);
+        }
+    }
+
+    for (const fact of facts) {
+        if (fact.category !== "preference") continue;
+        const trimmed = fact.text.trim();
+        if (!trimmed) continue;
+        if (fact.isTaboo) {
+            if (!seenTabooTexts.has(trimmed)) {
+                seenTabooTexts.add(trimmed);
+                taboos.push(`🚫 ${trimmed}`);
+            }
+        } else if (!seenPrefTexts.has(trimmed)) {
+            seenPrefTexts.add(trimmed);
+            dietAndPreferences.push(`❤️ ${trimmed}`);
+        }
     }
 
     for (const item of socialPreferences) {
+        const trimmed = item.content.trim();
+        if (!trimmed) continue;
         if (item.isTaboo || item.category === "taboos") {
-            taboos.push(`🚫 ${item.content}`);
-        } else {
+            if (!seenTabooTexts.has(trimmed)) {
+                seenTabooTexts.add(trimmed);
+                taboos.push(`🚫 ${trimmed}`);
+            }
+        } else if (!seenPrefTexts.has(trimmed)) {
+            seenPrefTexts.add(trimmed);
             const icon = item.category === "dietary" ? "🍲" : item.category === "beverage" ? "☕" : "🤝";
-            dietAndPreferences.push(`${icon} ${item.content}`);
+            dietAndPreferences.push(`${icon} ${trimmed}`);
         }
     }
 
