@@ -149,7 +149,7 @@
     }
     let detailPerson: ContactSummary | null = $state(null);
     let contextPerson: ContactSummary | null = $state(null);
-    let contextPanelOpen = $state(true);
+    let contextPanelOpen = $state(false);
     let peopleGroups: string[] = $state([]);
     let detailReturn = $state<PersonReturnContext | null>(null);
     let organizationOpen = $state(false);

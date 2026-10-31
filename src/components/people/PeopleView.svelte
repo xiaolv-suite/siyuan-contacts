@@ -227,6 +227,9 @@
     let moreMenuPanel: HTMLElement | null = $state(null);
     let colMenuWrap: HTMLElement | null = $state(null);
     let colMenuPanel: HTMLElement | null = $state(null);
+    let toolsOpen = $state(false);
+    let toolsMenuWrap: HTMLElement | null = $state(null);
+    let toolsMenuPanel: HTMLElement | null = $state(null);
     let currentViewId = $state("");
     let activeViewName = $state("");
     let viewHint = $state("");
@@ -1087,6 +1090,13 @@
             closeOnScroll: false,
             closeOnResize: false,
         } : undefined);
+    });
+
+    $effect(() => {
+        const wrap = toolsMenuWrap;
+        const panel = toolsMenuPanel;
+        if (!toolsOpen || !wrap || !panel) return;
+        return attachPopover(panel, wrap, () => (toolsOpen = false));
     });
 
     // 外部偏好更新时同步本地视图列表
@@ -2017,22 +2027,22 @@
         </span>
     {/snippet}
     {#snippet actionControls()}
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); dupOpen = true; }}>
+        <button class="b3-button b3-button--outline" onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); dupOpen = true; }}>
             {text("peopleCleanup", "整理")}{duplicatePairs.length > 0 ? ` ·${duplicatePairs.length}${duplicatePairsCapped ? "（上限）" : ""}` : ""}
         </button>
         <button
             class="b3-button b3-button--outline lvct-people__tidy-btn"
-            onclick={() => { if (isMobile) closeMobileSheet(false); tidyDrawerOpen = true; }}
+            onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); tidyDrawerOpen = true; }}
             title={text("peopleTidyTitle", "智能识别并归纳缺少分组或标签的待安顿无序联系人")}
         >
             <Sparkles size={16} strokeWidth={1.6} />{text("peopleTidy", "待安顿整理")}{unorganizedCount > 0 ? ` ·${unorganizedCount}` : ""}
         </button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16} strokeWidth={1.6} />{text("peopleImportDocs", "导入已有文档")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16} strokeWidth={1.6} />{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
-        <button class="b3-button b3-button--outline lvct-people__occasions-btn" onclick={() => { if (isMobile) closeMobileSheet(false); occasionsHubOpen = true; }} title={text("peopleOccasionsHubTip", "查看群体活动大事记与聚会记录大盘")}><Calendar size={16} strokeWidth={1.6} />{text("peopleOccasion", "活动大盘")}</button>
-        <button class="b3-button b3-button--outline" onclick={() => { if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16} strokeWidth={1.6} />{text("peopleRegionExplorer", "城市与行程")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); importing = true; }}><FolderInput size={16} strokeWidth={1.6} />{text("peopleImportDocs", "导入已有文档")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); vcarding = true; }}><ContactRound size={16} strokeWidth={1.6} />{text("peopleVcard", "批量导入/导出 (Excel/vCard)")}</button>
+        <button class="b3-button b3-button--outline lvct-people__occasions-btn" onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); occasionsHubOpen = true; }} title={text("peopleOccasionsHubTip", "查看群体活动大事记与聚会记录大盘")}><Calendar size={16} strokeWidth={1.6} />{text("peopleOccasion", "活动大盘")}</button>
+        <button class="b3-button b3-button--outline" onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); regionExploring = true; }}><Compass size={16} strokeWidth={1.6} />{text("peopleRegionExplorer", "城市与行程")}</button>
         {#if onListTrash}
-            <button class="b3-button b3-button--outline lvct-people__trash-btn" onclick={() => { if (isMobile) closeMobileSheet(false); trashDrawerOpen = true; }} title={text("peopleTrashBtnTip", "查看回收站与近期软删除联系人，支持一键恢复")}><Trash2 size={16} strokeWidth={1.6} />{text("peopleTrashBtn", "回收站")}</button>
+            <button class="b3-button b3-button--outline lvct-people__trash-btn" onclick={() => { toolsOpen = false; if (isMobile) closeMobileSheet(false); trashDrawerOpen = true; }} title={text("peopleTrashBtnTip", "查看回收站与近期软删除联系人，支持一键恢复")}><Trash2 size={16} strokeWidth={1.6} />{text("peopleTrashBtn", "回收站")}</button>
         {/if}
     {/snippet}
     <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
@@ -2177,9 +2187,14 @@
             </span>
 
             <button class="b3-button b3-button--primary lvct-people__create" onclick={() => (adding = true)}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建联系人")}</button>
-            <span class="lvct-people__toolbar-actions">
-                {@render actionControls()}
-            </span>
+            <details class="lvct-people__tools-fold" bind:open={toolsOpen} bind:this={toolsMenuWrap}>
+                <summary class="b3-button b3-button--outline lvct-people__tools-trigger">
+                    <SlidersHorizontal size={15} strokeWidth={1.6} />{text("peopleToolsMenu", "整理与导入")}{duplicatePairs.length + unorganizedCount > 0 ? ` ·${duplicatePairs.length + unorganizedCount}` : ""}
+                </summary>
+                <div class="lvct-people__moremenu lvct-people__tools-popover" bind:this={toolsMenuPanel} role="group" aria-label="整理与导入工具">
+                    {@render actionControls()}
+                </div>
+            </details>
         {/if}
     </div>
 
