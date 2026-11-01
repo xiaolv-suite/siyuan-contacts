@@ -95,3 +95,58 @@ test("快照导出：与展示节点和边一致，同名按 ID 区分，特殊�
     assert(failedExport.includes("来源节点 未知"));
     assert(failedExport.includes("读失败 \\#假成功"));
 });
+
+test("IDEA-08 图谱矢量导出：exportCytoscapeSvg 正确组装独立矢量 SVG", async () => {
+    const cytoscape = (await import("cytoscape")).default;
+    const { exportCytoscapeSvg } = await import("../src/domain/graph-image-export.ts");
+
+    const cy = cytoscape({
+        elements: [
+            { data: { id: "p1", label: "张三", color: "#ea580c", kind: "person", degree: 2 } },
+            { data: { id: "p2", label: "李四", color: "#10b981", kind: "person", degree: 1 } },
+            { data: { id: "org1", label: "研发部", color: "#3b82f6", kind: "org", degree: 2 } },
+            { data: { id: "e1", source: "p1", target: "p2", kind: "related" } },
+            { data: { id: "e2", source: "p1", target: "org1", kind: "member" } },
+        ],
+    });
+    cy.layout({ name: "grid" }).run();
+
+    const svg = exportCytoscapeSvg(cy, { bg: "#ffffff" });
+    assert.ok(svg.includes('<?xml version="1.0" encoding="UTF-8"?>'), "应输出合规 XML 声明");
+    assert.ok(svg.includes('<svg xmlns="http://www.w3.org/2000/svg"'), "应包含 SVG 根节点与命名空间");
+    assert.ok(svg.includes('<rect x='), "应包含背景矩形或组织方形节点");
+    assert.ok(svg.includes('<circle cx='), "应包含人物圆形节点");
+    assert.ok(svg.includes('<line x1='), "应包含连接边");
+    assert.ok(svg.includes("张三") && svg.includes("李四") && svg.includes("研发部"), "应包含全部节点名称");
+});
+
+test("IDEA-08 图谱标签子网隔离：GraphQuery 支持按标签精确收窄范围", () => {
+    const p1 = { docId: "p1", itemId: "i1", name: "张三", phone: "", email: "", wechat: "", website: "", birthday: "", isLunar: false, group: "商务", tags: ["合作伙伴", "VIP"], relatedItemIds: ["i2"] };
+    const p2 = { docId: "p2", itemId: "i2", name: "李四", phone: "", email: "", wechat: "", website: "", birthday: "", isLunar: false, group: "技术", tags: ["开源"], relatedItemIds: ["i1"] };
+
+    const sources: GraphSources = {
+        people: [p1, p2],
+        organizations: [],
+        selfDocId: "p1",
+        status: { roster: "verified", self: "verified", organizations: "verified" },
+        errors: {},
+        revision: 1,
+    };
+
+    // 不按标签收窄：包含张三和李四
+    const snapAll = buildGraphQuerySnapshot(sources, {
+        mode: "relations", scope: "global", centerDocId: "", orgDocId: "",
+        search: "", group: "", tag: "", isolatedOnly: false, showOrgs: false,
+        depth: "direct", focusId: "", compareId: "", queryMode: "common",
+    });
+    assert.equal(snapAll.graph.nodes.length, 2);
+
+    // 按标签收窄为 VIP 子网：仅保留张三
+    const snapVip = buildGraphQuerySnapshot(sources, {
+        mode: "relations", scope: "global", centerDocId: "", orgDocId: "",
+        search: "", group: "", tag: "VIP", isolatedOnly: false, showOrgs: false,
+        depth: "direct", focusId: "", compareId: "", queryMode: "common",
+    });
+    assert.equal(snapVip.graph.nodes.length, 1);
+    assert.equal(snapVip.graph.nodes[0]?.id, "p1");
+});

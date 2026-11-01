@@ -5,6 +5,10 @@ import {
     filterPreMeetingDossiers,
     type ContactPreMeetingDossier,
 } from "../src/domain/pre-meeting-hub.ts";
+import {
+    formatPreMeetingBriefCallout,
+    formatPreMeetingBriefText,
+} from "../src/domain/pre-meeting-brief.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
 import type { PersonSocialPreferenceItem } from "../src/domain/social-preferences.ts";
 import type { PersonPromiseItem } from "../src/domain/promises.ts";
@@ -85,4 +89,30 @@ test("pre-meeting-hub domain: filterPreMeetingDossiers 多维搜索与分类过�
     assert.equal(filterPreMeetingDossiers(all, "", "taboo_only")[0]?.person.name, "张三");
     assert.equal(filterPreMeetingDossiers(all, "", "promise_only").length, 1);
     assert.equal(filterPreMeetingDossiers(all, "", "promise_only")[0]?.person.name, "李四");
+});
+
+test("pre-meeting-brief: formatPreMeetingBriefCallout 组装符合思源原生 Callout 引述块规范的 Markdown", () => {
+    const brief = {
+        personName: "张三",
+        lastMetText: "2026-10-15 讨论方案",
+        statusSummary: "渐冷 (35 天未联系)",
+        originText: "2024-05 行业峰会",
+        dietAndPreferences: ["☕ 喜美式咖啡", "🍲 清淡为主"],
+        taboos: ["🚫 避免谈论跳槽"],
+        sharedNetwork: ["🤝 引荐人: 王五", "李四 (同场 2 次)"],
+    };
+
+    const callout = formatPreMeetingBriefCallout(brief);
+    assert.ok(callout.startsWith(">>>\n⚡ **会前 30 秒破冰速览 · 张三**"), "引述块应以 >>> 开头并带标题");
+    assert.ok(callout.endsWith("\n>>>"), "引述块应以 >>> 结尾闭合");
+    assert.ok(callout.includes("- 💬 **上次互动**：2026-10-15 讨论方案"));
+    assert.ok(callout.includes("- 📊 **状态近况**：渐冷 (35 天未联系)"));
+    assert.ok(callout.includes("- 🌱 **初识溯源**：2024-05 行业峰会"));
+    assert.ok(callout.includes("- ❤️ **喜好习惯**：☕ 喜美式咖啡；🍲 清淡为主"));
+    assert.ok(callout.includes("- ⚠️ **禁忌雷区**：🚫 避免谈论跳槽"));
+    assert.ok(callout.includes("- 👥 **共同熟人**：🤝 引荐人: 王五、李四 (同场 2 次)"));
+
+    const plain = formatPreMeetingBriefText(brief);
+    assert.ok(plain.includes("⚡ 会前 30 秒破冰速览 · 张三"));
+    assert.ok(!plain.startsWith(">>>"));
 });

@@ -655,6 +655,9 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 for (const f of (data.followUps ?? [])) {
                     if (f.person && map.has(f.person.docId)) f.person.avatar = map.get(f.person.docId);
                 }
+                for (const p of (data.allPeople ?? [])) {
+                    if (map.has(p.docId)) p.avatar = map.get(p.docId);
+                }
                 data = { ...data };
             }
         } catch {}
@@ -677,6 +680,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                         ...(result.birthdays ?? []).map((b) => b.person.docId),
                         ...(result.stale ?? []).map((s) => s.person.docId),
                         ...(result.followUps ?? []).map((f) => f.person?.docId),
+                        ...(result.allPeople ?? []).map((p) => p.docId),
                     ];
                     void enrichDashboardAvatars(candidateDocs);
                 }
@@ -1011,6 +1015,10 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         }
     }
     let summaryHiddenThisSession = $state(false);
+    let summaryUserToggled = $state<boolean | null>(null);
+    const summaryCollapsed = $derived(
+        summaryUserToggled !== null ? summaryUserToggled : Boolean(preferences.dashSummaryDefaultCollapsed)
+    );
     let summaryBusy = $state(false);
     let summaryError = $state("");
     let onboardingHiddenThisSession = $state(false);
@@ -1562,23 +1570,37 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         </div>
 
         {#if summaryVisible}
-            <div class="lvct-dash__summary" role="region" aria-label={text("dashSummaryLabel", "今日关注摘要")} aria-busy={summaryBusy}>
-                <div class="lvct-dash__summary-main">
-                    <b>{text("dashSummaryTitle", "今天有 {n} 件值得处理的事", { n: summary.total })}</b>
-                    <span class="lvct-dash__summary-chips">
-                        {#if summary.overdue > 0}<span class="lvct-action-chip lvct-action-chip--overdue">{text("dashSummaryOverdue", "逾期跟进 {n}", { n: summary.overdue })}</span>{/if}
-                        {#if summary.birthdaysToday > 0}<span class="lvct-action-chip lvct-action-chip--today">{text("dashSummaryBirthdays", "今天生日 {n}", { n: summary.birthdaysToday })}</span>{/if}
-                        {#if summary.stale > 0}<span class="lvct-action-chip lvct-action-chip--stale">{text("dashSummaryStale", "久未联系 {n}", { n: summary.stale })}</span>{/if}
-                    </span>
+            {#if summaryCollapsed}
+                <div class="lvct-dash__summary lvct-dash__summary--collapsed" role="region" aria-label={text("dashSummaryLabel", "今日关注摘要")} aria-busy={summaryBusy}>
+                    <div class="lvct-dash__summary-main">
+                        <span class="lvct-dash__summary-collapsed-hint">⚡ <b>{text("dashSummaryTitle", "今天有 {n} 件值得处理的事", { n: summary.total })}</b></span>
+                    </div>
+                    <div class="lvct-dash__summary-actions">
+                        <button class="b3-button b3-button--text" onclick={() => (summaryUserToggled = false)}>{text("dashExpand", "展开")}</button>
+                        <button class="b3-button b3-button--outline" disabled={summaryBusy}
+                            title={summaryBusy ? text("dashSavingDismissHint", "正在保存摘要显示设置，请稍候") : undefined}
+                            onclick={dismissSummaryToday}>{summaryBusy ? text("dashSavingDismiss", "保存中…") : text("dashDismissToday", "今日不再展示")}</button>
+                    </div>
                 </div>
-                <div class="lvct-dash__summary-actions">
-                    <button class="b3-button b3-button--text" onclick={() => (summaryHiddenThisSession = true)}>{text("dashCollapse", "收起")}</button>
-                    <button class="b3-button b3-button--outline" disabled={summaryBusy}
-                        title={summaryBusy ? text("dashSavingDismissHint", "正在保存摘要显示设置，请稍候") : undefined}
-                        onclick={dismissSummaryToday}>{summaryBusy ? text("dashSavingDismiss", "保存中…") : text("dashDismissToday", "今日不再展示")}</button>
+            {:else}
+                <div class="lvct-dash__summary" role="region" aria-label={text("dashSummaryLabel", "今日关注摘要")} aria-busy={summaryBusy}>
+                    <div class="lvct-dash__summary-main">
+                        <b>{text("dashSummaryTitle", "今天有 {n} 件值得处理的事", { n: summary.total })}</b>
+                        <span class="lvct-dash__summary-chips">
+                            {#if summary.overdue > 0}<span class="lvct-action-chip lvct-action-chip--overdue">{text("dashSummaryOverdue", "逾期跟进 {n}", { n: summary.overdue })}</span>{/if}
+                            {#if summary.birthdaysToday > 0}<span class="lvct-action-chip lvct-action-chip--today">{text("dashSummaryBirthdays", "今天生日 {n}", { n: summary.birthdaysToday })}</span>{/if}
+                            {#if summary.stale > 0}<span class="lvct-action-chip lvct-action-chip--stale">{text("dashSummaryStale", "久未联系 {n}", { n: summary.stale })}</span>{/if}
+                        </span>
+                    </div>
+                    <div class="lvct-dash__summary-actions">
+                        <button class="b3-button b3-button--text" onclick={() => (summaryUserToggled = true)}>{text("dashCollapse", "收起")}</button>
+                        <button class="b3-button b3-button--outline" disabled={summaryBusy}
+                            title={summaryBusy ? text("dashSavingDismissHint", "正在保存摘要显示设置，请稍候") : undefined}
+                            onclick={dismissSummaryToday}>{summaryBusy ? text("dashSavingDismiss", "保存中…") : text("dashDismissToday", "今日不再展示")}</button>
+                    </div>
+                    <StatusNotice error message={summaryError ? text("dashSummaryDismissFailed", "今日隐藏保存失败：{msg}，请重试。", { msg: summaryError }) : ""} />
                 </div>
-                <StatusNotice error message={summaryError ? text("dashSummaryDismissFailed", "今日隐藏保存失败：{msg}，请重试。", { msg: summaryError }) : ""} />
-            </div>
+            {/if}
         {/if}
 
         <div class="lvct-dash__grid">

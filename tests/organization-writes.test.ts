@@ -27,7 +27,7 @@ const hooks = registerHooks({
     },
 });
 const { startOrganizationCreate, startOrganizationRename, inspectOrganizationOperation, listPendingOrganizationOperations, resumeOrganizationOperation } = await import("../src/services/organization-writes.ts");
-const { archiveOrganization, restoreOrganization, removeOrganization, ensureDefaultFamilyOrganization, listOrganizationsWithMembers, createOrganization, renameOrganization, scanOrganizations, invalidateOrganizationScan, removeOrgLinkBlocks } = await import("../src/services/org.ts");
+const { archiveOrganization, restoreOrganization, removeOrganization, ensureDefaultFamilyOrganization, listOrganizationsWithMembers, createOrganization, renameOrganization, scanOrganizations, invalidateOrganizationScan, removeOrgLinkBlocks, cascadeRenameDepartmentMembers } = await import("../src/services/org.ts");
 const { ORGANIZATION_DEFAULT_SEEDS_STORAGE_KEY, loadDefaultOrganizationSeeds } = await import("../src/data/organization-default-seeds.ts");
 const { ORGANIZATION_OPERATIONS_STORAGE_KEY, saveOrganizationOperation, loadOrganizationOperations } = await import("../src/data/organization-operations.ts");
 const { kernelConfig } = await import("../src/api/client.ts");
@@ -561,4 +561,42 @@ test("组织移除：响应丢失核实实际状态，回读失败保持未知�
     state.failFactsAfterWrite = true;
     await assert.rejects(removeOrganization(docId), /结果未核实/);
     assert.deepEqual(state.writes, ["marker"]);
+});
+
+test("FEAT-03: cascadeRenameDepartmentMembers 部门改名级联更新关联成员记录", async () => {
+    const { plugin, state } = fixture();
+    const membershipStore = {
+        schemaVersion: 1,
+        memberships: [
+            {
+                id: "20261018000000-mem0001",
+                orgDocId: docId,
+                personDocId: "20261018000000-per0001",
+                department: "技术部",
+                title: "工程师",
+                joinedOn: "2023-01-01",
+                leftOn: "",
+                status: "active",
+            },
+            {
+                id: "20261018000000-mem0002",
+                orgDocId: docId,
+                personDocId: "20261018000000-per0002",
+                department: "市场部",
+                title: "专员",
+                joinedOn: "2023-02-01",
+                leftOn: "",
+                status: "active",
+            },
+        ],
+    };
+    state.store.set("org-membership.json", membershipStore);
+
+    const renamedMap = new Map([["技术部", "研发中心"]]);
+    const updated = await cascadeRenameDepartmentMembers(plugin, docId, renamedMap);
+    assert.equal(updated, 1, "应准确匹配并更新 1 位技术部成员");
+
+    const after = state.store.get("org-membership.json") as { memberships: Array<{ department: string }> };
+    assert.equal(after.memberships[0].department, "研发中心", "成员部门名称应已级联更新为研发中心");
+    assert.equal(after.memberships[1].department, "市场部", "非目标部门成员不受影响");
 });

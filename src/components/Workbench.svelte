@@ -13,7 +13,7 @@
     import OrgManagerDialog from "./org/OrgManagerDialog.svelte";
     import OrganizationProfileEditor from "./org/OrganizationProfileEditor.svelte";
     import { createCloseScope, anyDirtyChanges } from "./close-guard";
-    import { House, UsersRound, Network, Settings, Building2, UserPlus, Search } from "@lucide/svelte";
+    import LvctIcon from "./LvctIcon.svelte";
     import SettingsView from "./SettingsView.svelte";
     import { getContext, onDestroy, onMount, tick } from "svelte";
     import { translateText } from "../domain/translation";
@@ -669,7 +669,7 @@
                     data-navigation-view={view.id}
                     onclick={() => selectView(view.id)}
                 >
-            <span class="lvct-workbench__nav-icon" aria-hidden="true">{#if view.id === "home"}<House size={16}/>{:else if view.id === "people"}<UsersRound size={16}/>{:else if view.id === "orgs"}<Building2 size={16}/>{:else}<Network size={16}/>{/if}</span><span class="lvct-workbench__nav-text">{isMobile ? view.shortLabel : view.label}</span>
+            <span class="lvct-workbench__nav-icon" aria-hidden="true">{#if view.id === "home"}<LvctIcon name="iconHome" size={16}/>{:else if view.id === "people"}<LvctIcon name="iconAccount" size={16}/>{:else if view.id === "orgs"}<LvctIcon name="iconInbox" size={16}/>{:else}<LvctIcon name="iconGraph" size={16}/>{/if}</span><span class="lvct-workbench__nav-text">{isMobile ? view.shortLabel : view.label}</span>
             </button>
             {/each}
             <button
@@ -678,13 +678,13 @@
                 aria-current={current === "settings" ? "page" : undefined}
                 onclick={() => selectView("settings")}
             >
-                <span class="lvct-workbench__nav-icon" aria-hidden="true"><Settings size={16}/></span>
+                <span class="lvct-workbench__nav-icon" aria-hidden="true"><LvctIcon name="iconSettings" size={16}/></span>
                 <span class="lvct-workbench__nav-text">{text("navSettings", "设置")}</span>
             </button>
         </nav>
         <div class="lvct-workbench__sidebar-footer">
             <button class="lvct-workbench__nav-item" class:lvct-workbench__nav-item--active={current === "settings"} aria-current={current === "settings" ? "page" : undefined} title={text("openSettings", "打开插件设置")} onclick={() => selectView("settings")}>
-                <span class="lvct-workbench__nav-icon" aria-hidden="true"><Settings size={16}/></span><span class="lvct-workbench__nav-text">{text("navSettings", "设置")}</span>
+                <span class="lvct-workbench__nav-icon" aria-hidden="true"><LvctIcon name="iconSettings" size={16}/></span><span class="lvct-workbench__nav-text">{text("navSettings", "设置")}</span>
             </button>
         </div>
     </aside>
@@ -699,8 +699,8 @@
                 {#if current === "home"}<div class="lvct-workbench__header-actions">
                     <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
                         onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
-                    <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><Search size={16}/>{text("homeSearchAction", "搜索")}</button>
-                    <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><UserPlus size={16}/>{text("peopleCreate", "新建联系人")}</button>
+                    <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><LvctIcon name="iconSearch" size={16}/>{text("homeSearchAction", "搜索")}</button>
+                    <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><LvctIcon name="iconAdd" size={16}/>{text("peopleCreate", "新建联系人")}</button>
                 </div>{/if}
             </div>
         </header>

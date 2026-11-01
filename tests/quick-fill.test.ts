@@ -134,3 +134,31 @@ test("buildDraftFromQuickInput：Cardhop 风格单行自然语言建档解析", 
     const empty = buildDraftFromQuickInput("");
     assert.equal(empty.name, "");
 });
+
+test("IDEA-02 编辑器拖拽文本块识别：支持多行段落与自然语言混合文本解析建档", () => {
+    // 模拟从思源笔记 protyle 拖拽的一段会议纪要或人员介绍
+    const draggedProtyleBlockText = `
+参会人：王五经理
+联系方式：13912345678
+微信号：wangwu_pm
+工作邮箱：wangwu@enterprise.org
+分组：重要客户
+标签：#华东区 #智能制造
+    `.trim();
+
+    const parsed = parseContactText(draggedProtyleBlockText);
+    assert.deepEqual(quickFillValues(parsed, "name"), ["王五经理"]);
+    assert.deepEqual(quickFillValues(parsed, "phone"), ["13912345678"]);
+    assert.deepEqual(quickFillValues(parsed, "wechat"), ["wangwu_pm"]);
+    assert.deepEqual(quickFillValues(parsed, "email"), ["wangwu@enterprise.org"]);
+    assert.deepEqual(quickFillValues(parsed, "group"), ["重要客户"]);
+    assert.deepEqual(quickFillValues(parsed, "tags"), ["#华东区", "#智能制造"]);
+
+    const draft = buildDraftFromQuickInput(draggedProtyleBlockText);
+    assert.equal(draft.name, "王五经理");
+    assert.equal(draft.phone, "13912345678");
+    assert.equal(draft.wechat, "wangwu_pm");
+    assert.equal(draft.email, "wangwu@enterprise.org");
+    assert.equal(draft.group, "重要客户");
+    assert.deepEqual(draft.tags, ["华东区", "智能制造"]);
+});

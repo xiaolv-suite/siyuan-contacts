@@ -230,6 +230,13 @@ function renderStripChip(context: PanelContext, item: StripChipItem): HTMLElemen
                 btn.classList.remove("lvct-strip__chip--copied");
             }, 1500);
         }).catch((err) => {
+            btn.textContent = t(context, "stripCopyFailed", "复制失败");
+            btn.classList.add("lvct-strip__chip--error");
+            if (copyTimer) clearTimeout(copyTimer);
+            copyTimer = setTimeout(() => {
+                btn.textContent = item.text;
+                btn.classList.remove("lvct-strip__chip--error");
+            }, 2000);
             console.warn("[LvContacts] 复制联系方式失败", err);
         });
     });

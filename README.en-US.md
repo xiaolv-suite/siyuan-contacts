@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.5** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.5) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.7** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.7) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -54,21 +54,45 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.5 (2026-10-31)
+## This release: v0.7.7 (2026-11-02)
 
-Native SiYuan Document Linkage Phase 1 (P0) & Live Isolated Preview Environment:
+Deep Native Document & Daily Note Synchronization, Xiaolv Federation SDK Integration, Multi-Granularity Graph Timeline & Full-Stack Isolated E2E Acceptance:
 
-- **Isolated Live Web Preview (`pnpm preview:isolated`)**: Spins up an isolated SiYuan kernel on Drive D (`D:\思源插件\小驴人脉-isolated-preview`) serving desktop web UI at `http://127.0.0.1:43920/stage/build/desktop/` (strictly avoiding 6806 and 43919) with pre-populated sample contacts for live testing and inspection.
-- **Incremental Document Mirror Scheduler (`src/services/doc-mirror.ts`)**: Automatically debounces updates (800ms) to native person document sections upon changes to interactions, ledger, anniversaries, and profile; evades active typing in editor (3s delay) to preserve cursor and undo history with 0 writes when content is unchanged.
-- **Direct SiYuan Native `alias` Sync (`src/services/person-aliases.ts`)**: Synchronizes contact aliases into native document `alias` block attributes, immediately enabling SiYuan global `Ctrl+P` alias search and `((` autocompletion.
-- **Human-Readable Supplementary Fields & Deduplicated Follow-Ups (`person-fields.ts` & `doc-section.ts`)**: Upgraded `custom-lvct-person-fields` to clean two-tier Markdown lists (`## 补充资料\n- **Group**\n  - Label: Value`) without raw JSON clutter while preserving 100% backward compatibility; eliminated redundant static follow-up blocks in favor of interactive native task items.
+- **Deep Native SiYuan Document Linkage (Phases 1 ~ 6)**:
+  - **Native Block References Everywhere**: Upgraded person, organization, occasion, and daily note cross-links to standard SiYuan block references (`((docId 'Name'))`), lighting up native backlink panels and local graphs;
+  - **Organization Controlled Dossier**: Automated dossier SuperBlocks (`custom-lvct-org-dossier`) on organization documents embedding descriptions, department trees, and active/former member native block references;
+  - **Daily Note Row-Level Bi-Directional Synchronization**: Tagged interaction entries in Daily Notes with `custom-lvct-event-id`; amendments and tombstone deletions update or remove daily note rows in place without text drift;
+  - **Global Alias Mapping**: Direct synchronization of contact aliases into document root `alias` block attributes, enabling global `Ctrl+P` and `((` autocompletion;
+  - **Occasion Gathering Memo**: 1-click export of occasion summaries embedding all attendee native block references (`FEAT-01`);
+  - **Department Tree Cascade**: Stable ID cascading across organizational departments (`cascadeRenameDepartmentMembers`);
+  - **Editor Float Strip**: Native protyle top strip (`.lvct-doc-strip`) with full editing callbacks.
+- **Xiaolv Federation SDK Ecosystem Linkages (IDEA-15 ~ IDEA-18)**:
+  - **QuickGate Global Commands (IDEA-16)**: Registered `rm <name>` and `rm+ <name> <note>` slash commands via `executeCommand`;
+  - **LvCards Review Deck Push (IDEA-15)**: 1-click flashcard generation for client preferences and taboos via `CardsBridgeApi.createCard`;
+  - **Home Calendar Sync (IDEA-17)**: Automatic synchronization of anniversaries and birthdays to `siyuan-home` schedule;
+  - **Raikiri Dynamic Widget (IDEA-18)**: Real-time action counts, upcoming birthdays, and overdue alerts in desktop dynamic widgets.
+- **Relation Graph Micro-Interactions & Multi-Granularity Time Evolution (Batch D / IDEA-11 ~ IDEA-14)**:
+  - **4 Topology Layouts**: Smooth switching across Force-Directed (`cose`), Concentric (`concentric`), Breadthfirst (`breadthfirst`), and Circle (`circle`);
+  - **Multi-Granularity Time Evolution**: Custom timeline slices by Year, Month (`YYYY-MM`), or Day (`YYYY-MM-DD` with configurable +1/+7/+30 day steps);
+  - **Neighbor Spotlight & Glow Paths**: Hover neighbor focus with dimming (0.15 opacity) and canvas shortest-path glow (`.lvct-graph-path-highlight`);
+  - **Node Quick Action Island**: Hover pills for ⚡ Log Interaction, 🎯 Set as Center, Full Profile, and ↗ Open Doc.
+- **Refined Typography & Sticky Layout**:
+  - **Sticky Sidebar**: Fixed sidebar scroll-off with `.lvct-tab-root` viewport sticky navigation;
+  - **Compact Typography Scale**: Standardized `.font-size-10` ~ `.font-size-13` scale, reducing member card text to 10.5px / 11.5px;
+  - **High-DPI & Narrow Viewport Zero Overflow**: Pinned dialog submit bar, zero overflow under 150% scaling (`853×533`) and 390px mobile viewports.
 
-Validation: `pnpm check` (0/0), unit tests (**1090/1090 PASS**), 3-tier UI regressions (**528/528**), and `pnpm e2e:isolated` (11/11 kernel services + 9-stage real SiYuan desktop & scaling walkthrough) all passed.
+Validation: `pnpm check` (0/0), unit tests (**1114/1114 PASS**), 3-tier UI regressions (**528/528 PASS**), and `pnpm e2e:isolated` (11/11 kernel services + 12/12 real SiYuan desktop walkthroughs) all passed with 10 desktop screenshots.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.7.4 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.7.6 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.6 · 2026-11-01
+- Multi-channel entries (`person-channels.ts`), physical business card image management with fullscreen viewer, avatar pipeline unified across roster and dashboard, and clean borderless layout.
+
+### v0.7.5 · 2026-10-31
+- Isolated live web preview (`pnpm preview:isolated`), incremental document mirror scheduler, direct SiYuan native `alias` sync, human-readable supplementary fields, and deduplicated follow-ups.
 
 ### v0.7.4 · 2026-10-31
 - Document strip & cross-dialog button link repairs, cold-start `requestWorkbenchNavigation` queue, shared-org tie discovery, immediate ContextPanel cleanup on deletion, and 150% scaling sticky CTA.

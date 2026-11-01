@@ -38,6 +38,8 @@
             copiedTimer = setTimeout(() => {
                 if (copiedIndex === index) copiedIndex = null;
             }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制里程碑寄语失败", err);
         } finally {
             copyingIndex = null;
         }

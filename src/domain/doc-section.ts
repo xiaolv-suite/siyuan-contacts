@@ -37,7 +37,22 @@ export const FACT_CATEGORY_META: Record<FactCategory, { label: string; icon: str
     fact: { label: "关键事实", icon: "📌" },
 };
 
-export function profileSectionMarkdown(person: ContactSummary): string {
+export interface ProfileSectionDetails {
+    origin?: {
+        metAt?: string;
+        introducedByDocId?: string;
+        introducedByName?: string;
+    } | null;
+    kinships?: readonly {
+        role?: string;
+        relationLabel?: string;
+        relation?: string;
+        name: string;
+        linkedDocId?: string;
+    }[];
+}
+
+export function profileSectionMarkdown(person: ContactSummary, details?: ProfileSectionDetails): string {
     const lines = ["## 人脉基本档案", ""];
     if (person.phone) lines.push(`- **电话**：${person.phone}`);
     if (person.wechat) lines.push(`- **微信**：${person.wechat}`);
@@ -57,6 +72,36 @@ export function profileSectionMarkdown(person: ContactSummary): string {
         if (edu && edu !== "—") lines.push(`- **学校**：${edu}`);
         if (fam && fam !== "—") lines.push(`- **家庭**：${fam}`);
         if (rel && rel !== "—") lines.push(`- **与我的关系**：${rel}`);
+    }
+    if (details?.origin) {
+        const parts: string[] = [];
+        if (details.origin.metAt) parts.push(details.origin.metAt);
+        if (details.origin.introducedByDocId) {
+            const anchor = details.origin.introducedByName ? ` '${escapeLinkLabel(details.origin.introducedByName)}'` : "";
+            parts.push(`引荐人 ((${details.origin.introducedByDocId}${anchor}))`);
+        } else if (details.origin.introducedByName) {
+            parts.push(`引荐人 ${escapeLinkLabel(details.origin.introducedByName)}`);
+        }
+        if (parts.length > 0) {
+            lines.push(`- **初识与引荐**：${parts.join(" · ")}`);
+        }
+    }
+    if (details?.kinships && details.kinships.length > 0) {
+        const roleLabels: Record<string, string> = {
+            parent: "长辈",
+            spouse: "配偶",
+            sibling: "兄弟姐妹",
+            child: "子女",
+            relative: "亲属",
+        };
+        const kinItems = details.kinships.map((k) => {
+            const rel = k.relation || k.relationLabel || (k.role && roleLabels[k.role]) || "亲属";
+            if (k.linkedDocId) {
+                return `${rel} ((${k.linkedDocId} '${escapeLinkLabel(k.name)}'))`;
+            }
+            return `${rel} ${escapeLinkLabel(k.name)}`;
+        });
+        lines.push(`- **家庭亲属**：${kinItems.join(" · ")}`);
     }
     if (lines.length <= 2) return "";
     return lines.join("\n");
@@ -149,7 +194,7 @@ export function anniversariesSectionMarkdown(items: readonly AnniversaryItem[]):
 }
 
 export function relatedSectionMarkdown(related: readonly ContactSummary[]): string {
-    const links = related.map((item) => `[${escapeLinkLabel(item.name)}](siyuan://blocks/${item.docId})`);
+    const links = related.map((item) => `((${item.docId} '${escapeLinkLabel(item.name)}'))`);
     return `**相关人物**：${links.join("、")}`;
 }
 

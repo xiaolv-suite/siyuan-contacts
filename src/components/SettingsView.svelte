@@ -670,6 +670,29 @@ import { toLocalDateKey } from "../domain/date-key.ts";
         draft = { ...draft, [key]: value };
     }
 
+    const cardFieldOptions = [
+        { key: "birthday", label: "生日" },
+        { key: "phone", label: "电话" },
+        { key: "wechat", label: "微信" },
+        { key: "email", label: "邮箱" },
+        { key: "org", label: "组织经历" },
+        { key: "recent", label: "最近互动/温度" },
+        { key: "tags", label: "分组与标签" },
+        { key: "region", label: "常驻城市" },
+    ] as const;
+
+    function toggleCardField(key: string, enabled: boolean) {
+        const currentFields = draft.cardFields || [];
+        const set = new Set(currentFields);
+        if (enabled) {
+            set.add(key as any);
+        } else {
+            if (set.size <= 1) return;
+            set.delete(key as any);
+        }
+        draft = { ...draft, cardFields: Array.from(set) as any };
+    }
+
     function clearPreferenceDayError(field: PreferenceDayField): void {
         if (!(field in preferenceDayErrors)) return;
         const next = { ...preferenceDayErrors };
@@ -1309,6 +1332,8 @@ import { toLocalDateKey } from "../domain/date-key.ts";
                                 <option value="group">按分组</option>
                                 <option value="birthday">按生日临近</option>
                                 <option value="recent">按最近互动</option>
+                                <option value="frequency">按互动频次</option>
+                                <option value="created">按创建时间</option>
                             </select>
                         </label>
                         <label class="lvct-form__item">
@@ -1344,8 +1369,28 @@ import { toLocalDateKey } from "../domain/date-key.ts";
                                 ...draft,
                                 peopleView: DEFAULT_VIEW_PREFERENCES.peopleView,
                                 tableColumns: [...DEFAULT_VIEW_PREFERENCES.tableColumns],
+                                cardFields: [...DEFAULT_VIEW_PREFERENCES.cardFields],
                             };
                         }}>恢复默认显示</button>
+                    </div>
+
+                    <div style="margin: 10px 0 14px 0; padding: 12px 14px; background: color-mix(in srgb, var(--lvct-bg-elevated) 70%, transparent); border: 1px solid var(--lvct-border-subtle); border-radius: var(--lvct-r-md, 10px);">
+                        <div style="margin-bottom: 8px;">
+                            <b>名册卡片展示字段（IDEA-06）</b>
+                            <div class="ft__smaller ft__on-surface">选择在名册卡片常驻展示的辅助字段，满足销售、HR、校友多场景诉求</div>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px 16px;">
+                            {#each cardFieldOptions as opt}
+                                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; user-select: none;">
+                                    <input
+                                        type="checkbox"
+                                        checked={(draft.cardFields || []).includes(opt.key)}
+                                        onchange={(e) => toggleCardField(opt.key, (e.currentTarget as HTMLInputElement).checked)}
+                                    />
+                                    <span>{opt.label}</span>
+                                </label>
+                            {/each}
+                        </div>
                     </div>
 
                     <label class="lvct-settings__switch-row">
@@ -1884,6 +1929,13 @@ import { toLocalDateKey } from "../domain/date-key.ts";
                         <div><b>{text("settingsSummarySwitchLabel", "打开工作台时显示关注摘要")}</b><small>{text("settingsSummarySwitchDesc", "页面内卡片展示生日、久未联系与跟进到期，可设置当日不再展示；不发送宿主通知")}</small></div>
                         <span class="lvct-switch"><input type="checkbox" bind:checked={draft.summaryEnabled} /><span class="lvct-switch__track"><span class="lvct-switch__thumb"></span></span></span>
                     </label>
+
+                    {#if draft.summaryEnabled}
+                        <label class="lvct-settings__switch-row" style="margin-top: 6px; margin-left: 16px; border-left: 2px solid var(--lvct-border-subtle); padding-left: 12px;">
+                            <div><b>{text("settingsSummaryDefaultCollapsedLabel", "关注摘要默认保持折叠")}</b><small>{text("settingsSummaryDefaultCollapsedDesc", "开启后，打开工作台时关注摘要默认呈收起紧凑条，为下方待办清单留出更多空间")}</small></div>
+                            <span class="lvct-switch"><input type="checkbox" bind:checked={draft.dashSummaryDefaultCollapsed} /><span class="lvct-switch__track"><span class="lvct-switch__thumb"></span></span></span>
+                        </label>
+                    {/if}
 
                     <div class="lvct-settings__actions">
                         <button

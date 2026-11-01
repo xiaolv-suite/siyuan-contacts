@@ -43,6 +43,7 @@
         Edit3,
         Maximize2,
         Upload,
+        Quote,
     } from "@lucide/svelte";
     import { processAvatarFile, processBusinessCardFile } from "../../shared/avatar-processor.ts";
     import {
@@ -61,6 +62,7 @@
     import { profileText } from "../../domain/people-profiles.ts";
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
+    import { pushFlashcardSafely } from "../../libs/ecosystem-bridge-kit";
     import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
     import type { DetailSectionKey, DetailCollapsedSections } from "../../domain/preferences";
     import { listContacts, removeContact, updateContactFields } from "../../services/contacts";
@@ -86,7 +88,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import { computeRelationshipHealth, heatLevelColorClass, CADENCE_TIERS } from "../../domain/cadence";
     import type { PersonCadence, RelationshipHealth } from "../../domain/cadence";
     import type { PersonOrigin } from "../../domain/person-origin";
-    import { buildPreMeetingBrief, formatPreMeetingBriefText, type PreMeetingBrief } from "../../domain/pre-meeting-brief";
+    import { buildPreMeetingBrief, formatPreMeetingBriefText, formatPreMeetingBriefCallout, type PreMeetingBrief } from "../../domain/pre-meeting-brief";
     import { computeMonthlyInteractionTrend } from "../../domain/interactions";
     import { renderTemplate } from "../../domain/interaction-templates";
     import type { NoteTemplate } from "../../domain/interaction-templates";
@@ -1243,6 +1245,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let preMeetingBriefOpen = $state(false);
     let preMeetingBriefCopied = $state(false);
     let preMeetingBriefCopyTimer: ReturnType<typeof setTimeout> | null = null;
+    let preMeetingBriefCalloutCopied = $state(false);
+    let preMeetingBriefCalloutCopyTimer: ReturnType<typeof setTimeout> | null = null;
     let greetingReminderSending = $state(false);
     let greetingReminderSent = $state(false);
     let greetingReminderError = $state("");
@@ -1312,12 +1316,34 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function handleCopyPreMeetingBrief() {
         const textToCopy = formatPreMeetingBriefText(preMeetingBrief);
-        await copyPlainText(textToCopy);
-        preMeetingBriefCopied = true;
-        if (preMeetingBriefCopyTimer) clearTimeout(preMeetingBriefCopyTimer);
-        preMeetingBriefCopyTimer = setTimeout(() => {
-            if (detailAlive) preMeetingBriefCopied = false;
-        }, 2000);
+        try {
+            await copyPlainText(textToCopy);
+            preMeetingBriefCopied = true;
+            if (preMeetingBriefCopyTimer) clearTimeout(preMeetingBriefCopyTimer);
+            preMeetingBriefCopyTimer = setTimeout(() => {
+                if (detailAlive) preMeetingBriefCopied = false;
+            }, 2000);
+        } catch (err) {
+            copyFieldError = `复制会前简报失败：${requestErrorMessage(err)}`;
+            if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
+            copyFieldErrorTimer = setTimeout(() => { copyFieldError = ""; }, 2500);
+        }
+    }
+
+    async function handleCopyPreMeetingBriefCallout() {
+        const textToCopy = formatPreMeetingBriefCallout(preMeetingBrief);
+        try {
+            await copyPlainText(textToCopy);
+            preMeetingBriefCalloutCopied = true;
+            if (preMeetingBriefCalloutCopyTimer) clearTimeout(preMeetingBriefCalloutCopyTimer);
+            preMeetingBriefCalloutCopyTimer = setTimeout(() => {
+                if (detailAlive) preMeetingBriefCalloutCopied = false;
+            }, 2000);
+        } catch (err) {
+            copyFieldError = `复制思源引述块失败：${requestErrorMessage(err)}`;
+            if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
+            copyFieldErrorTimer = setTimeout(() => { copyFieldError = ""; }, 2500);
+        }
     }
 
     async function handleSendGreetingReminder() {
@@ -1516,14 +1542,24 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let flashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
     async function makeFactFlashcard(fact: PersonFactItem) {
         const catLabel = FACT_CATEGORY_META[fact.category]?.label || "社交备忘";
-        const content = `Q: [人脉常识] ${current.name} 的【${catLabel}】是什么？\nA: ${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
+        const front = `[人脉常识] ${current.name} 的【${catLabel}】是什么？`;
+        const back = `${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
         try {
-            await copyPlainText(content);
+            const pushed = await pushFlashcardSafely({
+                front,
+                back,
+                deckName: "人脉常识",
+                tags: ["人脉常识", current.name],
+                sourceDocId: current.docId,
+            });
+            if (!pushed) {
+                await copyPlainText(`Q: ${front}\nA: ${back}`);
+            }
             flashcardToastId = fact.id;
             if (flashcardToastTimer) clearTimeout(flashcardToastTimer);
             flashcardToastTimer = setTimeout(() => { flashcardToastId = ""; }, 1800);
         } catch (err) {
-            factsSaveError = `复制失败：${requestErrorMessage(err)}`;
+            factsSaveError = `制作闪卡失败：${requestErrorMessage(err)}`;
         }
     }
 
@@ -1869,6 +1905,9 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             vcardCopiedTimer = setTimeout(() => { vcardCopied = false; }, 1800);
         } catch (err) {
             console.warn("[LvContacts] 复制名片文本失败", err);
+            copyFieldError = requestErrorMessage(err);
+            if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
+            copyFieldErrorTimer = setTimeout(() => { copyFieldError = ""; }, 2500);
         }
     }
 
@@ -2532,22 +2571,30 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     async function copySiyuanRef() {
         const refText = `((${current.docId} "${current.name}"))`;
-        await copyPlainText(refText);
-        siyuanRefCopied = true;
-        if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
-        siyuanRefTimer = setTimeout(() => {
-            siyuanRefCopied = false;
-        }, 2000);
+        try {
+            await copyPlainText(refText);
+            siyuanRefCopied = true;
+            if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
+            siyuanRefTimer = setTimeout(() => {
+                siyuanRefCopied = false;
+            }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制思源块引用失败", err);
+        }
     }
 
     async function copySiyuanUri() {
         const uriText = `siyuan://blocks/${current.docId}`;
-        await copyPlainText(uriText);
-        siyuanUriCopied = true;
-        if (siyuanUriTimer) clearTimeout(siyuanUriTimer);
-        siyuanUriTimer = setTimeout(() => {
-            siyuanUriCopied = false;
-        }, 2000);
+        try {
+            await copyPlainText(uriText);
+            siyuanUriCopied = true;
+            if (siyuanUriTimer) clearTimeout(siyuanUriTimer);
+            siyuanUriTimer = setTimeout(() => {
+                siyuanUriCopied = false;
+            }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制思源 URI 失败", err);
+        }
     }
 
     async function copyBriefing() {
@@ -2560,6 +2607,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             briefingCopyTimer = setTimeout(() => {
                 briefingCopied = false;
             }, 2000);
+        } catch (err) {
+            errorText = `复制简报失败：${requestErrorMessage(err)}`;
         } finally {
             briefingCopying = false;
         }
@@ -2567,6 +2616,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     onDestroy(() => {
         if (preMeetingBriefCopyTimer) clearTimeout(preMeetingBriefCopyTimer);
+        if (preMeetingBriefCalloutCopyTimer) clearTimeout(preMeetingBriefCalloutCopyTimer);
         if (greetingReminderTimer) clearTimeout(greetingReminderTimer);
         if (briefingCopyTimer) clearTimeout(briefingCopyTimer);
         if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
@@ -3758,12 +3808,24 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     type="button"
                     class="b3-button b3-button--text b3-button--small lvct-premeeting-brief__copy-btn"
                     onclick={(e) => { e.stopPropagation(); e.preventDefault(); void handleCopyPreMeetingBrief(); }}
-                    title="一键复制完整会前备忘录"
+                    title="一键复制纯文本会前备忘录"
                 >
                     {#if preMeetingBriefCopied}
                         <Check size={12} strokeWidth={1.6} class="lvct-text-success" /> 已复制备忘
                     {:else}
                         <Copy size={12} strokeWidth={1.6} /> 复制速览
+                    {/if}
+                </button>
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small lvct-premeeting-brief__callout-btn"
+                    onclick={(e) => { e.stopPropagation(); e.preventDefault(); void handleCopyPreMeetingBriefCallout(); }}
+                    title="复制为思源引述块 Markdown（>>> 语法，贴入笔记即成卡片）"
+                >
+                    {#if preMeetingBriefCalloutCopied}
+                        <Check size={12} strokeWidth={1.6} class="lvct-text-success" /> 已复制引述块
+                    {:else}
+                        <Quote size={12} strokeWidth={1.6} /> 复制引述块
                     {/if}
                 </button>
             </div>

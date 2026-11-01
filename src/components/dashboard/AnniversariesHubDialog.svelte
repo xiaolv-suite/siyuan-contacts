@@ -27,6 +27,7 @@
         MessageSquarePlus,
         Download,
         Sparkles,
+        Bell,
     } from "@lucide/svelte";
 
     let {
@@ -56,6 +57,10 @@
     let categoryFilter = $state<AnniversaryCategory | "all">("all");
     let copiedItemId = $state<string | null>(null);
     let copiedTimer: ReturnType<typeof setTimeout> | null = null;
+    let copyErrorId = $state<string | null>(null);
+    let copyErrorTimer: ReturnType<typeof setTimeout> | null = null;
+    let syncedItemId = $state<string | null>(null);
+    let syncedTimer: ReturnType<typeof setTimeout> | null = null;
     let exportingIcs = $state(false);
 
     $effect(() => {
@@ -77,6 +82,14 @@
         if (copiedTimer) {
             clearTimeout(copiedTimer);
             copiedTimer = null;
+        }
+        if (copyErrorTimer) {
+            clearTimeout(copyErrorTimer);
+            copyErrorTimer = null;
+        }
+        if (syncedTimer) {
+            clearTimeout(syncedTimer);
+            syncedTimer = null;
         }
     });
 
@@ -120,12 +133,39 @@
     const milestoneCount = $derived(allHubItems.filter((i) => (i.yearsCount ?? 0) > 0).length);
 
     async function handleCopyGreeting(item: AnniversaryHubItem) {
-        await copyPlainText(item.congratulatoryText);
-        copiedItemId = item.id;
-        if (copiedTimer) clearTimeout(copiedTimer);
-        copiedTimer = setTimeout(() => {
+        try {
+            await copyPlainText(item.congratulatoryText);
+            copiedItemId = item.id;
+            copyErrorId = null;
+            if (copiedTimer) clearTimeout(copiedTimer);
+            copiedTimer = setTimeout(() => {
+                copiedItemId = null;
+            }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制周年寄语失败", err);
+            copyErrorId = item.id;
             copiedItemId = null;
-        }, 2000);
+            if (copyErrorTimer) clearTimeout(copyErrorTimer);
+            copyErrorTimer = setTimeout(() => {
+                copyErrorId = null;
+            }, 2000);
+        }
+    }
+
+    async function handleSyncToHome(item: AnniversaryHubItem) {
+        if (!facade.syncAnniversariesToHome) return;
+        try {
+            const ok = await facade.syncAnniversariesToHome(item.title, item.displayDate);
+            if (ok && alive) {
+                syncedItemId = item.id;
+                if (syncedTimer) clearTimeout(syncedTimer);
+                syncedTimer = setTimeout(() => {
+                    if (alive) syncedItemId = null;
+                }, 2000);
+            }
+        } catch (err) {
+            console.warn("[LvContacts] 同步到管家日程失败", err);
+        }
     }
 
     function handleLog(item: AnniversaryHubItem) {
@@ -290,10 +330,17 @@
         {:else}
             <div class="anniv-grid">
                 {#each filteredItems as item (item.id)}
+                    {@const matchedPerson = peopleByDocId.get(item.personDocId)}
                     <div class="anniv-card {item.isToday ? 'anniv-card--today' : ''}">
                         <div class="anniv-card-top">
                             <div class="anniv-person-info">
-                                <span class="anniv-avatar">{item.personName.slice(0, 1)}</span>
+                                <span class="anniv-avatar">
+                                    {#if matchedPerson?.avatar}
+                                        <img class="anniv-avatar-img" src={matchedPerson.avatar} alt={item.personName} />
+                                    {:else}
+                                        {item.personName.slice(0, 1)}
+                                    {/if}
+                                </span>
                                 <div class="anniv-person-text">
                                     <div class="anniv-name-row">
                                         <button
@@ -346,12 +393,14 @@
                         <div class="anniv-card-actions">
                             <button
                                 type="button"
-                                class="b3-button b3-button--small {copiedItemId === item.id ? 'b3-button--primary' : 'b3-button--outline'}"
+                                class="b3-button b3-button--small {copiedItemId === item.id ? 'b3-button--primary' : copyErrorId === item.id ? 'b3-button--cancel' : 'b3-button--outline'}"
                                 onclick={() => void handleCopyGreeting(item)}
                                 title={text("annivCopyGreetingTip", "复制温情祝贺寄语到剪贴板")}
                             >
                                 {#if copiedItemId === item.id}
                                     <Check size={12} style="margin-right: 2px;" /> {text("copied", "已复制")}
+                                {:else if copyErrorId === item.id}
+                                    {text("copyFailed", "复制失败")}
                                 {:else}
                                     <Copy size={12} style="margin-right: 2px;" /> {text("annivCopyGreeting", "复制寄语")}
                                 {/if}
@@ -366,6 +415,21 @@
                                 <MessageSquarePlus size={12} style="margin-right: 2px;" />
                                 {text("annivLogActivity", "记一笔")}
                             </button>
+
+                            {#if facade?.syncAnniversariesToHome}
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--small b3-button--outline"
+                                    onclick={() => void handleSyncToHome(item)}
+                                    title="同步该纪念日到小驴管家日程提醒"
+                                >
+                                    {#if syncedItemId === item.id}
+                                        <Check size={12} style="margin-right: 2px; color: var(--lvct-success);" /> 已同步管家
+                                    {:else}
+                                        <Bell size={12} style="margin-right: 2px;" /> 同步管家
+                                    {/if}
+                                </button>
+                            {/if}
 
                             <button
                                 type="button"
@@ -590,6 +654,14 @@
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .anniv-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
     }
 
     .anniv-person-text {

@@ -6,9 +6,10 @@ import { deleteBlock, readMarkedBlocks, upsertMarkedBlock } from "../api/blocks"
 import { KernelPermissionError, KernelResponseError } from "../api/client";
 import type { ContactSummary } from "../domain/person";
 import { loadInteractionStore } from "../data/interactions";
-import { loadFollowUpStore } from "../data/followups";
 import { loadExchangeStore } from "../data/exchanges";
 import { loadAnniversaryStore } from "../data/anniversaries";
+import { loadPersonOrigin } from "../data/person-origins.ts";
+import { loadPersonKinships } from "../data/kinship.ts";
 import { syncFollowUpTasksToDoc } from "./followup-sync";
 import { loadPersonFields } from "./person-fields";
 import type { Plugin } from "siyuan";
@@ -29,6 +30,7 @@ import {
     buildFactsSectionMarkdown,
     parseFactsSectionMarkdown,
     type PersonFactItem,
+    type ProfileSectionDetails,
 } from "../domain/doc-section.ts";
 
 export {
@@ -60,10 +62,29 @@ function contentWithoutIal(markdown: string): string {
 }
 
 /** 同步某人物文档的正文基本资料档案区块（真实落盘到思源笔记正文） */
-export async function syncPersonProfileDocSection(person: ContactSummary, options: { strict?: boolean } = {}): Promise<void> {
+export async function syncPersonProfileDocSection(
+    person: ContactSummary,
+    options: { strict?: boolean; plugin?: Plugin } = {},
+): Promise<void> {
     if (!person.docId) return;
     const existing = await readMarkedBlocks(person.docId, PROFILE_SECTION_ATTR);
-    const markdown = profileSectionMarkdown(person);
+    let details: ProfileSectionDetails | undefined;
+    if (options.plugin) {
+        try {
+            const [origin, kinships] = await Promise.all([
+                loadPersonOrigin(options.plugin, person.docId).catch(() => null),
+                loadPersonKinships(options.plugin, person.docId).catch(() => []),
+            ]);
+            details = {
+                origin: origin ? {
+                    metAt: origin.metAt,
+                    introducedByDocId: origin.introducedByDocId,
+                } : null,
+                kinships,
+            };
+        } catch {}
+    }
+    const markdown = profileSectionMarkdown(person, details);
     if (existing.length === 0 && !markdown) return;
     if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
     try {
@@ -93,19 +114,17 @@ export async function syncInteractionDocSection(plugin: Plugin, personDocId: str
     }
 }
 
-export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string, personName?: string, options: { strict?: boolean } = {}): Promise<void> {
+export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string, _personName?: string, options: { strict?: boolean } = {}): Promise<void> {
     if (!personDocId) return;
     try {
-        const store = await loadFollowUpStore(plugin);
-        const items = store.items.filter((item) => item.personDocId === personDocId);
         const existing = await readMarkedBlocks(personDocId, FOLLOWUPS_SECTION_ATTR);
-        const markdown = followupsSectionMarkdown(items, personDocId, personName);
-        if (existing.length === 0 && !markdown) return;
-        if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
-        await upsertMarkedBlock(personDocId, FOLLOWUPS_SECTION_ATTR, markdown, existing[0]?.id);
+        for (const b of existing) {
+            await deleteBlock(b.id).catch(() => {});
+        }
+        await syncFollowUpTasksToDoc(plugin, personDocId);
     } catch (err) {
         if (options.strict) throw err;
-        console.warn("[LvContacts] 待办跟进同步到正文未完成", err);
+        console.warn("[LvContacts] 原生跟进任务同步到正文未完成", err);
     }
 }
 
@@ -187,7 +206,7 @@ export async function syncFullPersonDocument(plugin: Plugin, person: ContactSumm
     } catch {}
 
     await Promise.all([
-        syncPersonProfileDocSection(person, { strict: true }),
+        syncPersonProfileDocSection(person, { strict: true, plugin }),
         syncInteractionDocSection(plugin, person.docId, { strict: true }),
         syncFollowUpTasksToDoc(plugin, person.docId).catch((e) => console.warn("[LvContacts] 原生跟进同步未完成:", e)),
         syncPersonFieldsDocSection(person.docId, { strict: true }),

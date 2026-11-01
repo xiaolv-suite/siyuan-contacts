@@ -38,11 +38,11 @@ export interface QuickFillResult {
 
 /** 中英键名别名表：识别规则由别名表驱动，不散落在分支里（FAST-01.2） */
 const KEY_ALIASES: Readonly<Record<string, QuickFillField>> = {
-    姓名: "name", 名字: "name", 称呼: "name", name: "name",
-    手机: "phone", 手机号: "phone", 电话: "phone", 电话号码: "phone", 座机: "phone",
+    姓名: "name", 名字: "name", 称呼: "name", 联系人: "name", 人员: "name", 参会人: "name", 会议参会人: "name", name: "name",
+    手机: "phone", 手机号: "phone", 电话: "phone", 电话号码: "phone", 座机: "phone", 联系方式: "phone", 工作手机: "phone", 工作电话: "phone", 公司电话: "phone",
     tel: "phone", mobile: "phone", phone: "phone",
     微信: "wechat", 微信号: "wechat", wx: "wechat", wechat: "wechat", weixin: "wechat",
-    邮箱: "email", 邮件: "email", 电邮: "email", email: "email",
+    邮箱: "email", 邮件: "email", 电邮: "email", 工作邮箱: "email", 公司邮箱: "email", 个人邮箱: "email", email: "email",
     网址: "website", 网站: "website", 主页: "website", url: "website", website: "website",
     生日: "birthday", 出生日期: "birthday", 生辰: "birthday", birthday: "birthday",
     分组: "group", group: "group",
@@ -278,7 +278,7 @@ export function buildDraftFromQuickInput(text: string): QuickInputDraft {
     const website = quickFillValues(parsed, "website")[0] || "";
     const birthday = quickFillValues(parsed, "birthday")[0] || "";
     const group = quickFillValues(parsed, "group")[0] || "";
-    const tags = quickFillValues(parsed, "tags");
+    const tags = quickFillValues(parsed, "tags").map((t) => t.replace(/^#/, "").trim()).filter(Boolean);
 
     return {
         name,

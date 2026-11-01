@@ -25,6 +25,25 @@
     }
 
     const WEEKDAY_LABELS = ["一", "", "三", "", "五", "", "日"];
+
+    let hoveredDay = $state<HeatmapDay | null>(null);
+    let tooltipCoords = $state<{ x: number; y: number } | null>(null);
+
+    function handleCellEnter(day: HeatmapDay, event: MouseEvent | FocusEvent) {
+        if (day.isFuture) return;
+        const target = event.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        hoveredDay = day;
+        tooltipCoords = {
+            x: Math.round(rect.left + rect.width / 2),
+            y: Math.round(rect.top),
+        };
+    }
+
+    function handleCellLeave() {
+        hoveredDay = null;
+        tooltipCoords = null;
+    }
 </script>
 
 <div class="lvct-heatmap" role="region" aria-label="年度人脉交往活跃热力图">
@@ -84,6 +103,10 @@
                                 aria-label={dayTooltip(day)}
                                 disabled={day.isFuture || day.count === 0}
                                 onclick={() => onSelectDate?.(day.dateKey)}
+                                onmouseenter={(e) => handleCellEnter(day, e)}
+                                onmouseleave={handleCellLeave}
+                                onfocus={(e) => handleCellEnter(day, e)}
+                                onblur={handleCellLeave}
                             ></button>
                         {/each}
                     </div>
@@ -105,4 +128,31 @@
             <span class="ft__smaller ft__on-surface">{text("heatmapMore", "频繁")}</span>
         </div>
     </div>
+
+    {#if hoveredDay && tooltipCoords}
+        <div
+            class="lvct-heatmap__tooltip"
+            style={`position: fixed; left: ${tooltipCoords.x}px; top: ${tooltipCoords.y - 8}px; transform: translate(-50%, -100%);`}
+            role="tooltip"
+        >
+            <div class="lvct-heatmap__tooltip-date">{hoveredDay.dateKey}</div>
+            {#if hoveredDay.count === 0}
+                <div class="lvct-heatmap__tooltip-status">无交往记录</div>
+            {:else}
+                <div class="lvct-heatmap__tooltip-headline">
+                    <b>{hoveredDay.count} 次互动</b> · {hoveredDay.peopleCount} 位联系人
+                </div>
+                {#if hoveredDay.personNames && hoveredDay.personNames.length > 0}
+                    <div class="lvct-heatmap__tooltip-names">
+                        {#each hoveredDay.personNames as name}
+                            <span class="lvct-heatmap__tooltip-chip">{name}</span>
+                        {/each}
+                        {#if hoveredDay.peopleCount > hoveredDay.personNames.length}
+                            <span class="lvct-heatmap__tooltip-more">+{hoveredDay.peopleCount - hoveredDay.personNames.length}</span>
+                        {/if}
+                    </div>
+                {/if}
+            {/if}
+        </div>
+    {/if}
 </div>

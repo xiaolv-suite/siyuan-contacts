@@ -469,6 +469,19 @@ test("C-14：buildOrgLinksSection 组织名含方括号与特殊字符时保持 
         links,
         "**所属组织**：[某组织\\[北京\\]分部\\\\实验室](siyuan://blocks/20261004000000-org0001)（工作单位 · 在职 · 研发部 · 工程师）",
     );
+
+    const nativeLinks = buildOrgLinksSection([{
+        orgDocId: "20261004000000-org0001",
+        orgName: "某组织[北京]分部\\实验室\r\n",
+        affiliationKind: "work",
+        department: "研发部",
+        title: "工程师",
+    }], { useNativeRef: true });
+    assert.equal(
+        nativeLinks,
+        "**所属组织**：((20261004000000-org0001 '某组织\\[北京\\]分部\\\\实验室'))（工作单位 · 在职 · 研发部 · 工程师）",
+        "useNativeRef 应生成思源原生块引用双链格式",
+    );
 });
 
 test("G-09：共同组织背景支持预剪枝无关组织，大名册稳定顺序输出", () => {

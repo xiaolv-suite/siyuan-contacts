@@ -256,6 +256,14 @@ export interface CardsDueSummary {
     updatedAt: string;
 }
 
+export interface CreateCardInput {
+    deckName?: string;
+    front: string;
+    back: string;
+    tags?: string[];
+    sourceDocId?: string;
+}
+
 export interface CardsBridgeApi {
     readonly protocol: number;
     readonly capabilities: readonly string[];
@@ -266,6 +274,7 @@ export interface CardsBridgeApi {
     getDueSummary(): Promise<ActionResult<CardsDueSummary>>;
     openHub?(tab?: string): Promise<ActionResult<boolean>>;
     openReview?(options?: unknown): Promise<ActionResult<boolean>>;
+    createCard?(input: CreateCardInput): Promise<ActionResult<boolean>>;
 }
 
 // --- ⑧ 小驴常用 (xiaolv-common) ---
@@ -470,6 +479,36 @@ export async function logCheckinEventSafely(options: {
             }]);
             const r = results[0];
             return r?.kind === "recorded" || r?.kind === "duplicate";
+        },
+        () => false
+    );
+}
+
+/**
+ * 向小驴闪卡（siyuan-lv-cards）安全推送制卡（IDEA-15 联动）
+ */
+export async function pushFlashcardSafely(options: {
+    front: string;
+    back: string;
+    tags?: string[];
+    deckName?: string;
+    sourceDocId?: string;
+}): Promise<boolean> {
+    return await callBridge<CardsBridgeApi, boolean>(
+        "cards",
+        "cards.create",
+        async (bridge) => {
+            if (typeof bridge.createCard === "function") {
+                const res = await bridge.createCard({
+                    deckName: options.deckName ?? "人脉常识",
+                    front: options.front,
+                    back: options.back,
+                    tags: options.tags ?? ["人脉常识"],
+                    sourceDocId: options.sourceDocId,
+                });
+                return Boolean(res && res.ok);
+            }
+            return false;
         },
         () => false
     );

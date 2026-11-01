@@ -134,17 +134,35 @@ test("显示偏好：合法自定义顺序原样保留", () => {
     assert.deepEqual(result.tableColumns, ["birthday", "phone"]);
 });
 
+test("IDEA-06 显示偏好：名册卡片展示字段归一化与容错回退", () => {
+    const custom = normalizeViewPreferences({ cardFields: ["region", "birthday", "tags", "invalid", "birthday"] });
+    assert.deepEqual(custom.cardFields, ["region", "birthday", "tags"]);
+
+    // 旧偏好缺字段：回退默认全字段
+    const legacy = normalizeViewPreferences({});
+    assert.deepEqual(legacy.cardFields, DEFAULT_VIEW_PREFERENCES.cardFields);
+
+    // 非法结构回退默认字段
+    assert.deepEqual(normalizeViewPreferences({ cardFields: "invalid" }).cardFields, DEFAULT_VIEW_PREFERENCES.cardFields);
+    assert.deepEqual(normalizeViewPreferences({ cardFields: [] }).cardFields, DEFAULT_VIEW_PREFERENCES.cardFields);
+});
+
 test("显示偏好：摘要开关与当日忽略标记归一化", () => {
     const result = normalizeViewPreferences({
         summaryEnabled: false,
+        dashSummaryDefaultCollapsed: true,
         summaryDismissedOn: "2026-09-28",
     });
     assert.equal(result.summaryEnabled, false);
+    assert.equal(result.dashSummaryDefaultCollapsed, true);
     assert.equal(result.summaryDismissedOn, "2026-09-28");
-    // 旧偏好缺字段：默认开启、未忽略
+    // 旧偏好缺字段：默认开启、未忽略、默认不折叠
     const legacy = normalizeViewPreferences({ peopleSort: "recent" });
     assert.equal(legacy.summaryEnabled, true);
+    assert.equal(legacy.dashSummaryDefaultCollapsed, false);
     assert.equal(legacy.summaryDismissedOn, "");
+    // 非法类型回退默认值 false
+    assert.equal(normalizeViewPreferences({ dashSummaryDefaultCollapsed: "invalid" }).dashSummaryDefaultCollapsed, false);
     // 非法日期串归一化为空串
     assert.equal(normalizeViewPreferences({ summaryDismissedOn: "09/28" }).summaryDismissedOn, "");
 });

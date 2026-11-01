@@ -28,7 +28,7 @@ import { initializeWorkspace, inspectWorkspace, readSettingsState, scanAnchorCan
 import { configureCloseGuardI18n } from "./components/close-guard";
 import type { InitProgressStep, WorkspaceSnapshot } from "./services/init";
 import { loadDashboard, DEFAULT_DASHBOARD_OPTIONS } from "./services/dashboard";
-import { amendInteraction, deleteInteraction, recordInteraction, loadInteractionStoreStrict } from "./data/interactions";
+import { amendInteraction, deleteInteraction, recordInteractionWithResult, loadInteractionStoreStrict } from "./data/interactions";
 import { toLocalDateKey } from "./domain/interactions";
 import type { InteractionAmendment } from "./domain/interactions";
 import { captureFromDoc, previewCapture, resolveRecognizeTarget } from "./services/capture";
@@ -82,7 +82,12 @@ import { listPendingOrganizationOperations, inspectOrganizationOperation, resume
 import { saveOrganizationMember, editOrganizationMember, deleteOrganizationMember, replaceOrganizationMemberWithProjection, moveOrganizationMemberWithProjection } from "./services/org-member-writes";
 import { loadViewPreferences, saveViewPreferences, createPreferenceRequests } from "./services/preferences";
 import { exportInteractionJson } from "./services/interaction-export";
-import { appendInteractionToDailyNote, appendFollowUpToDailyNote } from "./services/diary";
+import {
+    appendInteractionToDailyNote,
+    appendFollowUpToDailyNote,
+    removeDailyNoteInteractionByEventId,
+    updateDailyNoteInteractionByEventId,
+} from "./services/diary";
 import { loadExportSummary } from "./services/export-center";
 import { exportVcfText } from "./services/vcard";
 import {
@@ -137,6 +142,7 @@ import { svelteDialog } from "./libs/dialog";
 import { openSiYuanDocument } from "./libs/open-document";
 import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation, subscribeDataChanged } from "./libs/data-events";
 import { schedulePersonDocMirror, disposeDocMirrorScheduler } from "./services/doc-mirror";
+import { syncOrganizationDocSection } from "./services/org-dossier";
 import type { ContactsSettings } from "./domain/model";
 import { setBlockAttrs, flushBlockIndex } from "./api/blocks";
 import { querySql, assertKernelRecord } from "./api/client";
@@ -447,21 +453,41 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 if (!this.settings) return { title: "人脉动态", items: [{ label: "工作空间未初始化" }] };
                 try {
                     const data = await this.loadDashboard({ birthdayWindowDays: 7 });
-                    const items: Array<{ label: string; value?: string }> = [];
+                    const items: Array<{ label: string; value?: string; command?: string }> = [];
                     const todayBdays = data.birthdays.filter((b) => b.bucket === "today");
                     if (todayBdays.length > 0) {
-                        items.push({ label: `🎂 今日生日 (${todayBdays.length})`, value: todayBdays.map((b) => b.person.name).join("、") });
+                        items.push({
+                            label: `🎂 今日生日 (${todayBdays.length})`,
+                            value: todayBdays.map((b) => b.person.name).join("、"),
+                            command: "contacts:open-people?sort=birthday",
+                        });
                     }
                     const weekBdays = data.birthdays.filter((b) => b.bucket === "week");
                     if (weekBdays.length > 0) {
-                        items.push({ label: `🎉 本周生日 (${weekBdays.length})`, value: weekBdays.map((b) => b.person.name).join("、") });
+                        items.push({
+                            label: `🎉 本周生日 (${weekBdays.length})`,
+                            value: weekBdays.map((b) => b.person.name).join("、"),
+                            command: "contacts:open-people?sort=birthday",
+                        });
                     }
                     const openFus = (data.followUps ?? []).filter((f) => f.item.status === "open");
                     if (openFus.length > 0) {
-                        items.push({ label: `📌 待跟进人脉 (${openFus.length})`, value: openFus.slice(0, 3).map((f) => f.person?.name || f.item.title).join("、") });
+                        items.push({
+                            label: `📌 待跟进事项 (${openFus.length})`,
+                            value: openFus.slice(0, 3).map((f) => f.person?.name || f.item.title).join("、"),
+                            command: "contacts:open-people?view=followups",
+                        });
+                    }
+                    const overdueItems = (data.actions ?? []).filter((a) => a.bucket === "overdue");
+                    if (overdueItems.length > 0) {
+                        items.push({
+                            label: `⌛ 待问候/逾期 (${overdueItems.length})`,
+                            value: overdueItems.slice(0, 3).map((a) => a.person.name).join("、"),
+                            command: "contacts:open-people?filter=overdue",
+                        });
                     }
                     if (items.length === 0) {
-                        items.push({ label: "近期无待办与生日提醒", value: "一切就绪" });
+                        items.push({ label: "人脉交往一切就绪", value: "近期无待办与生日" });
                     }
                     return { title: "人脉动态", items };
                 } catch {
@@ -1047,16 +1073,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         type?: import("./domain/interactions").InteractionType,
         options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean; skipDailyNoteSync?: boolean },
     ): Promise<void> {
-        await recordInteraction(this, { personDocId, note, type, ...options });
+        const recordResult = await recordInteractionWithResult(this, { personDocId, note, type, ...options });
         if (!options?.skipDocSync) {
-            void syncInteractionDocSection(this, personDocId).catch(() => {});
+            await syncInteractionDocSection(this, personDocId).catch(() => {});
         }
         if (!options?.skipDailyNoteSync && this.settings?.notebookId) {
             const notebookId = this.settings.notebookId;
             const date = toLocalDateKey(options?.occurredAt ? new Date(options.occurredAt) : new Date());
-            void this.listContacts().then((roster) => {
+            const lastEvent = recordResult.store.events[recordResult.store.events.length - 1];
+            await this.listContacts().then((roster) => {
                 const person = roster.find((p) => p.docId === personDocId);
                 return appendInteractionToDailyNote(notebookId, {
+                    eventId: lastEvent?.id,
                     personDocId,
                     personName: person?.name || "联系人",
                     localDate: date,
@@ -1080,13 +1108,26 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async deleteInteraction(personDocId: string, eventId: string): Promise<void> {
         await deleteInteraction(this, eventId, personDocId);
-        void syncInteractionDocSection(this, personDocId).catch(() => {});
+        await syncInteractionDocSection(this, personDocId).catch(() => {});
+        await removeDailyNoteInteractionByEventId(eventId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
     }
 
     async amendInteraction(personDocId: string, eventId: string, amendment: InteractionAmendment): Promise<void> {
-        await amendInteraction(this, eventId, personDocId, amendment);
-        void syncInteractionDocSection(this, personDocId).catch(() => {});
+        const res = await amendInteraction(this, eventId, personDocId, amendment);
+        await syncInteractionDocSection(this, personDocId).catch(() => {});
+        await this.listContacts().then((roster) => {
+            const person = roster.find((p) => p.docId === personDocId);
+            return updateDailyNoteInteractionByEventId({
+                oldEventId: eventId,
+                newEventId: res.event.id,
+                personDocId,
+                personName: person?.name || "联系人",
+                type: res.event.type,
+                note: res.event.note,
+                occurredAt: res.event.occurredAt,
+            });
+        }).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
     }
 
@@ -1314,6 +1355,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!this.isLifecycleActive() || !this.settings) throw new Error("人脉工作空间尚未初始化");
         const result = await updateOrganizationProfile(this, orgDocId, profile, expected);
         if (!this.isLifecycleActive()) return result;
+        await syncOrganizationDocSection(this, orgDocId).catch(() => {});
         emitDataChanged({ topics: ["organizations"] }, this.lifecycleToken);
         return result;
     }
@@ -1335,6 +1377,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         const token = this.lifecycleToken;
         const report = await saveOrganizationMember(this, this.settings, { ...extra, orgDocId, personDocId });
+        await syncOrganizationDocSection(this, orgDocId).catch(() => {});
         emitDataChanged({}, token);
         return report;
     }
@@ -1344,6 +1387,9 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         const token = this.lifecycleToken;
         const report = await deleteOrganizationMember(this, this.settings, id, expected);
+        if (expected?.orgDocId) {
+            await syncOrganizationDocSection(this, expected.orgDocId).catch(() => {});
+        }
         emitDataChanged({}, token);
         return report;
     }
@@ -1353,6 +1399,9 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!this.settings) throw new Error("人脉工作空间尚未初始化");
         const token = this.lifecycleToken;
         const report = await editOrganizationMember(this, this.settings, id, patch, expected);
+        if (expected?.orgDocId) {
+            await syncOrganizationDocSection(this, expected.orgDocId).catch(() => {});
+        }
         emitDataChanged({}, token);
         return report;
     }
@@ -2080,6 +2129,19 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         );
     }
 
+    /** IDEA-17：将重要相识/相聚纪念日及生日自动同步至小驴管家日历日程 */
+    async syncAnniversariesToHome(title: string, dueDate: string): Promise<boolean> {
+        return callBridge<HomeBridgeApi, boolean>(
+            "home",
+            "memo",
+            async (home) => {
+                await home.addMemo(`[人脉纪念日] ${title}`, dueDate);
+                return true;
+            },
+            () => false,
+        );
+    }
+
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     async loadPersonFacts(personDocId: string) {
         return loadPersonFactsFromDoc(personDocId);
@@ -2224,9 +2286,9 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         return this.openDoc(this.settings.hostDocId);
     }
 
-    openDoc(docId: string) {
+    openDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions) {
         if (!this.isLifecycleActive() || !docId) return;
-        const opening = openSiYuanDocument(this.app, docId);
+        const opening = openSiYuanDocument(this.app, docId, options);
         // 按钮旧入口可能没有 await：旁路处理避免未处理拒绝，原 Promise 仍供图谱等调用方捕获。
         void opening.catch((error: unknown) => {
             if (!this.isLifecycleActive()) return;
@@ -2235,8 +2297,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         return opening;
     }
 
-    openPersonDoc(docId: string) {
-        return this.openDoc(docId);
+    openPersonDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions) {
+        return this.openDoc(docId, options);
     }
 
     openSetting(): void {

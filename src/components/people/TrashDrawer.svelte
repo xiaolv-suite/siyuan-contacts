@@ -180,7 +180,11 @@
                     <div class="trash-item-card">
                         <div class="trash-item-left">
                             <span class="trash-avatar">
-                                {entry.name.slice(0, 1)}
+                                {#if entry.snapshot.avatar}
+                                    <img class="trash-avatar-img" src={entry.snapshot.avatar} alt={entry.name} />
+                                {:else}
+                                    {entry.name.slice(0, 1)}
+                                {/if}
                             </span>
                             <div class="trash-item-main">
                                 <div class="trash-item-title-row">
@@ -354,6 +358,14 @@
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .trash-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
     }
 
     .trash-item-main {

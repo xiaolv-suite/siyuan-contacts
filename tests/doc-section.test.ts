@@ -6,6 +6,7 @@ import {
     followupsSectionMarkdown,
     exchangesSectionMarkdown,
     anniversariesSectionMarkdown,
+    relatedSectionMarkdown,
     PROFILE_SECTION_ATTR,
     INTERACTIONS_SECTION_ATTR,
     RELATED_SECTION_ATTR,
@@ -55,6 +56,43 @@ test("profileSectionMarkdown：生成人脉基本档案 Markdown 区块", () => 
     assert.match(md, /- \*\*生日\*\*：1990-05-20/);
     assert.match(md, /- \*\*分组\*\*：同事/);
     assert.match(md, /- \*\*标签\*\*：#投资 #合伙人/);
+});
+
+test("思源文档深度联动 P1：profileSectionMarkdown 与 relatedSectionMarkdown 输出思源原生块引用双链 ((((docId 'name'))))", () => {
+    const person: ContactSummary = {
+        docId: "20261023000000-doc001",
+        itemId: "item-001",
+        name: "张三",
+        phone: "13800000000",
+        email: "",
+        wechat: "",
+        website: "",
+        birthday: "",
+        isLunar: false,
+        group: "",
+        tags: [],
+        relatedItemIds: [],
+    };
+    const details = {
+        origin: {
+            metAt: "2024秋季峰会",
+            introducedByDocId: "20261001000000-intro01",
+            introducedByName: "李四",
+        },
+        kinships: [
+            { relation: "配偶", name: "王小红", linkedDocId: "20261002000000-wife001" },
+            { relation: "子女", name: "小明" },
+        ],
+    };
+    const md = profileSectionMarkdown(person, details);
+    assert.ok(md.includes("- **初识与引荐**：2024秋季峰会 · 引荐人 ((20261001000000-intro01 '李四'))"), "初识引荐人应生成思源原生块引用双链");
+    assert.ok(md.includes("- **家庭亲属**：配偶 ((20261002000000-wife001 '王小红')) · 子女 小明"), "亲属应生成思源原生块引用双链并兼顾未建档亲属");
+
+    const related = [
+        { docId: "20261003000000-rel01", itemId: "i1", name: "赵六", phone: "", email: "", wechat: "", website: "", birthday: "", isLunar: false, group: "", tags: [], relatedItemIds: [] },
+    ];
+    const relatedMd = relatedSectionMarkdown(related);
+    assert.equal(relatedMd, "**相关人物**：((20261003000000-rel01 '赵六'))", "相关人物必须生成思源原生块引用以打通原生反向链接面板与局部图谱");
 });
 
 test("interactionSectionMarkdown：生成往来记录 Markdown 列表与图标映射", () => {

@@ -43,7 +43,9 @@
     // 复制成功的提示状态与并发防连发锁
     let copyingVisitList = $state(false);
     let copySuccess = $state(false);
+    let copyError = $state(false);
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
+    let copyErrorTimer: ReturnType<typeof setTimeout> | null = null;
     let syncingDoc = $state(false);
     let syncDocSuccess = $state(false);
     let syncDocTimer: ReturnType<typeof setTimeout> | null = null;
@@ -209,9 +211,19 @@
             await copyPlainText(textContent);
             if (!alive) return;
             copySuccess = true;
+            copyError = false;
             if (copyTimer) clearTimeout(copyTimer);
             copyTimer = setTimeout(() => {
                 if (alive) copySuccess = false;
+            }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制探访备忘失败", err);
+            if (!alive) return;
+            copyError = true;
+            copySuccess = false;
+            if (copyErrorTimer) clearTimeout(copyErrorTimer);
+            copyErrorTimer = setTimeout(() => {
+                if (alive) copyError = false;
             }, 2000);
         } finally {
             if (alive) {
@@ -223,6 +235,7 @@
     onDestroy(() => {
         alive = false;
         if (copyTimer) clearTimeout(copyTimer);
+        if (copyErrorTimer) clearTimeout(copyErrorTimer);
         if (syncDocTimer) clearTimeout(syncDocTimer);
     });
 
@@ -389,12 +402,14 @@
                         </button>
                         <button
                             type="button"
-                            class="b3-button b3-button--outline b3-button--small"
+                            class="b3-button b3-button--small {copyError ? 'b3-button--cancel' : 'b3-button--outline'}"
                             onclick={handleCopyVisitList}
                             disabled={currentContacts.length === 0 || copyingVisitList}
                         >
                             {#if copySuccess}
                                 <Check size={14} strokeWidth={1.6} /> 已复制探访备忘
+                            {:else if copyError}
+                                复制失败
                             {:else}
                                 <Copy size={14} strokeWidth={1.6} /> {copyingVisitList ? "正在复制…" : "复制探访备忘"}
                             {/if}

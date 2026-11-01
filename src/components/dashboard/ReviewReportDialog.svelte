@@ -231,10 +231,13 @@
                                 <li>
                                     <div class="ft__smaller ft__on-surface">{issue.samples.length > 0 ? issue.samples.join("、") : "已定位对象"}</div>
                                     <div>{issue.reason}</div>
-                                    <button type="button" class="b3-button b3-button--text" onclick={() => (auditPreviewIssue = issue)}>预览修复范围</button>
-                                    {#if onOpenPeople && auditJumpLabels[issue.kind] && !module.stale && module.state === "success"}
-                                        <button type="button" class="b3-button b3-button--text" onclick={() => onOpenPeople?.({ itemIds: issue.itemIds, label: auditJumpLabels[issue.kind]! })}>查看这 {issue.itemIds.length} 人</button>
-                                    {/if}
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                                        <button type="button" class="b3-button b3-button--text" onclick={() => (auditPreviewIssue = issue)}>预览修复范围</button>
+                                        {#if onOpenPeople && auditJumpLabels[issue.kind] && !module.stale && module.state === "success"}
+                                            <button type="button" class="b3-button b3-button--text" onclick={() => onOpenPeople?.({ itemIds: issue.itemIds, label: auditJumpLabels[issue.kind]! })}>查看这 {issue.itemIds.length} 人</button>
+                                            <button type="button" class="b3-button b3-button--outline b3-button--small" onclick={() => onOpenPeople?.({ itemIds: issue.itemIds, label: `直达修复 · ${auditJumpLabels[issue.kind]}` })}>直达修补</button>
+                                        {/if}
+                                    </div>
                                 </li>
                             {/each}
                         </ul>
@@ -247,11 +250,30 @@
                 <div class="lvct-review__section" role="status">
                     <b>修复预览：{auditPreviewIssue.repair.action}</b>
                     <p class="ft__smaller ft__on-surface">目标 {auditPreviewIssue.repair.targetIds.length} 项；{auditPreviewIssue.repair.impact}确认前写入数：{auditPreviewIssue.repair.writes}。</p>
-                    <ul>{#each auditPreviewIssue.repair.targetIds as target}<li>{target}</li>{/each}</ul>
+                    <ul class="lvct-audit-preview-targets">
+                        {#each auditPreviewIssue.repair.targetIds as target, idx}
+                            <li>
+                                <span>{target}</span>
+                                <div style="display: flex; gap: 4px;">
+                                    {#if onOpenPeople && auditPreviewIssue.itemIds && auditPreviewIssue.itemIds[idx]}
+                                        <button type="button" class="b3-button b3-button--small b3-button--outline" onclick={() => onOpenPeople?.({ itemIds: [auditPreviewIssue!.itemIds[idx]], label: `修补 · ${target}` })}>直达修补</button>
+                                    {/if}
+                                    {#if onOpenDoc && auditPreviewIssue.repair.targetDocIds && auditPreviewIssue.repair.targetDocIds[idx]}
+                                        <button type="button" class="b3-button b3-button--small b3-button--text" onclick={() => onOpenDoc?.(auditPreviewIssue!.repair.targetDocIds![idx])}>打开原文档</button>
+                                    {/if}
+                                </div>
+                            </li>
+                        {/each}
+                    </ul>
                     {#if auditPreviewIssue.repair.targetDocIds?.length}
                         <p class="ft__smaller ft__on-surface">涉及文档：{auditPreviewIssue.repair.targetDocIds.join("、")}</p>
                     {/if}
-                    <button type="button" class="b3-button b3-button--text" onclick={() => (auditPreviewIssue = null)}>关闭预览</button>
+                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                        {#if onOpenPeople && auditPreviewIssue.itemIds && auditPreviewIssue.itemIds.length > 0}
+                            <button type="button" class="b3-button b3-button--primary b3-button--small" onclick={() => onOpenPeople?.({ itemIds: auditPreviewIssue!.itemIds, label: `批量修补 · ${auditJumpLabels[auditPreviewIssue!.kind] || auditPreviewIssue!.repair.action}` })}>一键直达全部待修补联系人 ({auditPreviewIssue.itemIds.length})</button>
+                        {/if}
+                        <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => (auditPreviewIssue = null)}>关闭预览</button>
+                    </div>
                 </div>
             {/if}
             {#if auditReport.issues.length === 0 && Object.values(auditReport.modules).every((module) => module.state === "success")}

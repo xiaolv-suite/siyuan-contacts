@@ -38,6 +38,7 @@ import { PERSON_ALIAS_STORAGE_KEY, loadPersonAliasStore } from "../data/person-a
 import { PERSON_ORIGIN_STORAGE_KEY, loadPersonOriginStoreStrict } from "../data/person-origins.ts";
 import { RELATIONSHIP_LABEL_STORAGE_KEY, loadRelationshipLabelStore } from "../data/person-relationship-labels.ts";
 import { OCCASIONS_STORAGE_KEY, loadOccasionStoreStrict } from "../data/occasions.ts";
+import { setBlockAttrs } from "../api/blocks.ts";
 
 export interface ExecuteMergeResult {
     primaryDocId: string;
@@ -410,6 +411,15 @@ export async function executeContactMerge(
         }
         if (changed) {
             await saveJsonVerified(plugin, PERSON_ALIAS_STORAGE_KEY, store);
+            try {
+                const primaryAliases = store.aliases
+                    .filter((a) => a.personDocId === primary.docId)
+                    .map((a) => a.alias.trim())
+                    .filter(Boolean);
+                await setBlockAttrs(primary.docId, { alias: primaryAliases.join(",") });
+            } catch (err) {
+                console.warn("[LvContacts] 合并别名同步至主文档原生属性失败", err);
+            }
         }
     });
 

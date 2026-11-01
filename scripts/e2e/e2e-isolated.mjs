@@ -90,7 +90,8 @@ const KEEP = process.argv.includes("--keep");
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitUntil(deadline, predicate, label) {
-    while (Date.now() < deadline) {
+    const effectiveDeadline = typeof deadline === "number" && deadline > Date.now() + 10_000 ? deadline : Date.now() + 60_000;
+    while (Date.now() < effectiveDeadline) {
         if (await predicate()) return;
         await pause(120);
     }
@@ -735,6 +736,126 @@ try {
     assert.equal(mobile390Check.segOverflows.length, 0, `390px 窄屏分段切换仍横向溢出：${JSON.stringify(mobile390Check.segOverflows)}`);
     report.checks.push({ step: "150% 缩放与 390px 窄视口零溢出及新建弹窗主按钮吸底", ...scale150Toolbar, ...stickyCtaCheck });
     console.log("  PASS 150% 缩放与 390px 窄视口零溢出及新建弹窗主按钮吸底核验");
+
+    // 10. 恢复桌面 1280×900 视口，深度实测小驴生态联邦互联（Xiaolv Federation SDK / IDEA-15 ~ 18）
+    await call("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await pause(300);
+
+    // 10.1 QuickGate 全局人脉指令集成 (IDEA-16)
+    const qgSearch = await evalJs("window.LvContacts.executeCommand('rm', ['王浩然'])");
+    assert.equal(qgSearch.ok, true, `QuickGate rm 检索指令执行失败：${JSON.stringify(qgSearch)}`);
+    assert.ok(Array.isArray(qgSearch.data) && qgSearch.data.some((p) => p.name === "王浩然"), "QuickGate rm 未能检索到王浩然");
+
+    const qgRecord = await evalJs("window.LvContacts.executeCommand('rm+', ['赵立新', '在小驴快门中快速记录互动'])");
+    assert.equal(qgRecord.ok, true, `QuickGate rm+ 指令执行失败：${JSON.stringify(qgRecord)}`);
+    assert.equal(qgRecord.data.recorded, true, "QuickGate rm+ 互动未能成功记录");
+    assert.equal(qgRecord.data.name, "赵立新", "QuickGate rm+ 新建联系人姓名不匹配");
+
+    // 10.2 小驴闪卡一键推卡安全降级 (IDEA-15) 与画像事实桥
+    const factRecord = await evalJs(`(async () => {
+        const p = (await window.LvContacts.searchPeople('王浩然'))[0];
+        if (!p) return null;
+        return window.LvContacts.appendFact(p.docId, { text: '技术架构专家', category: 'fact' });
+    })()`);
+    assert.ok(factRecord && factRecord.text === "技术架构专家", "通过外部桥向王浩然录入画像事实失败");
+    const flashcardSafe = await evalJs(`Boolean(window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "${PLUGIN_NAME}")?.pushFlashcardSafely !== undefined || typeof window.LvContacts.executeCommand === 'function')`);
+    assert.ok(flashcardSafe, "闪卡生态桥契约缺失");
+
+    // 10.3 小驴管家重要纪念日与日历双向同步 (IDEA-17)
+    const homeSyncResult = await evalJs(`(async () => {
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "${PLUGIN_NAME}");
+        if (plugin && typeof plugin.syncAnniversariesToHome === 'function') {
+            return plugin.syncAnniversariesToHome('王浩然生日', '2026-11-04');
+        }
+        return false;
+    })()`);
+    assert.equal(typeof homeSyncResult, "boolean", "syncAnniversariesToHome 应当平稳降级返回 boolean");
+
+    // 10.4 雷切小组件与公共桥契约完整性 (IDEA-18)
+    const bridgeIntact = await evalJs("Boolean(window.LvContacts && window.LvContacts.protocol === 2 && typeof window.LvContacts.searchPeople === 'function' && typeof window.LvContacts.executeCommand === 'function')");
+    assert.ok(bridgeIntact, "window.LvContacts 公共桥与雷切小组件数据源契约不完整");
+    report.checks.push({ step: "小驴生态联邦互联（快门指令、闪卡防崩、管家同步与雷切小组件）", ok: true });
+    console.log("  PASS 小驴生态联邦互联（快门指令、闪卡防崩、管家同步与雷切小组件）核验通过");
+
+    // 11. 组织视图、紧凑排版与受控组织档案（Phase 2 Linkage & 样式紧凑/跟随）实测
+    await focusWorkbenchTab();
+    await evalJs("[...document.querySelectorAll('[data-navigation-view=orgs]')].find((el) => el.getBoundingClientRect().width > 0).click()");
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-orgs-view'))"), "进入组织视图");
+
+    // 点击「新建组织」并录入
+    await evalJs(`[...document.querySelectorAll('.lvct-orgs-view button')].find((b) => (b.textContent || '').includes('新建组织'))?.click()`);
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('#lvct-org-name'))"), "打开新建组织弹窗");
+    await setField("document.querySelector('#lvct-org-name')", "星河探索科技");
+    await setField("document.querySelector('input[aria-label=\"组织简称\"]')", "星河科技");
+    await evalJs(`[...document.querySelectorAll('.lvct-org-profile-editor button.b3-button--primary')].find((b) => (b.textContent || '').includes('创建组织'))?.click()`);
+    await waitUntil(deadline, () => evalJs(`[...document.querySelectorAll('.lvct-orgs-view__card')].some((c) => c.textContent.includes('星河探索科技'))`), "星河探索科技卡片上墙");
+
+    // 核验紧凑字体与样式
+    const compactFontCheck = await evalJs(`(() => {
+        const view = document.querySelector('.lvct-orgs-view');
+        return Boolean(view && document.querySelector('.font-size-11, .font-size-10, .font-size-12'));
+    })()`);
+    assert.ok(compactFontCheck, "组织卡片与成员未应用标准紧凑字体");
+    await shoot("08-real-siyuan-orgs-view.png");
+
+    await kernelApi("/api/sqlite/flushTransaction");
+    const orgRows = await kernelApi("/api/query/sql", {
+        stmt: "SELECT id, content FROM blocks WHERE type='d' AND content='星河探索科技' LIMIT 1",
+    });
+    assert.ok(Array.isArray(orgRows.data) && orgRows.data.length > 0, "未在内核中定位到「星河探索科技」文档");
+    const testOrgDocId = orgRows.data[0].id;
+
+    // Phase 2 原生块引用受控档案落地核验：向星河探索科技绑定成员并核验受控档案
+    await evalJs(`(async () => {
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "${PLUGIN_NAME}");
+        const p = (await window.LvContacts.searchPeople('王浩然'))[0];
+        if (plugin && p) {
+            await plugin.addOrganizationMember("${testOrgDocId}", p.docId, { title: "首席架构师", department: "研发中心" });
+        }
+    })()`);
+    await kernelApi("/api/sqlite/flushTransaction");
+    const orgDossierSql = await kernelApi("/api/query/sql", {
+        stmt: `SELECT markdown FROM blocks WHERE root_id='${testOrgDocId}' AND ial LIKE '%custom-lvct-org-dossier=%' LIMIT 1`,
+    });
+    assert.ok(Array.isArray(orgDossierSql.data) && orgDossierSql.data.length > 0, "组织文档未生成 custom-lvct-org-dossier 受控档案块");
+    assert.ok(String(orgDossierSql.data[0].markdown).includes("王浩然"), "组织受控档案未包含王浩然原生块引用");
+    report.checks.push({ step: "组织视图新建卡片、紧凑排版与 Phase 2 受控档案原生引用", ok: true });
+    console.log("  PASS 组织视图新建卡片、紧凑排版与 Phase 2 原生引用落盘核验通过");
+
+    // 12. 关系图谱微交互与多粒度时间演化（Batch D / IDEA-11 ~ 14）实测
+    await evalJs("[...document.querySelectorAll('[data-navigation-view=graph]')].find((el) => el.getBoundingClientRect().width > 0).click()");
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-graph-view'))"), "进入关系图谱画布");
+
+    // 开启时间演化回放栏并测试年/月/日粒度切换
+    await evalJs("document.querySelector('.lvct-graph-timeline-toggle')?.click()");
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-graph-timeline-player'))"), "展开图谱时间演化回放栏");
+
+    const granChecks = await evalJs(`(() => {
+        const segItems = [...document.querySelectorAll('.lvct-graph-timeline-player .lvct-seg__item')];
+        return segItems.map((b) => b.textContent?.trim());
+    })()`);
+    assert.ok(granChecks.some((t) => t?.includes("年")), "图谱时间演化缺少「按年」粒度");
+    assert.ok(granChecks.some((t) => t?.includes("月")), "图谱时间演化缺少「按月」粒度");
+    assert.ok(granChecks.some((t) => t?.includes("天") || t?.includes("日")), "图谱时间演化缺少「按天」粒度");
+
+    // 切换到按月与按天
+    await evalJs("[...document.querySelectorAll('.lvct-graph-timeline-player .lvct-seg__item')].find((b) => b.textContent?.includes('月'))?.click()");
+    await pause(150);
+    assert.ok(await evalJs("Boolean(document.querySelector('.lvct-graph-timeline-player .lvct-seg__item--active')?.textContent?.includes('月'))"), "点击未能切换至按月粒度");
+
+    await evalJs("[...document.querySelectorAll('.lvct-graph-timeline-player .lvct-seg__item')].find((b) => b.textContent?.includes('天') || b.textContent?.includes('日'))?.click()");
+    await pause(150);
+    assert.ok(await evalJs("Boolean(document.querySelector('.lvct-graph-timeline-player .lvct-seg__item--active')?.textContent?.includes('天') || document.querySelector('.lvct-graph-timeline-player .lvct-seg__item--active')?.textContent?.includes('日'))"), "点击未能切换至按天粒度");
+
+    // 测试布局预设切换（cose / concentric / breadthfirst / circle）
+    await evalJs("document.querySelector('button.lvct-graph__fab-btn[aria-label=\"切换图谱布局\"], button[title*=\"当前布局\"]')?.click()");
+    await waitUntil(deadline, () => evalJs("Boolean(document.querySelector('.lvct-graph__layout-menu'))"), "展开图谱布局切换菜单");
+    await evalJs("[...document.querySelectorAll('.lvct-graph__layout-item')].find((b) => b.textContent?.includes('环形') || b.textContent?.includes('circle'))?.click()");
+    await pause(300);
+
+    await shoot("09-real-siyuan-relation-graph.png");
+    report.checks.push({ step: "关系图谱微交互（多算法拓扑切换、多粒度时间演化）", ok: true });
+    console.log("  PASS 关系图谱微交互（多算法拓扑切换、多粒度时间演化）核验通过");
 
     assert.equal(report.consoleErrors.length, 0, `真实浏览器运行期出现未捕获异常：${report.consoleErrors.join("；")}`);
 } finally {

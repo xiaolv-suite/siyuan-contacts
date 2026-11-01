@@ -691,3 +691,24 @@ test("外部服务桥：支持 appendFact 与 getFacts 扩展能力（联动小�
     assert.equal(facts[0].id, fact.id);
 });
 
+test("IDEA-16 小驴快门指令支持：executeCommand 执行 rm 搜人与 rm+ 记互动", async () => {
+    const { api } = fixture();
+    assert.equal(typeof api.executeCommand, "function");
+
+    // 1. rm 搜人
+    const searchRes = await api.executeCommand!("rm", ["甲"]);
+    assert.equal(searchRes.ok, true);
+    assert.ok(Array.isArray(searchRes.data));
+
+    // 2. rm+ 快捷记交往
+    const recordRes = await api.executeCommand!("rm+", ["甲", "电话讨论技术方案"]);
+    assert.equal(recordRes.ok, true);
+    assert.equal((recordRes.data as any).name, "甲");
+    assert.equal((recordRes.data as any).recorded, true);
+
+    // 3. 缺少人名报错
+    const failRes = await api.executeCommand!("rm+", []);
+    assert.equal(failRes.ok, false);
+    assert.equal(failRes.message, "请输入联系人姓名");
+});
+

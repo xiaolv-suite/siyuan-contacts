@@ -69,3 +69,55 @@ test("组织资料保存使用打开时快照，拒绝覆盖其他窗口的新�
     const latest = JSON.parse(JSON.stringify(stored)) as { profiles: Record<string, { description: string }> };
     assert.equal(latest.profiles[docId].description, external.description);
 });
+
+test("思源文档深度联动 P2：buildOrganizationDossierMarkdown 生成组织全要素受控文档与在职/离职成员双链", async () => {
+    const { buildOrganizationDossierMarkdown } = await import("../src/domain/org-dossier.ts");
+
+    const md = buildOrganizationDossierMarkdown({
+        name: "远山科技有限公司",
+        shortName: "远山科技",
+        description: "专注本地优先企业协同软件",
+        qccUrl: "https://www.qcc.com/firm/yuanshan.html",
+        isArchived: false,
+        departments: [
+            {
+                id: "dept-1",
+                name: "研发中心",
+                children: [
+                    { id: "dept-1-1", name: "架构组" },
+                ],
+            },
+            { id: "dept-2", name: "产品部" },
+        ],
+        members: [
+            {
+                personDocId: "20261001000000-p001",
+                name: "王浩然",
+                department: "研发中心",
+                title: "架构师",
+                status: "active",
+                startYearMonth: "2023-05",
+            },
+            {
+                personDocId: "20261002000000-p002",
+                name: "陈明",
+                department: "研发中心",
+                title: "工程师",
+                status: "former",
+                startYearMonth: "2021-03",
+                endYearMonth: "2023-04",
+            },
+        ],
+    });
+
+    assert.ok(md.includes("## 🏢 机构档案概览"));
+    assert.ok(md.includes("- **简称 / 状态**：远山科技 · 活跃"));
+    assert.ok(md.includes("- **机构简介**：专注本地优先企业协同软件"));
+    assert.ok(md.includes("- **外部链接**：[企业信息档案](https://www.qcc.com/firm/yuanshan.html)"));
+    assert.ok(md.includes("- **部门架构**：\n  - 研发中心\n    - 架构组\n  - 产品部"));
+    assert.ok(md.includes("## 👥 关联人脉名录"));
+    assert.ok(md.includes("- **在职 / 当前成员（1）**："));
+    assert.ok(md.includes("- ((20261001000000-p001 '王浩然')) · 研发中心 · 架构师 · 2023-05 ~ 至今"), "在职成员必须生成思源原生块引用双链与履历信息");
+    assert.ok(md.includes("- **历史成员 / 前同事校友（1）**："));
+    assert.ok(md.includes("- ((20261002000000-p002 '陈明')) · 研发中心 · 工程师 · 2021-03 ~ 2023-04 · 已离职"), "离职成员必须生成思源原生块引用双链与历史任期");
+});

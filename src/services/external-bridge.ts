@@ -68,6 +68,7 @@ export interface LvContactsBridgeApi {
     recordInteraction(personDocIds: readonly string[], meta?: BridgeInteractionMeta): Promise<BridgeInteractionResult>;
     appendFact(personDocId: string, input: import("../domain/external-bridge").BridgeFactInput): Promise<import("../domain/doc-section").PersonFactItem>;
     getFacts(personDocId: string): Promise<import("../domain/doc-section").PersonFactItem[]>;
+    executeCommand?(command: string, args?: string[]): Promise<import("../libs/ecosystem-bridge-kit").ActionResult<unknown>>;
 }
 
 function anchors(settings: ContactsSettings): BridgeAnchors {
@@ -136,7 +137,8 @@ export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBri
         }
     };
 
-    return Object.freeze({
+    let api: LvContactsBridgeApi;
+    api = {
         protocol: BRIDGE_PROTOCOL,
         apiVersion: 1,
         version: bridgeVersion(deps),
@@ -401,7 +403,29 @@ export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBri
             if (!deps.loadFacts) return [];
             return deps.loadFacts(personDocId);
         },
-    });
+        executeCommand: async (command: string, args: string[] = []): Promise<import("../libs/ecosystem-bridge-kit").ActionResult<unknown>> => {
+            const cmd = command.trim().toLowerCase();
+            const settings = settingsFor("searchPeople");
+            if (cmd === "rm" || cmd === "rm:search") {
+                const keyword = args.join(" ").trim();
+                const people = await deps.search(settings, keyword);
+                return { ok: true, data: people };
+            }
+            if (cmd === "rm+" || cmd === "rm:record") {
+                const name = args[0]?.trim();
+                const note = args.slice(1).join(" ").trim();
+                if (!name) return { ok: false, message: "请输入联系人姓名" };
+                const ensured = await api.ensurePerson(name, { ref: `quickgate:${Date.now()}` });
+                if (ensured.docId) {
+                    await api.recordInteraction([ensured.docId], { note: note || "通过小驴快门记录互动", ref: `quickgate-record:${Date.now()}` });
+                    return { ok: true, data: { docId: ensured.docId, name: ensured.name, recorded: true } };
+                }
+                return { ok: false, message: "未定位到联系人文档" };
+            }
+            return { ok: false, message: `未知人脉指令：${command}` };
+        },
+    };
+    return Object.freeze(api);
 }
 
 export function mountBridgeAliases(

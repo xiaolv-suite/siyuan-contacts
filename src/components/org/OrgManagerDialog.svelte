@@ -159,9 +159,18 @@
         const orgName = currentOrg?.name ?? "";
         const rows = targetMembers.map((m) => toMemberExportRow(m, orgName));
         const tsv = buildOrganizationMemberTsv(rows, { includeBom: false });
-        await copyPlainText(tsv);
-        batchActionMessage = `已复制选中的 ${targetMembers.length} 位成员记录（TSV）`;
-        setTimeout(() => { if (alive) batchActionMessage = ""; }, 2500);
+        batchActionError = "";
+        batchActionMessage = "";
+        try {
+            await copyPlainText(tsv);
+            if (!alive) return;
+            batchActionMessage = `已复制选中的 ${targetMembers.length} 位成员记录（TSV）`;
+            setTimeout(() => { if (alive) batchActionMessage = ""; }, 2500);
+        } catch (err) {
+            if (!alive) return;
+            batchActionError = `复制 TSV 失败：${requestErrorMessage(err)}`;
+            setTimeout(() => { if (alive) batchActionError = ""; }, 2500);
+        }
     }
     let memberLoading = $state(false);
     let memberError = $state("");

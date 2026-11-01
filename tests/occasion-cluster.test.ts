@@ -331,3 +331,29 @@ test("E-30 occasion 服务层：createOccasion 自动派生互动事件，delete
         /创建群体活动失败/,
     );
 });
+
+test("FEAT-01: buildOccasionMemoMarkdown 生成带参会人员思源原生块引用双链的纪要文档", async () => {
+    const { buildOccasionMemoMarkdown } = await import("../src/domain/occasion-cluster.ts");
+
+    const occasion: OccasionEntity = {
+        id: "20261028000000-occ001",
+        title: "2026 Q4 产品架构研讨会",
+        type: "meeting",
+        date: "2026-10-28",
+        place: "南京国际博览中心 302 会议室",
+        attendees: [
+            { personDocId: "20261001000000-host01", name: "张三", role: "host" },
+            { personDocId: "20261002000000-guest01", name: "李四", role: "guest" },
+        ],
+        note: "研讨了本地优先数据治理与双链拓扑方案。",
+        createdAt: Date.now(),
+    };
+
+    const memoMd = buildOccasionMemoMarkdown(occasion);
+    assert.ok(memoMd.includes("# 💼 2026 Q4 产品架构研讨会"), "应包含活动标题与类型图标");
+    assert.ok(memoMd.includes("> 📅 **活动日期**：2026-10-28"), "应包含活动日期");
+    assert.ok(memoMd.includes("> 📍 **活动地点**：南京国际博览中心 302 会议室"), "应包含活动地点");
+    assert.ok(memoMd.includes("((20261001000000-host01 '张三')) (发起人)"), "参会人必须生成思源原生块引用并标明角色");
+    assert.ok(memoMd.includes("((20261002000000-guest01 '李四'))"), "参会人必须生成思源原生块引用");
+    assert.ok(memoMd.includes("研讨了本地优先数据治理与双链拓扑方案。"), "应包含纪要内容正文");
+});

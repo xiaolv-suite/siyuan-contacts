@@ -229,6 +229,8 @@
             copyTimer = setTimeout(() => {
                 if (copiedId === item.id) copiedId = "";
             }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制行程 Markdown 失败", err);
         } finally {
             copyingId = null;
         }

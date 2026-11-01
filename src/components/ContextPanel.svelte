@@ -124,13 +124,17 @@
 
     async function handleCopy(val: string, kind: "phone" | "wechat") {
         if (!val) return;
-        await copyPlainText(val);
-        if (kind === "phone") {
-            copiedPhone = true;
-            setTimeout(() => (copiedPhone = false), 1500);
-        } else {
-            copiedWechat = true;
-            setTimeout(() => (copiedWechat = false), 1500);
+        try {
+            await copyPlainText(val);
+            if (kind === "phone") {
+                copiedPhone = true;
+                setTimeout(() => (copiedPhone = false), 1500);
+            } else {
+                copiedWechat = true;
+                setTimeout(() => (copiedWechat = false), 1500);
+            }
+        } catch (err) {
+            console.warn("[LvContacts] 侧栏复制联系方式失败", err);
         }
     }
 

@@ -5,7 +5,7 @@
  */
 import type { ContactSummary } from "./person.ts";
 import type { OrgMembershipStatus } from "./org-membership.ts";
-import { occasionKey, type InteractionEvent } from "./interactions.ts";
+import { occasionKey, type InteractionEvent, toLocalDateKey } from "./interactions.ts";
 import type { PersonOrigin } from "./person-origin.ts";
 
 export interface GraphNode {
@@ -339,6 +339,78 @@ export function parseYearFromId(id: string): number {
     return new Date().getFullYear();
 }
 
+export function parseDateKeyFromId(id: string): string {
+    if (!id || typeof id !== "string") return toLocalDateKey(new Date());
+    const match = id.match(/^(\d{4})(\d{2})(\d{2})/);
+    if (match) {
+        return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+    return toLocalDateKey(new Date());
+}
+
+export function parseMonthKeyFromId(id: string): string {
+    return parseDateKeyFromId(id).slice(0, 7);
+}
+
+export interface DetailedGraphTimeSpan extends GraphTimeSpan {
+    minDateKey: string;
+    maxDateKey: string;
+    months: string[]; // YYYY-MM
+    days: string[]; // YYYY-MM-DD
+}
+
+/**
+ * 提取图谱节点涵盖的精细时间跨度（年、月、日序列）
+ */
+export function extractDetailedGraphTimeSpan(
+    graph: PersonGraph,
+): DetailedGraphTimeSpan {
+    const base = extractGraphTimeSpan(graph);
+    const today = toLocalDateKey(new Date());
+    if (graph.nodes.length === 0) {
+        return {
+            ...base,
+            minDateKey: today,
+            maxDateKey: today,
+            months: [today.slice(0, 7)],
+            days: [today],
+        };
+    }
+
+    let minDate = "9999-99-99";
+    let maxDate = "0000-00-00";
+
+    for (const node of graph.nodes) {
+        const d = parseDateKeyFromId(node.id);
+        if (d < minDate) minDate = d;
+        if (d > maxDate) maxDate = d;
+    }
+
+    if (minDate > maxDate) {
+        minDate = `${base.minYear}-01-01`;
+        maxDate = `${base.maxYear}-12-31`;
+    }
+
+    const months: string[] = [];
+    const [startYear, startMonth] = minDate.split("-").map(Number);
+    const [endYear, endMonth] = maxDate.split("-").map(Number);
+    for (let y = startYear; y <= endYear; y++) {
+        const mStart = y === startYear ? startMonth : 1;
+        const mEnd = y === endYear ? endMonth : 12;
+        for (let m = mStart; m <= mEnd; m++) {
+            months.push(`${y}-${String(m).padStart(2, "0")}`);
+        }
+    }
+
+    return {
+        ...base,
+        minDateKey: minDate,
+        maxDateKey: maxDate,
+        months: months.length > 0 ? months : [`${base.minYear}-01`],
+        days: [minDate, maxDate],
+    };
+}
+
 /**
  * 提取图谱节点涵盖的年份区间。
  * 纯函数：零外部依赖。
@@ -415,6 +487,45 @@ export function filterGraphByMaxYear(
 
     return {
         nodes: recalculatedNodes,
+        edges: validEdges,
+    };
+}
+
+/**
+ * 按精细日期/月份键（如 YYYY-MM 或 YYYY-MM-DD）过滤图谱生长
+ */
+export function filterGraphByMaxDateKey(
+    graph: PersonGraph,
+    maxDateKey: string,
+): PersonGraph {
+    if (graph.nodes.length === 0 || !maxDateKey) return graph;
+    const maxPrefix = maxDateKey.replace(/-/g, "");
+
+    const validNodes = graph.nodes.filter((node) => {
+        const prefix = node.id.replace(/-/g, "").slice(0, maxPrefix.length);
+        if (/^\d+$/.test(prefix)) {
+            return prefix <= maxPrefix;
+        }
+        return true;
+    });
+
+    const validNodeIdSet = new Set(validNodes.map((n) => n.id));
+    const validEdges = graph.edges.filter((edge) => {
+        if (!validNodeIdSet.has(edge.source) || !validNodeIdSet.has(edge.target)) return false;
+        const srcPrefix = edge.source.replace(/-/g, "").slice(0, maxPrefix.length);
+        const tgtPrefix = edge.target.replace(/-/g, "").slice(0, maxPrefix.length);
+        return (/^\d+$/.test(srcPrefix) ? srcPrefix <= maxPrefix : true)
+            && (/^\d+$/.test(tgtPrefix) ? tgtPrefix <= maxPrefix : true);
+    });
+
+    const degreeMap = new Map<string, number>();
+    for (const edge of validEdges) {
+        degreeMap.set(edge.source, (degreeMap.get(edge.source) ?? 0) + 1);
+        degreeMap.set(edge.target, (degreeMap.get(edge.target) ?? 0) + 1);
+    }
+
+    return {
+        nodes: validNodes.map((n) => ({ ...n, degree: degreeMap.get(n.id) ?? 0 })),
         edges: validEdges,
     };
 }

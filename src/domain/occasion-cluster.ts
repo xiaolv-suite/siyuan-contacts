@@ -368,3 +368,40 @@ export function filterOccasions(
         return matchTitle || matchPlace || matchAttendee || matchNote;
     });
 }
+
+/**
+ * 组装群体活动纪要文档 Markdown（思源原生深度联动 P2 / FEAT-01）
+ * 包含原生块引用参会人员名单、活动类型徽标、时间地点与纪要正文
+ */
+export function buildOccasionMemoMarkdown(occasion: OccasionEntity): string {
+    const typeMeta = OCCASION_TYPE_LABELS[occasion.type] || OCCASION_TYPE_LABELS.other;
+    const lines = [
+        `# ${typeMeta.icon} ${occasion.title}`,
+        "",
+        `> 📅 **活动日期**：${occasion.date}${occasion.endDate && occasion.endDate !== occasion.date ? ` ~ ${occasion.endDate}` : ""}`,
+    ];
+
+    if (occasion.place && occasion.place.trim()) {
+        lines.push(`> 📍 **活动地点**：${occasion.place.trim()}`);
+    }
+
+    if (occasion.attendees && occasion.attendees.length > 0) {
+        const attendeeRefs = occasion.attendees.map((a) => {
+            const roleTag = a.role === "host" ? " (发起人)" : a.role === "organizer" ? " (组织者)" : "";
+            const cleanName = (a.name || "").replace(/['\[\]]/g, "").trim();
+            return `((${a.personDocId} '${cleanName}'))${roleTag}`;
+        });
+        lines.push(`> 👥 **参会人员（${occasion.attendees.length}人）**：${attendeeRefs.join("、")}`);
+    }
+
+    lines.push("");
+    lines.push("## 📝 活动纪要与备忘");
+    lines.push("");
+    if (occasion.note && occasion.note.trim()) {
+        lines.push(occasion.note.trim());
+    } else {
+        lines.push("*（在此处记录本次活动讨论要点、聚会随笔或后续待办）*");
+    }
+
+    return lines.join("\n");
+}

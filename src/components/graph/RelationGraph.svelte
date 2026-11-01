@@ -12,12 +12,14 @@
     import LvctDialog from "../LvctDialog.svelte";
     import NetworkHubsModal from "./NetworkHubsModal.svelte";
     import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
-    import { GRAPH_MAX_NODES, filterGraphEdges, extractGraphTimeSpan, filterGraphByMaxYear, type GraphTimeSpan } from "../../domain/graph";
+    import { GRAPH_MAX_NODES, filterGraphEdges, filterGraphByMaxYear, extractDetailedGraphTimeSpan, filterGraphByMaxDateKey, type DetailedGraphTimeSpan } from "../../domain/graph";
     import { buildGraphQuerySnapshot, graphEdgeLabel } from "../../domain/graph-query";
     import type { GraphSources, GraphQuery, GraphReferenceSource, GraphScope } from "../../domain/graph-query";
     import type { GraphNode } from "../../domain/graph";
     import { DEFAULT_VIEW_PREFERENCES, type GraphViewMode, type ViewPreferences } from "../../domain/preferences";
     import { renderGraphSnapshotMarkdown } from "../../domain/graph-export";
+    import { exportCytoscapeSvg, exportCytoscapePng } from "../../domain/graph-image-export";
+    import { toLocalDateKey } from "../../domain/interactions";
     import { translateText } from "../../domain/translation";
     import type { ContactsSettings } from "../../domain/model";
     import type { ContactSummary } from "../../domain/person";
@@ -28,6 +30,7 @@
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { addRelation } from "../../services/relations";
     import { emitDataChanged } from "../../libs/data-events";
+    import { pushFlashcardSafely } from "../../libs/ecosystem-bridge-kit";
 
     let {
         settings,
@@ -129,6 +132,7 @@
     let debouncedSearchText: string = $state("");
     let searchTimer: ReturnType<typeof setTimeout> | null = null;
     let groupFilter: string = $state("");
+    let tagFilter: string = $state("");
     let isolatedOnly = $state(false);
     let relationDepth: "direct" | "second" = $state("direct");
     let graphInstance: cytoscape.Core | null = $state.raw(null);
@@ -228,25 +232,43 @@
         }
     }
 
-    function makeDrawerFlashcard(fact: import("../../domain/doc-section").PersonFactItem) {
+    async function makeDrawerFlashcard(fact: import("../../domain/doc-section").PersonFactItem) {
         if (!drawerPerson) return;
         const catLabels: Record<string, string> = { quote: "观点", preference: "喜好/忌口", background: "背景经历", fact: "关键事实" };
         const catLabel = catLabels[fact.category] || "社交备忘";
-        const text = `Q: [人脉常识] ${drawerPerson.name} 的【${catLabel}】是什么？\nA: ${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
-        void copyPlainText(text);
-        drawerFlashcardToastId = fact.id;
-        if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
-        drawerFlashcardToastTimer = setTimeout(() => { drawerFlashcardToastId = ""; }, 1800);
+        const front = `[人脉常识] ${drawerPerson.name} 的【${catLabel}】是什么？`;
+        const back = `${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
+        try {
+            const pushed = await pushFlashcardSafely({
+                front,
+                back,
+                deckName: "人脉常识",
+                tags: ["人脉常识", drawerPerson.name],
+                sourceDocId: drawerPerson.docId,
+            });
+            if (!pushed) {
+                await copyPlainText(`Q: ${front}\nA: ${back}`);
+            }
+            drawerFlashcardToastId = fact.id;
+            if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
+            drawerFlashcardToastTimer = setTimeout(() => { drawerFlashcardToastId = ""; }, 1800);
+        } catch (err) {
+            console.warn("[LvContacts] 图谱抽屉制作闪卡失败", err);
+        }
     }
 
-    function copyField(textToCopy: string | undefined, fieldName: string) {
+    async function copyField(textToCopy: string | undefined, fieldName: string) {
         if (!textToCopy) return;
-        void copyPlainText(textToCopy);
-        copyToast = fieldName;
-        if (copyToastTimer) clearTimeout(copyToastTimer);
-        copyToastTimer = setTimeout(() => {
-            copyToast = "";
-        }, 1800);
+        try {
+            await copyPlainText(textToCopy);
+            copyToast = fieldName;
+            if (copyToastTimer) clearTimeout(copyToastTimer);
+            copyToastTimer = setTimeout(() => {
+                copyToast = "";
+            }, 1800);
+        } catch (err) {
+            console.warn("[LvContacts] 图谱抽屉复制字段失败", err);
+        }
     }
 
     function closeDrawer() {
@@ -287,6 +309,7 @@
     ] as const;
 
     const groups = $derived.by(() => [...new Set(snapshot.people.map((person) => person.group).filter(Boolean))].sort());
+    const allTags = $derived.by(() => [...new Set(snapshot.people.flatMap((person) => person.tags))].filter(Boolean).sort());
     /* B03 可搜索选人器：图内节点 → 候选项（带分组提示与联系方式关键词） */
     const graphPickerItems = $derived.by((): PickerItem[] => snapshot.people.map((person) => {
         return {
@@ -301,9 +324,9 @@
     /* B14.8 按组织收窄：选中组织后画布人物=该组织成员（成员边来自组织覆盖层） */
     const query: GraphQuery = $derived({ mode: graphMode, scope: graphMode === "native" ? nativeScope : relationScope,
         centerDocId: graphMode === "native" ? nativeCenterDocId : relationCenterDocId, orgDocId: orgNarrowId,
-        search: debouncedSearchText, group: groupFilter, isolatedOnly, showOrgs, depth: relationDepth, focusId, compareId, queryMode });
+        search: debouncedSearchText, group: groupFilter, tag: tagFilter, isolatedOnly, showOrgs, depth: relationDepth, focusId, compareId, queryMode });
     const activeFilterCount = $derived(Number(Boolean(orgNarrowId)) + Number(query.scope !== "global")
-        + (graphMode === "relations" ? Number(Boolean(groupFilter)) + Number(isolatedOnly) + Number(!showOrgs) : 0)
+        + (graphMode === "relations" ? Number(Boolean(groupFilter)) + Number(Boolean(tagFilter)) + Number(isolatedOnly) + Number(!showOrgs) : 0)
         + hiddenEdgeKinds.size);
     const snapshot = $derived(buildGraphQuerySnapshot(sources, query, references));
     // G-12：节点与联系人预建 Map 索引，避免在渲染、hover、点击与路径导出时频繁对全量数组做 .find 扫描
@@ -314,17 +337,52 @@
     const displayedOrg = $derived(hoveredPerson ? undefined : hoveredOrg ?? (selectedOrgId && nodeById.get(selectedOrgId)?.kind === "org" ? nodeById.get(selectedOrgId) : undefined));
 
     let timelineEnabled = $state(false);
+    let timelineGranularity = $state<"year" | "month" | "day">("year");
     let selectedYear = $state<number | null>(null);
+    let selectedMonthIndex = $state<number | null>(null);
+    let selectedDayIndex = $state<number | null>(null);
+    let dayStep = $state(7);
     let isPlayingTimeline = $state(false);
     let timelinePlayTimer: ReturnType<typeof setInterval> | null = null;
 
-    const timeSpan = $derived.by<GraphTimeSpan>(() => extractGraphTimeSpan(snapshot.graph));
+    const detailedTimeSpan = $derived.by<DetailedGraphTimeSpan>(() => extractDetailedGraphTimeSpan(snapshot.graph));
+    const timeSpan = $derived(detailedTimeSpan);
     const activeYear = $derived(selectedYear ?? timeSpan.maxYear);
+    const activeMonthKey = $derived.by(() => {
+        if (!detailedTimeSpan.months.length) return "";
+        const idx = selectedMonthIndex ?? (detailedTimeSpan.months.length - 1);
+        return detailedTimeSpan.months[Math.min(idx, detailedTimeSpan.months.length - 1)] || "";
+    });
+    const totalDays = $derived.by(() => {
+        const d1 = new Date(detailedTimeSpan.minDateKey).getTime();
+        const d2 = new Date(detailedTimeSpan.maxDateKey).getTime();
+        if (Number.isNaN(d1) || Number.isNaN(d2) || d2 <= d1) return 1;
+        return Math.max(1, Math.round((d2 - d1) / 86400000));
+    });
+    const activeDayKey = $derived.by(() => {
+        const d1 = new Date(detailedTimeSpan.minDateKey).getTime();
+        if (Number.isNaN(d1)) return detailedTimeSpan.maxDateKey;
+        const offset = selectedDayIndex ?? totalDays;
+        const cur = new Date(d1 + offset * 86400000);
+        return toLocalDateKey(cur);
+    });
 
     const timeFilteredGraph = $derived.by(() => {
         const base = filterGraphEdges(snapshot.graph, hiddenEdgeKinds);
-        if (!timelineEnabled || selectedYear === null) return base;
-        return filterGraphByMaxYear(base, selectedYear);
+        if (!timelineEnabled) return base;
+        if (timelineGranularity === "year") {
+            if (selectedYear === null) return base;
+            return filterGraphByMaxYear(base, selectedYear);
+        }
+        if (timelineGranularity === "month") {
+            if (selectedMonthIndex === null) return base;
+            return filterGraphByMaxDateKey(base, activeMonthKey);
+        }
+        if (timelineGranularity === "day") {
+            if (selectedDayIndex === null) return base;
+            return filterGraphByMaxDateKey(base, activeDayKey);
+        }
+        return base;
     });
     const displayGraph = $derived(timeFilteredGraph);
 
@@ -339,17 +397,30 @@
     function playTimeline() {
         if (isPlayingTimeline) return;
         isPlayingTimeline = true;
-        if (activeYear >= timeSpan.maxYear) {
-            selectedYear = timeSpan.minYear;
-        }
         timelinePlayTimer = setInterval(() => {
-            const next = (selectedYear ?? timeSpan.minYear) + 1;
-            if (next > timeSpan.maxYear) {
-                pauseTimeline();
-            } else {
-                selectedYear = next;
+            if (timelineGranularity === "year") {
+                const cur = selectedYear ?? timeSpan.minYear;
+                if (cur >= timeSpan.maxYear) {
+                    pauseTimeline();
+                } else {
+                    selectedYear = cur + 1;
+                }
+            } else if (timelineGranularity === "month") {
+                const cur = selectedMonthIndex ?? 0;
+                if (cur >= detailedTimeSpan.months.length - 1) {
+                    pauseTimeline();
+                } else {
+                    selectedMonthIndex = cur + 1;
+                }
+            } else if (timelineGranularity === "day") {
+                const cur = selectedDayIndex ?? 0;
+                if (cur >= totalDays) {
+                    pauseTimeline();
+                } else {
+                    selectedDayIndex = Math.min(totalDays, cur + dayStep);
+                }
             }
-        }, 1100);
+        }, 800);
     }
 
     function pauseTimeline() {
@@ -363,6 +434,8 @@
     function resetTimeline() {
         pauseTimeline();
         selectedYear = timeSpan.maxYear;
+        selectedMonthIndex = detailedTimeSpan.months.length - 1;
+        selectedDayIndex = totalDays;
     }
     const canvasData = $derived(JSON.stringify(displayGraph));
     const snapshotStatusText = $derived.by(() => loading || nativeLoading
@@ -430,6 +503,41 @@
         resultExportMessage = "结果说明已导出为 Markdown";
     }
 
+    function exportResultSvg() {
+        if (!graphInstance) return;
+        const pad = (value: number) => String(value).padStart(2, "0");
+        const now = new Date();
+        const palette = themeColors();
+        const svg = exportCytoscapeSvg(graphInstance, { bg: palette.surface, title: "小驴人脉关系图谱" });
+        const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        anchor.download = `小驴人脉_关系图谱_${stamp}.svg`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        resultExportMessage = "图谱矢量图已导出为 SVG";
+    }
+
+    function exportResultPng() {
+        if (!graphInstance) return;
+        const pad = (value: number) => String(value).padStart(2, "0");
+        const now = new Date();
+        const palette = themeColors();
+        try {
+            const dataUrl = exportCytoscapePng(graphInstance, { bg: palette.surface, scale: 2 });
+            const anchor = document.createElement("a");
+            anchor.href = dataUrl;
+            const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+            anchor.download = `小驴人脉_关系图谱_${stamp}.png`;
+            anchor.click();
+            resultExportMessage = "图谱高清图已导出为 PNG";
+        } catch (err) {
+            resultExportMessage = `导出 PNG 失败：${requestErrorMessage(err)}`;
+        }
+    }
+
     onDestroy(() => {
         alive = false;
         refreshVersion += 1;
@@ -486,21 +594,32 @@
         const canHighlight = graphMode === "relations" && (snapshot.result.status === "ready" || snapshot.result.status === "no_path");
         if (!instance || instance.destroyed()) return;
         instance.batch(() => {
-            instance.elements().removeClass("lvct-graph-muted lvct-graph-focus");
+            instance.elements().removeClass("lvct-graph-muted lvct-graph-focus lvct-graph-path-highlight");
             if (!selected || !canHighlight) return;
             const visible = new Set([selected, other, ...hits, ...bridges]);
             const hitIds = new Set(hits);
             const bridgeIds = new Set(bridges);
             const nextOnPath = new Map((path ?? []).slice(0, -1).map((id, index) => [id, path![index + 1]]));
+            const pathEles = path && path.length > 0 ? instance.collection() : null;
+
             instance.nodes().forEach((node) => {
                 if (!visible.has(node.id())) node.addClass("lvct-graph-muted");
                 if (node.id() === selected || node.id() === other) node.addClass("lvct-graph-focus");
+                if (path && path.includes(node.id())) {
+                    node.addClass("lvct-graph-path-highlight");
+                    pathEles?.merge(node);
+                }
             });
             instance.edges().forEach((edge) => {
                 const source = edge.source().id();
                 const target = edge.target().id();
+                const isPathEdge = path !== null && (nextOnPath.get(source) === target || nextOnPath.get(target) === source);
+                if (isPathEdge) {
+                    edge.addClass("lvct-graph-path-highlight");
+                    pathEles?.merge(edge);
+                }
                 const connectsHit = edge.data("kind") === "related" && (path !== null
-                    ? nextOnPath.get(source) === target || nextOnPath.get(target) === source
+                    ? isPathEdge
                     : expandSecond
                     ? (source === selected && bridgeIds.has(target)) || (target === selected && bridgeIds.has(source))
                         || (bridgeIds.has(source) && hitIds.has(target)) || (bridgeIds.has(target) && hitIds.has(source))
@@ -508,6 +627,14 @@
                         || (hitIds.has(target) && (source === selected || source === other)));
                 if (!connectsHit) edge.addClass("lvct-graph-muted");
             });
+
+            if (pathEles && pathEles.length > 0) {
+                instance.animate({
+                    fit: { eles: pathEles, padding: 60 },
+                    duration: 350,
+                    easing: "ease-out-cubic",
+                });
+            }
         });
     });
 
@@ -868,6 +995,18 @@
         changeLayout(activeLayout);
     }
 
+    function highlightNeighbors(node: any) {
+        if (!graphInstance || graphInstance.destroyed()) return;
+        const neighborhood = node.neighborhood().add(node);
+        graphInstance.elements().addClass("lvct-graph-dimmed");
+        neighborhood.removeClass("lvct-graph-dimmed").addClass("lvct-graph-neighbor-focus");
+    }
+
+    function clearNeighborHighlight() {
+        if (!graphInstance || graphInstance.destroyed()) return;
+        graphInstance.elements().removeClass("lvct-graph-dimmed lvct-graph-neighbor-focus");
+    }
+
     function clearHover() {
         if (hoverTimer) clearTimeout(hoverTimer);
         if (clearHoverTimer) clearTimeout(clearHoverTimer);
@@ -879,6 +1018,7 @@
         hoverInsightsLoading = false;
         hoverInsightsError = false;
         hoverInsightsVersion += 1;
+        clearNeighborHighlight();
     }
 
     function scheduleClearHover() {
@@ -889,6 +1029,7 @@
             hoveredPerson = null;
             hoveredOrg = null;
             clearHoverTimer = undefined;
+            clearNeighborHighlight();
         }, 220);
     }
 
@@ -912,6 +1053,7 @@
     });
 
     function scheduleHover(event: cytoscape.EventObject) {
+        highlightNeighbors(event.target);
         const docId = event.target.id();
         const person = allPeopleByDocId.get(docId);
         if (!person) {
@@ -1002,15 +1144,21 @@
             ],
             // 同步完成布局，避免筛选/切页销毁画布后动画帧继续访问 renderer。
             // 大规模节点（>150）下自适应适度收缩迭代步数与斥力半径，实现秒级收敛并杜绝卡顿。
-            layout: {
-                name: "cose",
-                animate: false,
-                padding: 30,
-                nodeDimensionsIncludeLabels: true,
-                numIter: nodeCount > 200 ? 500 : 1000,
-                nodeRepulsion: nodeCount > 200 ? 2500 : 4096,
-                idealEdgeLength: nodeCount > 200 ? 60 : 80,
-            },
+            layout: activeLayout === "concentric"
+                ? { name: "concentric", animate: false, padding: 40, concentric: (n: any) => n.degree(), levelWidth: () => 2 }
+                : activeLayout === "breadthfirst"
+                ? { name: "breadthfirst", animate: false, padding: 40, directed: false, circle: false, spacingFactor: 1.3 }
+                : activeLayout === "circle"
+                ? { name: "circle", animate: false, padding: 40 }
+                : {
+                    name: "cose",
+                    animate: false,
+                    padding: 30,
+                    nodeDimensionsIncludeLabels: true,
+                    numIter: nodeCount > 200 ? 500 : 1000,
+                    nodeRepulsion: nodeCount > 200 ? 2500 : 4096,
+                    idealEdgeLength: nodeCount > 200 ? 60 : 80,
+                },
             style: [
                 {
                     selector: "node",
@@ -1088,7 +1236,12 @@
                     },
                 },
                 { selector: ".lvct-graph-muted", style: { opacity: 0.18 } },
+                { selector: ".lvct-graph-dimmed", style: { opacity: 0.15 } },
                 { selector: ".lvct-graph-focus", style: { "border-color": "data(themeFocus)", "border-width": 4 } },
+                { selector: "node.lvct-graph-neighbor-focus", style: { "border-width": 3, "border-color": palette.focus, "underlay-opacity": 0.28 } },
+                { selector: "edge.lvct-graph-neighbor-focus", style: { width: 3.5, "line-color": palette.focus, opacity: 1, "z-index": 5 } },
+                { selector: "node.lvct-graph-path-highlight", style: { "border-color": "#ea580c", "border-width": 4, "underlay-color": "#ea580c", "underlay-opacity": 0.35, "underlay-padding": 8, "z-index": 20 } },
+                { selector: "edge.lvct-graph-path-highlight", style: { "line-color": "#ea580c", width: 4.5, "target-arrow-color": "#ea580c", opacity: 1, "z-index": 20 } },
                 /* B14.6：组织节点方形、成员边虚线——与 related 边视觉分源 */
                 { selector: 'node[kind = "org"]', style: { shape: "round-rectangle" } },
                 { selector: 'edge[kind = "member"]', style: { "line-style": "dashed" } },
@@ -1739,7 +1892,15 @@
             </div>
             <button class="b3-button b3-button--outline" onclick={exportResultMarkdown}
                 disabled={loading || nativeLoading}
-                title={loading || nativeLoading ? text("graphExportDisabled", "图谱仍在加载，核实完成后才能导出") : undefined}>{text("graphSnapshotExport", "导出当前快照")}</button>
+                title={loading || nativeLoading ? text("graphExportDisabled", "图谱仍在加载，核实完成后才能导出") : undefined}>{text("graphSnapshotExport", "导出 Markdown")}</button>
+            {#if presentation === "canvas"}
+                <button class="b3-button b3-button--outline" onclick={exportResultSvg}
+                    disabled={loading || nativeLoading || !graphInstance}
+                    title="导出当前关系图谱为矢量 SVG 图形文件">导出 SVG</button>
+                <button class="b3-button b3-button--outline" onclick={exportResultPng}
+                    disabled={loading || nativeLoading || !graphInstance}
+                    title="导出当前关系图谱为高分辨率 PNG 图片">导出 PNG</button>
+            {/if}
         </div>
         <details class="lvct-graph-advanced" bind:open={graphFiltersOpen}>
             <summary>{text("graphFiltersSummary", "范围、分组与图例")}{#if activeFilterCount} · {activeFilterCount} 项条件{/if}</summary>
@@ -1810,6 +1971,14 @@
                             <option value={group}>{group}</option>
                         {/each}
                     </select>
+                    {#if allTags.length > 0}
+                        <select class="b3-select" bind:value={tagFilter} aria-label={text("graphFilterByTag", "按标签过滤")}>
+                            <option value="">{text("graphAllTags", "全部标签")}</option>
+                            {#each allTags as tag (tag)}
+                                <option value={tag}>#{tag}</option>
+                            {/each}
+                        </select>
+                    {/if}
                     <label class="lvct-graph-isolated"><input type="checkbox" bind:checked={isolatedOnly} />{text("graphIsolatedOnly", "仅无关系人物（{n}）", { n: snapshot.counts.isolatedPeople })}</label>
                     <label class="lvct-graph-isolated"><input type="checkbox" bind:checked={showOrgs} />{text("graphShowOrgs", "显示组织（{n}）", { n: orgOverlay?.nodes.length ?? 0 })}</label>
                 </div>
@@ -1935,42 +2104,121 @@
                         {/if}
                     </button>
 
-                    <div class="lvct-graph-timeline-slider-wrap fn__flex">
-                        <span class="ft__smaller ft__on-surface">{timeSpan.minYear}</span>
-                        <input
-                            type="range"
-                            class="b3-slider lvct-graph-timeline-slider"
-                            min={timeSpan.minYear}
-                            max={timeSpan.maxYear}
-                            step="1"
-                            value={activeYear}
-                            oninput={(e) => {
-                                pauseTimeline();
-                                selectedYear = Number((e.currentTarget as HTMLInputElement).value);
-                            }}
-                        />
-                        <span class="ft__smaller ft__on-surface">{timeSpan.maxYear}</span>
-                    </div>
-
-                    <div class="lvct-graph-timeline-info fn__flex">
-                        <span class="b3-chip b3-chip--primary font-size-11">
-                            <b>{activeYear} 年</b>
-                        </span>
-                        <span class="ft__smaller ft__on-surface">
-                            {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
-                        </span>
-                    </div>
-
-                    {#if activeYear < timeSpan.maxYear}
+                    <!-- 时间粒度切换：按年 / 按月 / 按天 -->
+                    <div class="lvct-seg" style="flex-shrink: 0;" role="group" aria-label="时间粒度">
                         <button
                             type="button"
-                            class="b3-button b3-button--small b3-button--text lvct-graph-timeline-reset"
-                            onclick={resetTimeline}
-                            title={text("graphTimelineReset", "查看全部年份完整图谱")}
-                        >
-                            <RotateCcw size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("graphTimelineAll", "全部")}
-                        </button>
+                            class="lvct-seg__item"
+                            class:lvct-seg__item--active={timelineGranularity === "year"}
+                            onclick={() => { pauseTimeline(); timelineGranularity = "year"; }}
+                        >年</button>
+                        <button
+                            type="button"
+                            class="lvct-seg__item"
+                            class:lvct-seg__item--active={timelineGranularity === "month"}
+                            onclick={() => { pauseTimeline(); timelineGranularity = "month"; }}
+                        >月</button>
+                        <button
+                            type="button"
+                            class="lvct-seg__item"
+                            class:lvct-seg__item--active={timelineGranularity === "day"}
+                            onclick={() => { pauseTimeline(); timelineGranularity = "day"; }}
+                        >天</button>
+                    </div>
+
+                    {#if timelineGranularity === "year"}
+                        <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                            <span class="ft__smaller ft__on-surface">{timeSpan.minYear}</span>
+                            <input
+                                type="range"
+                                class="b3-slider lvct-graph-timeline-slider"
+                                min={timeSpan.minYear}
+                                max={timeSpan.maxYear}
+                                step="1"
+                                value={activeYear}
+                                oninput={(e) => {
+                                    pauseTimeline();
+                                    selectedYear = Number((e.currentTarget as HTMLInputElement).value);
+                                }}
+                            />
+                            <span class="ft__smaller ft__on-surface">{timeSpan.maxYear}</span>
+                        </div>
+
+                        <div class="lvct-graph-timeline-info fn__flex">
+                            <span class="b3-chip b3-chip--primary font-size-11">
+                                <b>{activeYear} 年</b>
+                            </span>
+                            <span class="ft__smaller ft__on-surface">
+                                {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                            </span>
+                        </div>
+                    {:else if timelineGranularity === "month"}
+                        <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.months[0]}</span>
+                            <input
+                                type="range"
+                                class="b3-slider lvct-graph-timeline-slider"
+                                min="0"
+                                max={detailedTimeSpan.months.length - 1}
+                                step="1"
+                                value={selectedMonthIndex ?? (detailedTimeSpan.months.length - 1)}
+                                oninput={(e) => {
+                                    pauseTimeline();
+                                    selectedMonthIndex = Number((e.currentTarget as HTMLInputElement).value);
+                                }}
+                            />
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.months[detailedTimeSpan.months.length - 1]}</span>
+                        </div>
+
+                        <div class="lvct-graph-timeline-info fn__flex">
+                            <span class="b3-chip b3-chip--primary font-size-11">
+                                <b>{activeMonthKey}</b>
+                            </span>
+                            <span class="ft__smaller ft__on-surface">
+                                {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                            </span>
+                        </div>
+                    {:else}
+                        <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.minDateKey}</span>
+                            <input
+                                type="range"
+                                class="b3-slider lvct-graph-timeline-slider"
+                                min="0"
+                                max={totalDays}
+                                step={dayStep}
+                                value={selectedDayIndex ?? totalDays}
+                                oninput={(e) => {
+                                    pauseTimeline();
+                                    selectedDayIndex = Number((e.currentTarget as HTMLInputElement).value);
+                                }}
+                            />
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.maxDateKey}</span>
+                        </div>
+
+                        <div class="lvct-graph-timeline-info fn__flex" style="gap: 6px;">
+                            <span class="b3-chip b3-chip--primary font-size-11">
+                                <b>{activeDayKey}</b>
+                            </span>
+                            <div style="display: inline-flex; gap: 2px;">
+                                <button type="button" class="b3-chip font-size-10" class:b3-chip--primary={dayStep === 1} onclick={() => (dayStep = 1)}>+1天</button>
+                                <button type="button" class="b3-chip font-size-10" class:b3-chip--primary={dayStep === 7} onclick={() => (dayStep = 7)}>+7天</button>
+                                <button type="button" class="b3-chip font-size-10" class:b3-chip--primary={dayStep === 30} onclick={() => (dayStep = 30)}>+30天</button>
+                            </div>
+                            <span class="ft__smaller ft__on-surface">
+                                {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                            </span>
+                        </div>
                     {/if}
+
+                    <button
+                        type="button"
+                        class="b3-button b3-button--small b3-button--text lvct-graph-timeline-reset"
+                        onclick={resetTimeline}
+                        title={text("graphTimelineReset", "查看全部时间完整图谱")}
+                    >
+                        <RotateCcw size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("graphTimelineAll", "全部")}
+                    </button>
                 </div>
             {/if}
             <!-- UX-02.13 视图操作收进画布右下角浮动簇（地图应用范式），工具栏只留筛选 -->
@@ -2179,6 +2427,10 @@
                         </div>
                     {/if}
                     <button class="b3-button b3-button--text" onclick={openHoveredPerson}>{text("graphOpenDetail", "查看人物详情")}</button>
+                    <div style="display: flex; gap: 4px; margin: 2px 0;">
+                        <button type="button" class="b3-chip font-size-11" onclick={() => { const p = hoveredPerson; clearHover(); if (p) openSnapshotPerson(p, "activity"); }} title="直达交往互动时间流并记录">⚡ 记互动</button>
+                        <button type="button" class="b3-chip font-size-11" onclick={() => { const docId = hoveredPerson?.docId; clearHover(); if (docId) { focusId = docId; compareId = ""; } }} title="将该节点设为关系分析中心">🎯 设为中心</button>
+                    </div>
                     <button class="b3-button b3-button--text" onclick={() => { if (hoveredPerson) onOpenPeople({ itemIds: [hoveredPerson.itemId], label: `图谱定位 · ${hoveredPerson.name}` }); }}>{text("graphFocusInPeople", "在名册中定位")}</button>
                     {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === hoveredPerson.docId} onclick={() => { if (hoveredPerson) void openSourceDocument(hoveredPerson.docId); }}>{sourceOpeningDocId === hoveredPerson.docId ? "正在打开…" : "打开来源文档"}</button>{/if}
                 </div>
@@ -2363,6 +2615,14 @@
                             title="直达交往互动时间流并记录"
                         >
                             <MessageSquarePlus size={13} class="lvct-icon-inline" /> 记互动
+                        </button>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline lvct-graph-drawer__btn"
+                            onclick={() => { focusId = drawerPerson!.docId; compareId = ""; closeDrawer(); }}
+                            title="将该人物设为关系分析中心"
+                        >
+                            🎯 设为中心
                         </button>
                         {#if facade?.openDoc}
                             <button

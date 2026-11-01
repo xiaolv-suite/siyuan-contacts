@@ -338,12 +338,16 @@ export interface OrgLinkEntry {
     statusLabel?: string;
 }
 
+export interface BuildOrgLinksOptions {
+    useNativeRef?: boolean;
+}
+
 /**
- * 组织归属链接区块文本（纯函数）：`**所属组织**：[名](siyuan://blocks/<id>)（部门 · 职位）、…`。
+ * 组织归属链接区块文本（纯函数）：`**所属组织**：((<id> '名'))（部门 · 职位）、…` 或 `[名](siyuan://blocks/<id>)`。
  * 空条目返回空串（调用方据此移除区块）；部门/职位按存在性拼接，两者皆空不加括注。
  * 组织名含 Markdown 语法字符的显示瑕疵与人物姓名同水位（C-14 通道统一处理，不在此转义）。
  */
-export function buildOrgLinksSection(entries: readonly OrgLinkEntry[]): string {
+export function buildOrgLinksSection(entries: readonly OrgLinkEntry[], options?: BuildOrgLinksOptions): string {
     if (entries.length === 0) return "";
     const links = entries.map((entry) => {
         const classification = entry.affiliationKind === "family" ? "家庭" : entry.affiliationKind === "work" ? "工作单位" : entry.affiliationKind === "education" ? "学校" : "其他组织";
@@ -351,6 +355,9 @@ export function buildOrgLinksSection(entries: readonly OrgLinkEntry[]): string {
         const details = [classification, status, entry.department, entry.title].filter(Boolean);
         const suffix = details.length ? `（${details.join(" · ")}）`
             : "";
+        if (options?.useNativeRef) {
+            return `((${entry.orgDocId} '${escapeLinkLabel(entry.orgName)}'))${suffix}`;
+        }
         return `[${escapeLinkLabel(entry.orgName)}](siyuan://blocks/${entry.orgDocId})${suffix}`;
     });
     return `**所属组织**：${links.join("、")}`;

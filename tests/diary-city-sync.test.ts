@@ -220,3 +220,19 @@ test("buildTripItineraryMarkdown: 生成带任务复选框与人物块引的出�
     assert.ok(md.includes("微信: zhangsan_wx"));
     assert.ok(md.includes("腾讯科技"));
 });
+
+test("思源文档深度联动 P3：Daily Note 互动行支持 custom-lvct-event-id 锚点契约与改删同步", async () => {
+    const { buildDailyNoteInteractionMarkdown } = await import("../src/domain/diary-sync.ts");
+
+    const input = {
+        personDocId: "20261026000000-doc001",
+        personName: "张三",
+        type: "meeting" as const,
+        note: "修改后的深度会面讨论",
+        occurredTimeStr: "15:00",
+    };
+
+    const updatedMd = buildDailyNoteInteractionMarkdown(input);
+    assert.ok(updatedMd.includes("🤝 与 (( 20261026000000-doc001 '张三' )) 见面：修改后的深度会面讨论"));
+    assert.ok(updatedMd.startsWith("- 15:00 🤝"));
+});

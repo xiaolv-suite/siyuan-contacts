@@ -6,7 +6,7 @@
 import type { Plugin } from "siyuan";
 import { flushBlockIndex, readMarkedBlocks, readOrganizationFact, updateBlockMd, upsertMarkedBlock, findBlockIdByCustomAttr, deleteBlock } from "../api/blocks";
 import { querySql, assertSafeBlockId } from "../api/client";
-import { withStoreLock } from "../data/storage";
+import { withStoreLock, saveJsonVerified } from "../data/storage";
 import { loadOrganizationOperations } from "../data/organization-operations";
 import { organizationIalAttributes, organizationOperationComplete } from "../domain/organization-operations";
 import { organizationMarkerStates, organizationsFromDocs } from "../domain/organization-scan";
@@ -21,6 +21,7 @@ import {
     removeOrgMembership,
     updateOrgMembership,
     replaceOrgMembership,
+    ORG_MEMBERSHIP_STORAGE_KEY,
 } from "../data/org-membership";
 import type { OrgMembership, OrgMembershipPatch, OrgMembershipStatusFilter } from "../domain/org-membership";
 import { buildCommonOrgBackground, orgMembershipStatusLabel, pageOrgMemberships, sortOrgMemberships, buildOrgLinksSection } from "../domain/org-membership";
@@ -419,6 +420,31 @@ export async function getOrganizationProfile(plugin: Plugin, docId: string): Pro
     return loadOrganizationProfile(plugin, docId);
 }
 
+/**
+ * FEAT-03 / FUNC-10：组织部门稳定 ID 改名时级联更新该组织下全部关联成员的部门字段
+ */
+export async function cascadeRenameDepartmentMembers(
+    plugin: Plugin,
+    orgDocId: string,
+    renamedMap: Map<string, string>,
+): Promise<number> {
+    if (renamedMap.size === 0) return 0;
+    return withStoreLock(ORG_MEMBERSHIP_STORAGE_KEY, async () => {
+        const store = await loadOrgMembershipStore(plugin);
+        let updatedCount = 0;
+        for (const m of store.memberships) {
+            if (m.orgDocId === orgDocId && renamedMap.has(m.department.trim())) {
+                m.department = renamedMap.get(m.department.trim())!;
+                updatedCount++;
+            }
+        }
+        if (updatedCount > 0) {
+            await saveJsonVerified(plugin, ORG_MEMBERSHIP_STORAGE_KEY, store);
+        }
+        return updatedCount;
+    });
+}
+
 export async function updateOrganizationProfile(
     plugin: Plugin,
     docId: string,
@@ -429,6 +455,24 @@ export async function updateOrganizationProfile(
     if (!organization) throw new Error("组织不存在，资料未保存");
     if (organization.removed) throw new Error("组织已移除，请先恢复组织后再编辑资料");
     if (organization.name.trim() !== profile.name.trim()) throw new Error("组织名称已变化，请先完成组织改名后再保存资料");
+
+    // FEAT-03 部门树改名级联更新成员记录
+    if (expected && expected.departments && profile.departments) {
+        const renamedMap = new Map<string, string>();
+        const oldDeptById = new Map(expected.departments.map((d) => [d.id, d.name]));
+        for (const newDept of profile.departments) {
+            const oldName = oldDeptById.get(newDept.id);
+            if (oldName && oldName.trim() !== newDept.name.trim()) {
+                renamedMap.set(oldName.trim(), newDept.name.trim());
+            }
+        }
+        if (renamedMap.size > 0) {
+            await cascadeRenameDepartmentMembers(plugin, docId, renamedMap).catch((e) => {
+                console.warn("[LvContacts] 部门改名级联更新成员未完成:", e);
+            });
+        }
+    }
+
     return saveOrganizationProfile(plugin, docId, profile, expected);
 }
 

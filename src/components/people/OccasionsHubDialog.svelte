@@ -18,7 +18,11 @@
         Trash2,
         FileText,
         Sparkles,
+        Copy,
+        Check,
     } from "@lucide/svelte";
+    import { copyPlainText } from "../../shared/clipboard";
+    import { buildOccasionMemoMarkdown } from "../../domain/occasion-cluster.ts";
 
     let {
         onListOccasions,
@@ -74,9 +78,27 @@
         void loadData();
     });
 
+    let copiedMemoId = $state<string | null>(null);
+    let copiedMemoTimer: ReturnType<typeof setTimeout> | null = null;
+
     onDestroy(() => {
         alive = false;
+        if (copiedMemoTimer) clearTimeout(copiedMemoTimer);
     });
+
+    async function handleCopyOccasionMemo(occasion: OccasionEntity) {
+        const md = buildOccasionMemoMarkdown(occasion);
+        try {
+            await copyPlainText(md);
+            copiedMemoId = occasion.id;
+            if (copiedMemoTimer) clearTimeout(copiedMemoTimer);
+            copiedMemoTimer = setTimeout(() => {
+                if (alive) copiedMemoId = null;
+            }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制活动纪要失败", err);
+        }
+    }
 
     const filteredOccasions = $derived(
         filterOccasions(occasions, searchQuery, typeFilter)
@@ -300,6 +322,19 @@
                                         <Sparkles size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("highlightInRoster", "名册下钻")}
                                     </button>
                                 {/if}
+
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--outline b3-button--small btn-copy-memo"
+                                    onclick={() => void handleCopyOccasionMemo(occasion)}
+                                    title="复制为思源活动纪要文档 Markdown（包含全体参会人双链）"
+                                >
+                                    {#if copiedMemoId === occasion.id}
+                                        <Check size={12} strokeWidth={1.6} class="lvct-text-success lvct-icon-inline" /> 已复制纪要
+                                    {:else}
+                                        <Copy size={12} strokeWidth={1.6} class="lvct-icon-inline" /> 复制纪要
+                                    {/if}
+                                </button>
                             </div>
                         </div>
                     </div>

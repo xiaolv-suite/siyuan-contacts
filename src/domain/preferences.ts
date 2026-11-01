@@ -126,6 +126,11 @@ function normalizeBrandAvatarText(value: unknown): string {
 /** 表格可选列的展示顺序默认值（常用常驻、次要折叠的排序基础） */
 export const PEOPLE_TABLE_COLUMNS: readonly PeopleTableColumn[] = ["group", "phone", "wechat", "birthday", "recent", "tags", "org", "school", "relationship"];
 
+/** 名册卡片可选字段类型（IDEA-06） */
+export type PersonCardField = "birthday" | "phone" | "wechat" | "email" | "org" | "recent" | "tags" | "region";
+export const PERSON_CARD_FIELDS: readonly PersonCardField[] = ["birthday", "phone", "wechat", "email", "org", "recent", "tags", "region"];
+export const DEFAULT_CARD_FIELDS: readonly PersonCardField[] = ["birthday", "phone", "wechat", "email", "org", "recent", "tags"];
+
 export interface ViewPreferences {
     readonly schemaVersion: number;
     readonly revision: number;
@@ -138,6 +143,8 @@ export interface ViewPreferences {
     readonly peopleView: PeopleViewMode;
     /** 表格可见列（有序）。归一化保证只含可选键、无重复且非空。 */
     readonly tableColumns: PeopleTableColumn[];
+    /** 名册卡片可见字段（IDEA-06）：控制名册卡片展示的辅助字段 */
+    readonly cardFields: readonly PersonCardField[];
     /** 图谱数据源模式（B14.5）：重开工作台仍使用用户选定模式 */
     readonly graphMode: GraphViewMode;
     /** 文档引用图范围（B14.8）：中心语义与 global 入口，重开保留 */
@@ -148,6 +155,8 @@ export interface ViewPreferences {
     readonly savedViews: readonly SavedView[];
     /** 打开工作台时的关注摘要开关（F08） */
     readonly summaryEnabled: boolean;
+    /** 首页今日关注摘要默认折叠偏好（IDEA-05）：true 时默认收起大横幅，留给行动清单更多垂直空间 */
+    readonly dashSummaryDefaultCollapsed: boolean;
     /** 摘要「当日不再展示」标记（YYYY-MM-DD）；空串表示未忽略 */
     readonly summaryDismissedOn: string;
     /** C02 收编宽限期（天）：新收编联系人在此期限内不计入「从未互动」提醒；0 = 关闭 */
@@ -179,11 +188,13 @@ export const DEFAULT_VIEW_PREFERENCES: ViewPreferences = {
     staleThresholdDays: 30,
     peopleView: "card",
     tableColumns: ["group", "phone", "wechat", "birthday", "recent", "tags", "org"],
+    cardFields: [...DEFAULT_CARD_FIELDS],
     graphMode: "relations",
     nativeScope: "self",
     nativeCenterDocId: "",
     savedViews: [],
     summaryEnabled: true,
+    dashSummaryDefaultCollapsed: false,
     summaryDismissedOn: "",
     reminderGraceDays: 14,
     onboardingDismissed: false,
@@ -238,6 +249,21 @@ export function normalizeTableColumns(raw: unknown): PeopleTableColumn[] {
     return result.length > 0 ? result : [...DEFAULT_VIEW_PREFERENCES.tableColumns];
 }
 
+/** 名册卡片展示字段归一化（IDEA-06）：剔除非法与重复键，保留顺序；非法或空时回退默认字段。 */
+export function normalizeCardFields(raw: unknown): readonly PersonCardField[] {
+    if (!Array.isArray(raw)) return [...DEFAULT_CARD_FIELDS];
+    const allowed = new Set(PERSON_CARD_FIELDS);
+    const seen = new Set<string>();
+    const result: PersonCardField[] = [];
+    for (const item of raw) {
+        if (typeof item === "string" && allowed.has(item as PersonCardField) && !seen.has(item)) {
+            seen.add(item);
+            result.push(item as PersonCardField);
+        }
+    }
+    return result.length > 0 ? result : [...DEFAULT_CARD_FIELDS];
+}
+
 export function normalizeViewPreferences(raw: unknown): ViewPreferences {
     if (raw === null || typeof raw !== "object") return DEFAULT_VIEW_PREFERENCES;
     const record = raw as Record<string, unknown>;
@@ -253,6 +279,7 @@ export function normalizeViewPreferences(raw: unknown): ViewPreferences {
         peopleView: isPeopleViewMode(record.peopleView) ? record.peopleView : DEFAULT_VIEW_PREFERENCES.peopleView,
         // 旧偏好缺字段取默认；已有值仍逐键校验
         tableColumns: record.tableColumns === undefined ? [...DEFAULT_VIEW_PREFERENCES.tableColumns] : normalizeTableColumns(record.tableColumns),
+        cardFields: normalizeCardFields(record.cardFields),
         graphMode: isGraphViewMode(record.graphMode) ? record.graphMode : DEFAULT_VIEW_PREFERENCES.graphMode,
         nativeScope: isNativeGraphScope(record.nativeScope) ? record.nativeScope : DEFAULT_VIEW_PREFERENCES.nativeScope,
         // 中心文档 ID 透传字符串；加载侧按名册校验，失效回退本人
@@ -260,6 +287,9 @@ export function normalizeViewPreferences(raw: unknown): ViewPreferences {
         // 旧偏好缺字段取空列表；已有值逐条归一化
         savedViews: record.savedViews === undefined ? [] : normalizeSavedViews(record.savedViews),
         summaryEnabled: typeof record.summaryEnabled === "boolean" ? record.summaryEnabled : DEFAULT_VIEW_PREFERENCES.summaryEnabled,
+        dashSummaryDefaultCollapsed: typeof record.dashSummaryDefaultCollapsed === "boolean"
+            ? record.dashSummaryDefaultCollapsed
+            : DEFAULT_VIEW_PREFERENCES.dashSummaryDefaultCollapsed,
         summaryDismissedOn: typeof record.summaryDismissedOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(record.summaryDismissedOn)
             ? record.summaryDismissedOn
             : "",

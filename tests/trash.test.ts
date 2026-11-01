@@ -49,13 +49,14 @@ function mockPerson(docId: string = personDocId, name: string = "张三"): Conta
 
 test("E-33 trash: createTrashEntry 完整保留元数据快照并设定 30 天过期", () => {
     const now = 1700000000000;
-    const person = mockPerson();
+    const person = { ...mockPerson(), avatar: "assets/avatar-123.jpg" };
     const entry = createTrashEntry(person, now);
 
     assert.equal(entry.docId, personDocId);
     assert.equal(entry.name, "张三");
     assert.equal(entry.snapshot.phone, "13800138000");
     assert.equal(entry.snapshot.group, "朋友");
+    assert.equal(entry.snapshot.avatar, "assets/avatar-123.jpg");
     assert.deepEqual(entry.snapshot.tags, ["技术", "设计"]);
     assert.equal(entry.removedAt, now);
     assert.equal(entry.expiresAt, now + TRASH_RETENTION_DAYS * 86400 * 1000);

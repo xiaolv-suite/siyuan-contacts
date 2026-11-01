@@ -236,9 +236,19 @@
             </p>
             <textarea class="b3-text-field fn__block lvct-qf__input" rows="7"
                 style="border-radius: var(--lvct-r-card, 12px);"
-                placeholder={text("qfPlaceholder", "张三\n手机：13800138000\n微信：zhang_san\n邮箱：a@example.com")}
+                placeholder={text("qfPlaceholder", "张三\n手机：13800138000\n微信：zhang_san\n邮箱：a@example.com\n\n💡 支持直接从思源笔记拖入文本块")}
                 aria-label={text("qfInputLabel", "待识别的联系人内容")} bind:this={sourceInput}
-                bind:value={pasteText}></textarea>
+                bind:value={pasteText}
+                ondragover={(e) => { e.preventDefault(); }}
+                ondrop={(e) => {
+                    e.preventDefault();
+                    const text = e.dataTransfer?.getData("text/plain")?.trim();
+                    if (text) {
+                        pasteText = text;
+                        recognize();
+                    }
+                }}
+            ></textarea>
             <div class="lvct-form__actions">
                 <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={requestClose}>{text("formCancel", "取消")}</button>
                 <button class="b3-button" style="border-radius: var(--lv-r-pill, 9999px);" disabled={pasteText.trim().length === 0} onclick={recognize}>{text("qfRecognize", "识别")}</button>

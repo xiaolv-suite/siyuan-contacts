@@ -36,6 +36,7 @@ export interface GraphQuery {
     orgDocId: string;
     search: string;
     group: string;
+    tag?: string;
     isolatedOnly: boolean;
     showOrgs: boolean;
     depth: "direct" | "second";
@@ -238,6 +239,7 @@ export function buildGraphQuerySnapshot(sources: GraphSources, query: GraphQuery
         const person = byPerson.get(node.id);
         const matchesSearch = !needle || (query.mode === "native" ? `${node.label} ${node.id}` : person ? [person.name, person.phone, person.wechat, person.email, ...person.tags].join(" ") : node.label).toLowerCase().includes(needle);
         const matches = matchesSearch && (query.mode === "native" || ((!query.group || person?.group === query.group)
+            && (!query.tag || person?.tags.includes(query.tag))
             && (!query.isolatedOnly || isolated.has(node.id)) && (node.kind !== "org" || query.showOrgs)));
         if (!matches && pins.has(node.id)) retainedByFilter.push(node.id);
         return matches || pins.has(node.id);

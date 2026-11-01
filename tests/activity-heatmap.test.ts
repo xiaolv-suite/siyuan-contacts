@@ -118,4 +118,9 @@ test("computeActivityHeatmap：生成 52 周网格并正确聚合互动数据", 
     const thu = lastWeek[3];
     assert.equal(thu.isFuture, true, "基准日之后应标记为未来日期");
     assert.deepEqual(thu.personDocIds, []);
+
+    // 验证气泡所需数据完整性
+    assert.ok(wed.personNames.length > 0, "活跃日气泡应包含联系人姓名数组");
+    assert.equal(wed.count, 2, "活跃日气泡应包含准确互动计数");
+    assert.equal(mon.peopleCount, 1, "超高频测试日应正确统计参与人数");
 });

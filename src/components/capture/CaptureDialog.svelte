@@ -46,6 +46,7 @@
     let factText: string = $state("");
     let factCategory: import("../../domain/doc-section").FactCategory = $state("quote");
     let factsWrittenCount = $state(0);
+    let factFailures: string[] = $state([]);
     let loading: boolean = $state(true);
     let running: boolean = $state(false);
     let errorText: string = $state("");
@@ -354,6 +355,7 @@
                         factsWrittenCount += 1;
                     } catch (e) {
                         console.warn("[LvContacts] 随路沉淀事实失败：", targetId, e);
+                        factFailures.push(targetId);
                     }
                 }
             }
@@ -449,6 +451,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                 {#if result.occasionLinksWritten > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneOccasionLinks", "已完成 {n} 个事项双链区块", { n: result.occasionLinksWritten })}</p>{/if}
                 {#if result.dateDocId || result.placeDocId}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneOccasionDocuments", "已关联当日日记与地点文档")}</p>{/if}
                 {#if factsWrittenCount > 0}<p class="lvct-capture__done-line"><Sparkles size={14}/> {text("captureDoneFacts", "已为 {n} 位参与人员沉淀关键观点与事实", { n: factsWrittenCount })}</p>{/if}
+                {#if factFailures.length > 0}<p class="lvct-capture__done-line lvct-text-danger" role="alert">{text("captureDoneFactFailures", "部分人员事实沉淀未成功（{count} 位），可后续在人物详情手动补充", { count: factFailures.length })}</p>{/if}
             </div>
             {#if result.occasionLinkFailures.length > 0}
                 <p class="ft__smaller lvct-text-danger">

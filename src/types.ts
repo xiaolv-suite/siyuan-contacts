@@ -207,6 +207,8 @@ export interface ContactsPluginFacade {
     loadAllPersonOrigins?(): Promise<Record<string, import("./domain/person-origin").PersonOrigin>>;
     /** Simple-PRM / Monica 对标：向小驴管家输出到期问候提醒 */
     sendGreetingReminderToHome?(personName: string, daysOverdue: number): Promise<boolean>;
+    /** IDEA-17：将重要相识/相聚纪念日及生日自动同步至小驴管家日历日程 */
+    syncAnniversariesToHome?(title: string, dueDate: string): Promise<boolean>;
     /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
     loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
     savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;
@@ -313,10 +315,10 @@ export interface ContactsPluginFacade {
     /** AI 抽取本页人名/日期/地点（需思源内置 AI；结果须经确认 UI） */
     prepareAiExtraction(docId: string, options?: AiPreflightOptions): Promise<AiPreflight>;
     aiExtractFromDoc(docId: string, confirmation?: AiExtractionConfirmation): Promise<AiExtractOutcome>;
-    /** 打开任意思源文档（捕获完成页等快捷入口使用） */
-    openDoc(docId: string): void | Promise<void>;
+    /** 打开任意思源文档（捕获完成页等快捷入口使用，支持子块级高亮精准滚动定位） */
+    openDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions): void | Promise<void>;
     openHostDoc(): void | Promise<void>;
-    /** 打开人物文档（联系人详情页 = 人物文档） */
-    openPersonDoc(docId: string): void | Promise<void>;
+    /** 打开人物文档（联系人详情页 = 人物文档，支持子块级高亮精准滚动定位） */
+    openPersonDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions): void | Promise<void>;
     openSettings(): void;
 }

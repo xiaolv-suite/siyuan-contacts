@@ -254,6 +254,7 @@
     let cardDensity: "comfortable" | "compact" = $state("comfortable");
     let activeLetterFilter = $state("");
     let filterStarredOnly = $state(false);
+    let isDraggingOver = $state(false);
     let addPersonInitial = $state<ContactDraft | undefined>(undefined);
     let lifecycleStages: Record<string, RelationshipStageKey> = $state({});
     let cadences: Record<string, import("../../domain/cadence").PersonCadence> = $state({});
@@ -1933,7 +1934,34 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<div class="lvct-people" bind:this={peopleElement}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+    class="lvct-people"
+    class:lvct-people--dragover={isDraggingOver}
+    bind:this={peopleElement}
+    ondragenter={(e) => { e.preventDefault(); isDraggingOver = true; }}
+    ondragover={(e) => { e.preventDefault(); isDraggingOver = true; }}
+    ondragleave={(e) => {
+        if (e.currentTarget === e.target) isDraggingOver = false;
+    }}
+    ondrop={(e) => {
+        e.preventDefault();
+        isDraggingOver = false;
+        const text = e.dataTransfer?.getData("text/plain")?.trim();
+        if (text) {
+            openAddWithName(text);
+        }
+    }}
+>
+    {#if isDraggingOver}
+        <div class="lvct-people__drop-overlay">
+            <div class="lvct-people__drop-card">
+                <Sparkles size={28} strokeWidth={1.6} class="lvct-text-brand" />
+                <b>释放以解析录入联系人</b>
+                <p>将思源笔记中的段落、人员资料或名片文字拖入，即可智能解析并建档</p>
+            </div>
+        </div>
+    {/if}
     <!-- B09-1：工具栏控件 snippet 化——桌面原位渲染；移动端收进「筛选与整理」底部弹层（互斥渲染，popover 单挂载） -->
     {#snippet viewMenuControl()}
         <span id="lvct-people-viewsmenu" bind:this={viewsMenuWrap} style="position:relative; display:inline-flex">
@@ -2122,6 +2150,15 @@
                     placeholder={text("peopleSearchPlaceholder", "搜索姓名/电话/微信/邮箱/标签…")}
                     value={searchInput}
                     oninput={(event) => handleSearchInput((event.currentTarget as HTMLInputElement).value)}
+                    onkeydown={(event) => {
+                        if (event.key === "Enter" && filtered.length === 1 && searchInput.trim()) {
+                            event.preventDefault();
+                            onOpenDetail(filtered[0]);
+                        } else if (event.key === "Enter" && filtered.length === 0 && searchInput.trim()) {
+                            event.preventDefault();
+                            openAddWithName(searchInput.trim());
+                        }
+                    }}
                 />
                 <button class="b3-button" onclick={() => (adding = true)} aria-label={text("peopleCreate", "新建联系人")}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建")}</button>
                 <button
@@ -2151,6 +2188,9 @@
                         } else {
                             (event.currentTarget as HTMLInputElement).blur();
                         }
+                    } else if (event.key === "Enter" && filtered.length === 1 && searchInput.trim()) {
+                        event.preventDefault();
+                        onOpenDetail(filtered[0]);
                     } else if (event.key === "Enter" && filtered.length === 0 && searchInput.trim()) {
                         event.preventDefault();
                         openAddWithName(searchInput.trim());
@@ -2685,6 +2725,7 @@
                 <PersonCard
                     {person}
                     compact={cardDensity === "compact"}
+                    cardFields={preferences.cardFields}
                     starred={isPersonStarred(preferences, person.docId)}
                     onToggleStarred={() => void handleToggleStarred(person.docId)}
                     {onOpenGraphPerson}

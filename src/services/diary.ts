@@ -3,8 +3,15 @@
  * 当用户记录一笔互动（见面/电话/聚餐等）时，安全追加到指定日期的日记文档末尾，
  * 并以 siyuan://blocks/<personDocId> 双向锚定人物，使得日记与人脉图谱彻底咬合。
  */
-import { appendBlockMd, findDailyNoteDocument, flushBlockIndex } from "../api/blocks";
-import { createDailyNote } from "../api/client";
+import {
+    appendBlockMd,
+    deleteBlock,
+    findDailyNoteDocument,
+    flushBlockIndex,
+    setBlockAttrs,
+    updateBlockMd,
+} from "../api/blocks";
+import { createDailyNote, querySql } from "../api/client";
 import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown, buildDailyNoteFollowUpTaskMarkdown, type DiaryFollowUpTaskInput } from "../domain/diary-sync.ts";
 import type { InteractionType } from "../domain/interactions.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
@@ -16,6 +23,7 @@ export interface AppendInteractionToDailyNoteInput {
     type?: InteractionType;
     note?: string;
     occurredAt?: number;
+    eventId?: string;
 }
 
 export async function appendInteractionToDailyNote(
@@ -62,6 +70,9 @@ export async function appendInteractionToDailyNote(
         });
 
         const blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        if (input.eventId) {
+            await setBlockAttrs(blockId, { "custom-lvct-event-id": input.eventId }).catch(() => {});
+        }
         await flushBlockIndex();
         return { dailyDocId: dailyDoc.docId, blockId };
     } catch (err) {
@@ -154,5 +165,77 @@ export async function appendFollowUpToDailyNote(
     } catch (err) {
         console.warn("[LvContacts] 追加跟进待办到思源日记未完成（非阻塞）：", err);
         return null;
+    }
+}
+
+/**
+ * 根据互动事件 ID 精确定位并删除思源日记中的对应行（改删同步 P3）
+ */
+export async function removeDailyNoteInteractionByEventId(eventId: string): Promise<boolean> {
+    if (!eventId) return false;
+    try {
+        const rows = await querySql<{ id: string }>(
+            `SELECT id FROM blocks WHERE ial LIKE '%custom-lvct-event-id="${eventId}"%' LIMIT 1`
+        );
+        if (!rows || rows.length === 0) return false;
+        await deleteBlock(rows[0].id);
+        await flushBlockIndex();
+        return true;
+    } catch (err) {
+        console.warn(`[LvContacts] 从日记中移除互动行失败 (${eventId}):`, err);
+        return false;
+    }
+}
+
+export interface UpdateDailyNoteInteractionInput {
+    oldEventId: string;
+    newEventId: string;
+    personDocId: string;
+    personName: string;
+    type?: InteractionType;
+    note?: string;
+    occurredAt?: number;
+}
+
+/**
+ * 根据旧互动事件 ID 精确定位并就地更新思源日记中的对应行文本及事件 ID 锚点（改删同步 P3）
+ */
+export async function updateDailyNoteInteractionByEventId(
+    input: UpdateDailyNoteInteractionInput,
+): Promise<boolean> {
+    if (!input.oldEventId) return false;
+    try {
+        const rows = await querySql<{ id: string }>(
+            `SELECT id FROM blocks WHERE ial LIKE '%custom-lvct-event-id="${input.oldEventId}"%' LIMIT 1`
+        );
+        if (!rows || rows.length === 0) return false;
+        const blockId = rows[0].id;
+
+        let occurredTimeStr: string | undefined;
+        if (input.occurredAt) {
+            const timeDate = new Date(input.occurredAt);
+            if (!Number.isNaN(timeDate.getTime())) {
+                const pad = (v: number) => String(v).padStart(2, "0");
+                occurredTimeStr = `${pad(timeDate.getHours())}:${pad(timeDate.getMinutes())}`;
+            }
+        }
+
+        const markdown = buildDailyNoteInteractionMarkdown({
+            personDocId: input.personDocId,
+            personName: input.personName,
+            type: input.type,
+            note: input.note,
+            occurredTimeStr,
+        });
+
+        await updateBlockMd(blockId, markdown);
+        if (input.newEventId !== input.oldEventId) {
+            await setBlockAttrs(blockId, { "custom-lvct-event-id": input.newEventId });
+        }
+        await flushBlockIndex();
+        return true;
+    } catch (err) {
+        console.warn(`[LvContacts] 更新日记中互动行失败 (${input.oldEventId}):`, err);
+        return false;
     }
 }

@@ -22,6 +22,7 @@ export interface TrashContactSnapshot {
     isLunar?: boolean;
     group?: string;
     tags: string[];
+    avatar?: string;
 }
 
 export interface TrashContactEntry {
@@ -73,6 +74,7 @@ export function createTrashEntry(person: ContactSummary, nowTime: number = Date.
             isLunar: Boolean(person.isLunar),
             group: person.group || undefined,
             tags: [...person.tags],
+            avatar: person.avatar || undefined,
         },
         removedAt: nowTime,
         expiresAt: nowTime + TRASH_RETENTION_DAYS * msInDay,
