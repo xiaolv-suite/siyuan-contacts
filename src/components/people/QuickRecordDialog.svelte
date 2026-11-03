@@ -10,14 +10,15 @@
         toLocalDateKey,
         type InteractionType,
     } from "../../domain/interactions";
-    import { recordInteraction } from "../../data/interactions";
+    import { recordInteractionWithResult, deleteInteraction } from "../../data/interactions";
     import { syncInteractionDocSection, loadPersonFactsFromDoc, savePersonFactsToDoc } from "../../services/doc-section";
-import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
-    import { appendInteractionToDailyNote } from "../../services/diary";
+    import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
+    import { appendInteractionToDailyNote, removeDailyNoteInteractionByEventId } from "../../services/diary";
     import { translateText } from "../../domain/translation";
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { emitDataChanged } from "../../libs/data-events";
     import { logCheckinEventSafely } from "../../libs/ecosystem-bridge-kit";
+    import { lvNotify } from "../../libs/lv-notice-kit";
     import type { ContactsSettings } from "../../domain/model";
     import { onMount } from "svelte";
 
@@ -63,7 +64,7 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
             const targetDate = date || toLocalDateKey();
             const occurredAt = new Date(`${targetDate}T12:00:00`).getTime();
             if (!interactionRecorded) {
-                await recordInteraction(plugin, {
+                const res = await recordInteractionWithResult(plugin, {
                     personDocId: person.docId,
                     note: note.trim() || undefined,
                     type,
@@ -71,6 +72,37 @@ import type { FactCategory, PersonFactItem } from "../../domain/doc-section";
                     source: "manual",
                 });
                 interactionRecorded = true;
+                const lastEvent = res.store.events[res.store.events.length - 1];
+                const eventId = lastEvent?.id;
+                lvNotify.capsule({
+                    source: "小驴人脉",
+                    message: `已记录与「${person.name}」的互动`,
+                    level: "success",
+                    duration: 5000,
+                    action: eventId ? {
+                        label: "撤销",
+                        onClick: async () => {
+                            try {
+                                await deleteInteraction(plugin, eventId, person.docId);
+                                void syncInteractionDocSection(plugin, person.docId).catch(() => {});
+                                void removeDailyNoteInteractionByEventId(eventId).catch(() => {});
+                                emitDataChanged({ topics: ["people"], docIds: [person.docId] });
+                                lvNotify.capsule({
+                                    source: "小驴人脉",
+                                    message: `已撤销与「${person.name}」的互动记录`,
+                                    level: "info",
+                                });
+                            } catch (err) {
+                                lvNotify.card({
+                                    source: "小驴人脉",
+                                    title: "撤销失败",
+                                    message: `未能撤销互动记录：${err instanceof Error ? err.message : String(err)}`,
+                                    level: "error",
+                                });
+                            }
+                        },
+                    } : undefined,
+                });
                 const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
                 if (pluginSettings?.checkinItemId) {
                     void logCheckinEventSafely({
