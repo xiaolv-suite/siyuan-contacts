@@ -6,7 +6,7 @@
 import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
-import { lvNotify, lvTicker, lvActivity, lvBackup, lvEcosystem, showMessage } from "./libs/lv-notice-kit";
+import { lvNotify, lvTicker, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, showMessage } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
     if (type === "error") {
@@ -31,6 +31,8 @@ import OrgManagerDialog from "./components/org/OrgManagerDialog.svelte";
 import ContactOrganizationDialog from "./components/org/ContactOrganizationDialog.svelte";
 import QuickFillDialog from "./components/people/QuickFillDialog.svelte";
 import AddPersonDialog from "./components/people/AddPersonDialog.svelte";
+import PreMeetingHubDialog from "./components/dashboard/PreMeetingHubDialog.svelte";
+import CoolingRadarDialog from "./components/dashboard/CoolingRadarDialog.svelte";
 import type { ContactExtendedDraft } from "./domain/contact-create";
 import PersonEditDialog from "./components/people/PersonEditDialog.svelte";
 import { parseContactText } from "./domain/quick-fill";
@@ -235,6 +237,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private eventCleanup: (() => void) | null = null;
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
+    private launchpadCleaner?: () => void;
+    private followupDueCount = 0;
     private layoutReady = false;
     private preferencesActive = true;
     private preferencesEpoch = 0;
@@ -288,6 +292,13 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         lifecycleToken.onDispose(() => {
             this.backupCleaner?.();
             this.backupCleaner = undefined;
+        });
+
+        // Phase 5: 接入小驴罗盘 (lvLaunchpad) 极速弹射坞
+        this.registerLaunchpad();
+        lifecycleToken.onDispose(() => {
+            this.launchpadCleaner?.();
+            this.launchpadCleaner = undefined;
         });
 
         const unsubscribeDataMirror = subscribeDataChanged((change) => {
@@ -565,6 +576,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     private disposeLifecycle(): void {
+        this.launchpadCleaner?.();
+        this.launchpadCleaner = undefined;
         this.backupCleaner?.();
         this.backupCleaner = undefined;
         this.noticeHubCleaner?.();
@@ -1775,6 +1788,96 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         return lvEcosystem.getStatusBadgeText();
     }
 
+    getFollowupDueCount(): number {
+        return this.followupDueCount;
+    }
+
+    openContactsView(): void {
+        this.openWorkbench();
+    }
+
+    openNewContactDialog(patch?: Partial<QuickFillPatch>): void {
+        if (!this.settings) {
+            this.openWorkbench();
+            return;
+        }
+        this.openPersonCreatePrefilled({
+            tagsAppend: [],
+            ...patch,
+        });
+    }
+
+    openPreMeetingDialog(): void {
+        if (!this.settings) {
+            this.openWorkbench();
+            return;
+        }
+        this.openOwnedDialog({
+            title: "🛡️ 会前速查与偏好雷区大盘",
+            width: "800px",
+            component: PreMeetingHubDialog,
+            props: {
+                facade: this,
+                i18n: this.i18n,
+            },
+        });
+    }
+
+    openCoolingRadarDialog(): void {
+        if (!this.settings) {
+            this.openWorkbench();
+            return;
+        }
+        this.openOwnedDialog({
+            title: "🧊 关系降温预警与破冰重联中枢",
+            width: "800px",
+            component: CoolingRadarDialog,
+            props: {
+                facade: this,
+                i18n: this.i18n,
+            },
+        });
+    }
+
+    handleQuickAction(action: string): void {
+        switch (action) {
+            case "快速记录一次人际互动":
+                this.openWorkbench("home");
+                break;
+            case "会前30秒关系档案速览卡":
+                this.openPreMeetingDialog();
+                break;
+            case "新建联系人与圈层标签":
+                this.openNewContactDialog();
+                break;
+            case "查看近期需要联络预警名单":
+                this.openCoolingRadarDialog();
+                break;
+            default:
+                this.openWorkbench();
+                break;
+        }
+    }
+
+    private registerLaunchpad(): void {
+        this.launchpadCleaner?.();
+        const dueCount = this.getFollowupDueCount();
+        this.launchpadCleaner = lvLaunchpad.register({
+            id: "siyuan-contacts",
+            name: "人脉",
+            fullName: "小驴人脉",
+            svgIcon: "icon-lv-contacts",
+            color: "#f97316",
+            desc: "关系图谱 · 联络提醒",
+            digit: 7,
+            badge: dueCount > 0 ? `${dueCount} 位需联络` : undefined,
+            badgeType: "warn",
+            actions: ["快速记录一次人际互动", "会前30秒关系档案速览卡", "新建联系人与圈层标签", "查看近期需要联络预警名单"],
+            onClick: () => this.openContactsView(),
+            onAction: (action) => this.handleQuickAction(action),
+        });
+    }
+
     async listPersonFollowUps(personDocId: string) {
         /* B07：人物详情打开时读侧对账；失败上抛，由详情页显示未对账并提供重试。 */
         await reconcileFollowUpTasksFromDoc(this, personDocId);
@@ -2336,6 +2439,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             );
 
             const totalCount = dueFollowUps.length + overdueCadences.length;
+            this.followupDueCount = totalCount;
+            this.registerLaunchpad();
             if (totalCount === 0) return { delivered: false, count: 0 };
 
             const firstPerson = dueFollowUps[0]?.person?.name || overdueCadences[0]?.person?.name || "联系人";

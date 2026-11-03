@@ -108,6 +108,10 @@ export interface ContactsPluginFacade {
     restoreData?(data: Record<string, unknown>): Promise<boolean>;
     /** 获取全生态协同状态指示徽章文案 (lvEcosystem) */
     getEcosystemStatusBadgeText?(): string;
+    /** 小驴罗盘相关操作与状态 (lvLaunchpad) */
+    getFollowupDueCount?(): number;
+    openContactsView?(): void;
+    handleQuickAction?(action: string): void;
     /** 跟进事项（F05）：日期型联系计划，独立于互动事实 */
     listPersonFollowUps(personDocId: string): Promise<FollowUpItem[]>;
     /** 创建跟进计划；dueDate 为 YYYY-MM-DD，非法日期抛错 */

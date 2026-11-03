@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, lvBackup, lvEcosystem, showMessage } from "../src/libs/lv-notice-kit.ts";
+import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, showMessage } from "../src/libs/lv-notice-kit.ts";
 
 function createMockDom() {
     const elements = new Map<string, any>();
@@ -499,4 +499,55 @@ test("全生态自省徽章：lvEcosystem.getStatusBadgeText 动态呈现协同�
         unregisterB();
     }
 });
+
+test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切换", () => {
+    let clicked = false;
+    let selectedAction = "";
+
+    const unregister = lvLaunchpad.register({
+        id: "siyuan-contacts",
+        name: "人脉",
+        fullName: "小驴人脉",
+        svgIcon: "icon-lv-contacts",
+        color: "#f97316",
+        desc: "关系图谱 · 联络提醒",
+        digit: 7,
+        badge: "3 位需联络",
+        badgeType: "warn",
+        actions: ["快速记录一次人际互动", "会前30秒关系档案速览卡", "新建联系人与圈层标签", "查看近期需要联络预警名单"],
+        onClick: () => { clicked = true; },
+        onAction: (act) => { selectedAction = act; },
+    });
+
+    try {
+        const items = lvLaunchpad.getItems();
+        const contactItem = items.find((i) => i.id === "siyuan-contacts");
+        assert.ok(contactItem);
+        assert.equal(contactItem.name, "人脉");
+        assert.equal(contactItem.fullName, "小驴人脉");
+        assert.equal(contactItem.color, "#f97316");
+        assert.equal(contactItem.badge, "3 位需联络");
+        assert.equal(contactItem.badgeType, "warn");
+        assert.equal(contactItem.digit, 7);
+        assert.equal(contactItem.state, "docked");
+        assert.equal(contactItem.actions?.length, 4);
+
+        // 点击与行动测试
+        contactItem.onClick();
+        assert.equal(clicked, true);
+
+        contactItem.onAction?.("会前30秒关系档案速览卡");
+        assert.equal(selectedAction, "会前30秒关系档案速览卡");
+
+        // 状态切换测试
+        lvLaunchpad.setPluginState("siyuan-contacts", "pinned");
+        const itemsAfter = lvLaunchpad.getItems();
+        assert.equal(itemsAfter.find((i) => i.id === "siyuan-contacts")?.state, "pinned");
+    } finally {
+        unregister();
+        const itemsCleaned = lvLaunchpad.getItems();
+        assert.equal(itemsCleaned.some((i) => i.id === "siyuan-contacts"), false);
+    }
+});
+
 
