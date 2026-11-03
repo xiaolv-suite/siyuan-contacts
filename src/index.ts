@@ -6,7 +6,7 @@
 import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
-import { lvNotify, lvTicker, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, showMessage } from "./libs/lv-notice-kit";
+import { lvNotify, lvTicker, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, lvOmnisearch, showMessage, type LvSearchResultItem } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
     if (type === "error") {
@@ -45,8 +45,8 @@ import { initializeWorkspace, inspectWorkspace, readSettingsState, scanAnchorCan
 import { configureCloseGuardI18n } from "./components/close-guard";
 import type { InitProgressStep, WorkspaceSnapshot } from "./services/init";
 import { loadDashboard, DEFAULT_DASHBOARD_OPTIONS } from "./services/dashboard";
-import { amendInteraction, deleteInteraction, recordInteractionWithResult, loadInteractionStoreStrict } from "./data/interactions";
-import { toLocalDateKey } from "./domain/interactions";
+import { amendInteraction, deleteInteraction, recordInteractionWithResult, loadInteractionStoreStrict, loadInteractionStore } from "./data/interactions";
+import { toLocalDateKey, INTERACTION_TYPE_LABELS } from "./domain/interactions";
 import type { InteractionAmendment } from "./domain/interactions";
 import { captureFromDoc, previewCapture, resolveRecognizeTarget } from "./services/capture";
 import { extractFromDoc, prepareAiExtraction } from "./services/ai-extract";
@@ -63,7 +63,7 @@ import { checkSettingsHealth, previewMissingFields, previewRebindSettings, probe
 import type { FieldRebuildPreview, SettingsRebindPreview } from "./services/settings-health";
 import { auditWorkspaceData, auditWorkspaceDataReport, retryFailedHealthAuditModules } from "./services/health-audit";
 import { reconcileFollowUpTasksFromDoc } from "./services/followup-sync";
-import { updateContactFields, applyContactCandidateFields, listContacts as listContactsService } from "./services/contacts";
+import { updateContactFields, applyContactCandidateFields, listContacts as listContactsService, filterContacts } from "./services/contacts";
 import { addRelation, removeRelation, discoverConnections } from "./services/relations";
 import { detectChangedCities } from "./domain/city-topic";
 import { autoRebaseCityTopics } from "./services/city-topic";
@@ -238,6 +238,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private noticeHubCleaner?: () => void;
     private backupCleaner?: () => void;
     private launchpadCleaner?: () => void;
+    private omnisearchCleaner?: () => void;
     private followupDueCount = 0;
     private layoutReady = false;
     private preferencesActive = true;
@@ -299,6 +300,15 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         lifecycleToken.onDispose(() => {
             this.launchpadCleaner?.();
             this.launchpadCleaner = undefined;
+        });
+
+        // Phase 7: 注册全局穿透搜索数据提供者 (lvOmnisearch)
+        this.omnisearchCleaner = lvOmnisearch.registerProvider("siyuan-contacts", async (keyword) => {
+            return this.searchOmniContacts(keyword);
+        });
+        lifecycleToken.onDispose(() => {
+            this.omnisearchCleaner?.();
+            this.omnisearchCleaner = undefined;
         });
 
         const unsubscribeDataMirror = subscribeDataChanged((change) => {
@@ -576,6 +586,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     private disposeLifecycle(): void {
+        this.omnisearchCleaner?.();
+        this.omnisearchCleaner = undefined;
         this.launchpadCleaner?.();
         this.launchpadCleaner = undefined;
         this.backupCleaner?.();
@@ -1876,6 +1888,75 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             onClick: () => this.openContactsView(),
             onAction: (action) => this.handleQuickAction(action),
         });
+    }
+
+    /**
+     * Phase 7: 全生态穿透搜索切面实现
+     * 支持联系人姓名、圈层标签、别名及互动记录全文秒级检索
+     */
+    async searchOmniContacts(keyword: string): Promise<LvSearchResultItem[]> {
+        const kw = keyword.trim().toLowerCase();
+        if (!kw) return [];
+
+        const results: LvSearchResultItem[] = [];
+
+        try {
+            // 1. 检索联系人名册（姓名、圈层标签、别名、电话/微信）
+            const roster = await this.listContacts();
+            const matchedPeople = filterContacts(roster, kw).slice(0, 15);
+            for (const person of matchedPeople) {
+                const snippets: string[] = [];
+                if (person.tags.length > 0) snippets.push(`标签: ${person.tags.join("、")}`);
+                if (person.group) snippets.push(`分组: ${person.group}`);
+                if (person.phone) snippets.push(`电话: ${person.phone}`);
+                if (person.wechat) snippets.push(`微信: ${person.wechat}`);
+
+                results.push({
+                    id: `contact_${person.docId}`,
+                    source: "人脉",
+                    category: person.group || "联系人",
+                    title: person.name,
+                    snippet: snippets.join(" · ") || "人脉档案卡片",
+                    badge: person.group || "联系人",
+                    linkBlockId: person.docId,
+                    onClick: () => {
+                        this.openWorkbench("people");
+                        emitDataChanged({ topics: ["people"], docIds: [person.docId] }, this.lifecycleToken);
+                    },
+                });
+            }
+
+            // 2. 检索互动记录
+            const interactionStore = await loadInteractionStore(this);
+            const tombstones = new Set(interactionStore.tombstones);
+            const matchedEvents = interactionStore.events
+                .filter((e) => !tombstones.has(e.id) && e.note && e.note.toLowerCase().includes(kw))
+                .slice(0, 10);
+
+            for (const event of matchedEvents) {
+                const person = roster.find((p) => p.docId === event.personDocId);
+                const personName = person?.name || "联系人";
+                const typeLabel = (event.type && INTERACTION_TYPE_LABELS[event.type]?.label) || "互动";
+
+                results.push({
+                    id: `interaction_${event.id}`,
+                    source: "人脉",
+                    category: "互动记录",
+                    title: `${personName} · ${event.localDate}`,
+                    snippet: event.note,
+                    badge: typeLabel,
+                    linkBlockId: event.personDocId,
+                    onClick: () => {
+                        this.openWorkbench("people");
+                        emitDataChanged({ topics: ["people"], docIds: [event.personDocId] }, this.lifecycleToken);
+                    },
+                });
+            }
+        } catch (err) {
+            console.warn("[LvContacts] 穿透搜索失败", err);
+        }
+
+        return results;
     }
 
     async listPersonFollowUps(personDocId: string) {

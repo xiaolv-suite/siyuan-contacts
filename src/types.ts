@@ -112,6 +112,8 @@ export interface ContactsPluginFacade {
     getFollowupDueCount?(): number;
     openContactsView?(): void;
     handleQuickAction?(action: string): void;
+    /** 全生态穿透搜索切面 (lvOmnisearch) */
+    searchOmniContacts?(keyword: string): Promise<import("./libs/lv-notice-kit").LvSearchResultItem[]>;
     /** 跟进事项（F05）：日期型联系计划，独立于互动事实 */
     listPersonFollowUps(personDocId: string): Promise<FollowUpItem[]>;
     /** 创建跟进计划；dueDate 为 YYYY-MM-DD，非法日期抛错 */

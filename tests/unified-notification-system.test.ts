@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, showMessage } from "../src/libs/lv-notice-kit.ts";
+import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, lvOmnisearch, showMessage } from "../src/libs/lv-notice-kit.ts";
 
 function createMockDom() {
     const elements = new Map<string, any>();
@@ -549,5 +549,81 @@ test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切�
         assert.equal(itemsCleaned.some((i) => i.id === "siyuan-contacts"), false);
     }
 });
+
+test("穿透搜索：lvOmnisearch 支持联系人姓名、圈层标签与互动记录检索切面", async () => {
+    let clickedId = "";
+
+    // 模拟注册人脉穿透搜索切面（包含姓名、标签与互动记录）
+    const unregister = lvOmnisearch.registerProvider("siyuan-contacts", async (keyword) => {
+        const kw = keyword.toLowerCase();
+        const items = [];
+
+        // 模拟联系人
+        if ("张三".includes(kw) || "核心圈".includes(kw)) {
+            items.push({
+                id: "contact_doc_001",
+                source: "人脉",
+                category: "挚友",
+                title: "张三",
+                snippet: "标签: 核心圈、技术合伙人 · 单位: 极客科技",
+                badge: "挚友",
+                linkBlockId: "20261103000000-doc001",
+                onClick: () => { clickedId = "contact_doc_001"; },
+            });
+        }
+
+        // 模拟互动记录
+        if ("洽谈合作".includes(kw)) {
+            items.push({
+                id: "interaction_evt_001",
+                source: "人脉",
+                category: "互动记录",
+                title: "张三 · 2026-11-03",
+                snippet: "在科技园咖啡厅洽谈战略合作与天使轮融资",
+                badge: "会面",
+                linkBlockId: "20261103000000-doc001",
+                onClick: () => { clickedId = "interaction_evt_001"; },
+            });
+        }
+
+        return items;
+    });
+
+    try {
+        // 1. 按姓名检索
+        const nameResults = await lvOmnisearch.search("张三");
+        assert.equal(nameResults.length, 1);
+        assert.equal(nameResults[0].title, "张三");
+        assert.equal(nameResults[0].source, "人脉");
+        assert.equal(nameResults[0].linkBlockId, "20261103000000-doc001");
+
+        // 点击穿透
+        nameResults[0].onClick();
+        assert.equal(clickedId, "contact_doc_001");
+
+        // 2. 按圈层标签检索
+        const tagResults = await lvOmnisearch.search("核心圈");
+        assert.equal(tagResults.length, 1);
+        assert.ok(tagResults[0].snippet?.includes("核心圈"));
+
+        // 3. 按互动记录内容检索
+        const interactionResults = await lvOmnisearch.search("洽谈合作");
+        assert.equal(interactionResults.length, 1);
+        assert.equal(interactionResults[0].category, "互动记录");
+        assert.ok(interactionResults[0].snippet?.includes("洽谈战略合作"));
+
+        interactionResults[0].onClick();
+        assert.equal(clickedId, "interaction_evt_001");
+
+        // 4. 空关键词预检
+        const emptyResults = await lvOmnisearch.search("   ");
+        assert.equal(emptyResults.length, 0);
+    } finally {
+        unregister();
+        const afterClean = await lvOmnisearch.search("张三");
+        assert.equal(afterClean.length, 0);
+    }
+});
+
 
 
