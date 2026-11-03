@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lvNotify, lvTicker, withDocLock, showMessage } from "../src/libs/lv-notice-kit.ts";
+import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, showMessage } from "../src/libs/lv-notice-kit.ts";
 
 function createMockDom() {
     const elements = new Map<string, any>();
@@ -368,4 +368,64 @@ test("后台主时钟：lvTicker 支持按周期与每小时整点巡检订阅�
         (globalThis as any).window = originalWindow;
         (globalThis as any).document = originalDoc;
     }
+});
+
+test("统一 AI 网关：lvAi 配置共享与结构化提炼对话调用", async () => {
+    lvAi.setConfig({
+        endpoint: "https://api.example.com/v1",
+        apiKey: "sk-test-token",
+        model: "deepseek-chat",
+    });
+    const cfg = lvAi.getConfig();
+    assert.equal(cfg?.apiKey, "sk-test-token");
+    assert.equal(cfg?.model, "deepseek-chat");
+
+    const originalFetch = globalThis.fetch;
+    try {
+        (globalThis as any).fetch = async (url: string, opts: any) => {
+            const body = JSON.parse(opts.body);
+            assert.equal(body.model, "deepseek-chat");
+            assert.equal(body.messages[0].role, "user");
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    choices: [{ message: { content: "提炼联系人：李总 13800000000" } }],
+                    usage: { total_tokens: 35 },
+                }),
+            };
+        };
+
+        const res = await lvAi.chat({
+            source: "人脉",
+            messages: [{ role: "user", content: "请分析这条名片文本" }],
+        });
+        assert.equal(res.content, "提炼联系人：李总 13800000000");
+        assert.equal(res.totalTokens, 35);
+    } finally {
+        (globalThis as any).fetch = originalFetch;
+    }
+});
+
+test("今日活动流：lvActivity 广播人脉交往事实并汇入全家桶活动流", async () => {
+    lvActivity.record({
+        source: "人脉",
+        category: "contact",
+        title: "与 赵立新 线下会面",
+        detail: "洽谈战略合作",
+        linkBlockId: "20261103000000-zhaolixin",
+    });
+
+    const records = lvActivity.getTodayRecords();
+    const contactAct = records.find((r) => r.title.includes("赵立新"));
+    assert.ok(contactAct);
+    assert.equal(contactAct.source, "人脉");
+    assert.equal(contactAct.category, "contact");
+    assert.equal(contactAct.detail, "洽谈战略合作");
+    assert.equal(contactAct.linkBlockId, "20261103000000-zhaolixin");
+
+    const markdown = lvActivity.formatAsMarkdown();
+    assert.ok(markdown.includes("今日活动汇编"));
+    assert.ok(markdown.includes("与 赵立新 线下会面"));
+    assert.ok(markdown.includes("洽谈战略合作"));
 });

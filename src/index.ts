@@ -6,7 +6,7 @@
 import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
-import { lvNotify, lvTicker, showMessage } from "./libs/lv-notice-kit";
+import { lvNotify, lvTicker, lvActivity, showMessage } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
     if (type === "error") {
@@ -1144,6 +1144,21 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             void this.listContacts().then((roster) => {
                 const person = roster.find((p) => p.docId === personDocId);
                 const name = person?.name || "联系人";
+
+                // Phase 3: 今日全生态活动流广播 (lvActivity)
+                const actionLabel = type === "call" ? "电话沟通"
+                    : type === "message" ? "线上交流"
+                    : type === "email" ? "邮件联络"
+                    : type === "meal" ? "聚餐商谈"
+                    : "线下会面";
+                lvActivity.record({
+                    source: "人脉",
+                    category: "contact",
+                    title: `与 ${name} ${actionLabel}`,
+                    detail: note || undefined,
+                    linkBlockId: personDocId,
+                });
+
                 lvNotify.capsule({
                     source: "小驴人脉",
                     message: `已记录与「${name}」的互动`,

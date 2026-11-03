@@ -1,4 +1,5 @@
 import { aiChat } from "../api/ai";
+import { lvAi } from "../libs/lv-notice-kit";
 import { fetchDocMarkdown } from "../api/blocks";
 import { KernelError } from "../api/client";
 import { parseExtraction } from "../domain/ai-extract.ts";
@@ -75,7 +76,28 @@ export async function extractFromDoc(settings: ContactsSettings, docId: string, 
     prepared.delete(preflight);
     if (signal?.aborted) throw new AiExtractionError("cancelled");
     try {
-        const reply = await aiChat(preflight, true, { signal, timeoutMs });
+        let reply = "";
+        try {
+            if (lvAi.getConfig()?.apiKey) {
+                const aiRes = await lvAi.chat({
+                    source: "人脉",
+                    messages: [
+                        { role: "system", content: "你是一个专业的人脉与联系人信息结构化提炼助手。" },
+                        { role: "user", content: preflight.msg },
+                    ],
+                    signal,
+                });
+                reply = aiRes.content;
+            } else {
+                reply = await aiChat(preflight, true, { signal, timeoutMs });
+            }
+        } catch (err) {
+            if (err instanceof Error && err.message.includes("[LvAiGateway]")) {
+                reply = await aiChat(preflight, true, { signal, timeoutMs });
+            } else {
+                throw err;
+            }
+        }
         if (signal?.aborted) throw new AiExtractionError("cancelled");
         const extraction = parseExtraction(reply.trim());
         const likelyUnconfigured = extraction === null && (reply.trim().length === 0 || /未配置|请先|密钥|not configured/i.test(reply.slice(0, 200)));

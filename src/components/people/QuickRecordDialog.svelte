@@ -18,7 +18,7 @@
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { emitDataChanged } from "../../libs/data-events";
     import { logCheckinEventSafely } from "../../libs/ecosystem-bridge-kit";
-    import { lvNotify } from "../../libs/lv-notice-kit";
+    import { lvNotify, lvActivity } from "../../libs/lv-notice-kit";
     import type { ContactsSettings } from "../../domain/model";
     import { onMount } from "svelte";
 
@@ -74,6 +74,20 @@
                 interactionRecorded = true;
                 const lastEvent = res.store.events[res.store.events.length - 1];
                 const eventId = lastEvent?.id;
+
+                const actionLabel = type === "call" ? "电话沟通"
+                    : type === "message" ? "线上交流"
+                    : type === "email" ? "邮件联络"
+                    : type === "meal" ? "聚餐商谈"
+                    : "线下会面";
+                lvActivity.record({
+                    source: "人脉",
+                    category: "contact",
+                    title: `与 ${person.name} ${actionLabel}`,
+                    detail: note.trim() || undefined,
+                    linkBlockId: person.docId,
+                });
+
                 lvNotify.capsule({
                     source: "小驴人脉",
                     message: `已记录与「${person.name}」的互动`,
