@@ -23,6 +23,7 @@
         FileText,
     } from "@lucide/svelte";
     import { querySql, assertKernelRecord } from "../../api/client";
+    import { lvTicker } from "../../libs/lv-notice-kit";
     import { organizationIalAttributes } from "../../domain/organization-operations";
     import { pickActions, pickSummaryCounts } from "../../services/dashboard";
     import { newFollowUpRequestId } from "../../services/followups";
@@ -554,7 +555,6 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     let lastRefreshedTime = $state(Date.now());
 
     $effect(() => {
-        const timer = window.setInterval(() => { clockTick += 1; }, 30_000);
         const onWakeCheck = () => {
             clockTick += 1;
             const currentToday = toLocalToday();
@@ -568,6 +568,14 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             }
         };
 
+        const unregisterMinute = lvTicker.onMinute("siyuan-contacts-dash", () => {
+            clockTick += 1;
+        });
+
+        const unregisterDateCross = lvTicker.onDateCross("siyuan-contacts-dash", () => {
+            onWakeCheck();
+        });
+
         const onVisibility = () => {
             if (document.visibilityState === "visible") onWakeCheck();
         };
@@ -577,7 +585,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         window.addEventListener("focus", onFocus);
 
         return () => {
-            window.clearInterval(timer);
+            unregisterMinute();
+            unregisterDateCross();
             document.removeEventListener("visibilitychange", onVisibility);
             window.removeEventListener("focus", onFocus);
         };

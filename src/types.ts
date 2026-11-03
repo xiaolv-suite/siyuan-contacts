@@ -217,6 +217,8 @@ export interface ContactsPluginFacade {
     establishPotentialConnection?(firstPersonDocId: string, secondPersonDocId: string): Promise<import("./domain/relations").RelationMutationReport>;
     /** 跟进日程与定期联络到期卡片提醒 (Epoch 7 Standard) */
     checkFollowUpReminders?(force?: boolean): Promise<{ delivered: boolean; count: number; cardId?: string }>;
+    /** 定期扫描联系人跟进日程 (Phase 2 统一心跳调度出口) */
+    checkFollowups?(force?: boolean): Promise<{ delivered: boolean; count: number; cardId?: string }>;
     /** 交往回顾报表（F12）：区间互动统计（只读投影，人物条数与同场活动分口径） */
     buildReviewReport(from: string, to: string): Promise<ReviewReport>;
     /** RF-03：将交往回顾沉淀为思源实体文档 */

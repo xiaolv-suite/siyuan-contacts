@@ -5,6 +5,7 @@
 import { deleteBlock, readMarkedBlocks, upsertMarkedBlock } from "../api/blocks";
 import { KernelPermissionError, KernelResponseError } from "../api/client";
 import type { ContactSummary } from "../domain/person";
+import { withDocLock } from "../libs/lv-notice-kit";
 import { loadInteractionStore } from "../data/interactions";
 import { loadExchangeStore } from "../data/exchanges";
 import { loadAnniversaryStore } from "../data/anniversaries";
@@ -95,23 +96,25 @@ export async function syncPersonProfileDocSection(
     }
 }
 
-/** 同步某人物文档的正文往来记录区块（真实落盘到思源笔记正文） */
+/** 同步某人物文档的正文往来记录区块（真实落盘到思源笔记正文，受 withDocLock 互斥排队保护） */
 export async function syncInteractionDocSection(plugin: Plugin, personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
-    const store = await loadInteractionStore(plugin);
-    const tombstones = new Set(store.tombstones);
-    const events = store.events
-        .filter((e) => e.personDocId === personDocId && !tombstones.has(e.id))
-        .sort((a, b) => b.occurredAt - a.occurredAt);
-    const existing = await readMarkedBlocks(personDocId, INTERACTIONS_SECTION_ATTR);
-    const markdown = interactionSectionMarkdown(events);
-    if (existing.length === 0 && !markdown) return;
-    if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
-    try {
-        await upsertMarkedBlock(personDocId, INTERACTIONS_SECTION_ATTR, markdown, existing[0]?.id);
-    } catch (err) {
-        if (options.strict) throw err;
-        console.warn("[LvContacts] 互动记录同步到正文未完成", err);
-    }
+    return withDocLock(personDocId, async () => {
+        const store = await loadInteractionStore(plugin);
+        const tombstones = new Set(store.tombstones);
+        const events = store.events
+            .filter((e) => e.personDocId === personDocId && !tombstones.has(e.id))
+            .sort((a, b) => b.occurredAt - a.occurredAt);
+        const existing = await readMarkedBlocks(personDocId, INTERACTIONS_SECTION_ATTR);
+        const markdown = interactionSectionMarkdown(events);
+        if (existing.length === 0 && !markdown) return;
+        if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+        try {
+            await upsertMarkedBlock(personDocId, INTERACTIONS_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 互动记录同步到正文未完成", err);
+        }
+    });
 }
 
 export async function syncFollowUpsDocSection(plugin: Plugin, personDocId: string, _personName?: string, options: { strict?: boolean } = {}): Promise<void> {
@@ -169,15 +172,17 @@ export async function loadPersonFactsFromDoc(personDocId: string): Promise<Perso
     return parseFactsSectionMarkdown(blocks[0].markdown);
 }
 
-/** 保存/更新人物文档中的谈资与关键事实区块 */
+/** 保存/更新人物文档中的谈资与关键事实区块（受 withDocLock 互斥排队保护） */
 export async function savePersonFactsToDoc(personDocId: string, items: readonly PersonFactItem[]): Promise<void> {
     if (!personDocId) return;
-    const existing = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
-    if (existing.length > 1) throw new Error("存在多个事实画像标记区块，未自动覆盖；请先核对文档");
-    const markdown = buildFactsSectionMarkdown(items);
-    if (existing.length === 0 && !markdown) return;
-    if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
-    await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
+    return withDocLock(personDocId, async () => {
+        const existing = await readMarkedBlocks(personDocId, FACTS_SECTION_ATTR);
+        if (existing.length > 1) throw new Error("存在多个事实画像标记区块，未自动覆盖；请先核对文档");
+        const markdown = buildFactsSectionMarkdown(items);
+        if (existing.length === 0 && !markdown) return;
+        if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+        await upsertMarkedBlock(personDocId, FACTS_SECTION_ATTR, markdown, existing[0]?.id);
+    });
 }
 
 /** 同步人物文档的补充资料受控区块（由 savePersonFields 直接维护于文档内，此处仅核实可达与无损读取） */

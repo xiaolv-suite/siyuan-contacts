@@ -6,7 +6,7 @@
 import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
-import { lvNotify, showMessage } from "./libs/lv-notice-kit";
+import { lvNotify, lvTicker, showMessage } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
     if (type === "error") {
@@ -532,11 +532,20 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             }, 0);
         }
 
-        window.setTimeout(() => {
+        // Phase 2: 接入全生态统一后台主时钟 (lvTicker)，消灭高频唤醒，失焦自动休眠降频
+        const unregisterFollowupsHour = lvTicker.onHour("siyuan-contacts", () => {
             if (this.isLifecycleActive(lifecycleToken) && this.workspaceState.kind === "ready") {
-                void this.checkFollowUpReminders();
+                void this.checkFollowups();
             }
-        }, 2000);
+        });
+        lifecycleToken.onDispose(unregisterFollowupsHour);
+
+        const unregisterDateCross = lvTicker.onDateCross("siyuan-contacts", () => {
+            if (this.isLifecycleActive(lifecycleToken) && this.workspaceState.kind === "ready") {
+                void this.checkFollowups(true);
+            }
+        });
+        lifecycleToken.onDispose(unregisterDateCross);
     }
 
     async onunload() {
@@ -2331,6 +2340,13 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         } catch {
             return { delivered: false, count: 0 };
         }
+    }
+
+    /**
+     * 定期扫描联系人跟进日程 (Phase 2 统一心跳调度出口)
+     */
+    async checkFollowups(force = false): Promise<{ delivered: boolean; count: number; cardId?: string }> {
+        return this.checkFollowUpReminders(force);
     }
 
     async buildReviewReport(from: string, to: string) {

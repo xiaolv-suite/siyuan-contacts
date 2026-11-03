@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lvNotify, showMessage } from "../src/libs/lv-notice-kit.ts";
+import { lvNotify, lvTicker, withDocLock, showMessage } from "../src/libs/lv-notice-kit.ts";
 
 function createMockDom() {
     const elements = new Map<string, any>();
@@ -272,5 +272,100 @@ test("统一通知出口：showMessage 智能分流错误升级为卡片，普�
         (globalThis as any).window = originalWindow;
         (globalThis as any).document = originalDoc;
         (globalThis as any).localStorage = originalStorage;
+    }
+});
+
+test("内核排队互斥锁：withDocLock 确保同文档写入串行排队且隔离异常", async () => {
+    const docId = "20261103000000-person01";
+    const executionOrder: string[] = [];
+
+    let resolveTask1: () => void = () => {};
+    const task1Promise = new Promise<void>((resolve) => { resolveTask1 = resolve; });
+
+    // 启动任务 1（挂起等待）
+    const p1 = withDocLock(docId, async () => {
+        executionOrder.push("task1-start");
+        await task1Promise;
+        executionOrder.push("task1-end");
+        return "result-1";
+    });
+
+    // 启动任务 2（必须排队在任务 1 之后）
+    const p2 = withDocLock(docId, async () => {
+        executionOrder.push("task2-start");
+        executionOrder.push("task2-end");
+        return "result-2";
+    });
+
+    // 等待微任务让任务 1 启动执行
+    await new Promise((r) => setTimeout(r, 10));
+
+    // 此时任务 1 正在进行中，任务 2 仍在排队
+    assert.deepEqual(executionOrder, ["task1-start"]);
+
+    // 释放任务 1
+    resolveTask1();
+    const [res1, res2] = await Promise.all([p1, p2]);
+
+    assert.equal(res1, "result-1");
+    assert.equal(res2, "result-2");
+    assert.deepEqual(executionOrder, [
+        "task1-start",
+        "task1-end",
+        "task2-start",
+        "task2-end",
+    ]);
+
+    // 测试异常隔离：任务抛错不应阻死后置排队任务
+    const pFail = withDocLock(docId, async () => {
+        throw new Error("task-error");
+    });
+    const pSuccess = withDocLock(docId, async () => {
+        return "recovered";
+    });
+
+    await assert.rejects(pFail, { message: "task-error" });
+    const recoveryRes = await pSuccess;
+    assert.equal(recoveryRes, "recovered");
+});
+
+test("后台主时钟：lvTicker 支持按周期与每小时整点巡检订阅及退订", async () => {
+    const originalWindow = globalThis.window;
+    const originalDoc = globalThis.document;
+
+    try {
+        let intervalCb: Function = () => {};
+        let intervalTimer = 0;
+        (globalThis as any).window = {
+            setInterval(fn: Function, ms: number) {
+                intervalCb = fn;
+                return ++intervalTimer;
+            },
+            clearInterval() {},
+        };
+        (globalThis as any).document = {
+            addEventListener() {},
+            removeEventListener() {},
+        };
+
+        let hourlyRunCount = 0;
+        let dateCrossNewDay = "";
+
+        const unregisterHour = lvTicker.onHour("siyuan-contacts", () => {
+            hourlyRunCount += 1;
+        });
+        const unregisterDateCross = lvTicker.onDateCross("siyuan-contacts", (today) => {
+            dateCrossNewDay = today;
+        });
+
+        assert.equal(typeof unregisterHour, "function");
+        assert.equal(typeof unregisterDateCross, "function");
+
+        // 退订清理
+        unregisterHour();
+        unregisterDateCross();
+    } finally {
+        (globalThis as any).window = originalWindow;
+        (globalThis as any).document = originalDoc;
     }
 });
