@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.7** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.7) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.8** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.8) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -54,7 +54,30 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.7 (2026-11-02)
+## This release: v0.7.8 (2026-11-04)
+
+Xiaolv Ecosystem Federation Suite Epoch 7 Integration, Concurrency Write Lock Hardening, Bi-Directional Daily Note Undo & Cross-Plugin Omnisearch:
+
+- **Xiaolv Ecosystem Federation Suite (Epoch 7 Protocol v1.6.0)**:
+  - **Progressive Noise-Reduction Notifications (`lvNotify`)**: 4-tier anti-interruption architecture (inline micro-animation -> transient micro-capsule -> interactive card -> silent logging); interaction logging and relation mutations feature 5-second "Undo" actions with snooze and today-do-not-disturb support;
+  - **Launchpad Dock Integration (`lvLaunchpad`)**: Registered Contacts dock entry with digit `7`, badge count of overdue follow-ups, and 4 quick sub-actions;
+  - **Omnisearch Data Provider (`lvOmnisearch`)**: Cross-plugin millisecond-level retrieval for contacts, aliases, phone numbers, interaction logs, and organizations with 1-second timeout fuse and direct document navigation;
+  - **Unified Ecosystem Backup Bus (`lvBackup`)**: Registered `dumpData` & `restoreData` contracts across all 24 modules for seamless whole-ecosystem disaster recovery;
+  - **Heartbeat Main Clock (`lvTicker`)**: Aligned 10s micro-heartbeat with hourly audits, automatically throttling to 60s in low-power/background state with 00:00 midnight broadcast;
+  - **Shared AI Gateway (`lvAi`)**: Structured profile extraction powered by ecosystem-shared AI endpoints and keys with graceful fallback to SiYuan kernel AI.
+- **Resource & Concurrency Hardening**:
+  - **Document Write Queue Lock (`withDocLock`)**: Fixed Map key retention leak on lock release; extended mutex coverage across person profile, follow-ups, favor ledger, anniversaries, and related connections to eliminate SiYuan `document is locked` conflicts;
+  - **Daily Note Bi-Directional Undo Loop**: Attached `eventId` to quick-record daily note entries ensuring complete removal on undo;
+  - **Console Drilldown & Dialog Resilience**: Defensive parameter safeguards for Pre-Meeting Hub (`PreMeetingHubDialog`) and Cooling Radar (`CoolingRadarDialog`) with direct jumps to person documents.
+
+Validation: `pnpm check` 0 errors / 0 warnings, unit tests **1130/1130 PASS**, UI smoke **528/528 PASS**, and `pnpm e2e:isolated` (11/11 kernel services + 12/12 real desktop walkthroughs) all passed with 10 desktop screenshots.
+
+---
+
+<details>
+<summary><b>📜 Historical Release Notes (v0.7.7 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.7 (2026-11-02)
 
 Deep Native Document & Daily Note Synchronization, Xiaolv Federation SDK Integration, Multi-Granularity Graph Timeline & Full-Stack Isolated E2E Acceptance:
 
@@ -80,13 +103,6 @@ Deep Native Document & Daily Note Synchronization, Xiaolv Federation SDK Integra
   - **Sticky Sidebar**: Fixed sidebar scroll-off with `.lvct-tab-root` viewport sticky navigation;
   - **Compact Typography Scale**: Standardized `.font-size-10` ~ `.font-size-13` scale, reducing member card text to 10.5px / 11.5px;
   - **High-DPI & Narrow Viewport Zero Overflow**: Pinned dialog submit bar, zero overflow under 150% scaling (`853×533`) and 390px mobile viewports.
-
-Validation: `pnpm check` (0/0), unit tests (**1114/1114 PASS**), 3-tier UI regressions (**528/528 PASS**), and `pnpm e2e:isolated` (11/11 kernel services + 12/12 real SiYuan desktop walkthroughs) all passed with 10 desktop screenshots.
-
----
-
-<details>
-<summary><b>📜 Historical Release Notes (v0.7.6 ~ v0.5.2 Click to Expand)</b></summary>
 
 ### v0.7.6 · 2026-11-01
 - Multi-channel entries (`person-channels.ts`), physical business card image management with fullscreen viewer, avatar pipeline unified across roster and dashboard, and clean borderless layout.

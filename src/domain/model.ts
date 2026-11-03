@@ -5,7 +5,7 @@
  */
 import type { FieldKey } from "./fields";
 
-export const PLUGIN_VERSION = "0.7.7";
+export const PLUGIN_VERSION = "0.7.8";
 export const SETTINGS_STORE_VERSION = 1;
 export const SETTINGS_STORAGE_KEY = "contacts-settings.json";
 

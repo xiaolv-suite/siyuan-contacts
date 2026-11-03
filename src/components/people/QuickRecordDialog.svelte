@@ -72,8 +72,7 @@
                     source: "manual",
                 });
                 interactionRecorded = true;
-                const lastEvent = res.store.events[res.store.events.length - 1];
-                const eventId = lastEvent?.id;
+                const eventId = res.event?.id || res.store.events[res.store.events.length - 1]?.id;
 
                 const actionLabel = type === "call" ? "电话沟通"
                     : type === "message" ? "线上交流"
@@ -134,6 +133,7 @@
                 }
                 if (syncToDailyNote && pluginSettings?.notebookId) {
                     void appendInteractionToDailyNote(pluginSettings.notebookId, {
+                        eventId,
                         personDocId: person.docId,
                         personName: person.name,
                         localDate: targetDate,

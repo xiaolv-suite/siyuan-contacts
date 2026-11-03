@@ -92,11 +92,9 @@ export async function extractFromDoc(settings: ContactsSettings, docId: string, 
                 reply = await aiChat(preflight, true, { signal, timeoutMs });
             }
         } catch (err) {
-            if (err instanceof Error && err.message.includes("[LvAiGateway]")) {
-                reply = await aiChat(preflight, true, { signal, timeoutMs });
-            } else {
-                throw err;
-            }
+            if (signal?.aborted) throw new AiExtractionError("cancelled");
+            // 优雅降级：生态 AI 网关调用异常时平滑回退至思源原生 AI
+            reply = await aiChat(preflight, true, { signal, timeoutMs });
         }
         if (signal?.aborted) throw new AiExtractionError("cancelled");
         const extraction = parseExtraction(reply.trim());

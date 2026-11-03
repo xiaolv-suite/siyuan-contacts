@@ -528,6 +528,7 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
     const activePackets: LvNoticePacket[] = [];
     const historyList: LvNoticePacket[] = [];
     const timers = new Map<string, number>();
+    const snoozeTimers = new Set<number>();
     const pluginRegistry = new Map<string, () => void>();
 
     // 动态同步浮层栈：仅在存在卡片式重点通知时压栈 Esc 监听，无卡片或仅微胶囊时释放
@@ -674,6 +675,19 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
                 existing.repeatCount += 1;
                 existing.message = packet.message;
                 existing.createdAt = Date.now();
+                if (packet.actions) existing.actions = packet.actions;
+                if (packet.level) existing.level = packet.level;
+                const duration = packet.duration ?? (packet.level === "error" ? 0 : 8000);
+                if (timers.has(existing.id)) {
+                    clearTimeout(timers.get(existing.id));
+                    timers.delete(existing.id);
+                }
+                if (duration > 0) {
+                    const t = window.setTimeout(() => {
+                        this.dismiss(existing.id);
+                    }, duration);
+                    timers.set(existing.id, t);
+                }
                 render();
                 return;
             }
@@ -709,7 +723,8 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
             const item = activePackets.find((p) => p.id === id);
             if (!item) return;
             this.dismiss(id);
-            setTimeout(() => {
+            const snoozeTimer = window.setTimeout(() => {
+                snoozeTimers.delete(snoozeTimer);
                 this.post({
                     ...item,
                     id: `snoozed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -717,6 +732,7 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
                     title: item.title ? `[稍后提醒] ${item.title}` : undefined
                 });
             }, durationMs);
+            snoozeTimers.add(snoozeTimer);
         },
 
         muteToday(category: string) {
@@ -778,6 +794,8 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
             unregisterSurface = null;
             timers.forEach((t) => clearTimeout(t));
             timers.clear();
+            snoozeTimers.forEach((t) => clearTimeout(t));
+            snoozeTimers.clear();
             hostEl?.remove();
             hostEl = null;
             if (window.__LV_NOTICE_HUB__ === this) {
@@ -1078,14 +1096,15 @@ export async function withDocLock<T>(docId: string, task: () => Promise<T>): Pro
 
     let release!: () => void;
     const current = new Promise<void>((resolve) => { release = resolve; });
-    map.set(docId, prev.then(() => current, () => current));
+    const tail = prev.then(() => current, () => current);
+    map.set(docId, tail);
 
     try {
         await prev;
         return await task();
     } finally {
         release();
-        if (map.get(docId) === current) {
+        if (map.get(docId) === tail) {
             map.delete(docId);
         }
     }
@@ -1160,11 +1179,11 @@ export const lvNotify = {
     },
 
     dismiss(id: string): void {
-        window.__LV_NOTICE_HUB__?.dismiss(id);
+        getHub().dismiss(id);
     },
 
     snooze(id: string, durationMs: number): void {
-        window.__LV_NOTICE_HUB__?.snooze(id, durationMs);
+        getHub().snooze(id, durationMs);
     },
 
     muteToday(category: string): void {

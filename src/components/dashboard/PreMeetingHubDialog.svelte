@@ -164,8 +164,8 @@
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small open-person-btn"
                                     onclick={() => {
-                                        onClose();
-                                        onOpenPerson(d.person.docId);
+                                        onClose?.();
+                                        onOpenPerson?.(d.person.docId);
                                     }}
                                     title={text("preMeetingOpenPersonTip", "在人脉详情视窗中查看完整画像")}
                                 >

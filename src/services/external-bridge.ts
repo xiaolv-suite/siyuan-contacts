@@ -10,6 +10,7 @@ import type {
 import type { ContactsSettings } from "../domain/model";
 import { birthdayToMs } from "../domain/person.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
+import { lvActivity } from "../libs/lv-notice-kit.ts";
 
 export interface BridgeDependencies {
     settings(): ContactsSettings;
@@ -356,16 +357,24 @@ export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBri
                     }
                 }
                 const summary = summarizeBridgeInteraction(results, recorded);
-                if (summary.recorded > 0 && typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
-                    const detail = {
-                        v: 1,
-                        source: "siyuan-contacts",
-                        type: "interaction-logged",
-                        eventId: `contacts_interaction_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                        at: new Date().toISOString(),
-                    };
-                    window.dispatchEvent(new CustomEvent("lv-contacts:interaction-logged", { detail }));
-                    window.dispatchEvent(new CustomEvent("lv-contacts:data-changed", { detail: { ...detail, type: "data-changed" } }));
+                if (summary.recorded > 0) {
+                    lvActivity.record({
+                        source: "人脉",
+                        category: "contact",
+                        title: `与联系人记录往来互动`,
+                        detail: entry.note || undefined,
+                    });
+                    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+                        const detail = {
+                            v: 1,
+                            source: "siyuan-contacts",
+                            type: "interaction-logged",
+                            eventId: `contacts_interaction_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                            at: new Date().toISOString(),
+                        };
+                        window.dispatchEvent(new CustomEvent("lv-contacts:interaction-logged", { detail }));
+                        window.dispatchEvent(new CustomEvent("lv-contacts:data-changed", { detail: { ...detail, type: "data-changed" } }));
+                    }
                 }
                 return summary;
             });

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, lvOmnisearch, showMessage } from "../src/libs/lv-notice-kit.ts";
+import { recordInteractionWithResult } from "../src/data/interactions.ts";
 
 function createMockDom() {
     const elements = new Map<string, any>();
@@ -586,6 +587,20 @@ test("穿透搜索：lvOmnisearch 支持联系人姓名、圈层标签与互动�
             });
         }
 
+        // 模拟组织机构
+        if ("极客科技".includes(kw)) {
+            items.push({
+                id: "org_doc_001",
+                source: "人脉",
+                category: "组织机构",
+                title: "极客科技",
+                snippet: "简称: 极客 · 3 位成员 · 行业: 人工智能",
+                badge: "组织",
+                linkBlockId: "20261103000000-org001",
+                onClick: () => { clickedId = "org_doc_001"; },
+            });
+        }
+
         return items;
     });
 
@@ -615,13 +630,110 @@ test("穿透搜索：lvOmnisearch 支持联系人姓名、圈层标签与互动�
         interactionResults[0].onClick();
         assert.equal(clickedId, "interaction_evt_001");
 
-        // 4. 空关键词预检
+        // 4. 按组织机构检索
+        const orgResults = await lvOmnisearch.search("极客科技");
+        assert.equal(orgResults.length, 1);
+        assert.equal(orgResults[0].category, "组织机构");
+        assert.equal(orgResults[0].title, "极客科技");
+        orgResults[0].onClick();
+        assert.equal(clickedId, "org_doc_001");
+
+        // 5. 空关键词预检
         const emptyResults = await lvOmnisearch.search("   ");
         assert.equal(emptyResults.length, 0);
     } finally {
         unregister();
         const afterClean = await lvOmnisearch.search("张三");
         assert.equal(afterClean.length, 0);
+    }
+});
+
+test("互动记录原子写入：recordInteractionWithResult 成功追加时直接返回新事件实体", async () => {
+    const memoryStorage = new Map<string, any>();
+    const mockPlugin: any = {
+        async loadData(key: string) {
+            return memoryStorage.get(key) ?? null;
+        },
+        async saveData(key: string, data: any) {
+            memoryStorage.set(key, data);
+        },
+    };
+
+    const docId = "20261103000000-abcdef1";
+    const result = await recordInteractionWithResult(mockPlugin, {
+        personDocId: docId,
+        note: "周三商务洽谈",
+        type: "meeting",
+        externalRef: "test-ref-123",
+    });
+
+    assert.equal(result.recorded, true);
+    assert.ok(result.event);
+    assert.equal(result.event.personDocId, docId);
+    assert.equal(result.event.note, "周三商务洽谈");
+    assert.equal(result.event.type, "meeting");
+    assert.ok(result.event.id);
+    assert.equal(result.store.events[result.store.events.length - 1].id, result.event.id);
+
+    // 幂等写入相同事件（基于 externalRef）不应重复记录
+    const dupResult = await recordInteractionWithResult(mockPlugin, {
+        personDocId: docId,
+        note: "周三商务洽谈",
+        type: "meeting",
+        source: result.event.source,
+        externalRef: "test-ref-123",
+    });
+    assert.equal(dupResult.recorded, false);
+    assert.equal(dupResult.event, undefined);
+});
+
+test("通知防打扰：重复通知到达时刷新自动关闭计时器并继承最新按钮", async () => {
+    const { doc, win, storage } = createMockDom();
+    const originalWindow = globalThis.window;
+    const originalDoc = globalThis.document;
+    const originalStorage = globalThis.localStorage;
+
+    try {
+        (globalThis as any).document = doc;
+        (globalThis as any).window = win;
+        (globalThis as any).localStorage = storage;
+
+        let actionClicked = false;
+        lvNotify.card({
+            source: "小驴人脉",
+            category: "test-dup",
+            message: "重复内容提醒",
+            duration: 4000,
+        });
+
+        // 紧接着触发带有撤销按钮的重复通知
+        lvNotify.card({
+            source: "小驴人脉",
+            category: "test-dup",
+            message: "重复内容提醒",
+            duration: 8000,
+            actions: [
+                {
+                    label: "立刻处理",
+                    onClick: () => { actionClicked = true; },
+                },
+            ],
+        });
+
+        const hub = (win as any).__LV_NOTICE_HUB__;
+        const history = hub.getHistory();
+        assert.ok(history.length >= 1);
+        const latest = history[0];
+        assert.equal(latest.repeatCount, 2);
+
+        // 测试 dismiss 与 snooze 在无 window 或有 window 下安全调用
+        lvNotify.snooze(latest.id, 1000);
+        lvNotify.dismiss(latest.id);
+        hub.destroy();
+    } finally {
+        (globalThis as any).window = originalWindow;
+        (globalThis as any).document = originalDoc;
+        (globalThis as any).localStorage = originalStorage;
     }
 });
 

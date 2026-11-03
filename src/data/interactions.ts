@@ -44,7 +44,7 @@ export async function recordInteraction(plugin: Plugin, input: RecordInteraction
 export async function recordInteractionWithResult(
     plugin: Plugin,
     input: RecordInteractionInput,
-): Promise<{ store: InteractionStore; recorded: boolean }> {
+): Promise<{ store: InteractionStore; recorded: boolean; event?: InteractionEvent }> {
     assertPersonDocId(input.personDocId);
     if (input.occurredAt !== undefined && (!Number.isFinite(input.occurredAt) || Number.isNaN(new Date(input.occurredAt).getTime()))) {
         throw new Error("互动发生时间无效，未记录互动");
@@ -66,7 +66,7 @@ export async function recordInteractionWithResult(
         if (next !== store) {
             await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, next);
         }
-        return { store: next, recorded: next !== store };
+        return { store: next, recorded: next !== store, event: next !== store ? event : undefined };
     });
 }
 

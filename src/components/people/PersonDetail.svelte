@@ -1797,6 +1797,11 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     }
 
     async function refreshAfterEdit() {
+        const fresh = await refreshPerson(settings, current);
+        if (fresh && detailAlive) {
+            if (current.avatar && !fresh.avatar) fresh.avatar = current.avatar;
+            current = fresh;
+        }
         await loadOthers();
         await loadInsights();
         if (onSyncDocProfile) void onSyncDocProfile(current).catch(() => {});

@@ -132,7 +132,7 @@ const workspace = process.env.TEST_ISOLATED_WORKSPACE
 if (KEEP && fs.existsSync(workspace)) {
     try { fs.rmSync(workspace, { recursive: true, force: true }); } catch {}
 }
-prepareIsolatedWorkspace(workspace, "lvct-isolated-walk.json", "lvct v0.7.2 isolated browser walkthrough");
+prepareIsolatedWorkspace(workspace, "lvct-isolated-walk.json", "lvct v0.7.8 isolated browser walkthrough");
 
 const pluginTarget = path.join(workspace, "data", "plugins", PLUGIN_NAME);
 assertIsolatedPath(workspace, pluginTarget);
@@ -774,8 +774,71 @@ try {
     // 10.4 雷切小组件与公共桥契约完整性 (IDEA-18)
     const bridgeIntact = await evalJs("Boolean(window.LvContacts && window.LvContacts.protocol === 2 && typeof window.LvContacts.searchPeople === 'function' && typeof window.LvContacts.executeCommand === 'function')");
     assert.ok(bridgeIntact, "window.LvContacts 公共桥与雷切小组件数据源契约不完整");
-    report.checks.push({ step: "小驴生态联邦互联（快门指令、闪卡防崩、管家同步与雷切小组件）", ok: true });
-    console.log("  PASS 小驴生态联邦互联（快门指令、闪卡防崩、管家同步与雷切小组件）核验通过");
+
+    // 10.5 小驴罗盘极速弹射坞 (lvLaunchpad) 入口与行动契约
+    const launchpadCheck = await evalJs(`(() => {
+        const hub = window.__LV_LAUNCHPAD__;
+        if (!hub) return { ok: false, reason: "未发现 __LV_LAUNCHPAD__ 单例" };
+        const items = hub.getItems();
+        const item = items.find((i) => i.id === "${PLUGIN_NAME}");
+        if (!item) return { ok: false, reason: "人脉未在罗盘注册" };
+        return {
+            ok: true,
+            name: item.name,
+            digit: item.digit,
+            actionCount: item.actions?.length ?? 0,
+        };
+    })()`);
+    assert.equal(launchpadCheck.ok, true, `罗盘入口核验失败：${launchpadCheck.reason}`);
+    assert.equal(launchpadCheck.name, "人脉");
+    assert.equal(launchpadCheck.digit, 7);
+    assert.ok(launchpadCheck.actionCount >= 4, "罗盘二级行动未完整注册");
+
+    // 10.6 全生态穿透搜索 (lvOmnisearch) 跨插件检索
+    const omniSearchResults = await evalJs(`(async () => {
+        const hub = window.__LV_OMNISEARCH__;
+        if (!hub) return { ok: false, reason: "未发现 __LV_OMNISEARCH__ 单例" };
+        const nameHits = await hub.search("王浩然");
+        const actHits = await hub.search("聚餐");
+        return {
+            ok: true,
+            nameFound: nameHits.some((h) => h.source === "人脉" && h.title.includes("王浩然")),
+            actFound: actHits.some((h) => h.source === "人脉" && h.category === "互动记录"),
+        };
+    })()`);
+    assert.equal(omniSearchResults.ok, true, `穿透搜索核验失败：${omniSearchResults.reason}`);
+    assert.ok(omniSearchResults.nameFound, "穿透搜索未能检索到联系人「王浩然」");
+    assert.ok(omniSearchResults.actFound, "穿透搜索未能检索到「聚餐」互动记录");
+
+    // 10.7 今日全生态活动流 (lvActivity) 广播核验
+    const activityCheck = await evalJs(`(() => {
+        const hub = window.__LV_ACTIVITY_STREAM__;
+        if (!hub) return { ok: false, reason: "未发现 __LV_ACTIVITY_STREAM__ 单例" };
+        const records = hub.getTodayRecords();
+        return {
+            ok: true,
+            hasContactActivity: records.some((r) => r.source === "人脉"),
+            count: records.length,
+        };
+    })()`);
+    assert.equal(activityCheck.ok, true, `活动流核验失败：${activityCheck.reason}`);
+    assert.ok(activityCheck.hasContactActivity, "人脉互动未成功广播至今日全生态活动流");
+
+    // 10.8 全生态联合灾备数据转储 (lvBackup)
+    const backupCheck = await evalJs(`(async () => {
+        const plugin = window.siyuan?.ws?.app?.plugins?.find((p) => p.name === "${PLUGIN_NAME}");
+        if (!plugin || typeof plugin.dumpData !== "function") return { ok: false, reason: "dumpData 未导出" };
+        const data = await plugin.dumpData();
+        return {
+            ok: Boolean(data && typeof data === "object" && data.modules),
+            hasInteractions: Boolean(data?.modules?.interactions),
+        };
+    })()`);
+    assert.equal(backupCheck.ok, true, `全生态灾备转储核验失败：${backupCheck.reason}`);
+    assert.ok(backupCheck.hasInteractions, "全生态灾备包缺少 interactions 核心模块");
+
+    report.checks.push({ step: "小驴生态联邦互联（快门指令、闪卡防崩、罗盘弹射、穿透搜索、活动流与联合灾备）", ok: true });
+    console.log("  PASS 小驴生态联邦互联（快门指令、闪卡防崩、罗盘弹射、穿透搜索、活动流与联合灾备）核验通过");
 
     // 11. 组织视图、紧凑排版与受控组织档案（Phase 2 Linkage & 样式紧凑/跟随）实测
     await focusWorkbenchTab();

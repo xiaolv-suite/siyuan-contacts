@@ -244,8 +244,8 @@
                                 type="button"
                                 class="b3-button b3-button--text btn-open-person"
                                 onclick={() => {
-                                    onOpenPerson(item.person.docId);
-                                    onClose();
+                                    onOpenPerson?.(item.person.docId);
+                                    onClose?.();
                                 }}
                             >
                                 <ExternalLink size={12} class="lvct-icon-inline" />

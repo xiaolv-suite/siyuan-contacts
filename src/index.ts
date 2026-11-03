@@ -302,7 +302,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             this.launchpadCleaner = undefined;
         });
 
-        // Phase 7: 注册全局穿透搜索数据提供者 (lvOmnisearch)
+        // Phase 7: 注册全局穿透搜索数据提供者 (lvOmnisearch) 与活动流初始化
         this.omnisearchCleaner = lvOmnisearch.registerProvider("siyuan-contacts", async (keyword) => {
             return this.searchOmniContacts(keyword);
         });
@@ -310,6 +310,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             this.omnisearchCleaner?.();
             this.omnisearchCleaner = undefined;
         });
+        lvActivity.getTodayRecords();
 
         const unsubscribeDataMirror = subscribeDataChanged((change) => {
             if (change.docIds && change.docIds.length > 0) {
@@ -1831,6 +1832,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             props: {
                 facade: this,
                 i18n: this.i18n,
+                onOpenPerson: (docId: string) => {
+                    this.openWorkbench("people");
+                    this.openPersonDoc(docId);
+                    emitDataChanged({ topics: ["people"], docIds: [docId] }, this.lifecycleToken);
+                },
             },
         });
     }
@@ -1847,6 +1853,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             props: {
                 facade: this,
                 i18n: this.i18n,
+                onOpenPerson: (docId: string) => {
+                    this.openWorkbench("people");
+                    this.openPersonDoc(docId);
+                    emitDataChanged({ topics: ["people"], docIds: [docId] }, this.lifecycleToken);
+                },
             },
         });
     }
@@ -1921,6 +1932,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     linkBlockId: person.docId,
                     onClick: () => {
                         this.openWorkbench("people");
+                        this.openPersonDoc(person.docId);
                         emitDataChanged({ topics: ["people"], docIds: [person.docId] }, this.lifecycleToken);
                     },
                 });
@@ -1948,7 +1960,33 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     linkBlockId: event.personDocId,
                     onClick: () => {
                         this.openWorkbench("people");
+                        this.openPersonDoc(event.personDocId);
                         emitDataChanged({ topics: ["people"], docIds: [event.personDocId] }, this.lifecycleToken);
+                    },
+                });
+            }
+
+            // 3. 检索组织机构
+            const orgs = await this.listOrganizations().catch(() => []);
+            const matchedOrgs = orgs.filter((org) =>
+                org.name.toLowerCase().includes(kw) ||
+                (org.profile?.shortName && org.profile.shortName.toLowerCase().includes(kw)) ||
+                (org.profile?.description && org.profile.description.toLowerCase().includes(kw))
+            ).slice(0, 10);
+
+            for (const org of matchedOrgs) {
+                const memberCount = org.memberships?.length ?? 0;
+                results.push({
+                    id: `org_${org.docId}`,
+                    source: "人脉",
+                    category: "组织机构",
+                    title: org.name,
+                    snippet: `${org.profile?.shortName ? `简称: ${org.profile.shortName} · ` : ""}${memberCount > 0 ? `${memberCount} 位成员` : "暂无成员"}${org.profile?.description ? ` · 简介: ${org.profile.description}` : ""}`,
+                    badge: org.archived ? "已归档" : "组织",
+                    linkBlockId: org.docId,
+                    onClick: () => {
+                        this.openWorkbench("orgs");
+                        this.openPersonDoc(org.docId);
                     },
                 });
             }
