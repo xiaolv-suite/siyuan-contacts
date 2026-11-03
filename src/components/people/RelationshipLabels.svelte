@@ -5,6 +5,7 @@
     import { useCloseGuard } from "../close-guard";
     import { MigrationWriteUnknownError } from "../../domain/migration-records";
     import { requestErrorMessage } from "../../shared/error-presenter";
+    import { lvNotify } from "../../libs/lv-notice-kit";
 
     let { personDocId, revision = 0, onLoad, onSave, onChanged }: {
         personDocId: string; revision?: number;
@@ -22,6 +23,7 @@
     let request = 0;
     let alive = true;
     let resultElement: HTMLElement | undefined = $state();
+    let saveButtonElement: HTMLElement | undefined = $state();
     const dirty = $derived.by(() => draft !== (snapshot?.record?.labels ?? []).join("、"));
     useCloseGuard({ busy: () => busy, dirty: () => dirty || unknown, changes: () => ["与我的关系称谓有未保存或未核实的修改"] });
     onDestroy(() => { alive = false; request += 1; });
@@ -79,11 +81,18 @@
             snapshot = { selfDocId: record.selfDocId, record };
             draft = record.labels.join("、");
             message = "称谓已保存并核实";
+            lvNotify.inline(saveButtonElement, "称谓已保存并核实", true);
+            lvNotify.capsule({
+                source: "小驴人脉",
+                message: "关系称谓已保存并核实",
+                level: "success",
+            });
             onChanged();
         } catch (error) {
             if (!alive || generation !== request || docId !== personDocId) return;
             unknown = error instanceof MigrationWriteUnknownError;
             message = requestErrorMessage(error);
+            lvNotify.inline(saveButtonElement, "称谓保存未完成", false);
         } finally {
             if (alive && generation === request) {
                 busy = false;
@@ -124,7 +133,13 @@
                 maxlength="1600"
                 onkeydown={(e) => { if (e.key === "Enter" && dirty && !busy && !unknown) { e.preventDefault(); void save(); } }}
             />
-            <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void save()} disabled={busy || unknown || !dirty}>{busy ? "保存中…" : "保存称谓"}</button>
+            <button
+                bind:this={saveButtonElement}
+                class="b3-button b3-button--outline"
+                style="border-radius: var(--lv-r-pill, 9999px);"
+                onclick={() => void save()}
+                disabled={busy || unknown || !dirty}
+            >{busy ? "保存中…" : "保存称谓"}</button>
             <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" disabled={busy} onclick={() => { message = ""; void load(false); }}>取消称谓草稿</button>
         </div>
     {/if}

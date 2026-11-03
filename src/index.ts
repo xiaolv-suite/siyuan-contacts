@@ -3,12 +3,27 @@
  * 业务编排在 services/，内核交互在 api/，自管数据在 data/，纯函数在 domain/，
  * 组件只依赖 types.ts 的 facade 接口，不反向 import 本文件（避免循环）。
  */
-import { Plugin, getFrontend, openTab, showMessage, Dialog, getActiveEditor } from "siyuan";
+import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
+import { lvNotify, showMessage } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
-    showMessage(`[小驴人脉] ${msg}`, timeout, type);
+    if (type === "error") {
+        lvNotify.card({
+            source: "小驴人脉",
+            title: "小驴人脉提示",
+            message: msg,
+            level: "error",
+            duration: Math.max(timeout, 6000),
+        });
+    } else {
+        lvNotify.capsule({
+            source: "小驴人脉",
+            message: msg,
+            duration: timeout,
+        });
+    }
 }
 
 import CaptureDialog from "./components/capture/CaptureDialog.svelte";
@@ -47,7 +62,7 @@ import type { FieldRebuildPreview, SettingsRebindPreview } from "./services/sett
 import { auditWorkspaceData, auditWorkspaceDataReport, retryFailedHealthAuditModules } from "./services/health-audit";
 import { reconcileFollowUpTasksFromDoc } from "./services/followup-sync";
 import { updateContactFields, applyContactCandidateFields, listContacts as listContactsService } from "./services/contacts";
-import { addRelation, discoverConnections } from "./services/relations";
+import { addRelation, removeRelation, discoverConnections } from "./services/relations";
 import { detectChangedCities } from "./domain/city-topic";
 import { autoRebaseCityTopics } from "./services/city-topic";
 import { ensureSelfIdentity, designateSelfIdentity, previewSelfIdentityChange, applySelfIdentityChange } from "./services/self-identity";
@@ -218,6 +233,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private readonly tabMounts = new Map<Element, LifecycleToken>();
     private readonly ownedDialogDisposers = new Set<() => void>();
     private eventCleanup: (() => void) | null = null;
+    private noticeHubCleaner?: () => void;
     private layoutReady = false;
     private preferencesActive = true;
     private preferencesEpoch = 0;
@@ -503,6 +519,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             currentCleanup?.();
             try { unregisterRaikiri?.(); } catch {}
         };
+        this.noticeHubCleaner = lvNotify.registerPlugin("siyuan-contacts");
+
         window.clearTimeout(this.startupTimer);
         if (this.preferencesVerified && this.viewPreferences.openOnStartup) {
             const epoch = this.preferencesEpoch;
@@ -513,6 +531,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 this.openWorkbench();
             }, 0);
         }
+
+        window.setTimeout(() => {
+            if (this.isLifecycleActive(lifecycleToken) && this.workspaceState.kind === "ready") {
+                void this.checkFollowUpReminders();
+            }
+        }, 2000);
     }
 
     async onunload() {
@@ -520,6 +544,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     private disposeLifecycle(): void {
+        this.noticeHubCleaner?.();
+        this.noticeHubCleaner = undefined;
         const lifecycleToken = this.lifecycleToken;
         lifecycleToken.invalidate();
         this.preferencesActive = false;
@@ -1101,6 +1127,40 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 value: 1,
                 externalRef: `contacts:${personDocId}:${date}:${options?.occurredAt ?? Date.now()}`,
                 note: note ? `与联系人互动：${note}` : "与联系人互动跟进",
+            }).catch(() => {});
+        }
+        if (recordResult.recorded) {
+            const lastEvent = recordResult.store.events[recordResult.store.events.length - 1];
+            const eventId = lastEvent?.id;
+            void this.listContacts().then((roster) => {
+                const person = roster.find((p) => p.docId === personDocId);
+                const name = person?.name || "联系人";
+                lvNotify.capsule({
+                    source: "小驴人脉",
+                    message: `已记录与「${name}」的互动`,
+                    level: "success",
+                    duration: 5000,
+                    action: eventId ? {
+                        label: "撤销",
+                        onClick: async () => {
+                            try {
+                                await this.deleteInteraction(personDocId, eventId);
+                                lvNotify.capsule({
+                                    source: "小驴人脉",
+                                    message: `已撤销与「${name}」的互动记录`,
+                                    level: "info",
+                                });
+                            } catch (err) {
+                                lvNotify.card({
+                                    source: "小驴人脉",
+                                    title: "撤销失败",
+                                    message: `未能撤销互动记录：${err instanceof Error ? err.message : String(err)}`,
+                                    level: "error",
+                                });
+                            }
+                        },
+                    } : undefined,
+                });
             }).catch(() => {});
         }
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
@@ -2168,7 +2228,109 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!p1 || !p2) throw new Error("未找到关联人物");
         const report = await addRelation(this.settings, p1, p2);
         emitDataChanged({ topics: ["people"], docIds: [firstPersonDocId, secondPersonDocId] }, token);
+        lvNotify.capsule({
+            source: "小驴人脉",
+            message: `已建立「${p1.name}」与「${p2.name}」的关联关系`,
+            level: "success",
+            duration: 5000,
+            action: {
+                label: "撤销",
+                onClick: async () => {
+                    try {
+                        if (!this.settings) return;
+                        await removeRelation(this.settings, p1, p2);
+                        emitDataChanged({ topics: ["people"], docIds: [firstPersonDocId, secondPersonDocId] }, this.lifecycleToken);
+                        lvNotify.capsule({
+                            source: "小驴人脉",
+                            message: `已撤销「${p1.name}」与「${p2.name}」的关联`,
+                            level: "info",
+                        });
+                    } catch (err) {
+                        lvNotify.card({
+                            source: "小驴人脉",
+                            title: "撤销关系失败",
+                            message: `未能撤销关联关系：${err instanceof Error ? err.message : String(err)}`,
+                            level: "error",
+                        });
+                    }
+                },
+            },
+        });
         return report;
+    }
+
+    /**
+     * 跟进日程与定期联络到期卡片提醒 (Epoch 7 Standard)
+     * 支持【去记录】、【稍后提醒】与今日免打扰
+     */
+    async checkFollowUpReminders(force = false): Promise<{ delivered: boolean; count: number; cardId?: string }> {
+        if (!this.settings) return { delivered: false, count: 0 };
+        if (!force && lvNotify.isMutedToday("contacts-followup")) {
+            return { delivered: false, count: 0 };
+        }
+        try {
+            const data = await this.loadDashboard({ birthdayWindowDays: 7 });
+            const dueFollowUps = (data.followUps ?? []).filter(
+                (f) => f.item.status === "open" && (f.bucket === "today" || f.bucket === "overdue")
+            );
+            const overdueCadences = (data.actions ?? []).filter(
+                (a) => a.bucket === "overdue" && a.reasons.some((r) => r.kind === "stale")
+            );
+
+            const totalCount = dueFollowUps.length + overdueCadences.length;
+            if (totalCount === 0) return { delivered: false, count: 0 };
+
+            const firstPerson = dueFollowUps[0]?.person?.name || overdueCadences[0]?.person?.name || "联系人";
+            const firstTitle = dueFollowUps[0]?.item?.title || "定期联络";
+            const firstDocId = dueFollowUps[0]?.item?.personDocId || overdueCadences[0]?.person?.docId;
+
+            const message = totalCount === 1
+                ? `联系人「${firstPerson}」已到跟进时间：${firstTitle}`
+                : `共有 ${totalCount} 位联系人到期需跟进（含「${firstPerson}」等）`;
+
+            const cardId = lvNotify.card({
+                source: "小驴人脉",
+                category: "contacts-followup",
+                title: "人脉跟进到期提醒",
+                message,
+                level: "warn",
+                duration: 10000,
+                actions: [
+                    {
+                        label: "去记录",
+                        primary: true,
+                        onClick: () => {
+                            this.openWorkbench();
+                            if (firstDocId) {
+                                void this.listContacts().then((roster) => {
+                                    const p = roster.find((item) => item.docId === firstDocId);
+                                    if (p) {
+                                        emitDataChanged({ topics: ["people"], docIds: [firstDocId] }, this.lifecycleToken);
+                                    }
+                                });
+                            }
+                        },
+                    },
+                    {
+                        label: "查看工作台",
+                        onClick: () => {
+                            this.openWorkbench();
+                        },
+                    },
+                ],
+                snooze: {
+                    options: [
+                        { label: "15分钟后再提醒", durationMs: 15 * 60 * 1000 },
+                        { label: "1小时后再提醒", durationMs: 60 * 60 * 1000 },
+                        { label: "今日免打扰", muteToday: true },
+                    ],
+                },
+            });
+
+            return { delivered: true, count: totalCount, cardId };
+        } catch {
+            return { delivered: false, count: 0 };
+        }
     }
 
     async buildReviewReport(from: string, to: string) {

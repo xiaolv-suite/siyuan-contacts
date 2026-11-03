@@ -63,6 +63,7 @@
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
     import { pushFlashcardSafely } from "../../libs/ecosystem-bridge-kit";
+    import { lvNotify } from "../../libs/lv-notice-kit";
     import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
     import type { DetailSectionKey, DetailCollapsedSections } from "../../domain/preferences";
     import { listContacts, removeContact, updateContactFields } from "../../services/contacts";
@@ -1729,6 +1730,63 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 ? await addRelation(settings, current, other)
                 : await removeRelation(settings, current, other);
             pendingRelationMutation = null;
+            if (operation === "add") {
+                lvNotify.capsule({
+                    source: "小驴人脉",
+                    message: `已建立与「${other.name}」的关联关系`,
+                    level: "success",
+                    duration: 5000,
+                    action: {
+                        label: "撤销",
+                        onClick: async () => {
+                            try {
+                                await removeRelation(settings, current, other);
+                                await refreshAfterEdit();
+                                lvNotify.capsule({
+                                    source: "小驴人脉",
+                                    message: `已撤销与「${other.name}」的关联`,
+                                    level: "info",
+                                });
+                            } catch (err) {
+                                lvNotify.card({
+                                    source: "小驴人脉",
+                                    title: "撤销关系失败",
+                                    message: `未能撤销关联关系：${err instanceof Error ? err.message : String(err)}`,
+                                    level: "error",
+                                });
+                            }
+                        },
+                    },
+                });
+            } else {
+                lvNotify.capsule({
+                    source: "小驴人脉",
+                    message: `已解除与「${other.name}」的关联关系`,
+                    level: "info",
+                    duration: 5000,
+                    action: {
+                        label: "撤销",
+                        onClick: async () => {
+                            try {
+                                await addRelation(settings, current, other);
+                                await refreshAfterEdit();
+                                lvNotify.capsule({
+                                    source: "小驴人脉",
+                                    message: `已恢复与「${other.name}」的关联`,
+                                    level: "success",
+                                });
+                            } catch (err) {
+                                lvNotify.card({
+                                    source: "小驴人脉",
+                                    title: "撤销解除失败",
+                                    message: `未能恢复关联关系：${err instanceof Error ? err.message : String(err)}`,
+                                    level: "error",
+                                });
+                            }
+                        },
+                    },
+                });
+            }
             return result;
         }, () => { pendingRelationMutation = { operation, other }; });
     }

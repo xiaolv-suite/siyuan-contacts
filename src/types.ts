@@ -215,6 +215,8 @@ export interface ContactsPluginFacade {
     /** RF-10 / 3.2：潜在人脉关联智能挖掘（Potential Connection Discovery） */
     discoverPotentialConnections?(options?: import("./domain/connections-discovery").DiscoverConnectionsOptions): Promise<import("./domain/connections-discovery").PotentialConnection[]>;
     establishPotentialConnection?(firstPersonDocId: string, secondPersonDocId: string): Promise<import("./domain/relations").RelationMutationReport>;
+    /** 跟进日程与定期联络到期卡片提醒 (Epoch 7 Standard) */
+    checkFollowUpReminders?(force?: boolean): Promise<{ delivered: boolean; count: number; cardId?: string }>;
     /** 交往回顾报表（F12）：区间互动统计（只读投影，人物条数与同场活动分口径） */
     buildReviewReport(from: string, to: string): Promise<ReviewReport>;
     /** RF-03：将交往回顾沉淀为思源实体文档 */
