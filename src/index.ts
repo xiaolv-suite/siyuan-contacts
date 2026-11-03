@@ -6,7 +6,7 @@
 import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
-import { lvNotify, lvTicker, lvActivity, showMessage } from "./libs/lv-notice-kit";
+import { lvNotify, lvTicker, lvActivity, lvBackup, lvEcosystem, showMessage } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
     if (type === "error") {
@@ -234,6 +234,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private readonly ownedDialogDisposers = new Set<() => void>();
     private eventCleanup: (() => void) | null = null;
     private noticeHubCleaner?: () => void;
+    private backupCleaner?: () => void;
     private layoutReady = false;
     private preferencesActive = true;
     private preferencesEpoch = 0;
@@ -277,6 +278,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         lifecycleToken.onDispose(bindPeopleProfileStorage(this));
         lifecycleToken.onDispose(bindContactAliasStorage(this));
         lifecycleToken.onDispose(() => disposeDocMirrorScheduler());
+
+        // Phase 4: 注册全生态一键联合灾备切面 (lvBackup)
+        this.backupCleaner = lvBackup.register(
+            "siyuan-contacts",
+            async () => this.dumpData(),
+            async (data) => this.restoreData(data)
+        );
+        lifecycleToken.onDispose(() => {
+            this.backupCleaner?.();
+            this.backupCleaner = undefined;
+        });
 
         const unsubscribeDataMirror = subscribeDataChanged((change) => {
             if (change.docIds && change.docIds.length > 0) {
@@ -553,6 +565,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     private disposeLifecycle(): void {
+        this.backupCleaner?.();
+        this.backupCleaner = undefined;
         this.noticeHubCleaner?.();
         this.noticeHubCleaner = undefined;
         const lifecycleToken = this.lifecycleToken;
@@ -1739,6 +1753,26 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async importMigrationBundle(text: string) {
         return importMigrationBundle(this, text);
+    }
+
+    async dumpData(): Promise<Record<string, unknown>> {
+        const bundleJson = await this.exportMigrationBundle();
+        return JSON.parse(bundleJson) as Record<string, unknown>;
+    }
+
+    async restoreData(data: Record<string, unknown>): Promise<boolean> {
+        try {
+            const bundleText = JSON.stringify(data);
+            const result = await this.importMigrationBundle(bundleText);
+            return result.failed.length === 0;
+        } catch (err) {
+            console.error("[LvContacts] 全生态灾备恢复失败", err);
+            return false;
+        }
+    }
+
+    getEcosystemStatusBadgeText(): string {
+        return lvEcosystem.getStatusBadgeText();
     }
 
     async listPersonFollowUps(personDocId: string) {

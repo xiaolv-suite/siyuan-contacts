@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, showMessage } from "../src/libs/lv-notice-kit.ts";
+import { lvNotify, lvTicker, withDocLock, lvAi, lvActivity, lvBackup, lvEcosystem, showMessage } from "../src/libs/lv-notice-kit.ts";
 
 function createMockDom() {
     const elements = new Map<string, any>();
@@ -429,3 +429,74 @@ test("今日活动流：lvActivity 广播人脉交往事实并汇入全家桶活
     assert.ok(markdown.includes("与 赵立新 线下会面"));
     assert.ok(markdown.includes("洽谈战略合作"));
 });
+
+test("全生态灾备切面：lvBackup 支持注册、导出全生态联合备份包与一键恢复", async () => {
+    let contactsRestoredData: any = null;
+    let habitsRestoredData: any = null;
+
+    // 模拟人脉插件与打卡插件注册灾备切面
+    const unregisterContacts = lvBackup.register(
+        "siyuan-contacts",
+        async () => ({
+            schemaVersion: 1,
+            peopleCount: 42,
+            interactions: [{ id: "int_01", note: "深度会面" }],
+        }),
+        async (data) => {
+            contactsRestoredData = data;
+            return true;
+        }
+    );
+
+    const unregisterHabits = lvBackup.register(
+        "siyuan-daily-checkin",
+        async () => ({
+            schemaVersion: 1,
+            checkins: [{ id: "chk_01", name: "晨跑打卡" }],
+        }),
+        async (data) => {
+            habitsRestoredData = data;
+            return true;
+        }
+    );
+
+    try {
+        // 导出全量包
+        const fullBundle = await lvBackup.exportFull();
+        assert.equal(fullBundle.v, 1);
+        assert.equal(fullBundle.ecosystem, "xiaolv");
+        assert.ok(fullBundle.plugins["siyuan-contacts"]);
+        assert.ok(fullBundle.plugins["siyuan-daily-checkin"]);
+        assert.equal((fullBundle.plugins["siyuan-contacts"].data as any).peopleCount, 42);
+
+        // 恢复全量包
+        const restoreResult = await lvBackup.restoreFull(fullBundle);
+        assert.deepEqual(restoreResult.success.sort(), ["siyuan-contacts", "siyuan-daily-checkin"].sort());
+        assert.equal(restoreResult.failed.length, 0);
+        assert.equal(contactsRestoredData?.peopleCount, 42);
+        assert.equal(habitsRestoredData?.checkins?.[0]?.name, "晨跑打卡");
+    } finally {
+        unregisterContacts();
+        unregisterHabits();
+    }
+});
+
+test("全生态自省徽章：lvEcosystem.getStatusBadgeText 动态呈现协同状态胶囊", () => {
+    const unregisterA = lvBackup.register("plugin-a", async () => ({}), async () => true);
+    const unregisterB = lvBackup.register("plugin-b", async () => ({}), async () => true);
+
+    try {
+        const diag = lvEcosystem.getDiagnostics();
+        assert.ok(diag.registeredPlugins.includes("plugin-a"));
+        assert.ok(diag.registeredPlugins.includes("plugin-b"));
+
+        const badge = lvEcosystem.getStatusBadgeText();
+        assert.ok(badge.includes("🐴 小驴全家桶协同正常"));
+        assert.ok(badge.includes("插件已联结"));
+        assert.ok(badge.includes("今日活动"));
+    } finally {
+        unregisterA();
+        unregisterB();
+    }
+});
+

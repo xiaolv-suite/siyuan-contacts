@@ -30,6 +30,7 @@ import type { ViewPreferences } from "../domain/preferences";
     import type { MigrationImportResult } from "../services/migration-bundle";
 import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 import { toLocalDateKey } from "../domain/date-key.ts";
+import { lvEcosystem } from "../libs/lv-notice-kit";
 
     let {
         facade,
@@ -1169,6 +1170,9 @@ import { toLocalDateKey } from "../domain/date-key.ts";
                     {/if}
                 </p>
             {/if}
+            <div class="lvct-settings__nav-badge" title="小驴全生态协同状态">
+                <span class="lvct-ecosystem-badge">{lvEcosystem.getStatusBadgeText()}</span>
+            </div>
         </div>
 
         <div class="lvct-settings__body">
@@ -1995,6 +1999,10 @@ import { toLocalDateKey } from "../domain/date-key.ts";
                     <div class="lvct-settings__row">
                         <div><b>小驴人脉</b><small>数据主权：一人一文档，数据库作主干</small></div>
                         <span class="lvct-settings__status">v{pluginManifest.version}</span>
+                    </div>
+                    <div class="lvct-settings__row" style="margin-top: 14px;">
+                        <div><b>全生态协同状态</b><small>已接入全生态健康自省与联合灾备总线</small></div>
+                        <span class="lvct-ecosystem-badge">{lvEcosystem.getStatusBadgeText()}</span>
                     </div>
                     <p class="lvct-settings__inline-hint">
                         <a href="https://github.com/ai68298100/siyuan-contacts" target="_blank" rel="noreferrer">项目主页</a>

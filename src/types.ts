@@ -103,6 +103,11 @@ export interface ContactsPluginFacade {
     exportMigrationBundle(): Promise<string>;
     previewMigrationImport(text: string): Promise<MigrationModulePreview[]>;
     importMigrationBundle(text: string): Promise<MigrationImportResult>;
+    /** 全生态联合灾备数据转储与恢复切面 (lvBackup) */
+    dumpData?(): Promise<Record<string, unknown>>;
+    restoreData?(data: Record<string, unknown>): Promise<boolean>;
+    /** 获取全生态协同状态指示徽章文案 (lvEcosystem) */
+    getEcosystemStatusBadgeText?(): string;
     /** 跟进事项（F05）：日期型联系计划，独立于互动事实 */
     listPersonFollowUps(personDocId: string): Promise<FollowUpItem[]>;
     /** 创建跟进计划；dueDate 为 YYYY-MM-DD，非法日期抛错 */

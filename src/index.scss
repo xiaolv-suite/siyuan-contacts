@@ -2623,6 +2623,28 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     font-size: var(--lvct-fs-micro);
 }
 
+.lvct-ecosystem-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--lvct-sp-1) var(--lvct-sp-2);
+    border-radius: var(--lvct-r-pill);
+    background: var(--lvct-accent-soft);
+    border: 1px solid color-mix(in srgb, var(--lvct-accent) 20%, transparent);
+    color: var(--lvct-accent);
+    font-size: var(--lvct-fs-micro);
+    font-weight: 500;
+    line-height: 1.4;
+    user-select: none;
+    white-space: normal;
+}
+
+.lvct-settings__nav-badge {
+    margin-top: auto;
+    padding: var(--lvct-sp-2) var(--lvct-sp-1);
+    display: flex;
+    justify-content: center;
+}
+
 .lvct-settings__health {
     display: flex;
     justify-content: space-between;
