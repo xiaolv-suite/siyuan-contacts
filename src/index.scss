@@ -2995,6 +2995,18 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
         padding: 2px 6px;
         margin-bottom: var(--lvct-sp-1);
     }
+
+    /* 大花名册紧凑档（>60 人）：字母间距收紧，索引条单行放得下，滚动定位更省力 */
+    &--compact {
+        gap: 1px;
+        padding: 4px 6px;
+
+        .lvct-people__alphabet-btn {
+            min-width: 20px;
+            padding: 0 4px;
+            font-size: 10.5px;
+        }
+    }
 }
 
 .lvct-people__alphabet-btn {

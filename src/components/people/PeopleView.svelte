@@ -2353,7 +2353,7 @@
 
     <!-- 拼音首字母 A-Z 跳跃索引条 -->
     {#if !isMobile && people.length > 8}
-        <div class="lvct-people__alphabet-bar" role="navigation" aria-label={text("alphabetBarAria", "首字母拼音快速跳转")}>
+        <div class="lvct-people__alphabet-bar" class:lvct-people__alphabet-bar--compact={people.length > 60} role="navigation" aria-label={text("alphabetBarAria", "首字母拼音快速跳转")}>
             <button
                 type="button"
                 class="lvct-people__alphabet-btn lvct-people__alphabet-btn--all"
