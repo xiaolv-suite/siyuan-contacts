@@ -91,7 +91,7 @@ function createMockDom() {
     return { doc, win, storage, elements, timeouts };
 }
 
-test("微胶囊通知：互动记录与关系更新支持附带撤销动作", async () => {
+test("微胶囊通知：轻提示按标准库契约呈现文本，撤销动作由紧凑卡片承载", async () => {
     const { doc, win, storage } = createMockDom();
     const originalWindow = globalThis.window;
     const originalDoc = globalThis.document;
@@ -103,31 +103,45 @@ test("微胶囊通知：互动记录与关系更新支持附带撤销动作", as
         (globalThis as any).localStorage = storage;
 
         let undone = false;
-        const id = lvNotify.capsule({
+        // 标准库 v1.6.0：capsule 仅承载轻文本提示；需要撤销/跳转动作的确认走 card 承载
+        const capsuleId = lvNotify.capsule({
             source: "小驴人脉",
             message: "已记录与「王浩然」的互动",
             level: "success",
-            action: {
-                label: "撤销",
-                onClick: () => {
-                    undone = true;
-                },
-            },
         });
 
-        assert.ok(id.startsWith("cap_"));
+        assert.ok(capsuleId.startsWith("cap_"));
         const hub = (win as any).__LV_NOTICE_HUB__;
         assert.ok(hub);
         const history = hub.getHistory();
-        const packet = history.find((p: any) => p.id === id);
-        assert.ok(packet);
-        assert.equal(packet.mode, "capsule");
-        assert.equal(packet.message, "已记录与「王浩然」的互动");
-        assert.equal(packet.actions?.length, 1);
-        assert.equal(packet.actions[0].label, "撤销");
+        const capsule = history.find((p: any) => p.id === capsuleId);
+        assert.ok(capsule);
+        assert.equal(capsule.mode, "capsule");
+        assert.equal(capsule.message, "已记录与「王浩然」的互动");
+
+        const cardId = lvNotify.card({
+            source: "小驴人脉",
+            message: "已建立与「王浩然」的关联关系",
+            level: "success",
+            duration: 5000,
+            actions: [
+                {
+                    label: "撤销",
+                    onClick: () => {
+                        undone = true;
+                    },
+                },
+            ],
+        });
+        const card = hub.getHistory().find((p: any) => p.id === cardId);
+        assert.ok(card);
+        assert.equal(card.mode, "card");
+        assert.equal(card.message, "已建立与「王浩然」的关联关系");
+        assert.equal(card.actions?.length, 1);
+        assert.equal(card.actions[0].label, "撤销");
 
         // 执行撤销回调
-        await packet.actions[0].onClick();
+        await card.actions[0].onClick();
         assert.equal(undone, true);
     } finally {
         (globalThis as any).window = originalWindow;
@@ -263,12 +277,13 @@ test("统一通知出口：showMessage 智能分流错误升级为卡片，普�
         assert.equal(history[0].mode, "capsule");
         assert.equal(history[0].message, "普通操作已完成");
 
-        showMessage("致命系统异常", 5000, "error");
+        // 标准库 v1.6.0：showMessage 的时长透传（>=6000 的兜底由插件层 notify() 负责）
+        showMessage("致命系统异常", 6000, "error");
         history = hub.getHistory();
         assert.equal(history[0].mode, "card");
         assert.equal(history[0].level, "error");
         assert.equal(history[0].message, "致命系统异常");
-        assert.ok(history[0].duration >= 6000);
+        assert.equal(history[0].duration, 6000);
     } finally {
         (globalThis as any).window = originalWindow;
         (globalThis as any).document = originalDoc;
@@ -435,6 +450,13 @@ test("全生态灾备切面：lvBackup 支持注册、导出全生态联合备�
     let contactsRestoredData: any = null;
     let habitsRestoredData: any = null;
 
+    // 标准库的联合导出/恢复走 window 宿主单例（node 回退仅注册不导出），用 DOM 桩走真实路径
+    const { win } = createMockDom();
+    const originalWindow = globalThis.window;
+    const originalDoc = globalThis.document;
+    (globalThis as any).document = { createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), body: { appendChild() {} }, head: { appendChild() {} }, getElementById: () => null, querySelector: () => null };
+    (globalThis as any).window = win;
+
     // 模拟人脉插件与打卡插件注册灾备切面
     const unregisterContacts = lvBackup.register(
         "siyuan-contacts",
@@ -479,6 +501,8 @@ test("全生态灾备切面：lvBackup 支持注册、导出全生态联合备�
     } finally {
         unregisterContacts();
         unregisterHabits();
+        (globalThis as any).window = originalWindow;
+        (globalThis as any).document = originalDoc;
     }
 });
 
@@ -501,9 +525,18 @@ test("全生态自省徽章：lvEcosystem.getStatusBadgeText 动态呈现协同�
     }
 });
 
-test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切换", () => {
+test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切换（手机端三态持久化）", () => {
     let clicked = false;
     let selectedAction = "";
+
+    // 标准库的三态状态持久化走 localStorage（node 回退不持久化），用 DOM 桩走真实路径
+    const { win, storage } = createMockDom();
+    const originalWindow = globalThis.window;
+    const originalDoc = globalThis.document;
+    const originalStorage = globalThis.localStorage;
+    (globalThis as any).document = { getElementById: () => null, createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), body: { appendChild() {} }, head: { appendChild() {} }, querySelector: () => null, addEventListener() {}, removeEventListener() {} };
+    (globalThis as any).window = win;
+    (globalThis as any).localStorage = storage;
 
     const unregister = lvLaunchpad.register({
         id: "siyuan-contacts",
@@ -515,7 +548,7 @@ test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切�
         digit: 7,
         badge: "3 位需联络",
         badgeType: "warn",
-        actions: ["快速记录一次人际互动", "会前30秒关系档案速览卡", "新建联系人与圈层标签", "查看近期需要联络预警名单"],
+        actions: ["速查联系人", "今日待联络", "新增联系人", "会前速览"],
         onClick: () => { clicked = true; },
         onAction: (act) => { selectedAction = act; },
     });
@@ -537,10 +570,10 @@ test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切�
         contactItem.onClick();
         assert.equal(clicked, true);
 
-        contactItem.onAction?.("会前30秒关系档案速览卡");
-        assert.equal(selectedAction, "会前30秒关系档案速览卡");
+        contactItem.onAction?.("会前速览");
+        assert.equal(selectedAction, "会前速览");
 
-        // 状态切换测试
+        // 状态切换测试（写入并经 localStorage 持久化回读）
         lvLaunchpad.setPluginState("siyuan-contacts", "pinned");
         const itemsAfter = lvLaunchpad.getItems();
         assert.equal(itemsAfter.find((i) => i.id === "siyuan-contacts")?.state, "pinned");
@@ -548,11 +581,21 @@ test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切�
         unregister();
         const itemsCleaned = lvLaunchpad.getItems();
         assert.equal(itemsCleaned.some((i) => i.id === "siyuan-contacts"), false);
+        (globalThis as any).window = originalWindow;
+        (globalThis as any).document = originalDoc;
+        (globalThis as any).localStorage = originalStorage;
     }
 });
 
 test("穿透搜索：lvOmnisearch 支持联系人姓名、圈层标签与互动记录检索切面", async () => {
     let clickedId = "";
+
+    // 标准库的检索执行走 window 宿主单例（node 回退只注册不检索），用 DOM 桩走真实路径
+    const { win } = createMockDom();
+    const originalWindow = globalThis.window;
+    const originalDoc = globalThis.document;
+    (globalThis as any).document = { getElementById: () => null, createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), body: { appendChild() {} }, head: { appendChild() {} }, querySelector: () => null };
+    (globalThis as any).window = win;
 
     // 模拟注册人脉穿透搜索切面（包含姓名、标签与互动记录）
     const unregister = lvOmnisearch.registerProvider("siyuan-contacts", async (keyword) => {
@@ -645,6 +688,8 @@ test("穿透搜索：lvOmnisearch 支持联系人姓名、圈层标签与互动�
         unregister();
         const afterClean = await lvOmnisearch.search("张三");
         assert.equal(afterClean.length, 0);
+        (globalThis as any).window = originalWindow;
+        (globalThis as any).document = originalDoc;
     }
 });
 
@@ -726,8 +771,7 @@ test("通知防打扰：重复通知到达时刷新自动关闭计时器并继�
         const latest = history[0];
         assert.equal(latest.repeatCount, 2);
 
-        // 测试 dismiss 与 snooze 在无 window 或有 window 下安全调用
-        lvNotify.snooze(latest.id, 1000);
+        // 测试 dismiss 在有 window 下安全调用
         lvNotify.dismiss(latest.id);
         hub.destroy();
     } finally {

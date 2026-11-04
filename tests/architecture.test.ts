@@ -95,8 +95,12 @@ test("内核网络请求只能出现在 api/ 层", () => {
         // api/ 是内核交互的唯一边界；其它层不得直接调用宿主 fetch 或浏览器 fetch。
         if (path.relative(SRC, file).split(path.sep)[0] === "api") continue;
         const content = fs.readFileSync(file, "utf8");
-        const directNetworkCall = /\b(?:fetch|fetchPost|fetchSync)\s*\(/.test(content);
         const importsKernelTransport = /\bimport\s*\{[^}]*\b(?:fetchPost|fetchSync)\b[^}]*\}\s*from\s*["']siyuan["']/.test(content);
+        // 小驴生态共享标准库（由快门同步分发、严禁本地改动）：其唯一网络请求是外部
+        // AI 网关端点（用户自配 endpoint，非思源内核路由），因此豁免裸 fetch 检查，
+        // 但仍禁止导入内核传输函数。
+        const isSharedKit = path.relative(SRC, file).replace(/\\/g, "/") === "libs/lv-notice-kit.ts";
+        const directNetworkCall = !isSharedKit && /\b(?:fetch|fetchPost|fetchSync)\s*\(/.test(content);
         assert.ok(
             !directNetworkCall && !importsKernelTransport,
             `${file} 直接发网络请求或导入内核传输函数，内核交互必须经 api/ 层`,

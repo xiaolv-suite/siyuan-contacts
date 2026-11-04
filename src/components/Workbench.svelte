@@ -18,6 +18,7 @@
     import { getContext, onDestroy, onMount, tick } from "svelte";
     import { translateText } from "../domain/translation";
     import { subscribeDataChangedDebounced, subscribePersonNavigation, subscribeWorkbenchNavigation } from "../libs/data-events";
+    import { lvLaunchpad } from "../libs/lv-notice-kit";
     import { isNavigationDocId, personReturnContext, resolveNavigationPerson } from "../domain/navigation";
     import type { PersonReturnContext } from "../domain/navigation";
     import StatusNotice from "./StatusNotice.svelte";
@@ -120,6 +121,35 @@
     let currentSettings: ContactsSettings = $state(settings);
     // svelte-ignore state_referenced_locally
     let currentPreferences: ViewPreferences = $state(preferences);
+
+    /* Mobile Spec v1 · 下滑关闭：手机端 Dialog 全屏工作台支持顶部抓手下拉关闭 */
+    let dragStartY: number | null = null;
+    let dragActive = false;
+    function onDragHandleDown(event: PointerEvent) {
+        dragStartY = event.clientY;
+        dragActive = false;
+        try { (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId); } catch { /* 指针捕获失败不阻断 */ }
+    }
+    function onDragHandleMove(event: PointerEvent) {
+        if (dragStartY === null) return;
+        const dy = event.clientY - dragStartY;
+        if (dy <= 0) return;
+        dragActive = true;
+        if (workbenchElement) workbenchElement.style.transform = `translateY(${Math.round(dy)}px)`;
+    }
+    function onDragHandleUp(event: PointerEvent) {
+        if (dragStartY === null) return;
+        const dy = event.clientY - dragStartY;
+        dragStartY = null;
+        if (workbenchElement) workbenchElement.style.transform = "";
+        if (!dragActive) return;
+        dragActive = false;
+        if (dy > 120) {
+            lvLaunchpad.haptic(12);
+            facade.closeWorkbenchDialog?.();
+        }
+    }
+
     let preferencesNotice = $state("");
     const preferenceRequests = createPreferenceRequests({
         load: () => typeof facade.loadViewPreferences === "function"
@@ -644,6 +674,19 @@
 </script>
 
 <div class="lvct-workbench" data-lvct-theme={currentPreferences.themeScheme || "cognac"} bind:this={workbenchElement}>
+    {#if isMobile}
+        <div
+            class="lvct-workbench__drag-zone"
+            role="presentation"
+            aria-hidden="true"
+            onpointerdown={onDragHandleDown}
+            onpointermove={onDragHandleMove}
+            onpointerup={onDragHandleUp}
+            onpointercancel={onDragHandleUp}
+        >
+            <span class="lvct-workbench__drag-pill"></span>
+        </div>
+    {/if}
     <aside class="lvct-workbench__sidebar" aria-label={text("navigationLabel", "小驴人脉导航")}>
         <div class="lvct-workbench__brand">
             <span class="lvct-workbench__brand-mark">

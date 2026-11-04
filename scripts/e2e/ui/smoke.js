@@ -248,6 +248,7 @@ const renderResult = () => ({ view: {
 } });
 function resetKernel() {
     invalidateRoster();
+    try { window.__LV_NOTICE_HUB__?.destroy(); } catch {}
     kernel.handler = async (route) => {
         if (route === "/api/av/renderAttributeView") return renderResult();
         throw new Error(`回归测试不允许请求 ${route}`);
@@ -425,6 +426,7 @@ async function test(name, action) {
     } finally {
         if (mounted) await unmount(mounted);
         mounted = undefined;
+        try { window.__LV_NOTICE_HUB__?.destroy(); } catch {}
         const state = history.state && typeof history.state === "object"
             ? Array.isArray(history.state) ? [...history.state] : { ...history.state } : {};
         delete state.__lvctWorkbench;

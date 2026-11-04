@@ -112,6 +112,8 @@ export interface ContactsPluginFacade {
     getFollowupDueCount?(): number;
     openContactsView?(): void;
     handleQuickAction?(action: string): void;
+    /** Mobile Spec v1：关闭移动端全屏工作台 Dialog（下拉手势/罗盘返回共用出口） */
+    closeWorkbenchDialog?(): void;
     /** 全生态穿透搜索切面 (lvOmnisearch) */
     searchOmniContacts?(keyword: string): Promise<import("./libs/lv-notice-kit").LvSearchResultItem[]>;
     /** 跟进事项（F05）：日期型联系计划，独立于互动事实 */

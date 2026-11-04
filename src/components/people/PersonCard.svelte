@@ -4,12 +4,13 @@
     import { formatBirthdayDisplay, nextBirthday } from "../../domain/occasions";
     import { formatRelativeInteraction } from "../../domain/format";
     import { computeRelationshipHealth, heatLevelColorClass } from "../../domain/cadence";
-    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake, MapPin } from "@lucide/svelte";
+    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake, MapPin, Copy } from "@lucide/svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import { copyPlainText } from "../../shared/clipboard";
     import { extractNormalizedRegion } from "../../domain/region";
     import type { PersonCardField } from "../../domain/preferences";
     import { onDestroy } from "svelte";
+    import { lvLaunchpad } from "../../libs/lv-notice-kit";
 
     let {
         person,
@@ -29,6 +30,7 @@
         cadencePaused = false,
         compact = false,
         cardFields,
+        isMobile = false,
     }: {
         person: ContactSummary;
         onOpen: (person: ContactSummary) => void;
@@ -49,6 +51,8 @@
         compact?: boolean;
         /** IDEA-06：卡片可见字段配置 */
         cardFields?: readonly PersonCardField[];
+        /** Mobile Spec v1：手机端呈现行内快拨（电话/复制手机号）按钮 */
+        isMobile?: boolean;
     } = $props();
 
     const isFieldVisible = $derived((field: PersonCardField) => {
@@ -87,6 +91,29 @@
     let copyingEmail = false;
     let emailCopied = $state(false);
     let emailTimer: ReturnType<typeof setTimeout> | null = null;
+    let phoneCopied = $state(false);
+    let phoneCopyTimer: ReturnType<typeof setTimeout> | null = null;
+
+    /** Mobile Spec v1：行内快拨复制手机号——触感反馈 + 原位微动效反馈 */
+    async function copyPhoneQuick(): Promise<void> {
+        if (!person.phone || !alive) return;
+        lvLaunchpad.haptic(10);
+        try {
+            await copyPlainText(person.phone);
+            if (!alive) return;
+            phoneCopied = true;
+            if (phoneCopyTimer) clearTimeout(phoneCopyTimer);
+            phoneCopyTimer = setTimeout(() => {
+                if (alive) phoneCopied = false;
+            }, 1500);
+        } catch (err) {
+            console.warn("[LvContacts] 名册卡片复制手机号失败", err);
+        }
+    }
+
+    function quickCall(): void {
+        lvLaunchpad.haptic(10);
+    }
 
     async function copyWechat(event: Event): Promise<void> {
         event.stopPropagation();
@@ -130,6 +157,7 @@
         alive = false;
         if (wechatTimer) clearTimeout(wechatTimer);
         if (emailTimer) clearTimeout(emailTimer);
+        if (phoneCopyTimer) clearTimeout(phoneCopyTimer);
     });
 </script>
 
@@ -338,6 +366,25 @@
                 </div>
             {/if}
         </div>
+        {#if isMobile && person.phone}
+            <div class="lvct-person-card__quick-actions">
+                <a
+                    class="lvct-person-card__quick-call"
+                    href={telHref(person.phone)}
+                    onclick={(event) => { event.stopPropagation(); quickCall(); }}
+                    aria-label={`拨打 ${person.name} 的电话`}
+                    title="拨打电话"
+                ><Phone size={14} strokeWidth={1.6} /><span>拨打</span></a>
+                <button
+                    type="button"
+                    class="lvct-person-card__quick-copy"
+                    class:lvct-person-card__quick-copy--done={phoneCopied}
+                    onclick={(event) => { event.stopPropagation(); void copyPhoneQuick(); }}
+                    aria-label={`复制 ${person.name} 的手机号`}
+                    title="复制手机号"
+                ><Copy size={13} strokeWidth={1.6} /><span>{phoneCopied ? "已复制" : "复制"}</span></button>
+            </div>
+        {/if}
         {#if (isFieldVisible("tags") && (person.group || person.tags.length > 0)) || onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
             <div class="lvct-person-card__footer">
                 {#if isFieldVisible("tags") && (person.group || person.tags.length > 0)}

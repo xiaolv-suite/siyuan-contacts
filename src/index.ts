@@ -6,7 +6,7 @@
 import { Plugin, getFrontend, openTab, Dialog, getActiveEditor } from "siyuan";
 import { mount, unmount } from "svelte";
 import "./index.scss";
-import { lvNotify, lvTicker, lvActivity, lvBackup, lvEcosystem, lvLaunchpad, lvOmnisearch, showMessage, type LvSearchResultItem } from "./libs/lv-notice-kit";
+import { lvNotify, lvTicker, lvActivity, lvAutomation, lvBackup, lvEcosystem, lvLaunchpad, lvOmnisearch, showMessage, type LvSearchResultItem } from "./libs/lv-notice-kit";
 
 function notify(msg: string, timeout = 3000, type: "info" | "error" = "info"): void {
     if (type === "error") {
@@ -338,6 +338,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             const anchor = await probeSettingsAnchor(settings);
             if (anchor.status === "verified") {
                 this.workspaceState = { kind: "ready" };
+                this.onWorkspaceReadyRefreshed();
             } else {
                 this.recoverySettings = settings;
                 this.workspaceState = { kind: anchor.status === "missing" ? "anchor-missing" : "anchor-unknown", message: anchor.message };
@@ -580,6 +581,35 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             }
         });
         lifecycleToken.onDispose(unregisterDateCross);
+
+        // Mobile Spec v1：手机端罗盘统一入口（顶栏按钮 + 悬浮球，按用户入口模式呈现；
+        // 桌面端为 no-op）。清理函数随生命周期注销（onunload 不写 petal）。
+        const unregisterMobileEntry = lvLaunchpad.ensureMobileEntry();
+        lifecycleToken.onDispose(unregisterMobileEntry);
+
+        // Mobile Spec v1：跟进到期提醒注册为全生态自动化规则——任何生态插件触发
+        // followup-due（或手动 trigger）时推送到期卡；手机端与桌面端同达。
+        const unregisterFollowupRule = lvAutomation.registerRule({
+            id: "contacts-followup-due",
+            name: "人脉跟进到期提醒",
+            desc: "触发时扫描今日到期跟进与定期联络并推送提醒卡（支持稍后提醒与今日免打扰）",
+            enabled: true,
+            triggerSource: "*",
+            triggerType: "followup-due",
+            actionPlugin: "siyuan-contacts",
+            actionName: "followup-reminder",
+            execute: async () => {
+                if (!this.isLifecycleActive(lifecycleToken) || this.workspaceState.kind !== "ready") return false;
+                const result = await this.checkFollowUpReminders(true);
+                return result.delivered || result.count === 0;
+            },
+        });
+        lifecycleToken.onDispose(unregisterFollowupRule);
+
+        // 启动首跑：已初始化工作区时立即计算到期数并刷新罗盘徽章，不等待首个整点心跳
+        if (this.settings && this.workspaceState.kind === "ready") {
+            void this.refreshFollowupDueCount();
+        }
     }
 
     async onunload() {
@@ -1121,6 +1151,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (this.isLifecycleActive(lifecycleToken)) {
             this.workspaceState = { kind: "ready" };
             emitWorkspaceState(this.workspaceState);
+            this.onWorkspaceReadyRefreshed();
             const wb = document.querySelector(".lvct-workbench");
             if (!this.isMobile && wb && wb.getBoundingClientRect().width === 0) {
                 this.openWorkbench();
@@ -1199,32 +1230,44 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     linkBlockId: personDocId,
                 });
 
-                lvNotify.capsule({
-                    source: "小驴人脉",
-                    message: `已记录与「${name}」的互动`,
-                    level: "success",
-                    duration: 5000,
-                    action: eventId ? {
-                        label: "撤销",
-                        onClick: async () => {
-                            try {
-                                await this.deleteInteraction(personDocId, eventId);
-                                lvNotify.capsule({
-                                    source: "小驴人脉",
-                                    message: `已撤销与「${name}」的互动记录`,
-                                    level: "info",
-                                });
-                            } catch (err) {
-                                lvNotify.card({
-                                    source: "小驴人脉",
-                                    title: "撤销失败",
-                                    message: `未能撤销互动记录：${err instanceof Error ? err.message : String(err)}`,
-                                    level: "error",
-                                });
-                            }
-                        },
-                    } : undefined,
-                });
+                // 标准库 v1.6.0：capsule 不承载动作按钮，撤销确认改由紧凑卡片承载
+                if (eventId) {
+                    lvNotify.card({
+                        source: "小驴人脉",
+                        message: `已记录与「${name}」的互动`,
+                        level: "success",
+                        duration: 5000,
+                        actions: [
+                            {
+                                label: "撤销",
+                                primary: true,
+                                onClick: async () => {
+                                    try {
+                                        await this.deleteInteraction(personDocId, eventId);
+                                        lvNotify.capsule({
+                                            source: "小驴人脉",
+                                            message: `已撤销与「${name}」的互动记录`,
+                                            level: "info",
+                                        });
+                                    } catch (err) {
+                                        lvNotify.card({
+                                            source: "小驴人脉",
+                                            title: "撤销失败",
+                                            message: `未能撤销互动记录：${err instanceof Error ? err.message : String(err)}`,
+                                            level: "error",
+                                        });
+                                    }
+                                },
+                            },
+                        ],
+                    });
+                } else {
+                    lvNotify.capsule({
+                        source: "小驴人脉",
+                        message: `已记录与「${name}」的互动`,
+                        level: "success",
+                    });
+                }
             }).catch(() => {});
         }
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
@@ -1761,6 +1804,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             this.settings = settings;
             this.workspaceState = { kind: "ready" };
             emitWorkspaceState(this.workspaceState);
+            this.onWorkspaceReadyRefreshed();
         }
         return settings;
     }
@@ -1862,8 +1906,53 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         });
     }
 
+    /** 刷新待跟进人脉到期计数并同步更新小驴罗盘徽章（纯算不弹卡） */
+    async refreshFollowupDueCount(): Promise<number> {
+        if (!this.settings) return 0;
+        try {
+            const data = await this.loadDashboard({ birthdayWindowDays: 7 });
+            const dueFollowUps = (data.followUps ?? []).filter(
+                (f) => f.item.status === "open" && (f.bucket === "today" || f.bucket === "overdue")
+            );
+            const overdueCadences = (data.actions ?? []).filter(
+                (a) => a.bucket === "overdue" && a.reasons.some((r) => r.kind === "stale")
+            );
+            const totalCount = dueFollowUps.length + overdueCadences.length;
+            this.followupDueCount = totalCount;
+            this.registerLaunchpad();
+            return totalCount;
+        } catch {
+            return 0;
+        }
+    }
+
+    /** 工作区变为 ready（启动核验/初始化完成/重绑恢复）后的统一刷新：徽章重建 + 待办计数刷新 */
+    private onWorkspaceReadyRefreshed(): void {
+        if (!this.isLifecycleActive()) return;
+        this.registerLaunchpad();
+        void this.refreshFollowupDueCount();
+    }
+
+    /** 关闭移动端全屏工作台 Dialog（下滑手势与罗盘返回共用出口；桌面 Tab 形态为 no-op） */
+    closeWorkbenchDialog(): void {
+        this.workbenchDialog?.destroy();
+    }
+
     handleQuickAction(action: string): void {
         switch (action) {
+            case "速查联系人":
+                this.openWorkbench("people");
+                break;
+            case "今日待联络":
+                this.openCoolingRadarDialog();
+                break;
+            case "新增联系人":
+                this.openNewContactDialog();
+                break;
+            case "会前速览":
+                this.openPreMeetingDialog();
+                break;
+            // 兼容 v0.7.8 及更早版本的罗盘二级行动文案
             case "快速记录一次人际互动":
                 this.openWorkbench("home");
                 break;
@@ -1895,7 +1984,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             digit: 7,
             badge: dueCount > 0 ? `${dueCount} 位需联络` : undefined,
             badgeType: "warn",
-            actions: ["快速记录一次人际互动", "会前30秒关系档案速览卡", "新建联系人与圈层标签", "查看近期需要联络预警名单"],
+            // Mobile Spec v1：手机直办动作（速查 / 今日待联络 / 新增 / 会前速览）
+            actions: ["速查联系人", "今日待联络", "新增联系人", "会前速览"],
             onClick: () => this.openContactsView(),
             onAction: (action) => this.handleQuickAction(action),
         });
@@ -1910,6 +2000,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!kw) return [];
 
         const results: LvSearchResultItem[] = [];
+        // Mobile Spec v1：手机端宿主下点击结果直接打开对应思源文档，
+        // 不再叠加弹出全屏工作台（避免「文档压在全屏工作台底下」的双面叠加）。
+        const mobileFrontend = lvLaunchpad.isMobileFrontend();
+        const openResultDoc = (docId: string) => {
+            if (!this.settings) {
+                this.openWorkbench();
+                return;
+            }
+            if (!mobileFrontend) this.openWorkbench("people");
+            this.openPersonDoc(docId);
+        };
 
         try {
             // 1. 检索联系人名册（姓名、圈层标签、别名、电话/微信）
@@ -1931,8 +2032,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     badge: person.group || "联系人",
                     linkBlockId: person.docId,
                     onClick: () => {
-                        this.openWorkbench("people");
-                        this.openPersonDoc(person.docId);
+                        openResultDoc(person.docId);
                         emitDataChanged({ topics: ["people"], docIds: [person.docId] }, this.lifecycleToken);
                     },
                 });
@@ -1959,8 +2059,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     badge: typeLabel,
                     linkBlockId: event.personDocId,
                     onClick: () => {
-                        this.openWorkbench("people");
-                        this.openPersonDoc(event.personDocId);
+                        openResultDoc(event.personDocId);
                         emitDataChanged({ topics: ["people"], docIds: [event.personDocId] }, this.lifecycleToken);
                     },
                 });
@@ -1985,7 +2084,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     badge: org.archived ? "已归档" : "组织",
                     linkBlockId: org.docId,
                     onClick: () => {
-                        this.openWorkbench("orgs");
+                        if (!this.settings) {
+                            this.openWorkbench();
+                            return;
+                        }
+                        if (!mobileFrontend) this.openWorkbench("orgs");
                         this.openPersonDoc(org.docId);
                     },
                 });
@@ -2508,33 +2611,36 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (!p1 || !p2) throw new Error("未找到关联人物");
         const report = await addRelation(this.settings, p1, p2);
         emitDataChanged({ topics: ["people"], docIds: [firstPersonDocId, secondPersonDocId] }, token);
-        lvNotify.capsule({
+        lvNotify.card({
             source: "小驴人脉",
             message: `已建立「${p1.name}」与「${p2.name}」的关联关系`,
             level: "success",
             duration: 5000,
-            action: {
-                label: "撤销",
-                onClick: async () => {
-                    try {
-                        if (!this.settings) return;
-                        await removeRelation(this.settings, p1, p2);
-                        emitDataChanged({ topics: ["people"], docIds: [firstPersonDocId, secondPersonDocId] }, this.lifecycleToken);
-                        lvNotify.capsule({
-                            source: "小驴人脉",
-                            message: `已撤销「${p1.name}」与「${p2.name}」的关联`,
-                            level: "info",
-                        });
-                    } catch (err) {
-                        lvNotify.card({
-                            source: "小驴人脉",
-                            title: "撤销关系失败",
-                            message: `未能撤销关联关系：${err instanceof Error ? err.message : String(err)}`,
-                            level: "error",
-                        });
-                    }
+            actions: [
+                {
+                    label: "撤销",
+                    primary: true,
+                    onClick: async () => {
+                        try {
+                            if (!this.settings) return;
+                            await removeRelation(this.settings, p1, p2);
+                            emitDataChanged({ topics: ["people"], docIds: [firstPersonDocId, secondPersonDocId] }, this.lifecycleToken);
+                            lvNotify.capsule({
+                                source: "小驴人脉",
+                                message: `已撤销「${p1.name}」与「${p2.name}」的关联`,
+                                level: "info",
+                            });
+                        } catch (err) {
+                            lvNotify.card({
+                                source: "小驴人脉",
+                                title: "撤销关系失败",
+                                message: `未能撤销关联关系：${err instanceof Error ? err.message : String(err)}`,
+                                level: "error",
+                            });
+                        }
+                    },
                 },
-            },
+            ],
         });
         return report;
     }
@@ -2582,14 +2688,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                         label: "去记录",
                         primary: true,
                         onClick: () => {
-                            this.openWorkbench();
+                            this.openWorkbench("people");
                             if (firstDocId) {
-                                void this.listContacts().then((roster) => {
-                                    const p = roster.find((item) => item.docId === firstDocId);
-                                    if (p) {
-                                        emitDataChanged({ topics: ["people"], docIds: [firstDocId] }, this.lifecycleToken);
-                                    }
-                                });
+                                void this.listContacts().then(() => {
+                                    this.openPersonDoc(firstDocId);
+                                }).catch(() => {});
                             }
                         },
                     },

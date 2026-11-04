@@ -87,34 +87,38 @@
                     linkBlockId: person.docId,
                 });
 
-                lvNotify.capsule({
+                // 标准库 v1.6.0：capsule 不承载动作按钮，撤销确认改由紧凑卡片承载
+                lvNotify.card({
                     source: "小驴人脉",
                     message: `已记录与「${person.name}」的互动`,
                     level: "success",
                     duration: 5000,
-                    action: eventId ? {
-                        label: "撤销",
-                        onClick: async () => {
-                            try {
-                                await deleteInteraction(plugin, eventId, person.docId);
-                                void syncInteractionDocSection(plugin, person.docId).catch(() => {});
-                                void removeDailyNoteInteractionByEventId(eventId).catch(() => {});
-                                emitDataChanged({ topics: ["people"], docIds: [person.docId] });
-                                lvNotify.capsule({
-                                    source: "小驴人脉",
-                                    message: `已撤销与「${person.name}」的互动记录`,
-                                    level: "info",
-                                });
-                            } catch (err) {
-                                lvNotify.card({
-                                    source: "小驴人脉",
-                                    title: "撤销失败",
-                                    message: `未能撤销互动记录：${err instanceof Error ? err.message : String(err)}`,
-                                    level: "error",
-                                });
-                            }
+                    actions: eventId ? [
+                        {
+                            label: "撤销",
+                            primary: true,
+                            onClick: async () => {
+                                try {
+                                    await deleteInteraction(plugin, eventId, person.docId);
+                                    void syncInteractionDocSection(plugin, person.docId).catch(() => {});
+                                    void removeDailyNoteInteractionByEventId(eventId).catch(() => {});
+                                    emitDataChanged({ topics: ["people"], docIds: [person.docId] });
+                                    lvNotify.capsule({
+                                        source: "小驴人脉",
+                                        message: `已撤销与「${person.name}」的互动记录`,
+                                        level: "info",
+                                    });
+                                } catch (err) {
+                                    lvNotify.card({
+                                        source: "小驴人脉",
+                                        title: "撤销失败",
+                                        message: `未能撤销互动记录：${err instanceof Error ? err.message : String(err)}`,
+                                        level: "error",
+                                    });
+                                }
+                            },
                         },
-                    } : undefined,
+                    ] : undefined,
                 });
                 const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
                 if (pluginSettings?.checkinItemId) {

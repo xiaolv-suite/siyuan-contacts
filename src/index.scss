@@ -13228,3 +13228,127 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 }
 
 
+
+/* ==========================================================================
+   Mobile Spec v1 · 手机端专项
+   （工作台全屏化 100dvh + 安全区 / 下滑关闭抓手 / 窄屏导航收敛 / 卡片行内快拨 / 底部大新建按钮）
+   ========================================================================== */
+
+/* 手机端 Dialog 全屏化：dvh 动态视口（软键盘收展不残留空隙）；桌面不受影响 */
+@media (max-width: 640px) {
+    .b3-dialog__container:has(> .b3-dialog .lvct-workbench) {
+        height: 100dvh;
+    }
+}
+
+/* 下滑关闭抓手：仅手机端工作台顶部渲染；桌面 display:none */
+.lvct-workbench__drag-zone {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .lvct-workbench__drag-zone {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 22px;
+        flex: 0 0 auto;
+        touch-action: none;
+        cursor: grab;
+        background: transparent;
+    }
+
+    .lvct-workbench__drag-pill {
+        width: 44px;
+        height: 5px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--lvct-border-subtle) 88%, var(--lvct-text-3));
+        opacity: 0.85;
+    }
+
+    /* 窄屏（<600px）收敛图谱与组织后，底部导航按实际 3 项等分 */
+    .lvct-workbench[data-narrow="true"] .lvct-workbench__nav {
+        grid-template-columns: repeat(3, minmax(50px, 1fr));
+    }
+
+    /* 底部大新建按钮：≥52px 触控目标，悬浮于底部导航上方 */
+    .lvct-people__create-fab {
+        position: fixed;
+        right: 16px;
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+        z-index: 30;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 52px;
+        padding: 0 18px;
+        border: none;
+        border-radius: 999px;
+        background: var(--lvct-accent-fill, var(--b3-theme-primary));
+        color: var(--b3-theme-primary-color, #fff);
+        font-size: 13px;
+        font-weight: 650;
+        box-shadow: 0 6px 20px color-mix(in srgb, var(--lvct-accent-fill, var(--b3-theme-primary)) 36%, rgba(0, 0, 0, 0.24));
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: transform var(--lvct-dur-micro) var(--lvct-ease);
+    }
+
+    .lvct-people__create-fab:active {
+        transform: scale(0.96);
+    }
+
+    /* 列表底部留出 FAB 高度，末行不被遮挡 */
+    .lvct-people__list {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* 卡片行内快拨（电话 / 复制手机号）：移动端 44px 触控目标 + 按下反馈 */
+.lvct-person-card__quick-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0 0;
+}
+
+.lvct-person-card__quick-call,
+.lvct-person-card__quick-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 90%, transparent);
+    background: var(--lvct-bg-elevated, var(--b3-theme-surface));
+    color: var(--lvct-text-2);
+    font-size: 11px;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform var(--lvct-dur-micro) var(--lvct-ease), background-color var(--lvct-dur-fast) var(--lvct-ease);
+}
+
+.lvct-person-card__quick-call:active,
+.lvct-person-card__quick-copy:active {
+    transform: scale(0.96);
+}
+
+.lvct-person-card__quick-call {
+    color: var(--lvct-accent-fill, var(--b3-theme-primary));
+}
+
+.lvct-person-card__quick-copy--done {
+    color: var(--lvct-success, var(--b3-theme-success));
+}
+
+/* 手机端表单主操作按钮 ≥52px 触控目标（新建/编辑联系人与全部 lvct-form 弹窗统一） */
+@media (max-width: 640px) {
+    .lvct-form__actions .b3-button--primary {
+        min-height: 52px;
+    }
+}
