@@ -1911,19 +1911,22 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
                     <div class="lvct-settings__form-grid">
                         <label class="lvct-form__item">
                             <span>{text("settingsBirthdayWindowLabel", "生日提醒窗口（天）")}</span>
-                            <input class="b3-text-field fn__block" type="number" min="0" max="365" step="1" bind:this={birthdayWindowInput} bind:value={draft.birthdayWindowDays} aria-invalid={Boolean(preferenceDayErrors.birthdayWindowDays)} aria-describedby={preferenceDayErrors.birthdayWindowDays ? "lvct-pref-birthday-window-error" : undefined} oninput={() => clearPreferenceDayError("birthdayWindowDays")} />
+                            <input class="b3-text-field fn__block" type="number" inputMode="numeric" min="0" max="365" step="1" bind:this={birthdayWindowInput} bind:value={draft.birthdayWindowDays} aria-invalid={Boolean(preferenceDayErrors.birthdayWindowDays)} aria-describedby={preferenceDayErrors.birthdayWindowDays ? "lvct-pref-birthday-window-error" : undefined} oninput={() => clearPreferenceDayError("birthdayWindowDays")} />
+                            inputMode="numeric"
                             <small>{text("settingsBirthdayWindowHint", "请输入 0–365 的整数，默认 30 天")}</small>
                             {#if preferenceDayErrors.birthdayWindowDays}<small id="lvct-pref-birthday-window-error" class="lvct-form__error" role="alert">{preferenceDayErrors.birthdayWindowDays}</small>{/if}
                         </label>
                         <label class="lvct-form__item">
                             <span>{text("settingsStaleThresholdLabel", "久未联系阈值（天）")}</span>
-                            <input class="b3-text-field fn__block" type="number" min="0" max="365" step="1" bind:this={staleThresholdInput} bind:value={draft.staleThresholdDays} aria-invalid={Boolean(preferenceDayErrors.staleThresholdDays)} aria-describedby={preferenceDayErrors.staleThresholdDays ? "lvct-pref-stale-threshold-error" : undefined} oninput={() => clearPreferenceDayError("staleThresholdDays")} />
+                            <input class="b3-text-field fn__block" type="number" inputMode="numeric" min="0" max="365" step="1" bind:this={staleThresholdInput} bind:value={draft.staleThresholdDays} aria-invalid={Boolean(preferenceDayErrors.staleThresholdDays)} aria-describedby={preferenceDayErrors.staleThresholdDays ? "lvct-pref-stale-threshold-error" : undefined} oninput={() => clearPreferenceDayError("staleThresholdDays")} />
+                            inputMode="numeric"
                             <small>{text("settingsStaleThresholdHint", "请输入 0–365 的整数，默认 30 天")}</small>
                             {#if preferenceDayErrors.staleThresholdDays}<small id="lvct-pref-stale-threshold-error" class="lvct-form__error" role="alert">{preferenceDayErrors.staleThresholdDays}</small>{/if}
                         </label>
                         <label class="lvct-form__item">
                             <span>{text("settingsReminderGraceLabel", "收编宽限期（天）")}</span>
-                            <input class="b3-text-field fn__block" type="number" min="0" max="365" step="1" bind:this={reminderGraceInput} bind:value={draft.reminderGraceDays} aria-invalid={Boolean(preferenceDayErrors.reminderGraceDays)} aria-describedby={preferenceDayErrors.reminderGraceDays ? "lvct-pref-reminder-grace-error" : undefined} oninput={() => clearPreferenceDayError("reminderGraceDays")} />
+                            <input class="b3-text-field fn__block" type="number" inputMode="numeric" min="0" max="365" step="1" bind:this={reminderGraceInput} bind:value={draft.reminderGraceDays} aria-invalid={Boolean(preferenceDayErrors.reminderGraceDays)} aria-describedby={preferenceDayErrors.reminderGraceDays ? "lvct-pref-reminder-grace-error" : undefined} oninput={() => clearPreferenceDayError("reminderGraceDays")} />
+                            inputMode="numeric"
                             <small>{text("settingsReminderGraceHint", "新收编联系人在此期限内不计入提醒；默认 14 天（0 为关闭）")}</small>
                             {#if preferenceDayErrors.reminderGraceDays}<small id="lvct-pref-reminder-grace-error" class="lvct-form__error" role="alert">{preferenceDayErrors.reminderGraceDays}</small>{/if}
                         </label>

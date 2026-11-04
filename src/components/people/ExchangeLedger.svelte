@@ -320,7 +320,8 @@
         {#if kind === "money"}
             <label class="lvct-form__item">
                 <span>{text("exchangeAmount", "金额")}</span>
-                <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="number" min="0" step="0.01" bind:value={amountText} disabled={formDisabled} />
+                <input class="b3-text-field fn__block" style="border-radius: var(--lv-r-pill, 9999px);" type="number" inputMode="numeric" min="0" step="0.01" bind:value={amountText} disabled={formDisabled} />
+                inputMode="numeric"
             </label>
             <label class="lvct-form__item">
                 <span>{text("exchangeCurrency", "币种")}</span>

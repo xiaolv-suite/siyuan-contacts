@@ -5124,7 +5124,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <option value="paused">{text("cadenceOptionPaused", "暂停提醒")}</option>
                 </select>
                 {#if cadenceMode === "custom"}
-                    <input type="number" class="b3-text-field" min="1" max="365" aria-label="自定义天数" bind:value={cadenceDays} disabled={cadenceSaving} />
+                    <input type="number" inputMode="numeric" class="b3-text-field" min="1" max="365" aria-label="自定义天数" bind:value={cadenceDays} disabled={cadenceSaving} />
+                    inputMode="numeric"
                 {/if}
                 <button class="b3-button b3-button--text" onclick={() => void saveCadence()} disabled={cadenceSaving}>
                     {cadenceSaving ? text("cadenceSaving", "保存中…") : text("cadenceSave", "保存节奏")}
@@ -5506,6 +5507,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                             class="b3-text-field"
                             style="width: 80px;"
                             type="number"
+                            inputMode="numeric"
                             min="0"
                             placeholder={text("giftsPricePlaceholder", "预算￥")}
                             aria-label={text("giftsPriceAria", "预估预算")}
