@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onDestroy } from "svelte";
     import type { ActivityHeatmapData, HeatmapDay } from "../../domain/activity-heatmap.ts";
     import { translateText } from "../../domain/translation";
 
@@ -44,6 +45,10 @@
         hoveredDay = null;
         tooltipCoords = null;
     }
+
+    onDestroy(() => {
+        handleCellLeave();
+    });
 </script>
 
 <div class="lvct-heatmap" role="region" aria-label="年度人脉交往活跃热力图">

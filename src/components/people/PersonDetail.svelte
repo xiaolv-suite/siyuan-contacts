@@ -63,7 +63,7 @@
     import { isPersonStarred, togglePersonStarred, type ViewPreferences } from "../../domain/preferences";
     import { extractNormalizedRegion } from "../../domain/region.ts";
     import { pushFlashcardSafely } from "../../libs/ecosystem-bridge-kit";
-    import { lvNotify } from "../../libs/lv-notice-kit";
+    import { lvNotify, lvLaunchpad } from "../../libs/lv-notice-kit";
     import { FACT_CATEGORY_META, type FactCategory, type PersonFactItem } from "../../domain/doc-section";
     import type { DetailSectionKey, DetailCollapsedSections } from "../../domain/preferences";
     import { listContacts, removeContact, updateContactFields } from "../../services/contacts";
@@ -473,6 +473,14 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let personNoteDraftRevision = 0;
     const canLeave = createCloseScope();
     // B06：互动备注草稿给出明细与「保存并离开」（保存=记录这条互动）
+    function applyQuickInteractionChip(itype: InteractionType, chipNote: string) {
+        lvLaunchpad.haptic(8);
+        recordType = itype;
+        noteText = chipNote;
+        recorded = false;
+        recordInputEl?.focus();
+    }
+
     async function persistNote(): Promise<void> {
         if (!current) throw new Error("当前没有人物");
         await onRecord(current.docId, noteText.trim() || undefined, recordType);
@@ -1641,6 +1649,36 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     const previousPerson = $derived(currentIndex > 0 ? orderedPeople[currentIndex - 1] : null);
     const nextPerson = $derived(currentIndex >= 0 && currentIndex < orderedPeople.length - 1 ? orderedPeople[currentIndex + 1] : null);
     const birthday = $derived(nextBirthday(current.birthday, current.isLunar));
+
+    /* Mobile Spec v1 专项 2：会前速览卡滑动切换上一位/下一位，顶部圆点指示器同步 */
+    const visibleBriefDots = $derived.by(() => {
+        const total = orderedPeople.length;
+        if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+        const start = Math.max(0, Math.min(currentIndex - 3, total - 7));
+        return Array.from({ length: 7 }, (_, i) => start + i);
+    });
+
+    let briefTouchStartX = 0;
+    let briefTouchStartY = 0;
+    function onBriefTouchStart(e: TouchEvent) {
+        if (e.touches.length !== 1) return;
+        briefTouchStartX = e.touches[0].clientX;
+        briefTouchStartY = e.touches[0].clientY;
+    }
+    function onBriefTouchEnd(e: TouchEvent) {
+        if (e.changedTouches.length !== 1) return;
+        const dx = e.changedTouches[0].clientX - briefTouchStartX;
+        const dy = e.changedTouches[0].clientY - briefTouchStartY;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+            if (dx < 0 && nextPerson && !busy) {
+                lvLaunchpad.haptic(6);
+                void navigate(nextPerson);
+            } else if (dx > 0 && previousPerson && !busy) {
+                lvLaunchpad.haptic(6);
+                void navigate(previousPerson);
+            }
+        }
+    }
 
     async function loadOthers() {
         if (!detailAlive) return;
@@ -3865,7 +3903,33 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     {/if}
 
     <!-- ⚡ 会前 30 秒破冰速览卡 (Monica 标杆融合) -->
-    <details class="lvct-premeeting-brief" bind:open={preMeetingBriefOpen}>
+    <details
+        class="lvct-premeeting-brief"
+        bind:open={preMeetingBriefOpen}
+        ontouchstart={onBriefTouchStart}
+        ontouchend={onBriefTouchEnd}
+    >
+        {#if orderedPeople.length > 1}
+            <div class="lvct-premeeting-brief__dots" role="tablist" aria-label="待联络人切换指示器">
+                {#each visibleBriefDots as dotIdx (dotIdx)}
+                    <button
+                        type="button"
+                        role="tab"
+                        class="lvct-premeeting-brief__dot"
+                        class:lvct-premeeting-brief__dot--active={dotIdx === currentIndex}
+                        aria-selected={dotIdx === currentIndex}
+                        title={`切换至 ${orderedPeople[dotIdx]?.name ?? ''}`}
+                        onclick={(e) => {
+                            e.stopPropagation();
+                            if (dotIdx !== currentIndex && !busy) {
+                                lvLaunchpad.haptic(6);
+                                void navigate(orderedPeople[dotIdx]);
+                            }
+                        }}
+                    ></button>
+                {/each}
+            </div>
+        {/if}
         <summary class="lvct-premeeting-brief__summary">
             <div class="lvct-premeeting-brief__summary-left">
                 <span class="lvct-premeeting-brief__badge">⚡ 会前 30 秒破冰速览</span>
@@ -4468,6 +4532,30 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     {INTERACTION_TYPE_LABELS[itype].icon} {INTERACTION_TYPE_LABELS[itype].label}
                 </button>
             {/each}
+        </div>
+        <!-- Mobile Spec v1 专项 3：常用快捷模板 chips -->
+        <div class="lvct-quick-template-chips" role="group" aria-label="快捷模板" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+            <button
+                type="button"
+                class="b3-chip font-size-11"
+                style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 2px 9px;"
+                disabled={busy}
+                onclick={() => applyQuickInteractionChip("call", "电话联络 30 分钟")}
+            >📞 电话联络 30 分钟</button>
+            <button
+                type="button"
+                class="b3-chip font-size-11"
+                style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 2px 9px;"
+                disabled={busy}
+                onclick={() => applyQuickInteractionChip("message", "微信互动")}
+            >💬 微信互动</button>
+            <button
+                type="button"
+                class="b3-chip font-size-11"
+                style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 2px 9px;"
+                disabled={busy}
+                onclick={() => applyQuickInteractionChip("meeting", "见面交流")}
+            >🤝 见面交流</button>
         </div>
         <div class="lvct-detail__record fn__flex" style="gap: 8px; align-items: center;">
             <input

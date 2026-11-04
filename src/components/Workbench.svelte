@@ -770,6 +770,7 @@
                     {onOpenPersonDoc}
                     onOpenOrganizations={() => void selectView("orgs")}
                     onOpenSettings={() => void selectView("settings")}
+                    {isMobile}
                 />
             {:else if current === "people"}
                 <PeopleView

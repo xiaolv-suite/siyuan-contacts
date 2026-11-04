@@ -13304,23 +13304,26 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     }
 }
 
-/* 卡片行内快拨（电话 / 复制手机号）：移动端 44px 触控目标 + 按下反馈 */
+/* 卡片行内快拨（拨打 / 复制 / 短信）：移动端三按钮等宽 ≥44px 触控目标 + 按下反馈 */
 .lvct-person-card__quick-actions {
-    display: inline-flex;
-    align-items: center;
+    display: flex;
+    align-items: stretch;
     gap: 8px;
-    margin: 2px 0 0;
+    width: 100%;
+    margin: 4px 0 0;
 }
 
 .lvct-person-card__quick-call,
-.lvct-person-card__quick-copy {
+.lvct-person-card__quick-copy,
+.lvct-person-card__quick-sms {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 12px;
+    padding: 0 6px;
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 90%, transparent);
     background: var(--lvct-bg-elevated, var(--b3-theme-surface));
@@ -13334,12 +13337,17 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 }
 
 .lvct-person-card__quick-call:active,
-.lvct-person-card__quick-copy:active {
+.lvct-person-card__quick-copy:active,
+.lvct-person-card__quick-sms:active {
     transform: scale(0.96);
 }
 
 .lvct-person-card__quick-call {
     color: var(--lvct-accent-fill, var(--b3-theme-primary));
+}
+
+.lvct-person-card__quick-sms {
+    color: var(--lvct-info, #0284c7);
 }
 
 .lvct-person-card__quick-copy--done {
@@ -13350,5 +13358,98 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 @media (max-width: 640px) {
     .lvct-form__actions .b3-button--primary {
         min-height: 52px;
+    }
+}
+
+/* Mobile Spec v1 专项 2：会前速览卡滑动切换圆点指示器 */
+.lvct-premeeting-brief__dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 12px 2px;
+    margin: 0 auto;
+}
+
+.lvct-premeeting-brief__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    border: none;
+    padding: 0;
+    background: color-mix(in srgb, var(--lvct-text-3, #94a3b8) 45%, transparent);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lvct-premeeting-brief__dot:active {
+    transform: scale(0.85);
+}
+
+.lvct-premeeting-brief__dot--active {
+    width: 16px;
+    background: var(--lvct-accent-fill, var(--b3-theme-primary));
+}
+
+/* Mobile Spec v1 专项 4：手机端首页置顶横幅（生日/纪念日 ≤7天） */
+.lvct-dash__celebration-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 0 0 var(--lvct-sp-3) 0;
+    border-radius: var(--lvct-r-card, 14px);
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, var(--lvct-bg-elevated, var(--b3-theme-surface)));
+    border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 25%, transparent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.lvct-dash__celebration-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.lvct-dash__celebration-icon {
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.lvct-dash__celebration-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.35;
+
+    b {
+        font-size: 13px;
+        color: var(--lvct-text-1, var(--b3-theme-on-background));
+    }
+
+    span {
+        font-size: 11px;
+        color: var(--lvct-text-2, var(--b3-theme-on-surface));
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.lvct-dash__celebration-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+
+    .b3-button {
+        min-height: 36px;
+        border-radius: 999px;
+        padding: 0 10px;
+        font-size: 11px;
+        touch-action: manipulation;
     }
 }

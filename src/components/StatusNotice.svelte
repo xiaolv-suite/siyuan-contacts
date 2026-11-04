@@ -20,7 +20,10 @@
             timer = setTimeout(onDismiss, 4000);
         }
     });
-    onDestroy(() => clearTimeout(timer));
+    onDestroy(() => {
+        clearTimeout(timer);
+        isHovered = false;
+    });
 </script>
 
 {#if message}
@@ -32,7 +35,10 @@
         onmouseenter={() => (isHovered = true)}
         onmouseleave={() => (isHovered = false)}
         onfocusin={() => (isHovered = true)}
-        onfocusout={() => (isHovered = false)}
+        onfocusout={(event) => {
+            const current = event.currentTarget as HTMLElement | null;
+            if (!current?.contains(document.activeElement)) isHovered = false;
+        }}
     >
         {#if error}<CircleAlert size={16} strokeWidth={1.6} />{:else}<CheckCircle2 size={16} strokeWidth={1.6} />{/if}
         <span>{message}</span>

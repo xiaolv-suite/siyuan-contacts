@@ -23,7 +23,8 @@
         FileText,
     } from "@lucide/svelte";
     import { querySql, assertKernelRecord } from "../../api/client";
-    import { lvTicker } from "../../libs/lv-notice-kit";
+    import { lvTicker, lvNotify, lvLaunchpad } from "../../libs/lv-notice-kit";
+    import { formatBirthdayDisplay } from "../../domain/occasions";
     import { organizationIalAttributes } from "../../domain/organization-operations";
     import { pickActions, pickSummaryCounts } from "../../services/dashboard";
     import { newFollowUpRequestId } from "../../services/followups";
@@ -65,6 +66,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         i18n,
         preferences = DEFAULT_VIEW_PREFERENCES,
         revision = 0,
+        isMobile = false,
         onOpenDetail,
         onOpenPeople,
         onOpenGraph,
@@ -81,6 +83,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         i18n?: Readonly<Record<string, string>>;
         preferences: ViewPreferences;
         revision?: number;
+        isMobile?: boolean;
         onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
         onOpenPeople: (focus?: { itemIds?: readonly string[]; memberDocIds?: readonly string[]; label?: string; sort?: "name" | "group" | "birthday" | "recent" }) => void;
         onOpenGraph: () => void;
@@ -612,6 +615,86 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "short" }).format(new Date());
     });
     const todayBirthdays = $derived.by(() => data?.birthdays?.filter((item) => item.bucket === "today") ?? []);
+    const isMobileScreen = $derived(isMobile || lvLaunchpad.isMobileFrontend());
+
+    interface UpcomingCelebration {
+        id: string;
+        person: ContactSummary;
+        kind: "birthday" | "anniversary";
+        title: string;
+        daysUntil: number;
+        detail: string;
+    }
+
+    /* Mobile Spec v1 专项 4：手机端首页置顶展示临近（≤7 天）生日与纪念日 */
+    const upcomingCelebrations = $derived.by(() => {
+        if (!data) return [];
+        const list: UpcomingCelebration[] = [];
+
+        for (const b of (data.birthdays ?? [])) {
+            if (b.projection.daysUntil >= 0 && b.projection.daysUntil <= 7) {
+                list.push({
+                    id: `bday-${b.person.docId}`,
+                    person: b.person,
+                    kind: "birthday",
+                    title: b.projection.daysUntil === 0 ? "今天生日" : `${b.projection.daysUntil}天后生日`,
+                    daysUntil: b.projection.daysUntil,
+                    detail: b.projection.daysUntil === 0 ? `今天 ${b.person.name} 过生日 🎂` : `${b.person.name} ${b.projection.daysUntil} 天后过生日（${formatBirthdayDisplay(b.person.birthday, b.person.isLunar)}）`,
+                });
+            }
+        }
+
+        for (const card of (data.actions ?? [])) {
+            for (const r of card.reasons) {
+                if (r.kind === "anniversary") {
+                    const daysUntil = r.bucket === "today" ? 0 : Number(r.label.match(/(\d+)\s*天后/)?.[1] ?? 7);
+                    list.push({
+                        id: `anniv-${card.person.docId}-${r.dueDate}`,
+                        person: card.person,
+                        kind: "anniversary",
+                        title: r.bucket === "today" ? "今天纪念日" : `${daysUntil}天后纪念日`,
+                        daysUntil,
+                        detail: `${card.person.name} · ${r.label}`,
+                    });
+                }
+            }
+        }
+
+        return list.sort((a, b) => a.daysUntil - b.daysUntil);
+    });
+
+    function remindLaterCelebration(item: UpcomingCelebration) {
+        lvLaunchpad.haptic(8);
+        lvNotify.card({
+            source: "小驴人脉",
+            category: "contacts-celebration",
+            title: `${item.person.name} 的${item.kind === "birthday" ? "生日" : "纪念日"}临近提醒`,
+            message: item.detail,
+            level: "info",
+            duration: 8000,
+            actions: [
+                {
+                    label: "去祝贺",
+                    primary: true,
+                    onClick: () => {
+                        onOpenDetail(item.person);
+                    },
+                },
+            ],
+            snooze: {
+                options: [
+                    { label: "1小时后再提醒", durationMs: 60 * 60 * 1000 },
+                    { label: "明天再提醒", durationMs: 24 * 60 * 60 * 1000 },
+                    { label: "今日免打扰", muteToday: true },
+                ],
+            },
+        });
+        lvNotify.capsule({
+            source: "小驴人脉",
+            message: `已为「${item.person.name}」设置稍后提醒卡片`,
+            level: "success",
+        });
+    }
 
     // C06：会话内撤销——只保留最近一次操作的反向闭包，跨刷新/重启不保留
     let undoAction: { run: () => Promise<void> } | null = $state(null);
@@ -1121,6 +1204,35 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         </div>
     {:else if data}
         {#if refreshing}<p class="ft__smaller ft__on-surface" role="status" aria-live="polite">正在更新仪表盘…</p>{/if}
+
+        <!-- Mobile Spec v1 专项 4：手机端首页置顶横幅（生日/纪念日临近 ≤7天） -->
+        {#if isMobileScreen && upcomingCelebrations.length > 0}
+            <div class="lvct-dash__celebration-banner">
+                <div class="lvct-dash__celebration-main">
+                    <span class="lvct-dash__celebration-icon" aria-hidden="true">
+                        {#if upcomingCelebrations[0].kind === "birthday"}🎂{:else}🎊{/if}
+                    </span>
+                    <div class="lvct-dash__celebration-text">
+                        <b>{upcomingCelebrations[0].title}</b>
+                        <span>{upcomingCelebrations[0].detail}{upcomingCelebrations.length > 1 ? ` 等 ${upcomingCelebrations.length} 项重要日子` : ""}</span>
+                    </div>
+                </div>
+                <div class="lvct-dash__celebration-actions">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--primary b3-button--small"
+                        onclick={() => onOpenDetail(upcomingCelebrations[0].person)}
+                    >祝贺</button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small"
+                        onclick={() => remindLaterCelebration(upcomingCelebrations[0])}
+                        title="推送到期提醒卡片并支持稍后提醒"
+                    >🔔 稍后提醒</button>
+                </div>
+            </div>
+        {/if}
+
         <div class="lvct-dash__welcome">
             <div>
                 <p class="lvct-dash__greeting">{text(greetingKey, "早上好")}，{text("dashGreetingLine", "今天先联系谁？")}</p>

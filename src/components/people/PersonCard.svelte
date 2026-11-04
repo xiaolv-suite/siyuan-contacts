@@ -4,7 +4,7 @@
     import { formatBirthdayDisplay, nextBirthday } from "../../domain/occasions";
     import { formatRelativeInteraction } from "../../domain/format";
     import { computeRelationshipHealth, heatLevelColorClass } from "../../domain/cadence";
-    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake, MapPin, Copy } from "@lucide/svelte";
+    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake, MapPin, Copy, MessageSquare } from "@lucide/svelte";
     import PersonProfileSummary from "./PersonProfileSummary.svelte";
     import { copyPlainText } from "../../shared/clipboard";
     import { extractNormalizedRegion } from "../../domain/region";
@@ -65,6 +65,10 @@
         return `tel:${phone}`;
     }
 
+    function smsHref(phone: string): string {
+        return `sms:${phone}`;
+    }
+
     function mailHref(email: string): string {
         return `mailto:${email}`;
     }
@@ -112,6 +116,10 @@
     }
 
     function quickCall(): void {
+        lvLaunchpad.haptic(10);
+    }
+
+    function quickSms(): void {
         lvLaunchpad.haptic(10);
     }
 
@@ -375,6 +383,13 @@
                     aria-label={`拨打 ${person.name} 的电话`}
                     title="拨打电话"
                 ><Phone size={14} strokeWidth={1.6} /><span>拨打</span></a>
+                <a
+                    class="lvct-person-card__quick-sms"
+                    href={smsHref(person.phone)}
+                    onclick={(event) => { event.stopPropagation(); quickSms(); }}
+                    aria-label={`给 ${person.name} 发短信`}
+                    title="发送短信"
+                ><MessageSquare size={14} strokeWidth={1.6} /><span>短信</span></a>
                 <button
                     type="button"
                     class="lvct-person-card__quick-copy"

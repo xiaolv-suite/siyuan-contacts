@@ -35,6 +35,20 @@ export const simpleDialog = (args: {
         destroyCallback: args.callback
     });
     dialog.element.querySelector(".dialog-content")?.appendChild(args.ele);
+
+    // Esc-only 关闭面审计：移动端补充可见关闭按钮（思源手机端 Dialog 无关闭钮、手机无 Esc 键）
+    const header = dialog.element.querySelector(".b3-dialog__header");
+    if (header && !header.querySelector(".b3-dialog__close, .lvct-mobile-dialog-close")) {
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "b3-dialog__close lvct-mobile-dialog-close";
+        closeBtn.setAttribute("aria-label", "关闭");
+        closeBtn.innerHTML = "✕";
+        closeBtn.style.cssText = "display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font-size:18px;border:none;background:transparent;color:var(--b3-theme-on-surface,#5f6368);cursor:pointer;touch-action:manipulation;";
+        closeBtn.onclick = () => dialog.destroy();
+        header.appendChild(closeBtn);
+    }
+
     return {
         dialog,
         close: dialog.destroy.bind(dialog)

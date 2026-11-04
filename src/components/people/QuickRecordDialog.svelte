@@ -18,7 +18,7 @@
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { emitDataChanged } from "../../libs/data-events";
     import { logCheckinEventSafely } from "../../libs/ecosystem-bridge-kit";
-    import { lvNotify, lvActivity } from "../../libs/lv-notice-kit";
+    import { lvNotify, lvActivity, lvLaunchpad } from "../../libs/lv-notice-kit";
     import type { ContactsSettings } from "../../domain/model";
     import { onMount } from "svelte";
 
@@ -55,6 +55,15 @@
     onMount(() => {
         textareaEl?.focus();
     });
+
+    /** Mobile Spec v1 专项 3：互动记录常用快捷模板 chips */
+    function applyQuickInteractionChip(itype: InteractionType, chipNote: string) {
+        lvLaunchpad.haptic(8);
+        type = itype;
+        note = chipNote;
+        if (!date) date = todayStr;
+        textareaEl?.focus();
+    }
 
     async function handleSave() {
         if (busy) return;
@@ -230,7 +239,33 @@
     </div>
 
     <div class="lvct-form__item" style="margin: 0;">
-        <span class="ft__smaller ft__on-surface" style="margin-bottom: 4px; display: block;">{text("dialogNote", "互动详情与备注")}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span class="ft__smaller ft__on-surface">{text("dialogNote", "互动详情与备注")}</span>
+            <!-- Mobile Spec v1 专项 3：常用快捷模板 chips -->
+            <div class="lvct-quick-template-chips" role="group" aria-label="快捷模板" style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button
+                    type="button"
+                    class="b3-chip font-size-11"
+                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px;"
+                    disabled={busy}
+                    onclick={() => applyQuickInteractionChip("call", "电话联络 30 分钟")}
+                >📞 电话 30m</button>
+                <button
+                    type="button"
+                    class="b3-chip font-size-11"
+                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px;"
+                    disabled={busy}
+                    onclick={() => applyQuickInteractionChip("message", "微信互动")}
+                >💬 微信互动</button>
+                <button
+                    type="button"
+                    class="b3-chip font-size-11"
+                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px;"
+                    disabled={busy}
+                    onclick={() => applyQuickInteractionChip("meeting", "见面交流")}
+                >🤝 见面交流</button>
+            </div>
+        </div>
         <textarea
             bind:this={textareaEl}
             class="b3-text-field fn__block"

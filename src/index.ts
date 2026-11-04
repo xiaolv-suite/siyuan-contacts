@@ -327,6 +327,13 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
   <circle cx="11.5" cy="11" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
   <path d="M5 25c0-4 2.8-6 6.5-6s6.5 2 6.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   <circle cx="23.5" cy="6.5" r="2.5" fill="currentColor"/>
+</symbol>
+<symbol id="icon-lv-contacts" viewBox="0 0 32 32">
+  <circle cx="21" cy="11.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity="0.45"/>
+  <path d="M17.5 24.5c.5-2.8 2-4 5.5-4s5 1.2 5.5 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.45"/>
+  <circle cx="11.5" cy="11" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <path d="M5 25c0-4 2.8-6 6.5-6s6.5 2 6.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="23.5" cy="6.5" r="2.5" fill="currentColor"/>
 </symbol>`);
 
         configureCloseGuardI18n(this.i18n);
@@ -1978,7 +1985,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             id: "siyuan-contacts",
             name: "人脉",
             fullName: "小驴人脉",
-            svgIcon: "icon-lv-contacts",
+            svgIcon: "iconLvContacts",
             color: "#f97316",
             desc: "关系图谱 · 联络提醒",
             digit: 7,
@@ -2905,6 +2912,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             },
         });
         const target = this.workbenchDialog.element.querySelector<HTMLElement>(".lvct-dialog-root");
+        // Esc-only 关闭面审计：移动端补充可见关闭按钮（思源手机端 Dialog 无关闭钮、手机无 Esc 键）
+        const header = this.workbenchDialog.element.querySelector(".b3-dialog__header");
+        if (header && !header.querySelector(".b3-dialog__close, .lvct-mobile-dialog-close")) {
+            const closeBtn = document.createElement("button");
+            closeBtn.type = "button";
+            closeBtn.className = "b3-dialog__close lvct-mobile-dialog-close";
+            closeBtn.setAttribute("aria-label", "关闭工作台");
+            closeBtn.innerHTML = "✕";
+            closeBtn.style.cssText = "display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font-size:18px;border:none;background:transparent;color:var(--b3-theme-on-surface,#5f6368);cursor:pointer;touch-action:manipulation;";
+            closeBtn.onclick = () => this.workbenchDialog?.destroy();
+            header.appendChild(closeBtn);
+        }
         try {
             if (!target) throw new Error("dialog 容器缺失");
             void this.mountWorkbenchRoot(target, dialogToken, initialView,

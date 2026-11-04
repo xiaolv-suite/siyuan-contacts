@@ -542,7 +542,7 @@ test("小驴罗盘：lvLaunchpad 支持注册、获取已注册项与状态切�
         id: "siyuan-contacts",
         name: "人脉",
         fullName: "小驴人脉",
-        svgIcon: "icon-lv-contacts",
+        svgIcon: "iconLvContacts",
         color: "#f97316",
         desc: "关系图谱 · 联络提醒",
         digit: 7,
