@@ -89,7 +89,7 @@
         const name = person.name.trim() || "联系人";
         a.download = `小驴人脉_名片_${name}_${orientation}.svg`;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 </script>
 

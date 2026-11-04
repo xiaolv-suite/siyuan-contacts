@@ -2309,7 +2309,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         a.href = url;
         a.download = res.filename;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
     // ---- E-37 协作项目与主题 ----
