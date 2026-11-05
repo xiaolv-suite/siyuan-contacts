@@ -278,6 +278,7 @@ function buildOrgStrip(
     actions.className = "lvct-strip__actions";
 
     const filterMembers = document.createElement("button");
+    filterMembers.type = "button";
     filterMembers.className = "b3-button b3-button--small b3-button--primary";
     filterMembers.textContent = t(context, "stripOrgMembers", "名册成员");
     filterMembers.title = t(context, "stripOrgMembersTitle", "在名册中筛选属于「{name}」的联系人", { name: org.name });
@@ -300,6 +301,7 @@ function buildOrgStrip(
     actions.appendChild(filterMembers);
 
     const openOrgsView = document.createElement("button");
+    openOrgsView.type = "button";
     openOrgsView.className = "b3-button b3-button--small b3-button--outline";
     openOrgsView.textContent = t(context, "stripOrgsPanorama", "组织全景");
     openOrgsView.title = t(context, "stripOrgsPanoramaTitle", "打开小驴人脉组织全貌看板");
@@ -351,6 +353,7 @@ function buildCityStrip(
     actions.className = "lvct-strip__actions";
 
     const filterCityPeople = document.createElement("button");
+    filterCityPeople.type = "button";
     filterCityPeople.className = "b3-button b3-button--small b3-button--primary";
     filterCityPeople.textContent = t(context, "stripCityFriends", "同城好友");
     filterCityPeople.title = t(context, "stripCityFriendsTitle", "在名册中筛选常驻「{name}」的联系人", { name: cityName });
@@ -372,6 +375,7 @@ function buildCityStrip(
     actions.appendChild(filterCityPeople);
 
     const openTripPlanner = document.createElement("button");
+    openTripPlanner.type = "button";
     openTripPlanner.className = "b3-button b3-button--small b3-button--outline";
     openTripPlanner.textContent = t(context, "stripTripPlanner", "行程规划");
     openTripPlanner.title = t(context, "stripTripPlannerTitle", "打开小驴人脉城市与行程助手，探索同城与周边好友");
@@ -560,6 +564,7 @@ function buildStrip(
     actions.className = "lvct-strip__actions";
 
     const record = document.createElement("button");
+    record.type = "button";
     record.className = "b3-button b3-button--small b3-button--primary lvct-strip__record-btn";
     record.textContent = t(context, "stripRecord", "记互动");
     record.title = t(context, "stripRecordTitle", "为 {name} 记录一笔互动", { name: person.name });
@@ -567,12 +572,14 @@ function buildStrip(
     actions.appendChild(record);
 
     const edit = document.createElement("button");
+    edit.type = "button";
     edit.className = "b3-button b3-button--small b3-button--text";
     edit.textContent = t(context, "stripEdit", "编辑资料");
     edit.addEventListener("click", () => openEditDialog(context, protyle, person));
     actions.appendChild(edit);
 
     const open = document.createElement("button");
+    open.type = "button";
     open.className = "b3-button b3-button--small b3-button--outline";
     open.textContent = t(context, "stripOpen", "打开人脉");
     open.dataset.lvctPersonEntry = "true";

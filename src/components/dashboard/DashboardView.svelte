@@ -150,6 +150,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             copiedMemoryTimer = setTimeout(() => {
                 if (alive) copiedMemoryId = "";
             }, 2000);
+        } catch (err) {
+            console.warn("[LvContacts] 复制那年今日破冰话题失败", err);
         } finally {
             copyingMemory = false;
         }

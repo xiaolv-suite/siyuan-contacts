@@ -253,6 +253,25 @@
     let regionExploring = $state(false);
     let cardDensity: "comfortable" | "compact" = $state("comfortable");
     let activeLetterFilter = $state("");
+    const defaultPageSize = $derived(isMobile ? 50 : PAGE_SIZE);
+
+    function selectLetterFilter(letter: string): void {
+        activeLetterFilter = activeLetterFilter === letter ? "" : letter;
+        visibleCount = defaultPageSize;
+        if (peopleListElement) {
+            peopleListElement.scrollTop = 0;
+            updateVirtualViewport();
+        }
+    }
+
+    function clearLetterFilter(): void {
+        activeLetterFilter = "";
+        visibleCount = defaultPageSize;
+        if (peopleListElement) {
+            peopleListElement.scrollTop = 0;
+            updateVirtualViewport();
+        }
+    }
     let filterStarredOnly = $state(false);
     let isDraggingOver = $state(false);
     let addPersonInitial = $state<ContactDraft | undefined>(undefined);
@@ -615,7 +634,8 @@
     }
     let batchScopeLabel = $state("");
     const selectionScopeLabel = $derived(selectedScope === "page" ? "当前页" : selectedScope === "filtered" ? "全部筛选" : "手动选中");
-    let visibleCount: number = $state(PAGE_SIZE);
+    // svelte-ignore state_referenced_locally
+    let visibleCount: number = $state(isMobile ? 50 : PAGE_SIZE);
     let rosterTotal: number = $state(0);
     let rosterPage: number = $state(0);
     let rosterHasMore: boolean = $state(false);
@@ -1846,7 +1866,7 @@
             anchor.href = url;
             anchor.download = `小驴人脉_选中_${stamp}.vcf`;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
         } catch (error) {
             errorText = requestErrorMessage(error);
         } finally {
@@ -1870,7 +1890,7 @@
             anchor.href = url;
             anchor.download = `小驴人脉_名册_${stamp}.csv`;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
         } catch (error) {
             errorText = requestErrorMessage(error);
         }
@@ -2352,13 +2372,13 @@
     {/if}
 
     <!-- 拼音首字母 A-Z 跳跃索引条 -->
-    {#if !isMobile && people.length > 8}
+    {#if people.length > 8}
         <div class="lvct-people__alphabet-bar" class:lvct-people__alphabet-bar--compact={people.length > 60} role="navigation" aria-label={text("alphabetBarAria", "首字母拼音快速跳转")}>
             <button
                 type="button"
                 class="lvct-people__alphabet-btn lvct-people__alphabet-btn--all"
                 class:lvct-people__alphabet-btn--active={activeLetterFilter === ""}
-                onclick={() => { activeLetterFilter = ""; visibleCount = PAGE_SIZE; }}
+                onclick={clearLetterFilter}
                 title={text("alphabetAllTip", "全部首字母")}
             >A-Z</button>
             {#each ALPHABET_LETTERS as letter}
@@ -2368,10 +2388,7 @@
                     class="lvct-people__alphabet-btn"
                     class:lvct-people__alphabet-btn--active={activeLetterFilter === letter}
                     disabled={!hasItems}
-                    onclick={() => {
-                        activeLetterFilter = activeLetterFilter === letter ? "" : letter;
-                        visibleCount = PAGE_SIZE;
-                    }}
+                    onclick={() => selectLetterFilter(letter)}
                     title={hasItems ? text("alphabetFilterTip", "只看首字母为 {letter} 的联系人", { letter }) : text("alphabetFilterEmptyTip", "暂无首字母为 {letter} 的联系人", { letter })}
                 >{letter}</button>
             {/each}
@@ -2380,10 +2397,7 @@
                     type="button"
                     class="lvct-people__alphabet-btn"
                     class:lvct-people__alphabet-btn--active={activeLetterFilter === "#"}
-                    onclick={() => {
-                        activeLetterFilter = activeLetterFilter === "#" ? "" : "#";
-                        visibleCount = PAGE_SIZE;
-                    }}
+                    onclick={() => selectLetterFilter("#")}
                     title={text("alphabetOtherTip", "其它非字母开头的联系人")}
                 >#</button>
             {/if}
@@ -2805,7 +2819,7 @@
     {/if}
 
     {#if filtered.length > visibleCount}
-        <button class="b3-button b3-button--outline lvct-people__more" onclick={() => (visibleCount += PAGE_SIZE)}>
+        <button class="b3-button b3-button--outline lvct-people__more" onclick={() => (visibleCount += defaultPageSize)}>
             加载更多（已显示 {visible.length} / {filtered.length}）
         </button>
     {/if}

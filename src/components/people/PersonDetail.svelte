@@ -1662,13 +1662,21 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let briefTouchStartY = 0;
     function onBriefTouchStart(e: TouchEvent) {
         if (e.touches.length !== 1) return;
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("button, a, input, select, textarea, [role='button'], [role='tab'], summary")) {
+            briefTouchStartX = 0;
+            briefTouchStartY = 0;
+            return;
+        }
         briefTouchStartX = e.touches[0].clientX;
         briefTouchStartY = e.touches[0].clientY;
     }
     function onBriefTouchEnd(e: TouchEvent) {
-        if (e.changedTouches.length !== 1) return;
+        if (e.changedTouches.length !== 1 || briefTouchStartX === 0) return;
         const dx = e.changedTouches[0].clientX - briefTouchStartX;
         const dy = e.changedTouches[0].clientY - briefTouchStartY;
+        briefTouchStartX = 0;
+        briefTouchStartY = 0;
         if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) {
             if (dx < 0 && nextPerson && !busy) {
                 lvLaunchpad.haptic(6);
@@ -1998,7 +2006,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         anchor.href = url;
         anchor.download = `${current.name.trim() || "联系人"}.vcf`;
         anchor.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
         vcfExported = true;
         if (vcfExportedTimer) clearTimeout(vcfExportedTimer);
         vcfExportedTimer = setTimeout(() => { vcfExported = false; }, 1800);
@@ -2839,7 +2847,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         const stamp = toLocalDateKey(new Date());
         anchor.download = buildBriefingFilename(current.name, stamp);
         anchor.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
     }
 
     async function confirmDelete() {

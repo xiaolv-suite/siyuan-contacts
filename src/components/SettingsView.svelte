@@ -788,7 +788,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
             anchor.href = url;
             anchor.download = `小驴人脉_互动事件_${toLocalDateKey(new Date())}.json`;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
             exportMessage = "互动事件与原始数据快照已导出";
         } catch (error) {
             errorText = requestErrorMessage(error);
@@ -820,7 +820,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
             anchor.href = url;
             anchor.download = `小驴人脉_插件数据迁移包_${toLocalDateKey(new Date())}.json`;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
             bundleMessage = "插件数据迁移包已导出（含账本、别名、本人身份、组织成员和关系称谓；思源原生文档需另行备份）";
         } catch (error) {
             errorText = requestErrorMessage(error);
@@ -915,7 +915,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
             anchor.href = url;
             anchor.download = `小驴人脉_联系人_${toLocalDateKey(new Date())}.vcf`;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
             rosterExportMessage = "全量名册已导出为 vCard 3.0";
         } catch (error) {
             errorText = requestErrorMessage(error);
@@ -937,7 +937,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
             anchor.href = url;
             anchor.download = res.filename;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
             icsExportMessage = "全量重要日期与纪念日已导出为 iCalendar (.ics)";
         } catch (error) {
             errorText = requestErrorMessage(error);
@@ -959,7 +959,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
             anchor.href = url;
             anchor.download = `小驴人脉_跟进事项_${toLocalDateKey(new Date())}.json`;
             anchor.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
             followUpsExportMessage = "跟进事项与原始数据快照已导出";
         } catch (error) {
             errorText = requestErrorMessage(error);

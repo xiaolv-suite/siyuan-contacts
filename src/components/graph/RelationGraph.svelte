@@ -499,7 +499,7 @@
         const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
         anchor.download = `小驴人脉_关系结果_${stamp}.md`;
         anchor.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
         resultExportMessage = "结果说明已导出为 Markdown";
     }
 
@@ -516,7 +516,7 @@
         const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
         anchor.download = `小驴人脉_关系图谱_${stamp}.svg`;
         anchor.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 0);
         resultExportMessage = "图谱矢量图已导出为 SVG";
     }
 

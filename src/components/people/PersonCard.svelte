@@ -374,30 +374,54 @@
                 </div>
             {/if}
         </div>
-        {#if isMobile && person.phone}
+        {#if isMobile}
             <div class="lvct-person-card__quick-actions">
-                <a
-                    class="lvct-person-card__quick-call"
-                    href={telHref(person.phone)}
-                    onclick={(event) => { event.stopPropagation(); quickCall(); }}
-                    aria-label={`拨打 ${person.name} 的电话`}
-                    title="拨打电话"
-                ><Phone size={14} strokeWidth={1.6} /><span>拨打</span></a>
-                <a
-                    class="lvct-person-card__quick-sms"
-                    href={smsHref(person.phone)}
-                    onclick={(event) => { event.stopPropagation(); quickSms(); }}
-                    aria-label={`给 ${person.name} 发短信`}
-                    title="发送短信"
-                ><MessageSquare size={14} strokeWidth={1.6} /><span>短信</span></a>
-                <button
-                    type="button"
-                    class="lvct-person-card__quick-copy"
-                    class:lvct-person-card__quick-copy--done={phoneCopied}
-                    onclick={(event) => { event.stopPropagation(); void copyPhoneQuick(); }}
-                    aria-label={`复制 ${person.name} 的手机号`}
-                    title="复制手机号"
-                ><Copy size={13} strokeWidth={1.6} /><span>{phoneCopied ? "已复制" : "复制"}</span></button>
+                {#if person.phone}
+                    <a
+                        class="lvct-person-card__quick-call"
+                        href={telHref(person.phone)}
+                        onclick={(event) => { event.stopPropagation(); quickCall(); }}
+                        aria-label={`拨打 ${person.name} 的电话`}
+                        title="拨打电话"
+                    ><Phone size={14} strokeWidth={1.6} /><span>拨打</span></a>
+                    <a
+                        class="lvct-person-card__quick-sms"
+                        href={smsHref(person.phone)}
+                        onclick={(event) => { event.stopPropagation(); quickSms(); }}
+                        aria-label={`给 ${person.name} 发短信`}
+                        title="发送短信"
+                    ><MessageSquare size={14} strokeWidth={1.6} /><span>短信</span></a>
+                    <button
+                        type="button"
+                        class="lvct-person-card__quick-copy"
+                        class:lvct-person-card__quick-copy--done={phoneCopied}
+                        onclick={(event) => { event.stopPropagation(); void copyPhoneQuick(); }}
+                        aria-label={`复制 ${person.name} 的手机号`}
+                        title="复制手机号"
+                    ><Copy size={13} strokeWidth={1.6} /><span>{phoneCopied ? "已复制" : "复制"}</span></button>
+                {:else}
+                    <button
+                        type="button"
+                        class="lvct-person-card__quick-call lvct-person-card__quick-btn--disabled"
+                        disabled
+                        aria-disabled="true"
+                        title="未登记手机号"
+                    ><Phone size={14} strokeWidth={1.6} /><span>拨打</span></button>
+                    <button
+                        type="button"
+                        class="lvct-person-card__quick-sms lvct-person-card__quick-btn--disabled"
+                        disabled
+                        aria-disabled="true"
+                        title="未登记手机号"
+                    ><MessageSquare size={14} strokeWidth={1.6} /><span>短信</span></button>
+                    <button
+                        type="button"
+                        class="lvct-person-card__quick-copy lvct-person-card__quick-btn--disabled"
+                        disabled
+                        aria-disabled="true"
+                        title="未登记手机号"
+                    ><Copy size={13} strokeWidth={1.6} /><span>复制</span></button>
+                {/if}
             </div>
         {/if}
         {#if (isFieldVisible("tags") && (person.group || person.tags.length > 0)) || onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
