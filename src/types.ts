@@ -53,6 +53,8 @@ export interface ContactsPluginFacade {
     deleteInteraction(personDocId: string, eventId: string): Promise<void>;
     /** 修改一条互动（墓碑旧事件 + 追加修正事件），同步人物文档互动区块 */
     amendInteraction(personDocId: string, eventId: string, amendment: import("./domain/interactions").InteractionAmendment): Promise<void>;
+    /** 划词直接记一笔互动 (Selection-to-Interaction) */
+    openSelectionToInteraction?(args: { rawText: string; rootId: string; protyleElement?: HTMLElement }): Promise<void>;
     /** 人物洞察：互动时间线 + 共同出席统计 */
     loadPersonInsights(docId: string): Promise<PersonInsights>;
     /** 人物独立备注：写入对应人物文档的 custom-lvct-person-note 标记块，不计入互动统计 */

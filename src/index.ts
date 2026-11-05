@@ -33,6 +33,8 @@ import QuickFillDialog from "./components/people/QuickFillDialog.svelte";
 import AddPersonDialog from "./components/people/AddPersonDialog.svelte";
 import PreMeetingHubDialog from "./components/dashboard/PreMeetingHubDialog.svelte";
 import CoolingRadarDialog from "./components/dashboard/CoolingRadarDialog.svelte";
+import SelectionToInteractionModal from "./components/capture/SelectionToInteractionModal.svelte";
+import { buildSelectionInteractionPayload, restoreFocusToEditor } from "./domain/selection-resolver.ts";
 import type { ContactExtendedDraft } from "./domain/contact-create";
 import PersonEditDialog from "./components/people/PersonEditDialog.svelte";
 import { parseContactText } from "./domain/quick-fill";
@@ -687,6 +689,21 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const protyleElement = event.detail.protyle?.element;
         const selectionText = protyleElement ? readSelectionWithin(protyleElement) : "";
         if (selectionText.trim()) {
+            // 断点消除战役：划词直接记一笔互动 (Selection-to-Interaction)
+            event.detail.menu.addItem({
+                id: "lvct-selection-to-interaction",
+                iconHTML: "",
+                label: "👥 人脉：记一笔互动",
+                click: () => {
+                    if (this.isLifecycleActive(lifecycleToken)) {
+                        void this.openSelectionToInteraction({
+                            rawText: selectionText.trim(),
+                            rootId,
+                            protyleElement,
+                        });
+                    }
+                },
+            });
             event.detail.menu.addItem({
                 id: "lvct-recognize-selection",
                 iconHTML: "",
@@ -790,6 +807,131 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                     close();
                     if (person) this.openPersonEditPrefilled(person, patch);
                     else this.openPersonCreatePrefilled(patch);
+                },
+                onClose: close,
+            },
+        });
+    }
+
+    /** Selection-to-Interaction: 划词直接记一笔互动 */
+    async openSelectionToInteraction(args: {
+        rawText: string;
+        rootId: string;
+        protyleElement?: HTMLElement;
+    }): Promise<void> {
+        const lifecycleToken = this.lifecycleToken;
+        if (!this.isLifecycleActive(lifecycleToken)) return;
+        if (!this.settings) {
+            notify("请先完成人脉工作空间初始化", 3000);
+            return;
+        }
+
+        const text = args.rawText.trim();
+        if (!text) {
+            notify("没有选中的互动内容", 3000);
+            return;
+        }
+
+        const previousActive = typeof document !== "undefined" ? document.activeElement as HTMLElement | null : null;
+        let rect: DOMRect | null = null;
+        let blockId = args.rootId;
+        const selection = typeof window !== "undefined" ? window.getSelection() : null;
+        if (selection && selection.rangeCount > 0) {
+            try {
+                const range = selection.getRangeAt(0);
+                rect = range.getBoundingClientRect();
+                const anchor = selection.anchorNode;
+                const anchorEl = anchor instanceof HTMLElement ? anchor : anchor?.parentElement;
+                const blockEl = anchorEl?.closest<HTMLElement>("[data-node-id]");
+                if (blockEl?.dataset?.nodeId) {
+                    blockId = blockEl.dataset.nodeId;
+                }
+            } catch {}
+        }
+
+        let people: ContactSummary[] = [];
+        try {
+            people = await this.listContacts();
+        } catch (err) {
+            console.warn("[LvContacts] 读取名册失败", err);
+        }
+        if (!this.isLifecycleActive(lifecycleToken)) return;
+
+        const isMobile = this.isMobile || lvLaunchpad.isMobileFrontend() || (typeof window !== "undefined" && window.innerWidth <= 640);
+        const container = document.createElement("div");
+        container.className = "lvct-dialog-root";
+        document.body.appendChild(container);
+
+        let closed = false;
+        let component: ReturnType<typeof mount> | null = null;
+        const close = () => {
+            if (closed) return;
+            closed = true;
+            if (component) void unmount(component);
+            component = null;
+            container.remove();
+            this.ownedDialogDisposers.delete(close);
+            restoreFocusToEditor(previousActive, args.protyleElement);
+        };
+        this.ownedDialogDisposers.add(close);
+
+        component = mount(SelectionToInteractionModal, {
+            target: container,
+            props: {
+                initialText: text,
+                blockId,
+                people,
+                isMobile,
+                rect,
+                onSave: async (payload: { person: ContactSummary; note: string; type: import("./domain/interactions").InteractionType; blockId?: string }) => {
+                    if (!this.isLifecycleActive(lifecycleToken)) return;
+                    try {
+                        const occurredAt = Date.now();
+                        const payloadData = buildSelectionInteractionPayload({
+                            person: payload.person,
+                            note: payload.note,
+                            type: payload.type,
+                            blockId: payload.blockId,
+                            occurredAt,
+                        });
+
+                        await this.recordInteraction(
+                            payloadData.personDocId,
+                            payloadData.note,
+                            payloadData.type,
+                            {
+                                occurredAt: payloadData.occurredAt,
+                                externalRef: payloadData.externalRef,
+                                source: "manual",
+                            },
+                        );
+
+                        lvLaunchpad.haptic(10);
+                        lvNotify.capsule({
+                            source: "小驴人脉",
+                            message: `已记录与「${payload.person.name}」的互动`,
+                            level: "success",
+                        });
+
+                        lvActivity.record({
+                            source: "人脉",
+                            category: "contact",
+                            title: `互动记录: ${payload.person.name}`,
+                            detail: payloadData.note,
+                            linkBlockId: payload.person.docId,
+                        });
+
+                        close();
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        lvNotify.card({
+                            source: "小驴人脉",
+                            title: "记录互动失败",
+                            message: `未能保存互动：${msg}`,
+                            level: "error",
+                        });
+                        throw err;
+                    }
                 },
                 onClose: close,
             },
