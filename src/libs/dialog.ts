@@ -34,6 +34,12 @@ export const simpleDialog = (args: {
         disableClose: args.disableClose ?? true,
         destroyCallback: args.callback
     });
+    // 点击遮罩背景快速关闭
+    dialog.element.addEventListener("click", (e) => {
+        if (e.target === dialog.element || (e.target as HTMLElement).classList?.contains("b3-dialog__scrim")) {
+            dialog.destroy();
+        }
+    });
     dialog.element.querySelector(".dialog-content")?.appendChild(args.ele);
 
     // Esc-only 关闭面审计：移动端补充可见关闭按钮（思源手机端 Dialog 无关闭钮、手机无 Esc 键）

@@ -3053,6 +3053,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 this.workbenchDialogToken = null;
             },
         });
+        this.workbenchDialog.element.addEventListener("click", (e) => {
+            if (e.target === this.workbenchDialog?.element || (e.target as HTMLElement).classList?.contains("b3-dialog__scrim")) {
+                this.workbenchDialog?.destroy();
+            }
+        });
         const target = this.workbenchDialog.element.querySelector<HTMLElement>(".lvct-dialog-root");
         // Esc-only 关闭面审计：移动端补充可见关闭按钮（思源手机端 Dialog 无关闭钮、手机无 Esc 键）
         const header = this.workbenchDialog.element.querySelector(".b3-dialog__header");
