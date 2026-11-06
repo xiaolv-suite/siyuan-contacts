@@ -503,8 +503,8 @@ export async function pushFlashcardSafely(options: {
         "cards",
         "cards.create",
         async (bridge) => {
-            if (typeof bridge.createCard === "function") {
-                const res = await bridge.createCard({
+            if (typeof (bridge as any).createCard === "function") {
+                const res = await (bridge as any).createCard({
                     deckName: options.deckName ?? "人脉常识",
                     front: options.front,
                     back: options.back,
@@ -512,6 +512,18 @@ export async function pushFlashcardSafely(options: {
                     sourceDocId: options.sourceDocId,
                 });
                 return Boolean(res && res.ok);
+            }
+            if (typeof (bridge as any).receiveExtract === "function") {
+                const content = options.back?.trim()
+                    ? `${options.front.trim()} ==${options.back.trim()}==`
+                    : options.front.trim();
+                const res = await (bridge as any).receiveExtract({
+                    content,
+                    sourceBlockId: options.sourceDocId ?? "",
+                    sourceTitle: "小驴人脉",
+                    tags: options.tags ?? ["人脉常识"],
+                });
+                return Boolean(res && (res.ok !== false && (res.ok || res.data?.enrolled !== false)));
             }
             return false;
         },
