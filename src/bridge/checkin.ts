@@ -13,12 +13,14 @@ export type CheckinBridgeState =
 
 /** 打卡插件暴露的全局桥 API（协议 v5，见 siyuan-checkin docs/agent-document-context-m2.md 同款约定） */
 interface CheckinBridgeApi {
-    readonly protocol?: number;
+    readonly protocol?: number | string;
     readonly capabilities?: readonly string[];
-    readonly version?: string;
+    readonly version?: string | number;
     whenReady?(): Promise<boolean>;
     hasCapability?(capability: string): boolean;
     recordItem?(itemId: string, note?: string, options?: { source?: string; externalRef?: string }): Promise<{ success: boolean; recordId?: string }>;
+    recordEvent?(input: { itemId: string; note?: string; source?: string; externalRef?: string }): Promise<{ id?: string } | undefined>;
+    recordEventsBatch?(inputs: readonly { itemId: string; note?: string; externalRef?: string }[]): Promise<Array<{ kind?: string; eventId?: string }>>;
 }
 
 declare global {
@@ -55,12 +57,14 @@ export function detectCheckinBridge(): CheckinBridgeStatus {
         if (!api || typeof api !== "object") {
             return { state: "unsupported", protocol: null, capabilities: [], version: null };
         }
-        const protocol = typeof api.protocol === "number" ? api.protocol : null;
+        const rawProtocol = api.protocol;
+        const protocol = typeof rawProtocol === "number" ? rawProtocol : (rawProtocol === "siyuan-checkin" ? 5 : null);
         if (protocol === null || protocol < 5) {
             return { state: "pending", protocol, capabilities: [], version: null };
         }
         const capabilities = Array.isArray(api.capabilities) ? [...api.capabilities] : [];
-        const version = typeof api.version === "string" && api.version.trim() ? api.version.trim() : null;
+        const rawVersion = api.version;
+        const version = typeof rawVersion === "string" && rawVersion.trim() ? rawVersion.trim() : (typeof rawVersion === "number" ? String(rawVersion) : null);
         return { state: "ready", protocol, capabilities, version };
     } catch {
         return { state: "failed", protocol: null, capabilities: [], version: null };
@@ -87,13 +91,26 @@ export async function recordCheckinForContact(
         LvCheckin?: CheckinBridgeApi;
     };
     const api = host.siyuanCheckin || host.xiaolvCheckin || host.lvCheckin || host.LvCheckin;
-    if (!api || typeof api.recordItem !== "function") {
-        return { recorded: false, reason: "打卡插件未提供 recordItem 能力" };
+    if (!api) {
+        return { recorded: false, reason: "打卡插件接口未找到" };
     }
     try {
         const fullNote = note?.trim() ? `[小驴人脉] ${personName} · ${note.trim()}` : `[小驴人脉] ${personName}`;
-        const outcome = await api.recordItem(itemId, fullNote, { source: "lv-contacts" });
-        return { recorded: Boolean(outcome?.success), recordId: outcome?.recordId };
+        if (typeof api.recordEvent === "function") {
+            const ev = await api.recordEvent({ itemId, note: fullNote, source: "api", externalRef: `contacts:${personName}` });
+            return { recorded: Boolean(ev), recordId: ev?.id };
+        }
+        if (typeof api.recordEventsBatch === "function") {
+            const res = await api.recordEventsBatch([{ itemId, note: fullNote, externalRef: `contacts:${personName}` }]);
+            const first = res?.[0];
+            const ok = first?.kind === "recorded" || first?.kind === "duplicate";
+            return { recorded: ok, recordId: first?.eventId };
+        }
+        if (typeof api.recordItem === "function") {
+            const outcome = await api.recordItem(itemId, fullNote, { source: "lv-contacts" });
+            return { recorded: Boolean(outcome?.success), recordId: outcome?.recordId };
+        }
+        return { recorded: false, reason: "打卡插件未提供 recordItem 能力" };
     } catch (error) {
         return { recorded: false, reason: (error as Error)?.message ?? "调用打卡接口失败" };
     }
