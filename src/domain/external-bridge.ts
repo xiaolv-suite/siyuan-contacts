@@ -20,6 +20,12 @@ export interface BridgePerson {
     name: string;
     group: string;
     tags: string[];
+    birthday?: string;
+    isLunar?: boolean;
+    phone?: string;
+    email?: string;
+    organization?: string;
+    role?: string;
 }
 
 export type BridgeOperation = typeof BRIDGE_CAPABILITIES[number];
@@ -202,7 +208,19 @@ export function bridgeKeyword(value: unknown): string {
 }
 
 export function bridgePerson(person: BridgePerson): BridgePerson {
-    return { docId: person.docId, itemId: person.itemId, name: person.name, group: person.group, tags: [...person.tags] };
+    return {
+        docId: person.docId,
+        itemId: person.itemId,
+        name: person.name,
+        group: person.group,
+        tags: [...person.tags],
+        ...(person.birthday ? { birthday: person.birthday } : {}),
+        ...(typeof person.isLunar === "boolean" ? { isLunar: person.isLunar } : {}),
+        ...(person.phone ? { phone: person.phone } : {}),
+        ...(person.email ? { email: person.email } : {}),
+        ...(person.organization ? { organization: person.organization } : {}),
+        ...(person.role ? { role: person.role } : {}),
+    };
 }
 
 export function resolveBridgePerson(people: readonly BridgePerson[], docId: string, operation: BridgeOperation): BridgePerson | null {
