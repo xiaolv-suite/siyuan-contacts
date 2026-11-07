@@ -7,6 +7,7 @@ import {
 } from "../src/domain/pre-meeting-hub.ts";
 import {
     formatPreMeetingBriefCallout,
+    formatPreMeetingBriefDailyNote,
     formatPreMeetingBriefText,
 } from "../src/domain/pre-meeting-brief.ts";
 import type { ContactSummary } from "../src/domain/person.ts";
@@ -115,4 +116,8 @@ test("pre-meeting-brief: formatPreMeetingBriefCallout 组装符合思源原生 C
     const plain = formatPreMeetingBriefText(brief);
     assert.ok(plain.includes("⚡ 会前 30 秒破冰速览 · 张三"));
     assert.ok(!plain.startsWith(">>>"));
+
+    const daily = formatPreMeetingBriefDailyNote(brief);
+    assert.ok(daily.includes("### ⚡ 会前 30 秒破冰速览 · [[张三]]"), "日记格式必须包含双链标题");
+    assert.ok(daily.includes('{: custom-type="meeting-brief" custom-person="张三" }'), "必须注入标准 IAL 属性");
 });

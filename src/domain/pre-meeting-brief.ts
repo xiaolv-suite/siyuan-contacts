@@ -209,3 +209,30 @@ export function formatPreMeetingBriefCallout(brief: PreMeetingBrief): string {
     lines.push(">>>");
     return lines.join("\n");
 }
+
+/**
+ * 组装便于直接追加进今日日记（Daily Note）的结构化速览块（带原生双链与 IAL 标记）
+ */
+export function formatPreMeetingBriefDailyNote(brief: PreMeetingBrief): string {
+    const safeName = (brief.personName || "联系人").trim().replace("[", "【").replace("]", "】");
+    const lines: string[] = [
+        `### ⚡ 会前 30 秒破冰速览 · [[${safeName}]]`,
+        "",
+        `- 💬 **上次互动**：${brief.lastMetText}`,
+        `- 📊 **状态近况**：${brief.statusSummary}`,
+        `- 🌱 **初识溯源**：${brief.originText}`,
+    ];
+
+    if (brief.dietAndPreferences.length > 0) {
+        lines.push(`- ❤️ **喜好习惯**：${brief.dietAndPreferences.join("；")}`);
+    }
+    if (brief.taboos.length > 0) {
+        lines.push(`- ⚠️ **禁忌雷区**：${brief.taboos.join("；")}`);
+    }
+    if (brief.sharedNetwork.length > 0) {
+        lines.push(`- 👥 **共同熟人**：${brief.sharedNetwork.join("、")}`);
+    }
+
+    lines.push(`{: custom-type="meeting-brief" custom-person="${safeName.replace(/"/g, "")}" }`);
+    return lines.join("\n");
+}
