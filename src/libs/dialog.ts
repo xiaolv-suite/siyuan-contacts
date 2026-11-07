@@ -5,6 +5,7 @@ import { Dialog } from "siyuan";
 import { mount, unmount } from "svelte";
 import type { Component } from "svelte";
 import { dialogEscapeScope } from "./dialog-escape-scope";
+import { lvSurfaceStack } from "./lv-notice-kit";
 
 /**
  * D-40：宿主关闭通道守卫。
@@ -24,20 +25,45 @@ export const simpleDialog = (args: {
     title: string, ele: HTMLElement | DocumentFragment,
     width?: string, height?: string,
     disableClose?: boolean,
+    canDismiss?: () => boolean,
     callback?: () => void;
 }) => {
+    let closed = false;
+    const surfaceId = `dialog_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const popSurface = lvSurfaceStack.push({
+        id: surfaceId,
+        type: "dialog",
+        dismiss: () => {
+            if (closed) return false;
+            if (args.canDismiss && args.canDismiss() === false) return false;
+            closed = true;
+            dialog.destroy();
+            return true;
+        },
+    });
+
     const dialog = new Dialog({
         title: args.title,
         content: `<div class="dialog-content" style="display: flex; height: 100%;"/>`,
         width: args.width,
         height: args.height,
         disableClose: args.disableClose ?? true,
-        destroyCallback: args.callback
+        destroyCallback: () => {
+            if (!closed) {
+                closed = true;
+                popSurface();
+            }
+            if (args.callback) args.callback();
+        }
     });
     // 点击遮罩背景快速关闭
     dialog.element.addEventListener("click", (e) => {
         if (e.target === dialog.element || (e.target as HTMLElement).classList?.contains("b3-dialog__scrim")) {
-            dialog.destroy();
+            if (!closed) {
+                closed = true;
+                popSurface();
+                dialog.destroy();
+            }
         }
     });
     dialog.element.querySelector(".dialog-content")?.appendChild(args.ele);
@@ -51,13 +77,25 @@ export const simpleDialog = (args: {
         closeBtn.setAttribute("aria-label", "关闭");
         closeBtn.innerHTML = "✕";
         closeBtn.style.cssText = "display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font-size:18px;border:none;background:transparent;color:var(--b3-theme-on-surface,#5f6368);cursor:pointer;touch-action:manipulation;";
-        closeBtn.onclick = () => dialog.destroy();
+        closeBtn.onclick = () => {
+            if (!closed) {
+                closed = true;
+                popSurface();
+                dialog.destroy();
+            }
+        };
         header.appendChild(closeBtn);
     }
 
     return {
         dialog,
-        close: dialog.destroy.bind(dialog)
+        close: () => {
+            if (!closed) {
+                closed = true;
+                popSurface();
+                dialog.destroy();
+            }
+        }
     };
 };
 
@@ -84,6 +122,13 @@ export const svelteDialog = (args: {
     const { dialog, close } = simpleDialog({
         ...args,
         ele: container,
+        canDismiss: () => {
+            if (typeof hostCloseChannel.request === "function") {
+                hostCloseChannel.request(() => closeDialog?.());
+                return false;
+            }
+            return true;
+        },
         callback: () => {
             teardownHostCloseInterception();
             unmount(componentInstance);
