@@ -2413,7 +2413,7 @@
                         <div class="ft__smaller ft__on-surface">{text("graphDegreeLabel", "关系度数：{n}", { n: snapshot.relationGraph.nodes.find((node) => node.id === hoveredPerson?.docId)?.degree ?? 0 })}</div>
                     {/if}
                     {#if hoveredPerson.phone}<div class="ft__smaller ft__on-surface">{text("graphPhoneLabel", "电话：{n}", { n: hoveredPerson.phone })}</div>{/if}
-                    {#if hoveredPerson.tags.length > 0}<div class="ft__smaller ft__on-surface">{text("graphTagsLabel", "标签：{n}", { n: hoveredPerson.tags.join(" · ") })}</div>{/if}
+                    {#if hoveredPerson.tags && hoveredPerson.tags.length > 0}<div class="ft__smaller ft__on-surface">{text("graphTagsLabel", "标签：{n}", { n: hoveredPerson.tags.join(" · ") })}</div>{/if}
                     {#if facade}
                         <div class="lvct-graph-view__hover-insights">
                             {#if hoverInsightsLoading}

@@ -1549,7 +1549,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
                                     </div>
                                     <div class="ft__smaller ft__on-surface">
                                         {#if entry.snapshot.phone}电话 {entry.snapshot.phone}{/if}
-                                        {#if entry.snapshot.tags.length > 0} · 标签 {entry.snapshot.tags.join("、")}{/if}
+                                        {#if entry.snapshot.tags && entry.snapshot.tags.length > 0} · 标签 {entry.snapshot.tags.join("、")}{/if}
                                     </div>
                                     <button
                                         type="button"

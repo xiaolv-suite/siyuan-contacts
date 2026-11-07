@@ -424,14 +424,16 @@
                 {/if}
             </div>
         {/if}
-        {#if (isFieldVisible("tags") && (person.group || person.tags.length > 0)) || onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
+        {#if (isFieldVisible("tags") && (person.group || (person.tags && person.tags.length > 0))) || onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
             <div class="lvct-person-card__footer">
-                {#if isFieldVisible("tags") && (person.group || person.tags.length > 0)}
+                {#if isFieldVisible("tags") && (person.group || (person.tags && person.tags.length > 0))}
                     <div class="lvct-person-card__tags">
                         {#if person.group}<span class="lvct-chip lvct-chip--group">{person.group}</span>{/if}
-                        {#each person.tags.slice(0, 3) as tag (tag)}<span class="lvct-chip"># {tag}</span>{/each}
-                        {#if person.tags.length > 3}
-                            <span class="lvct-chip" title={person.tags.slice(3).join("、")}>+{person.tags.length - 3}</span>
+                        {#if person.tags}
+                            {#each person.tags.slice(0, 3) as tag (tag)}<span class="lvct-chip"># {tag}</span>{/each}
+                            {#if person.tags.length > 3}
+                                <span class="lvct-chip" title={person.tags.slice(3).join("、")}>+{person.tags.length - 3}</span>
+                            {/if}
                         {/if}
                     </div>
                 {/if}
