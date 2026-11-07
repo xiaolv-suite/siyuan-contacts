@@ -114,7 +114,7 @@
                 cy={centerY}
                 r="22"
                 fill="var(--lv-brand, #ea580c)"
-                stroke="#ffffff"
+                stroke="var(--b3-theme-surface, #ffffff)"
                 stroke-width="2"
             />
             <text
