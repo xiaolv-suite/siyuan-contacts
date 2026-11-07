@@ -13181,7 +13181,7 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     height: auto;
     display: block;
     object-fit: contain;
-    background: #f8fafc;
+    background: var(--b3-theme-surface, #f8fafc);
 }
 
 .lvct-card-preview-overlay {
