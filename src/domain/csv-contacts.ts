@@ -213,7 +213,11 @@ export function generateCsvTemplate(): string {
 
 export function escapeCsvField(val: unknown): string {
     if (val === undefined || val === null) return "";
-    const str = String(val);
+    let str = String(val);
+    // 电子表格公式注入防御 (OWASP CSV Injection Defense)
+    if (/^\s*[=@\t]/.test(str) || (/^\s*[+\-]/.test(str) && !/^\s*[+\-]?\d+(\.\d+)?\s*$/.test(str))) {
+        str = `'${str}`;
+    }
     if (str.includes('"') || str.includes(",") || str.includes("\n") || str.includes("\r")) {
         return `"${str.replace(/"/g, '""')}"`;
     }
