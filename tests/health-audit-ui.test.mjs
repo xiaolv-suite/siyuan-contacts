@@ -90,7 +90,16 @@ for (const width of [1280, 390]) {
                 await new Promise((resolveWait) => setTimeout(resolveWait, 100));
             }
             assert.ok(port, "隔离浏览器调试端口未启动");
-            const targets = await fetch(`http://127.0.0.1:${port}/json/list`).then((response) => response.json());
+            let targets;
+            for (let retry = 0; retry < 30; retry += 1) {
+                try {
+                    const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+                    targets = await response.json();
+                    if (Array.isArray(targets) && targets.some((t) => t.type === "page")) break;
+                } catch {}
+                await new Promise((r) => setTimeout(r, 100));
+            }
+            assert.ok(targets, "未能连接至隔离浏览器页面目标");
             socket = new WebSocket(targets.find((target) => target.type === "page").webSocketDebuggerUrl);
             await new Promise((resolveOpen, rejectOpen) => { socket.addEventListener("open", resolveOpen, { once: true }); socket.addEventListener("error", rejectOpen, { once: true }); });
             let requestId = 0;
