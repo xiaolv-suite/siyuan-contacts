@@ -1111,8 +1111,13 @@
     $effect(() => {
         if (!container || presentation !== "canvas" || loading || nativeLoading || !canvasCanRender) return;
         /* B14：数据源按模式切换——关系图用名册投影，文档引用图用内核局部图（均走规模裁剪） */
-        const graph: import("../../domain/graph").PersonGraph = JSON.parse(canvasData);
-        if (graph.nodes.length === 0) return;
+        let graph: import("../../domain/graph").PersonGraph | null = null;
+        try {
+            graph = JSON.parse(canvasData);
+        } catch {
+            return;
+        }
+        if (!graph || !Array.isArray(graph.nodes) || graph.nodes.length === 0) return;
         const palette = themeColors();
         const nodeCount = graph.nodes.length;
 
