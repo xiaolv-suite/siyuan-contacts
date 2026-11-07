@@ -674,7 +674,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     private readonly onMenuContent = (event: { detail: { protyle?: { element?: HTMLElement; block?: { rootID?: string } }; menu: { addItem: (item: unknown) => void } } }): void => {
         const lifecycleToken = this.lifecycleToken;
-        if (!this.isLifecycleActive(lifecycleToken)) return;
+        if (!this.isLifecycleActive(lifecycleToken) || !event?.detail?.menu) return;
         const rootId = event.detail.protyle?.block?.rootID;
         if (!rootId) return;
         event.detail.menu.addItem({
