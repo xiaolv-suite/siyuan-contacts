@@ -59,7 +59,7 @@
     const health = $derived.by(() => {
         if (!person) return { level: "unknown" as const, score: 0 };
         const first = recentInteractions[0];
-        const lastTime = first?.date ? new Date(first.date).getTime() : undefined;
+        const lastTime = first?.date ? new Date(first.date.replace(/-/g, "/")).getTime() : undefined;
         return computeRelationshipHealth({
             cadenceDays: personCadence?.days ?? (preferences?.staleThresholdDays || 30),
             lastInteractionTime: lastTime,

@@ -249,7 +249,7 @@
         if (targetDate === today) {
             return { label: text("todayMeeting", "今天"), isPast: false };
         }
-        const diffMs = new Date(targetDate).getTime() - new Date(today).getTime();
+        const diffMs = new Date(targetDate.replace(/-/g, "/")).getTime() - new Date(today.replace(/-/g, "/")).getTime();
         const diffDays = Math.round(diffMs / (86400 * 1000));
         if (diffDays > 0) {
             return { label: text("futureDays", "{n} 天后", { n: diffDays }), isPast: false };

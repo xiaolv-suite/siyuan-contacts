@@ -354,13 +354,13 @@
         return detailedTimeSpan.months[Math.min(idx, detailedTimeSpan.months.length - 1)] || "";
     });
     const totalDays = $derived.by(() => {
-        const d1 = new Date(detailedTimeSpan.minDateKey).getTime();
-        const d2 = new Date(detailedTimeSpan.maxDateKey).getTime();
+        const d1 = new Date(detailedTimeSpan.minDateKey.replace(/-/g, "/")).getTime();
+        const d2 = new Date(detailedTimeSpan.maxDateKey.replace(/-/g, "/")).getTime();
         if (Number.isNaN(d1) || Number.isNaN(d2) || d2 <= d1) return 1;
         return Math.max(1, Math.round((d2 - d1) / 86400000));
     });
     const activeDayKey = $derived.by(() => {
-        const d1 = new Date(detailedTimeSpan.minDateKey).getTime();
+        const d1 = new Date(detailedTimeSpan.minDateKey.replace(/-/g, "/")).getTime();
         if (Number.isNaN(d1)) return detailedTimeSpan.maxDateKey;
         const offset = selectedDayIndex ?? totalDays;
         const cur = new Date(d1 + offset * 86400000);

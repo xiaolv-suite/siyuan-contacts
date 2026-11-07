@@ -54,7 +54,7 @@ export function buildPreMeetingBrief(options: BuildPreMeetingBriefOptions): PreM
     // 1. 上次聊了什么
     let lastMetText = "暂无往期互动记录";
     const latest = timeline[0];
-    const latestTime = latest?.occurredAt ?? (latest?.localDate ? new Date(latest.localDate).getTime() : undefined);
+    const latestTime = latest?.occurredAt ?? (latest?.localDate ? new Date(latest.localDate.replace(/-/g, "/")).getTime() : undefined);
     if (latest && latestTime !== undefined) {
         const daysAgo = Math.floor(Math.max(0, nowTime - latestTime) / (86400 * 1000));
         const daysDesc = daysAgo === 0 ? "今天" : daysAgo === 1 ? "昨天" : `${daysAgo}天前`;
@@ -79,7 +79,7 @@ export function buildPreMeetingBrief(options: BuildPreMeetingBriefOptions): PreM
     };
     const thirtyDaysAgo = nowTime - 30 * 86400 * 1000;
     const recent30dCount = timeline.filter((item) => {
-        const t = item.occurredAt ?? (item.localDate ? new Date(item.localDate).getTime() : 0);
+        const t = item.occurredAt ?? (item.localDate ? new Date(item.localDate.replace(/-/g, "/")).getTime() : 0);
         return t >= thirtyDaysAgo;
     }).length;
     const statusSummary = `${levelMap[health.level] || "良好"} · 过去30天互动 ${recent30dCount} 次`;
