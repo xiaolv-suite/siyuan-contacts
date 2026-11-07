@@ -89,7 +89,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     import { computeRelationshipHealth, heatLevelColorClass, CADENCE_TIERS } from "../../domain/cadence";
     import type { PersonCadence, RelationshipHealth } from "../../domain/cadence";
     import type { PersonOrigin } from "../../domain/person-origin";
-    import { buildPreMeetingBrief, formatPreMeetingBriefText, formatPreMeetingBriefCallout, type PreMeetingBrief } from "../../domain/pre-meeting-brief";
+    import { buildPreMeetingBrief, formatPreMeetingBriefText, formatPreMeetingBriefCallout, formatPreMeetingBriefDailyNote, type PreMeetingBrief } from "../../domain/pre-meeting-brief";
     import { computeMonthlyInteractionTrend } from "../../domain/interactions";
     import { renderTemplate } from "../../domain/interaction-templates";
     import type { NoteTemplate } from "../../domain/interaction-templates";
@@ -1256,6 +1256,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let preMeetingBriefCopyTimer: ReturnType<typeof setTimeout> | null = null;
     let preMeetingBriefCalloutCopied = $state(false);
     let preMeetingBriefCalloutCopyTimer: ReturnType<typeof setTimeout> | null = null;
+    let preMeetingBriefDailyCopied = $state(false);
+    let preMeetingBriefDailyCopyTimer: ReturnType<typeof setTimeout> | null = null;
     let greetingReminderSending = $state(false);
     let greetingReminderSent = $state(false);
     let greetingReminderError = $state("");
@@ -1350,6 +1352,22 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             }, 2000);
         } catch (err) {
             copyFieldError = `复制思源引述块失败：${requestErrorMessage(err)}`;
+            if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
+            copyFieldErrorTimer = setTimeout(() => { copyFieldError = ""; }, 2500);
+        }
+    }
+
+    async function handleCopyPreMeetingBriefDaily() {
+        const textToCopy = formatPreMeetingBriefDailyNote(preMeetingBrief);
+        try {
+            await copyPlainText(textToCopy);
+            preMeetingBriefDailyCopied = true;
+            if (preMeetingBriefDailyCopyTimer) clearTimeout(preMeetingBriefDailyCopyTimer);
+            preMeetingBriefDailyCopyTimer = setTimeout(() => {
+                if (detailAlive) preMeetingBriefDailyCopied = false;
+            }, 2000);
+        } catch (err) {
+            copyFieldError = `复制思源日记块失败：${requestErrorMessage(err)}`;
             if (copyFieldErrorTimer) clearTimeout(copyFieldErrorTimer);
             copyFieldErrorTimer = setTimeout(() => { copyFieldError = ""; }, 2500);
         }
@@ -2733,6 +2751,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     onDestroy(() => {
         if (preMeetingBriefCopyTimer) clearTimeout(preMeetingBriefCopyTimer);
         if (preMeetingBriefCalloutCopyTimer) clearTimeout(preMeetingBriefCalloutCopyTimer);
+        if (preMeetingBriefDailyCopyTimer) clearTimeout(preMeetingBriefDailyCopyTimer);
         if (greetingReminderTimer) clearTimeout(greetingReminderTimer);
         if (briefingCopyTimer) clearTimeout(briefingCopyTimer);
         if (siyuanRefTimer) clearTimeout(siyuanRefTimer);
@@ -3968,6 +3987,18 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         <Check size={12} strokeWidth={1.6} class="lvct-text-success" /> 已复制引述块
                     {:else}
                         <Quote size={12} strokeWidth={1.6} /> 复制引述块
+                    {/if}
+                </button>
+                <button
+                    type="button"
+                    class="b3-button b3-button--text b3-button--small lvct-premeeting-brief__daily-btn"
+                    onclick={(e) => { e.stopPropagation(); e.preventDefault(); void handleCopyPreMeetingBriefDaily(); }}
+                    title="复制为思源日记块 Markdown（带原生双链与 meeting-brief 属性）"
+                >
+                    {#if preMeetingBriefDailyCopied}
+                        <Check size={12} strokeWidth={1.6} class="lvct-text-success" /> 已复制日记块
+                    {:else}
+                        <Calendar size={12} strokeWidth={1.6} /> 复制日记块
                     {/if}
                 </button>
             </div>
