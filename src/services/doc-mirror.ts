@@ -42,8 +42,8 @@ export function schedulePersonDocMirror(
     pendingTimers.set(personDocId, timer);
 }
 
-/** 执行单文档后台同步镜像（安全非阻塞） */
-export async function runPersonDocMirror(plugin: Plugin, personDocId: string): Promise<boolean> {
+/** 执行单文档后台同步镜像（安全非阻塞，支持 1 次补偿重试） */
+export async function runPersonDocMirror(plugin: Plugin, personDocId: string, isRetry = false): Promise<boolean> {
     try {
         const settings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
         if (!settings) return false;
@@ -69,6 +69,10 @@ export async function runPersonDocMirror(plugin: Plugin, personDocId: string): P
         return true;
     } catch (err) {
         console.warn(`[LvContacts] 后台自动同步人物文档未完成 (${personDocId}):`, err);
+        // 单次偶发失败时延迟 2.5 秒安排一次且仅一次补偿重试，提高并发锁竞争下的最终一致性
+        if (!isRetry) {
+            schedulePersonDocMirror(plugin, personDocId, 2500);
+        }
         return false;
     }
 }
