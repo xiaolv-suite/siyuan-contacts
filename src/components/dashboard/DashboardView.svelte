@@ -1195,7 +1195,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
     {/if}
     {#if data?.ordinaryScopeUnknown}
         <StatusNotice error message={text("dashSelfUnknown", "本人身份尚未核实，普通联系人统计与提醒暂停。请在设置中核实身份后重新加载。")} />
-    {:else if data?.excludedSelfDocId}
+    {:else if data?.excludedSelfDocId && !isMobileScreen}
         <StatusNotice message={text("dashSelfExcluded", "统计、生日和待联系提醒已排除本人；本人档案及跟进记录仍保留在联系人详情。")} />
     {/if}
     {#if !data && !errorText}
