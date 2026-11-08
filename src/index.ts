@@ -243,6 +243,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private omnisearchCleaner?: () => void;
     private followupDueCount = 0;
     private layoutReady = false;
+    private topBarElement?: HTMLElement;
     private preferencesActive = true;
     private preferencesEpoch = 0;
     private dataChangeRequest = 0;
@@ -2840,11 +2841,18 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                         label: "去记录",
                         primary: true,
                         onClick: () => {
-                            this.openWorkbench("people");
-                            if (firstDocId) {
-                                void this.listContacts().then(() => {
-                                    this.openPersonDoc(firstDocId);
-                                }).catch(() => {});
+                            if (this.isMobile && firstDocId) {
+                                this.openPersonDoc(firstDocId);
+                            } else {
+                                this.openWorkbench("people");
+                                if (firstDocId) {
+                                    void this.listContacts().then((roster) => {
+                                        const person = roster.find((p) => p.docId === firstDocId);
+                                        if (person) {
+                                            window.dispatchEvent(new CustomEvent("lvct-workbench-person", { detail: { person } }));
+                                        }
+                                    }).catch(() => {});
+                                }
                             }
                         },
                     },

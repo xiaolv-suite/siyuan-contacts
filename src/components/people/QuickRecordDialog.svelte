@@ -96,6 +96,41 @@
                     linkBlockId: person.docId,
                 });
 
+                let createdFactId: string | null = null;
+                let appendDiaryPromise: Promise<unknown> | null = null;
+
+                if (saveAsFact && note.trim() && person?.docId) {
+                    try {
+                        const existing = await loadPersonFactsFromDoc(person.docId);
+                        const newFact: PersonFactItem = {
+                            id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                            text: note.trim(),
+                            category: factCategory,
+                            date: targetDate,
+                        };
+                        createdFactId = newFact.id;
+                        await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
+                    } catch (e) {
+                        onSaved?.();
+                        errorMessage = `互动已记录，但写入人物事实段未完成（可再次点击保存重试事实段）：${requestErrorMessage(e)}`;
+                        return;
+                    }
+                }
+
+                const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
+                if (syncToDailyNote && pluginSettings?.notebookId) {
+                    appendDiaryPromise = appendInteractionToDailyNote(pluginSettings.notebookId, {
+                        eventId,
+                        personDocId: person.docId,
+                        personName: person.name,
+                        localDate: targetDate,
+                        type,
+                        note: note.trim() || undefined,
+                        occurredAt,
+                    });
+                    appendDiaryPromise.catch(() => {});
+                }
+
                 // 标准库 v1.6.0：capsule 不承载动作按钮，撤销确认改由紧凑卡片承载
                 lvNotify.card({
                     source: "小驴人脉",
@@ -110,7 +145,18 @@
                                 try {
                                     await deleteInteraction(plugin, eventId, person.docId);
                                     void syncInteractionDocSection(plugin, person.docId).catch(() => {});
-                                    void removeDailyNoteInteractionByEventId(eventId).catch(() => {});
+                                    if (appendDiaryPromise) {
+                                        await appendDiaryPromise.catch(() => {});
+                                    }
+                                    await removeDailyNoteInteractionByEventId(eventId).catch(() => {});
+                                    if (createdFactId) {
+                                        try {
+                                            const existing = await loadPersonFactsFromDoc(person.docId);
+                                            await savePersonFactsToDoc(person.docId, existing.filter((f) => f.id !== createdFactId));
+                                        } catch (factErr) {
+                                            console.warn("[LvContacts] 撤销回滚事实段异常", factErr);
+                                        }
+                                    }
                                     emitDataChanged({ topics: ["people"], docIds: [person.docId] });
                                     lvNotify.capsule({
                                         source: "小驴人脉",
@@ -129,7 +175,7 @@
                         },
                     ] : undefined,
                 });
-                const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
+
                 if (pluginSettings?.checkinItemId) {
                     void logCheckinEventSafely({
                         itemId: pluginSettings.checkinItemId,
@@ -143,33 +189,6 @@
                     await syncInteractionDocSection(plugin, person.docId).catch(() => {});
                 } else {
                     void syncInteractionDocSection(plugin, person.docId).catch(() => {});
-                }
-                if (syncToDailyNote && pluginSettings?.notebookId) {
-                    void appendInteractionToDailyNote(pluginSettings.notebookId, {
-                        eventId,
-                        personDocId: person.docId,
-                        personName: person.name,
-                        localDate: targetDate,
-                        type,
-                        note: note.trim() || undefined,
-                        occurredAt,
-                    }).catch(() => {});
-                }
-            }
-            if (saveAsFact && note.trim() && person?.docId) {
-                try {
-                    const existing = await loadPersonFactsFromDoc(person.docId);
-                    const newFact: PersonFactItem = {
-                        id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                        text: note.trim(),
-                        category: factCategory,
-                        date: targetDate,
-                    };
-                    await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
-                } catch (e) {
-                    onSaved?.();
-                    errorMessage = `互动已记录，但写入人物事实段未完成（可再次点击保存重试事实段）：${requestErrorMessage(e)}`;
-                    return;
                 }
             }
             onSaved?.();

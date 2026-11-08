@@ -35,6 +35,14 @@ export const simpleDialog = (args: {
         type: "dialog",
         dismiss: () => {
             if (closed) return false;
+            const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            if (active && dialog.element.contains(active)) {
+                const scope = dialogEscapeScope(active);
+                if (scope) {
+                    scope();
+                    return true;
+                }
+            }
             if (args.canDismiss && args.canDismiss() === false) return false;
             closed = true;
             dialog.destroy();
