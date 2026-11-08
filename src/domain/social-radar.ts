@@ -38,6 +38,7 @@ export interface SocialRadarAssessment {
     tier: SocialTier;
     tierLabel: string;
     highlights: string[];
+    actionStrategies: string[];
     polygonPoints: string;
     axesCoordinates: Array<{ name: string; key: keyof SocialRadarMetrics; score: number; x: number; y: number }>;
 }
@@ -180,6 +181,9 @@ export function computeSocialRadar(input: SocialRadarInput): SocialRadarAssessme
     if (connectivity >= 80) highlights.push("人际网络通达");
     if (coOccurrence >= 75) highlights.push("同场活动频繁");
 
+    // 根据多维雷达指标派生精准交往策略建议
+    const actionStrategies = deriveSocialStrategyAdvice(metrics);
+
     // 计算各轴在 SVG 上的实际坐标点 (归一化到 0 ~ MAX_RADIUS)
     const points: string[] = [];
     const axesCoordinates: Array<{ name: string; key: keyof SocialRadarMetrics; score: number; x: number; y: number }> = [];
@@ -205,9 +209,49 @@ export function computeSocialRadar(input: SocialRadarInput): SocialRadarAssessme
         tier,
         tierLabel,
         highlights,
+        actionStrategies,
         polygonPoints: points.join(" "),
         axesCoordinates,
     };
+}
+
+/**
+ * 依据六维社交雷达指标智能生成行动交往策略建议（Actionable Strategy Prescriptions）
+ */
+export function deriveSocialStrategyAdvice(metrics: SocialRadarMetrics): string[] {
+    const advice: string[] = [];
+
+    // 1. 履约可靠度优先原则
+    if (metrics.commitment < 60) {
+        advice.push("存在待办跟进拖延或履约不足：优先闭环已承诺的待办事项，守护契约信任。");
+    }
+
+    // 2. 记忆深度与连接度错位
+    if (metrics.connectivity >= 60 && metrics.memoryDepth < 50) {
+        advice.push("网络通达但细节沉淀不足：建议在近期交谈中多倾听对方业务痛点与个性化偏好，丰富事实档案。");
+    }
+
+    // 3. 活跃度严重降温
+    if (metrics.recency <= 30) {
+        if (metrics.memoryDepth >= 60) {
+            advice.push("关系基底深厚但近期降温：拥有充分共同谈资，建议以历史共同话题或合伙项目轻松破冰。");
+        } else {
+            advice.push("长期未联系且认知积累较浅：建议借行业资讯、节日祝福或共同朋友引荐发起轻量问候。");
+        }
+    } else if (metrics.recency >= 85 && metrics.coOccurrence >= 60) {
+        advice.push("近期互动紧密且交集丰富：处于高信任心流期，适合推进核心业务合作或深度战略探讨。");
+    }
+
+    // 4. 共同交集扩展建议
+    if (metrics.coOccurrence < 30 && metrics.frequency >= 60) {
+        advice.push("交流频次较高但缺少共同事功：建议邀请共同参与一次行业活动、周会研讨或小范围聚会深化连接。");
+    }
+
+    if (advice.length === 0) {
+        advice.push("关系处于良性稳步发展轨道，按当前节奏保持自然交往即可。");
+    }
+
+    return advice;
 }
 
 /**
