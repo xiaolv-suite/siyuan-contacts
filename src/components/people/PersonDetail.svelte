@@ -3779,15 +3779,15 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             {/if}
         </div>
         <div class="lvct-detail__header-actions">
-            <button class="b3-button b3-button--outline" onclick={() => (editing = true)} disabled={busy || deleting}>{text("detailEdit", "编辑")}</button>
+            <button class="b3-button b3-button--outline lvct-detail__edit-btn" onclick={() => (editing = true)} disabled={busy || deleting}>{text("detailEdit", "编辑")}</button>
             <button class="b3-button b3-button--primary lvct-detail__quick-record-btn" onclick={scrollToRecordSection} title="为当前联系人快速记录一笔互动">
                 <Plus size={14} class="lvct-icon-inline" /> 记互动
             </button>
-            <button class="b3-button b3-button--outline" onclick={openBriefingExport} title="导出格式化会面简报 Markdown">
+            <button class="b3-button b3-button--outline lvct-detail__briefing-btn" onclick={openBriefingExport} title="导出格式化会面简报 Markdown">
                 <FileText size={14} class="lvct-icon-inline" /> 简报
             </button>
-            <button class="b3-button b3-button--outline" onclick={() => navigate(previousPerson)} disabled={!previousPerson || busy} title={previousPerson ? `上一位：${previousPerson.name} (Alt+←)` : undefined}>{text("detailPrevious", "上一位")}</button>
-            <button class="b3-button b3-button--outline" onclick={() => navigate(nextPerson)} disabled={!nextPerson || busy} title={nextPerson ? `下一位：${nextPerson.name} (Alt+→)` : undefined}>{text("detailNext", "下一位")}</button>
+            <button class="b3-button b3-button--outline lvct-detail__nav-btn" onclick={() => navigate(previousPerson)} disabled={!previousPerson || busy} title={previousPerson ? `上一位：${previousPerson.name} (Alt+←)` : undefined}>{text("detailPrevious", "上一位")}</button>
+            <button class="b3-button b3-button--outline lvct-detail__nav-btn" onclick={() => navigate(nextPerson)} disabled={!nextPerson || busy} title={nextPerson ? `下一位：${nextPerson.name} (Alt+→)` : undefined}>{text("detailNext", "下一位")}</button>
         </div>
     </div>
 

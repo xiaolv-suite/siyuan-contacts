@@ -3046,12 +3046,15 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         }
         const dialogToken = createLifecycleToken(this.lifecycleToken);
         this.workbenchDialogToken = dialogToken;
+        let unbindMobileViewport: (() => void) | null = null;
         this.workbenchDialog = new Dialog({
             title: this.i18n.tabTitle ?? "小驴人脉",
             content: '<div class="lvct-dialog-root" style="height:100%;"></div>',
             width: "100vw",
             height: "100%",
             destroyCallback: () => {
+                unbindMobileViewport?.();
+                unbindMobileViewport = null;
                 if (this.workbenchDialogToken !== dialogToken) return;
                 dialogToken.invalidate();
                 window.clearTimeout(this.viewRequestTimer);
@@ -3064,6 +3067,37 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 this.workbenchDialogToken = null;
             },
         });
+        const dialogContainer = this.workbenchDialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+        if (typeof window !== "undefined") {
+            const vv = window.visualViewport;
+            const mql = window.matchMedia?.("(max-width: 680px)");
+            let baselineHeight = Math.max(window.innerHeight || 0, Math.round(vv?.height ?? 0));
+            const syncMobileDialog = () => {
+                const isMobileOrNarrow = Boolean(this.isMobile || lvLaunchpad.isMobileFrontend() || mql?.matches);
+                dialogContainer?.classList.toggle("lvct-mobile-dialog", isMobileOrNarrow);
+                const innerH = window.innerHeight || 0;
+                const rawH = vv ? vv.height : innerH;
+                const vvH = Math.max(180, Math.round(rawH || innerH));
+                if (vvH > baselineHeight) baselineHeight = vvH;
+                this.workbenchDialog?.element.style.setProperty("--lvct-vv-h", `${vvH}px`);
+                dialogContainer?.style.setProperty("--lvct-vv-h", `${vvH}px`);
+                const kbOpen = Math.max(baselineHeight, innerH) - vvH > 110;
+                dialogContainer?.classList.toggle("lvct-vv-keyboard-open", kbOpen);
+            };
+            syncMobileDialog();
+            vv?.addEventListener("resize", syncMobileDialog);
+            vv?.addEventListener("scroll", syncMobileDialog);
+            window.addEventListener("resize", syncMobileDialog);
+            mql?.addEventListener?.("change", syncMobileDialog);
+            unbindMobileViewport = () => {
+                vv?.removeEventListener("resize", syncMobileDialog);
+                vv?.removeEventListener("scroll", syncMobileDialog);
+                window.removeEventListener("resize", syncMobileDialog);
+                mql?.removeEventListener?.("change", syncMobileDialog);
+            };
+        } else if (this.isMobile || lvLaunchpad.isMobileFrontend()) {
+            dialogContainer?.classList.add("lvct-mobile-dialog");
+        }
         this.workbenchDialog.element.addEventListener("click", (e) => {
             if (e.target === this.workbenchDialog?.element || (e.target as HTMLElement).classList?.contains("b3-dialog__scrim")) {
                 this.workbenchDialog?.destroy();

@@ -253,6 +253,7 @@
     let regionExploring = $state(false);
     let cardDensity: "comfortable" | "compact" = $state("comfortable");
     let activeLetterFilter = $state("");
+    let narrowDrawerOpen = $state(false);
     const defaultPageSize = $derived(isMobile ? 50 : PAGE_SIZE);
 
     function selectLetterFilter(letter: string): void {
@@ -1958,6 +1959,7 @@
 <div
     class="lvct-people"
     class:lvct-people--dragover={isDraggingOver}
+    class:lvct-people--drawer-open={narrowDrawerOpen}
     bind:this={peopleElement}
     ondragenter={(e) => { e.preventDefault(); isDraggingOver = true; }}
     ondragover={(e) => { e.preventDefault(); isDraggingOver = true; }}
@@ -2162,7 +2164,7 @@
     {/snippet}
     <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
         {#if isMobile}
-            <div class="fn__flex" style="width: 100%; align-items: center; gap: 8px;">
+            <div class="lvct-people__mobile-bar fn__flex" style="width: 100%; align-items: center; gap: 6px;">
                 <input
                     class="b3-text-field fn__flex-1 lvct-people__mobile-search"
                     type="search"
@@ -2180,15 +2182,20 @@
                         }
                     }}
                 />
-                <button class="b3-button" onclick={() => (adding = true)} aria-label={text("peopleCreate", "新建联系人")}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建")}</button>
                 <button
-                    class="b3-button b3-button--outline"
+                    class="b3-button b3-button--outline lvct-people__mobile-filter-btn"
+                    class:lvct-people__mobile-filter-btn--active={mobileSheetOpen || conditionChips.length > 0 || activeLetterFilter !== "" || isExtraFilterActive(extraFilter)}
                     aria-label={text("peopleMobileTools", "筛选与整理")}
                     aria-expanded={mobileSheetOpen}
                     aria-controls={mobileSheetOpen ? "lvct-people-mobile-tools-sheet" : undefined}
                     bind:this={mobileSheetTrigger}
                     onclick={openMobileSheet}
-                ><SlidersHorizontal size={16} strokeWidth={1.6} />{text("peopleMobileTools", "筛选与整理")}{isExtraFilterActive(extraFilter) || duplicatePairs.length > 0 ? " ·" : ""}</button>
+                >
+                    <SlidersHorizontal size={15} strokeWidth={1.6} />
+                    <span aria-hidden="true">筛选{conditionChips.length + (activeLetterFilter ? 1 : 0) > 0 ? `(${conditionChips.length + (activeLetterFilter ? 1 : 0)})` : ""}{isExtraFilterActive(extraFilter) || duplicatePairs.length > 0 ? " ·" : ""} ▾</span>
+                    <span class="lvct-sr-only">{text("peopleMobileTools", "筛选与整理")}</span>
+                </button>
+                <button class="b3-button b3-button--primary lvct-people__create lvct-people__mobile-create-btn" onclick={() => (adding = true)} aria-label={text("peopleCreate", "新建联系人")}><UserPlus size={15} strokeWidth={1.6} />{text("peopleCreate", "新建")}</button>
             </div>
         {:else}
             <!-- 桌面端搜索输入框：order -1 独占第一行，固定高度拒绝纵向拉伸 -->
@@ -2313,6 +2320,16 @@
                 {/if}
             </span>
 
+            <button
+                type="button"
+                class="b3-button b3-button--outline lvct-people__narrow-filter-btn"
+                class:lvct-people__narrow-filter-btn--active={narrowDrawerOpen || conditionChips.length > 0 || activeLetterFilter !== ""}
+                aria-expanded={narrowDrawerOpen}
+                onclick={() => (narrowDrawerOpen = !narrowDrawerOpen)}
+            >
+                <SlidersHorizontal size={15} strokeWidth={1.6} />
+                <span>筛选{conditionChips.length + (activeLetterFilter ? 1 : 0) > 0 ? `(${conditionChips.length + (activeLetterFilter ? 1 : 0)})` : ""} ▾</span>
+            </button>
             <button class="b3-button b3-button--primary lvct-people__create" onclick={() => (adding = true)}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建联系人")}</button>
             <details class="lvct-people__tools-fold" bind:open={toolsOpen} bind:this={toolsMenuWrap}>
                 <summary class="b3-button b3-button--outline lvct-people__tools-trigger">
@@ -2371,37 +2388,91 @@
         </div>
     {/if}
 
-    <!-- 拼音首字母 A-Z 跳跃索引条 -->
-    {#if people.length > 8}
-        <div class="lvct-people__alphabet-bar" class:lvct-people__alphabet-bar--compact={people.length > 60} role="navigation" aria-label={text("alphabetBarAria", "首字母拼音快速跳转")}>
-            <button
-                type="button"
-                class="lvct-people__alphabet-btn lvct-people__alphabet-btn--all"
-                class:lvct-people__alphabet-btn--active={activeLetterFilter === ""}
-                onclick={clearLetterFilter}
-                title={text("alphabetAllTip", "全部首字母")}
-            >A-Z</button>
-            {#each ALPHABET_LETTERS as letter}
-                {@const hasItems = alphabetData.activeLetters.has(letter)}
+    {#snippet alphabetBarBlock()}
+        {#if people.length > 8}
+            <div class="lvct-people__alphabet-bar" class:lvct-people__alphabet-bar--compact={people.length > 60} role="navigation" aria-label={text("alphabetBarAria", "首字母拼音快速跳转")}>
                 <button
                     type="button"
-                    class="lvct-people__alphabet-btn"
-                    class:lvct-people__alphabet-btn--active={activeLetterFilter === letter}
-                    disabled={!hasItems}
-                    onclick={() => selectLetterFilter(letter)}
-                    title={hasItems ? text("alphabetFilterTip", "只看首字母为 {letter} 的联系人", { letter }) : text("alphabetFilterEmptyTip", "暂无首字母为 {letter} 的联系人", { letter })}
-                >{letter}</button>
-            {/each}
-            {#if alphabetData.activeLetters.has("#")}
-                <button
-                    type="button"
-                    class="lvct-people__alphabet-btn"
-                    class:lvct-people__alphabet-btn--active={activeLetterFilter === "#"}
-                    onclick={() => selectLetterFilter("#")}
-                    title={text("alphabetOtherTip", "其它非字母开头的联系人")}
-                >#</button>
-            {/if}
-        </div>
+                    class="lvct-people__alphabet-btn lvct-people__alphabet-btn--all"
+                    class:lvct-people__alphabet-btn--active={activeLetterFilter === ""}
+                    onclick={clearLetterFilter}
+                    title={text("alphabetAllTip", "全部首字母")}
+                >A-Z</button>
+                {#each ALPHABET_LETTERS as letter}
+                    {@const hasItems = alphabetData.activeLetters.has(letter)}
+                    <button
+                        type="button"
+                        class="lvct-people__alphabet-btn"
+                        class:lvct-people__alphabet-btn--active={activeLetterFilter === letter}
+                        disabled={!hasItems}
+                        onclick={() => selectLetterFilter(letter)}
+                        title={hasItems ? text("alphabetFilterTip", "只看首字母为 {letter} 的联系人", { letter }) : text("alphabetFilterEmptyTip", "暂无首字母为 {letter} 的联系人", { letter })}
+                    >{letter}</button>
+                {/each}
+                {#if alphabetData.activeLetters.has("#")}
+                    <button
+                        type="button"
+                        class="lvct-people__alphabet-btn"
+                        class:lvct-people__alphabet-btn--active={activeLetterFilter === "#"}
+                        onclick={() => selectLetterFilter("#")}
+                        title={text("alphabetOtherTip", "其它非字母开头的联系人")}
+                    >#</button>
+                {/if}
+            </div>
+        {/if}
+    {/snippet}
+
+    {#snippet tagFiltersBlock()}
+        {#if tags.length > 0}
+            <div class="lvct-people__filters" class:lvct-people__filters--grouped={tagsExpanded && tags.length > TAG_PREVIEW_LIMIT} aria-label="标签筛选">
+                {#if !tagsExpanded || tags.length <= TAG_PREVIEW_LIMIT}
+                    <span class="ft__smaller ft__on-surface">{text("peopleTags", "标签")}</span>
+                    {#each previewTags as tag (tag)}
+                        <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
+                    {/each}
+                    {#if tags.length > TAG_PREVIEW_LIMIT}
+                        <button
+                            type="button"
+                            class="lvct-people__filter lvct-people__filter-toggle"
+                            onclick={() => (tagsExpanded = true)}
+                            title="展开全部标签并按维度分组查看"
+                        >
+                            +{tags.length - previewTags.length} 个标签 · 分组展开 ▾
+                        </button>
+                    {/if}
+                    {#if tagFilter.length > 0}
+                        <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选</button>
+                    {/if}
+                {:else}
+                    <div class="lvct-people__tag-groups">
+                        <div class="lvct-people__tag-groups-head">
+                            <span class="ft__smaller ft__on-surface"><b>{text("peopleTags", "标签分组筛选")}</b>（共 {tags.length} 个）</span>
+                            <div class="fn__flex" style="gap: 8px; align-items: center;">
+                                {#if tagFilter.length > 0}
+                                    <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选 ({tagFilter.length})</button>
+                                {/if}
+                                <button type="button" class="lvct-people__filter lvct-people__filter-toggle" onclick={() => (tagsExpanded = false)}>收起标签 ▴</button>
+                            </div>
+                        </div>
+                        {#each groupedTags as grp (grp.key)}
+                            <div class="lvct-people__tag-group-row">
+                                <span class="lvct-people__tag-group-label">{grp.label}</span>
+                                <div class="lvct-people__tag-group-items">
+                                    {#each grp.items as tag (tag)}
+                                        <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+        {/if}
+    {/snippet}
+
+    <!-- 拼音首字母 A-Z 跳跃索引条（桌面常驻，窄屏/手机端收进筛选抽屉） -->
+    {#if !isMobile}
+        {@render alphabetBarBlock()}
     {/if}
     {#if !isMobile && localViews.length > 0}
         <div class="lvct-people__savedviews" aria-label="已保存视图">
@@ -2442,6 +2513,20 @@
             <div class="lvct-sheet__body">
                 {@render viewMenuControl()}
                 {@render filterControls()}
+                <div class="lvct-people__sheet-viewmode">
+                    <span class="lvct-seg" role="group" aria-label="切换卡片/表格">
+                        <button type="button" class="lvct-seg__item" class:lvct-seg__item--active={viewMode === "cards"} aria-pressed={viewMode === "cards"} onclick={() => setViewMode("cards")}><LayoutGrid size={14} strokeWidth={1.6} />{text("peopleCards", "卡片")}</button>
+                        <button type="button" class="lvct-seg__item" class:lvct-seg__item--active={viewMode === "table"} aria-pressed={viewMode === "table"} onclick={() => setViewMode("table")}><List size={14} strokeWidth={1.6} />{text("peopleTable", "表格")}</button>
+                    </span>
+                    {#if viewMode === "cards"}
+                        <span class="lvct-seg" role="group" aria-label="卡片密度">
+                            <button type="button" class="lvct-seg__item" class:lvct-seg__item--active={cardDensity === "comfortable"} aria-pressed={cardDensity === "comfortable"} onclick={() => (cardDensity = "comfortable")}>详细</button>
+                            <button type="button" class="lvct-seg__item" class:lvct-seg__item--active={cardDensity === "compact"} aria-pressed={cardDensity === "compact"} onclick={() => (cardDensity = "compact")}>紧凑</button>
+                        </span>
+                    {/if}
+                </div>
+                {@render alphabetBarBlock()}
+                {@render tagFiltersBlock()}
                 {@render actionControls()}
                 <button class="b3-button b3-button--outline" onclick={() => { closeMobileSheet(false); adding = true; }}><UserPlus size={16} strokeWidth={1.6} />{text("peopleCreate", "新建联系人")}</button>
             </div>
@@ -2504,50 +2589,8 @@
         </div>
     {/if}
 
-    {#if tags.length > 0}
-        <div class="lvct-people__filters" class:lvct-people__filters--grouped={tagsExpanded && tags.length > TAG_PREVIEW_LIMIT} aria-label="标签筛选">
-            {#if !tagsExpanded || tags.length <= TAG_PREVIEW_LIMIT}
-                <span class="ft__smaller ft__on-surface">{text("peopleTags", "标签")}</span>
-                {#each previewTags as tag (tag)}
-                    <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
-                {/each}
-                {#if tags.length > TAG_PREVIEW_LIMIT}
-                    <button
-                        type="button"
-                        class="lvct-people__filter lvct-people__filter-toggle"
-                        onclick={() => (tagsExpanded = true)}
-                        title="展开全部标签并按维度分组查看"
-                    >
-                        +{tags.length - previewTags.length} 个标签 · 分组展开 ▾
-                    </button>
-                {/if}
-                {#if tagFilter.length > 0}
-                    <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选</button>
-                {/if}
-            {:else}
-                <div class="lvct-people__tag-groups">
-                    <div class="lvct-people__tag-groups-head">
-                        <span class="ft__smaller ft__on-surface"><b>{text("peopleTags", "标签分组筛选")}</b>（共 {tags.length} 个）</span>
-                        <div class="fn__flex" style="gap: 8px; align-items: center;">
-                            {#if tagFilter.length > 0}
-                                <button type="button" class="lvct-people__filter-clear" onclick={() => { tagFilter = []; visibleCount = PAGE_SIZE; }}>清除筛选 ({tagFilter.length})</button>
-                            {/if}
-                            <button type="button" class="lvct-people__filter lvct-people__filter-toggle" onclick={() => (tagsExpanded = false)}>收起标签 ▴</button>
-                        </div>
-                    </div>
-                    {#each groupedTags as grp (grp.key)}
-                        <div class="lvct-people__tag-group-row">
-                            <span class="lvct-people__tag-group-label">{grp.label}</span>
-                            <div class="lvct-people__tag-group-items">
-                                {#each grp.items as tag (tag)}
-                                    <button type="button" class="lvct-people__filter" class:lvct-people__filter--active={tagFilter.includes(tag)} aria-pressed={tagFilter.includes(tag)} onclick={() => toggleTag(tag)}>{tag}</button>
-                                {/each}
-                            </div>
-                        </div>
-                    {/each}
-                </div>
-            {/if}
-        </div>
+    {#if !isMobile}
+        {@render tagFiltersBlock()}
     {/if}
 
     {#if selectedIds.length > 0}

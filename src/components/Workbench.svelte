@@ -194,6 +194,20 @@
     let returnToContactAfterOrganizationProfile = $state(false);
     let organizationProfileCompletion: ((created?: { docId: string; name: string }) => void) | null = $state(null);
     let workbenchElement: HTMLDivElement | undefined = $state();
+    let keyboardOpen = $state(false);
+    const shouldHideBottomNav = $derived(
+        keyboardOpen || Boolean(detailPerson || organizationOpen || organizationProfileOpen)
+    );
+
+    async function closeWorkbenchSafely() {
+        if (!(await canLeave.requestClose())) return;
+        if (facade.closeWorkbenchDialog) {
+            facade.closeWorkbenchDialog();
+            return;
+        }
+        const hostClose = workbenchElement?.closest(".b3-dialog")?.querySelector<HTMLElement>(".b3-dialog__close");
+        hostClose?.click();
+    }
     let peopleView: {
         focusContact: (itemId: string) => Promise<"restored" | "cancelled" | "missing">;
         cancelContactFocus: () => void;
@@ -641,6 +655,30 @@
     let dataChangeNotice = $state("");
     onMount(() => {
         if (!lifecycleToken.isAlive()) return;
+        let unbindVv: (() => void) | null = null;
+        if (typeof window !== "undefined") {
+            const vv = window.visualViewport;
+            let baselineH = Math.max(window.innerHeight || 0, Math.round(vv?.height ?? 0));
+            const syncViewportAndModals = () => {
+                const innerH = window.innerHeight || 0;
+                const rawH = vv ? vv.height : innerH;
+                const vvH = Math.max(180, Math.round(rawH || innerH));
+                if (vvH > baselineH) baselineH = vvH;
+                workbenchElement?.style.setProperty("--lvct-vv-h", `${vvH}px`);
+                const dialogContainer = workbenchElement?.closest<HTMLElement>(".b3-dialog__container");
+                dialogContainer?.style.setProperty("--lvct-vv-h", `${vvH}px`);
+                keyboardOpen = Math.max(baselineH, innerH) - vvH > 110;
+            };
+            syncViewportAndModals();
+            vv?.addEventListener("resize", syncViewportAndModals);
+            vv?.addEventListener("scroll", syncViewportAndModals);
+            window.addEventListener("resize", syncViewportAndModals);
+            unbindVv = () => {
+                vv?.removeEventListener("resize", syncViewportAndModals);
+                vv?.removeEventListener("scroll", syncViewportAndModals);
+                window.removeEventListener("resize", syncViewportAndModals);
+            };
+        }
         void preferenceRequests.load().catch(() => {});
         const unsubscribe = subscribeDataChangedDebounced((change) => {
             if (!lifecycleToken.isAlive()) return;
@@ -666,6 +704,7 @@
             }
         }, { invalidate: () => { invalidateRoster(); preferenceRequests.invalidate(); }, token: lifecycleToken });
         return () => {
+            unbindVv?.();
             lifecycleToken.invalidate();
             unsubscribe();
             preferenceRequests.dispose();
@@ -673,7 +712,13 @@
     });
 </script>
 
-<div class="lvct-workbench" data-lvct-theme={currentPreferences.themeScheme || "cognac"} bind:this={workbenchElement}>
+<div
+    class="lvct-workbench"
+    class:lvct-workbench--keyboard-open={keyboardOpen}
+    class:lvct-workbench--hide-bottom-nav={shouldHideBottomNav}
+    data-lvct-theme={currentPreferences.themeScheme || "cognac"}
+    bind:this={workbenchElement}
+>
     {#if isMobile}
         <div
             class="lvct-workbench__drag-zone"
@@ -734,7 +779,7 @@
 
     <main class="lvct-workbench__main">
         <header class="lvct-workbench__header" class:lvct-workbench__header--settings={current === "settings"}>
-            <div>
+            <div class="lvct-workbench__header-title-wrap">
                 <h1 tabindex="-1">{currentMeta.title}</h1>
                 <p>{currentMeta.subtitle}</p>
             </div>
@@ -742,9 +787,16 @@
                 {#if current === "home"}<div class="lvct-workbench__header-actions">
                     <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
                         onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
-                    <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><LvctIcon name="iconSearch" size={16}/>{text("homeSearchAction", "搜索")}</button>
-                    <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><LvctIcon name="iconAdd" size={16}/>{text("peopleCreate", "新建联系人")}</button>
+                    <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><LvctIcon name="iconSearch" size={16}/><span class="lvct-workbench__header-btn-text">{text("homeSearchAction", "搜索")}</span></button>
+                    <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><LvctIcon name="iconAdd" size={16}/><span class="lvct-workbench__header-btn-text">{text("peopleCreate", "新建联系人")}</span></button>
                 </div>{/if}
+                <button
+                    type="button"
+                    class="lvct-workbench__mobile-close"
+                    aria-label={text("closeWorkbench", "关闭工作台")}
+                    title={text("closeWorkbench", "关闭工作台")}
+                    onclick={() => void closeWorkbenchSafely()}
+                >✕</button>
             </div>
         </header>
         <StatusNotice message={dataChangeNotice} onDismiss={() => (dataChangeNotice = "")} />

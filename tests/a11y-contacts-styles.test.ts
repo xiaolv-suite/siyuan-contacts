@@ -552,6 +552,33 @@ test("小驴人脉 · GitHub三大标杆融合对齐圈层联络周期、会前�
     assert.match(indexScss, /\.lvct-twenty-spark-bar[\s\S]*@media\s*\(forced-colors:\s*active\)/);
 });
 
+test("小驴人脉 · 手机端全屏容器选择器、visualViewport 软键盘同步、单行顶栏 44x44 关闭钮与列表/详情头部紧凑化", () => {
+    const indexTs = fs.readFileSync(path.join(SRC, "index.ts"), "utf8");
+    assert.match(indexTs, /lvct-mobile-dialog/);
+    assert.match(indexTs, /--lvct-vv-h/);
+
+    const indexScss = fs.readFileSync(path.join(SRC, "index.scss"), "utf8");
+    assert.match(indexScss, /\.b3-dialog:has\(\.lvct-workbench\)\s*\.b3-dialog__container,\s*\.b3-dialog__container\.lvct-mobile-dialog/);
+    assert.match(indexScss, /height:\s*var\(--lvct-vv-h,\s*100dvh\)\s*!important/);
+    assert.match(indexScss, /body:has\(\.lvct-dialog-mask,\s*\.lvct-sheet\)\s*\.lvct-workbench__sidebar/);
+    assert.match(indexScss, /\.lvct-detail__more-tools-panel[\s\S]*max-width:\s*calc\(100vw - 24px\)/);
+
+    const workbenchSvelte = fs.readFileSync(path.join(SRC, "components", "Workbench.svelte"), "utf8");
+    assert.match(workbenchSvelte, /lvct-workbench__mobile-close/);
+    assert.match(workbenchSvelte, /closeWorkbenchSafely/);
+
+    const peopleSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PeopleView.svelte"), "utf8");
+    assert.match(peopleSvelte, /lvct-people__mobile-filter-btn/);
+    assert.match(peopleSvelte, /lvct-people__narrow-filter-btn/);
+    assert.match(peopleSvelte, /alphabetBarBlock/);
+    assert.match(peopleSvelte, /tagFiltersBlock/);
+
+    const detailSvelte = fs.readFileSync(path.join(SRC, "components", "people", "PersonDetail.svelte"), "utf8");
+    assert.match(detailSvelte, /lvct-detail__edit-btn/);
+    assert.match(detailSvelte, /lvct-detail__quick-record-btn/);
+});
+
+
 
 
 
