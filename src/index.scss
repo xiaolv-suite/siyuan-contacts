@@ -13431,6 +13431,12 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px)) !important;
         border-right: 0 !important;
         border-top: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent) !important;
+
+        .lvct-workbench__nav-item {
+            min-height: 46px !important;
+            padding: 4px 0 !important;
+            gap: 2px !important;
+        }
     }
 
     .lvct-workbench__body {
