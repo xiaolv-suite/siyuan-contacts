@@ -221,7 +221,9 @@ export async function syncFullPersonDocument(plugin: Plugin, person: ContactSumm
     await Promise.all([
         syncPersonProfileDocSection(person, { strict: true, plugin }),
         syncInteractionDocSection(plugin, person.docId, { strict: true }),
-        syncFollowUpTasksToDoc(plugin, person.docId).catch((e) => console.warn("[LvContacts] 原生跟进同步未完成:", e)),
+        withDocLock(person.docId, async () => {
+            await syncFollowUpTasksToDoc(plugin, person.docId).catch((e) => console.warn("[LvContacts] 原生跟进同步未完成:", e));
+        }),
         syncPersonFieldsDocSection(person.docId, { strict: true }),
         syncExchangesDocSection(plugin, person.docId, { strict: true }),
         syncAnniversariesDocSection(plugin, person.docId, { strict: true }),

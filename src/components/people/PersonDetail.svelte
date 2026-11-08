@@ -4454,93 +4454,6 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         </dl>
     </section>
 
-    <!-- 🪪 实体名片档案卡片模块 -->
-    <section class="lvct-detail__section lvct-detail__business-card-section">
-        <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <div class="fn__flex" style="align-items: center; gap: 6px;">
-                <CreditCard size={14} style="color: var(--lv-brand, #ea580c);" />
-                <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">实体纸质名片</h4>
-            </div>
-            {#if businessCardUrl}
-                <div class="fn__flex" style="align-items: center; gap: 6px;">
-                    <button
-                        type="button"
-                        class="b3-button b3-button--outline b3-button--small font-size-11"
-                        style="padding: 2px 7px;"
-                        onclick={() => (cardViewerOpen = true)}
-                    >
-                        <Maximize2 size={12} /> 查看大图
-                    </button>
-                    <button
-                        type="button"
-                        class="b3-button b3-button--outline b3-button--small font-size-11"
-                        style="padding: 2px 7px;"
-                        onclick={() => cardFileInput?.click()}
-                        disabled={cardSaving}
-                    >
-                        <Upload size={12} /> 更换
-                    </button>
-                    <button
-                        type="button"
-                        class="b3-button b3-button--text b3-button--small font-size-11 lvct-text-danger"
-                        style="padding: 2px 7px;"
-                        onclick={handleDeleteBusinessCard}
-                        disabled={cardSaving}
-                    >
-                        <Trash2 size={12} />
-                    </button>
-                </div>
-            {/if}
-        </div>
-
-        <input
-            type="file"
-            accept="image/*"
-            style="display: none;"
-            bind:this={cardFileInput}
-            onchange={handleBusinessCardUpload}
-        />
-
-        {#if cardError}
-            <div class="ft__smaller lvct-text-danger" style="margin-bottom: 6px;">{cardError}</div>
-        {/if}
-
-        {#if businessCardUrl}
-            <div class="lvct-card-preview-container">
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                    class="lvct-card-preview-box"
-                    onclick={() => (cardViewerOpen = true)}
-                    title="点击查看名片高清原图"
-                >
-                    <img src={businessCardUrl} alt={`${current.name} 的实体名片`} class="lvct-card-preview-img" />
-                    <div class="lvct-card-preview-overlay">
-                        <Maximize2 size={18} />
-                        <span>点击放大查看名片</span>
-                    </div>
-                </div>
-            </div>
-        {:else}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-                class="lvct-card-upload-dropzone"
-                onclick={() => cardFileInput?.click()}
-                title="点击选择名片照片上传"
-            >
-                <div class="lvct-card-upload-inner">
-                    <CreditCard size={28} style="color: var(--b3-theme-on-surface-light); margin-bottom: 6px;" />
-                    <span class="lvct-card-upload-title">上传纸质名片照片</span>
-                    <span class="lvct-card-upload-desc">支持 PNG/JPG/WebP，智能保持原图比例并高清压缩，随时点击放大查阅</span>
-                </div>
-            </div>
-        {/if}
-        {#if copyFieldError}
-            <p class="b3-label b3-label--error ft__smaller" style="margin: 8px 0 0;">{copyFieldError}</p>
-        {/if}
-    </section>
-
     <section class="lvct-detail__section">
         <h4>{text("detailRecordTitle", "记一笔互动")}</h4>
         {#if templatesSupported}
@@ -4672,6 +4585,93 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             {/if}
         </div>
         <p class="ft__smaller ft__on-surface">记录后，首页"久未联系"会重新计时。</p>
+    </section>
+
+    <!-- 🪪 实体名片档案卡片模块 -->
+    <section class="lvct-detail__section lvct-detail__business-card-section">
+        <div class="lvct-detail__fields-header fn__flex" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="fn__flex" style="align-items: center; gap: 6px;">
+                <CreditCard size={14} style="color: var(--lv-brand, #ea580c);" />
+                <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--lvct-text-1);">实体纸质名片</h4>
+            </div>
+            {#if businessCardUrl}
+                <div class="fn__flex" style="align-items: center; gap: 6px;">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small font-size-11"
+                        style="padding: 2px 7px;"
+                        onclick={() => (cardViewerOpen = true)}
+                    >
+                        <Maximize2 size={12} /> 查看大图
+                    </button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--outline b3-button--small font-size-11"
+                        style="padding: 2px 7px;"
+                        onclick={() => cardFileInput?.click()}
+                        disabled={cardSaving}
+                    >
+                        <Upload size={12} /> 更换
+                    </button>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small font-size-11 lvct-text-danger"
+                        style="padding: 2px 7px;"
+                        onclick={handleDeleteBusinessCard}
+                        disabled={cardSaving}
+                    >
+                        <Trash2 size={12} />
+                    </button>
+                </div>
+            {/if}
+        </div>
+
+        <input
+            type="file"
+            accept="image/*"
+            style="display: none;"
+            bind:this={cardFileInput}
+            onchange={handleBusinessCardUpload}
+        />
+
+        {#if cardError}
+            <div class="ft__smaller lvct-text-danger" style="margin-bottom: 6px;">{cardError}</div>
+        {/if}
+
+        {#if businessCardUrl}
+            <div class="lvct-card-preview-container">
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="lvct-card-preview-box"
+                    onclick={() => (cardViewerOpen = true)}
+                    title="点击放大查看名片大图"
+                >
+                    <img src={businessCardUrl} alt="纸质名片" class="lvct-card-preview-img" />
+                    <div class="lvct-card-preview-overlay">
+                        <Maximize2 size={16} />
+                        <span>点击放大查看名片</span>
+                    </div>
+                </div>
+            </div>
+        {:else}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+                class="lvct-card-upload-dropzone"
+                onclick={() => cardFileInput?.click()}
+                title="点击选择名片照片上传"
+            >
+                <div class="lvct-card-upload-inner">
+                    <CreditCard size={14} style="color: var(--b3-theme-on-surface-light);" />
+                    <span class="lvct-card-upload-title" style="margin: 0; font-size: 12px;">上传纸质名片照片</span>
+                    <span class="lvct-card-upload-desc" style="font-size: 11px;">（支持 PNG/JPG/WebP 高清压缩查阅）</span>
+                </div>
+            </div>
+        {/if}
+        {#if copyFieldError}
+            <p class="b3-label b3-label--error ft__smaller" style="margin: 8px 0 0;">{copyFieldError}</p>
+        {/if}
     </section>
 
     {#if onLoadPersonFacts && onSavePersonFacts}
