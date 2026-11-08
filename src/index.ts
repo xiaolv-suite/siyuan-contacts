@@ -324,19 +324,21 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         });
         lifecycleToken.onDispose(unsubscribeDataMirror);
 
-        this.addIcons(`<symbol id="iconLvContacts" viewBox="0 0 32 32">
-  <circle cx="21" cy="11.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity="0.45"/>
-  <path d="M17.5 24.5c.5-2.8 2-4 5.5-4s5 1.2 5.5 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.45"/>
-  <circle cx="11.5" cy="11" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
-  <path d="M5 25c0-4 2.8-6 6.5-6s6.5 2 6.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="23.5" cy="6.5" r="2.5" fill="currentColor"/>
+        this.addIcons(`<symbol id="iconLvContacts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="none"/>
+  <circle cx="9" cy="7" r="4" fill="none"/>
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" fill="none"/>
+  <path d="M16 3.13a4 4 0 0 1 0 7.75" fill="none"/>
 </symbol>
-<symbol id="icon-lv-contacts" viewBox="0 0 32 32">
-  <circle cx="21" cy="11.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-opacity="0.45"/>
-  <path d="M17.5 24.5c.5-2.8 2-4 5.5-4s5 1.2 5.5 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.45"/>
-  <circle cx="11.5" cy="11" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
-  <path d="M5 25c0-4 2.8-6 6.5-6s6.5 2 6.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="23.5" cy="6.5" r="2.5" fill="currentColor"/>
+<symbol id="icon-lv-contacts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" fill="none"/>
+  <circle cx="9" cy="7" r="4" fill="none"/>
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" fill="none"/>
+  <path d="M16 3.13a4 4 0 0 1 0 7.75" fill="none"/>
+</symbol>
+<symbol id="iconHome" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" fill="none"/>
+  <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none"/>
 </symbol>`);
 
         configureCloseGuardI18n(this.i18n);
