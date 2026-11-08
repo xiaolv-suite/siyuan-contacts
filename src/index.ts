@@ -492,14 +492,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     onLayoutReady() {
         if (!this.isLifecycleActive() || !this.preferencesActive) return;
         const lifecycleToken = this.lifecycleToken;
-        if (!this.layoutReady) this.addTopBar({
-            icon: "iconLvContacts",
-            title: this.i18n.openWorkbench ?? "小驴人脉",
-            position: "right",
-            callback: () => {
-                if (this.isLifecycleActive(lifecycleToken)) this.openWorkbench();
-            },
-        });
+        if (!this.layoutReady) {
+            this.topBarElement = this.addTopBar({
+                icon: "iconLvContacts",
+                title: this.i18n.openWorkbench ?? "小驴人脉",
+                position: "right",
+                callback: () => {
+                    if (this.isLifecycleActive(lifecycleToken)) this.openWorkbench();
+                },
+            });
+            this.registerLaunchpad();
+        }
         this.layoutReady = true;
         // 注册小驴雷切工作台人脉动态小组件
         const unregisterRaikiri = registerRaikiriModuleSafely({
@@ -591,9 +594,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         });
         lifecycleToken.onDispose(unregisterDateCross);
 
-        // Mobile Spec v1：手机端罗盘统一入口（顶栏按钮 + 悬浮球，按用户入口模式呈现；
-        // 桌面端为 no-op）。清理函数随生命周期注销（onunload 不写 petal）。
-        const unregisterMobileEntry = lvLaunchpad.ensureMobileEntry();
+        // 罗盘全端统一入口挂载 (Protocol v1.7.5 Unified Entry)
+        const unregisterMobileEntry = lvLaunchpad.ensureUnifiedEntry();
         lifecycleToken.onDispose(unregisterMobileEntry);
 
         // Mobile Spec v1：跟进到期提醒注册为全生态自动化规则——任何生态插件触发
@@ -2135,6 +2137,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             badgeType: "warn",
             // Mobile Spec v1：手机直办动作（速查 / 今日待联络 / 新增 / 会前速览）
             actions: ["速查联系人", "今日待联络", "新增联系人", "会前速览"],
+            topBarElement: this.topBarElement,
             onClick: () => this.openContactsView(),
             onAction: (action) => this.handleQuickAction(action),
         });
