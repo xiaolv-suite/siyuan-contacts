@@ -13344,6 +13344,16 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 
 /* 手机端 Dialog 全屏化：dvh 动态视口（软键盘收展不残留空隙）；桌面不受影响 */
 @media (max-width: 680px) {
+    .b3-dialog:has(.lvct-dialog-root):not(:has(.lvct-workbench)) .b3-dialog__container {
+        width: calc(100vw - 16px) !important;
+        max-width: calc(100vw - 16px) !important;
+        max-height: calc(100dvh - 24px) !important;
+        margin: 12px auto !important;
+        border-radius: 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
     .b3-dialog:has(.lvct-workbench) .b3-dialog__container,
     .b3-dialog__container.lvct-mobile-dialog {
         width: 100vw !important;
@@ -14627,10 +14637,17 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     .b3-dialog__header {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         background: transparent !important;
         border-bottom: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
 
         .b3-dialog__close {
+            position: static !important;
+            margin-left: auto !important;
+            flex-shrink: 0;
             cursor: pointer;
             width: 28px;
             height: 28px;
