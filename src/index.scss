@@ -11639,7 +11639,8 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
         white-space: nowrap;
         pointer-events: none;
         user-select: none;
-        z-index: 9999;
+        // 悬浮提示层级压回 400：高于内容流与卡片，低于思源 dialog/搜索等系统弹层
+        z-index: 400;
 
         &-date {
             font-size: 10.5px;
@@ -13204,7 +13205,9 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
 .lvct-card-viewer-modal {
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    // 兜底层级 1000：实际由 PersonDetail.svelte 打开时按 window.siyuan.zIndex 动态内联提升，
+    // 保证盖过内容流且不被后续思源弹窗反盖（与 lv-notice-kit 通知层同策略）
+    z-index: 1000;
     background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(4px);
     display: flex;

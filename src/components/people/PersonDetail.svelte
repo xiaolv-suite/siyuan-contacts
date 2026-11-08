@@ -1099,6 +1099,16 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     let cardViewerOpen = $state(false);
     let cardFileInput: HTMLInputElement | undefined = $state();
 
+    /** 名片查看器动态层级：跟随思源递增的 window.siyuan.zIndex，避免长会话中被原生弹窗反盖 */
+    function viewerZIndex(): number {
+        try {
+            const currentZ = (window as any).siyuan?.zIndex;
+            return typeof currentZ === "number" ? Math.max(1000, currentZ + 20) : 1000;
+        } catch {
+            return 1000;
+        }
+    }
+
     async function loadBusinessCard() {
         if (!onLoadBusinessCard || !current?.docId) return;
         const targetDocId = current.docId;
@@ -6575,7 +6585,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 {#if cardViewerOpen && businessCardUrl}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="lvct-card-viewer-modal" onclick={() => (cardViewerOpen = false)}>
+    <div class="lvct-card-viewer-modal" style={`z-index: ${viewerZIndex()}`} onclick={() => (cardViewerOpen = false)}>
         <div class="lvct-card-viewer-dialog" onclick={(e) => e.stopPropagation()}>
             <div class="lvct-card-viewer-header">
                 <div class="fn__flex" style="align-items: center; gap: 8px;">
