@@ -299,13 +299,13 @@
         color: var(--b3-theme-on-background);
     }
     .lvct-org-projection__metric-val--success {
-        color: var(--b3-theme-primary, #4285f4);
+        color: var(--b3-theme-primary);
     }
     .lvct-org-projection__metric-val--warning {
-        color: #f59e0b;
+        color: var(--lv-data-amber);
     }
     .lvct-org-projection__metric-val--abnormal {
-        color: var(--b3-theme-error, #ef4444);
+        color: var(--lvct-danger);
     }
 
     .lvct-org-projection__summary-text {
@@ -320,7 +320,7 @@
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        color: #f59e0b;
+        color: var(--lv-data-amber);
         font-size: 11px;
     }
 
@@ -333,7 +333,7 @@
     .lvct-org-projection__target {
         box-sizing: border-box;
         padding: 12px 14px;
-        background: var(--b3-theme-surface, #ffffff);
+        background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-card, 12px);
         box-shadow: 0 1px 4px rgba(28, 24, 21, 0.02);
@@ -384,21 +384,21 @@
         forced-color-adjust: none;
     }
     .lvct-org-projection__state--success {
-        color: var(--b3-theme-primary, #4285f4);
+        color: var(--b3-theme-primary);
     }
     .lvct-org-projection__state--warning {
-        color: #f59e0b;
+        color: var(--lv-data-amber);
     }
     .lvct-org-projection__state--error {
-        color: var(--b3-theme-error, #ef4444);
+        color: var(--lvct-danger);
     }
     .lvct-org-projection__state--neutral {
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
     }
 
     .lvct-org-projection__docid {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
         margin: 4px 0 6px;
     }
     .lvct-org-projection__docid code {
@@ -428,7 +428,7 @@
         font-size: 11px;
         font-weight: 600;
         margin: 4px 0 2px;
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
     }
     .lvct-org-projection__text {
         white-space: pre-wrap;
@@ -437,7 +437,7 @@
         margin: 2px 0 6px;
         padding: 4px 6px;
         border-radius: 4px;
-        background: var(--b3-theme-surface, #ffffff);
+        background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-border-subtle);
     }
 

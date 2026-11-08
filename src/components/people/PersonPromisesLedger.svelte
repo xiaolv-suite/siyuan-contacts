@@ -737,8 +737,8 @@
         }
 
         &.fulfilled {
-            color: #059669;
-            border-color: color-mix(in srgb, #059669 30%, transparent);
+            color: var(--lvct-success);
+            border-color: color-mix(in srgb, var(--lvct-success) 30%, transparent);
         }
 
         &.broken {

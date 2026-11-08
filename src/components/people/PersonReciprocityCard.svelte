@@ -169,17 +169,17 @@
         }
 
         &.status-balanced {
-            color: #10b981;
-            border-color: color-mix(in srgb, #10b981 30%, transparent);
+            color: var(--lvct-success);
+            border-color: color-mix(in srgb, var(--lvct-success) 30%, transparent);
         }
 
         &.status-giver_heavy {
-            color: var(--lv-brand, #ea580c);
+            color: var(--lv-brand);
             border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
         }
 
         &.status-receiver_heavy {
-            color: var(--lv-data-amber, #d97706);
+            color: var(--lv-data-amber);
             border-color: color-mix(in srgb, var(--lv-data-amber) 30%, transparent);
         }
 

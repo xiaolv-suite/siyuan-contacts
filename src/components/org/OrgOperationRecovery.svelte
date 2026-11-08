@@ -192,7 +192,7 @@
     }
     .lvct-org-recovery__desc {
         font-size: 12px;
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
         line-height: 1.5;
         margin: 0 0 10px 0;
     }
@@ -200,7 +200,7 @@
         box-sizing: border-box;
         padding: 14px 16px;
         margin-top: 12px;
-        background: var(--b3-theme-surface, #ffffff);
+        background: var(--lvct-bg-surface);
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-card, 12px);
         box-shadow: 0 2px 8px rgba(28, 24, 21, 0.03);
@@ -221,7 +221,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
         margin-bottom: 8px;
     }
     .lvct-org-recovery__meta code {
@@ -244,7 +244,7 @@
         font-size: 12px;
     }
     .lvct-org-recovery__step-name {
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
     }
     .lvct-org-step-tag {
         display: inline-flex;
@@ -266,16 +266,16 @@
         forced-color-adjust: none;
     }
     .lvct-org-step--verified {
-        color: var(--b3-theme-primary, #4285f4);
+        color: var(--b3-theme-primary);
     }
     .lvct-org-step--pending {
-        color: #f59e0b;
+        color: var(--lv-data-amber);
     }
     .lvct-org-step--rejected {
-        color: var(--b3-theme-error, #ef4444);
+        color: var(--lvct-danger);
     }
     .lvct-org-step--idle {
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3);
     }
     .lvct-org-recovery__status-msg {
         font-size: 12px;

@@ -4074,7 +4074,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 
     <section class="lvct-detail__section lvct-detail__relationship-snapshot" aria-labelledby="lvct-relationship-snapshot-title">
         {#if !current.isSelf && (relationshipHealth.level === "cold" || (relationshipHealth.overdue && relationshipHealth.overdueDays >= 14))}
-            <div class="lvct-detail__cooling-alert" role="status" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; margin-bottom: 12px; background: color-mix(in srgb, #0284c7 10%, var(--lvct-bg-surface)); border: 1px solid color-mix(in srgb, #0284c7 35%, transparent); border-radius: var(--lvct-r-md);">
+            <div class="lvct-detail__cooling-alert" role="status" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 8px 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--lv-heat-cold) 10%, var(--lvct-bg-surface)); border: 1px solid color-mix(in srgb, var(--lv-heat-cold) 35%, transparent); border-radius: var(--lvct-r-md);">
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--lvct-text-1);">
                     <span style="font-size: 14px;">❄️</span>
                     <span><b>关系已渐冻冷却</b> · 距上次联系已过去 {relationshipHealth.elapsedDays ?? "多"} 天，建议主动问候联络</span>
@@ -4083,7 +4083,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <button
                         type="button"
                         class="b3-button b3-button--text b3-button--small"
-                        style="padding: 2px 8px; font-size: 11px; color: var(--lv-brand, #ea580c);"
+                        style="padding: 2px 8px; font-size: 11px; color: var(--lv-brand);"
                         onclick={() => void selectTab("activity")}
                     >记一笔互动</button>
                 </div>
@@ -4486,7 +4486,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <button
                     type="button"
                     class="b3-button b3-button--text"
-                    style="padding: 3px 10px; font-size: 11px; border-radius: var(--lv-r-pill, 9999px); {recordType === itype ? 'background: var(--b3-theme-primary); color: #fff; font-weight: 600;' : 'opacity: 0.8;'}"
+                    style="padding: 3px 10px; font-size: 11px; border-radius: var(--lv-r-pill, 9999px); {recordType === itype ? 'background: var(--b3-theme-primary); color: var(--lvct-on-accent); font-weight: 600;' : 'opacity: 0.8;'}"
                     aria-checked={recordType === itype}
                     role="radio"
                     onclick={() => { recordType = itype; }}

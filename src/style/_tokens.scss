@@ -21,7 +21,9 @@
 .lvct-tab-root,
 .lvct-dialog-root,
 .lvct-doc-strip,
-.lvct-workbench {
+.lvct-workbench,
+.lvct-dialog-mask,
+.lvct-sheet {
 
     /* ---------- 0. 原始值（Primitive） ----------
      * 原始值只在这一层出现；组件应使用下方语义/组件令牌。保留少量
@@ -309,7 +311,21 @@
 html[data-theme-mode="dark"] .lvct-tab-root,
 html[data-theme-mode="dark"] .lvct-dialog-root,
 html[data-theme-mode="dark"] .lvct-doc-strip,
-html[data-theme-mode="dark"] .lvct-workbench {
+html[data-theme-mode="dark"] .lvct-workbench,
+html[data-theme-mode="dark"] .lvct-dialog-mask,
+html[data-theme-mode="dark"] .lvct-sheet,
+body[data-theme-mode="dark"] .lvct-tab-root,
+body[data-theme-mode="dark"] .lvct-dialog-root,
+body[data-theme-mode="dark"] .lvct-doc-strip,
+body[data-theme-mode="dark"] .lvct-workbench,
+body[data-theme-mode="dark"] .lvct-dialog-mask,
+body[data-theme-mode="dark"] .lvct-sheet,
+.theme--dark .lvct-tab-root,
+.theme--dark .lvct-dialog-root,
+.theme--dark .lvct-doc-strip,
+.theme--dark .lvct-workbench,
+.theme--dark .lvct-dialog-mask,
+.theme--dark .lvct-sheet {
     --lv-brand: #f97316;
     --lv-brand-hover: #fb923c;
     --lv-brand-soft: color-mix(in srgb, var(--lv-brand) 16%, transparent);

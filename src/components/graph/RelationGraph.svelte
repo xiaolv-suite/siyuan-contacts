@@ -1562,9 +1562,9 @@
             transform var(--lvct-dur-fast) var(--lvct-ease);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button[aria-pressed="true"] {
-        border-color: var(--lv-brand, #ea580c);
-        background: var(--lv-brand, #ea580c);
-        color: #ffffff;
+        border-color: var(--lv-brand);
+        background: var(--lv-brand);
+        color: var(--lvct-on-accent);
         font-weight: var(--lvct-fw-medium);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button:focus-visible {

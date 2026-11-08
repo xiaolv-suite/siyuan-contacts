@@ -719,7 +719,7 @@
     }
     .lvct-region-dialog__contacts-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
         gap: 10px;
     }
     .lvct-region-dialog__person-card {
@@ -747,15 +747,15 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand, #ea580c) 78%, #ffffff), var(--lv-brand, #ea580c));
-        color: #ffffff;
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 78%, var(--lvct-color-white)), var(--lv-brand));
+        color: var(--lvct-on-accent);
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
         font-size: 13px;
         flex-shrink: 0;
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-brand, #ea580c) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-brand) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
     .lvct-region-dialog__person-basic {
         flex: 1;

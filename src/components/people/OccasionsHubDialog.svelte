@@ -437,7 +437,7 @@
     .search-input-box {
         position: relative;
         flex: 1;
-        min-width: 220px;
+        min-width: min(220px, 100%);
     }
 
     .search-input-box input {

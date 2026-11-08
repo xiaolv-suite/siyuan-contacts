@@ -707,6 +707,10 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
+
+        @media (max-width: 560px) {
+            grid-template-columns: 1fr;
+        }
     }
 
     .form-field {
@@ -846,8 +850,8 @@
     }
 
     .status-badge--completed {
-        color: #10b981;
-        border-color: color-mix(in srgb, #10b981 30%, transparent);
+        color: var(--lvct-success);
+        border-color: color-mix(in srgb, var(--lvct-success) 30%, transparent);
     }
 
     .status-badge--cancelled {
@@ -916,7 +920,7 @@
     }
 
     .chk-icon.is-done {
-        color: #10b981;
+        color: var(--lvct-success);
     }
 
     .card-note {

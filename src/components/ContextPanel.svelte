@@ -617,7 +617,7 @@
         height: 34px;
         border-radius: 9px;
         background: var(--lvct-brand-gradient);
-        color: #ffffff;
+        color: var(--lvct-on-accent);
         font-weight: 700;
         font-size: 15px;
         display: grid;

@@ -379,7 +379,7 @@
 
     .filter-pill.is-active {
         background: var(--lv-brand);
-        color: #ffffff;
+        color: var(--lvct-on-accent);
         border-color: var(--lv-brand);
         font-weight: 600;
     }

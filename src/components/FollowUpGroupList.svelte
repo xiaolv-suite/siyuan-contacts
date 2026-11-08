@@ -160,8 +160,8 @@
     transition: all 0.15s ease;
 }
 .lvct-fu-group__pill--active {
-    background: var(--lv-brand, #ea580c);
-    color: #ffffff;
+    background: var(--lv-brand);
+    color: var(--lvct-on-accent);
     opacity: 1;
     font-weight: 600;
 }
@@ -185,8 +185,8 @@
     font-size: 11px;
     font-weight: 600;
     border-radius: var(--lv-r-pill, 9999px);
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, transparent);
-    color: var(--lv-brand, #ea580c);
+    background: color-mix(in srgb, var(--lv-brand) 12%, transparent);
+    color: var(--lv-brand);
     padding: 1px 6px;
 }
 .lvct-fu-group__group ul {
@@ -222,12 +222,12 @@
     forced-color-adjust: none;
 }
 .lvct-fu-group__status--open {
-    color: var(--lv-brand, #ea580c);
-    border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
+    color: var(--lv-brand);
+    border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
 }
 .lvct-fu-group__status--done {
-    color: #059669;
-    border-color: color-mix(in srgb, #059669 30%, transparent);
+    color: var(--lvct-success);
+    border-color: color-mix(in srgb, var(--lvct-success) 30%, transparent);
 }
 .lvct-fu-group__status--cancelled {
     color: var(--b3-theme-on-surface-light);

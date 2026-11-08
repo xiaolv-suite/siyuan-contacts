@@ -433,29 +433,29 @@
         }
 
         &.stage_advance {
-            color: var(--lv-brand, #ea580c);
+            color: var(--lv-brand);
             border-color: color-mix(in srgb, var(--lv-brand) 30%, transparent);
             font-weight: 600;
         }
 
         &.promise_fulfilled {
-            color: #059669;
-            border-color: color-mix(in srgb, #059669 30%, transparent);
+            color: var(--lvct-success);
+            border-color: color-mix(in srgb, var(--lvct-success) 30%, transparent);
             font-weight: 600;
         }
 
         &.anniversary {
-            color: #e11d48;
-            border-color: color-mix(in srgb, #e11d48 30%, transparent);
+            color: var(--lvct-group-family);
+            border-color: color-mix(in srgb, var(--lvct-group-family) 30%, transparent);
         }
 
         &.first_contact {
-            color: #0284c7;
-            border-color: color-mix(in srgb, #0284c7 30%, transparent);
+            color: var(--lvct-info);
+            border-color: color-mix(in srgb, var(--lvct-info) 30%, transparent);
         }
 
         &.exchange {
-            color: var(--lv-data-amber, #d97706);
+            color: var(--lv-data-amber);
             border-color: color-mix(in srgb, var(--lv-data-amber) 30%, transparent);
         }
     }

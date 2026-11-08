@@ -292,7 +292,7 @@
 
     .stage-step-pill.active .step-num {
         background: var(--b3-theme-primary);
-        color: #fff;
+        color: var(--lvct-on-accent);
     }
 
     .current-dot {
