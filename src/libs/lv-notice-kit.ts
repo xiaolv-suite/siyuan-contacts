@@ -945,6 +945,10 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
                 id: "lv-notice-active-card",
                 type: "card",
                 dismiss: () => {
+                    // 若当前存在关闭守卫浮层，优先让路给关闭守卫自身处理 Esc，通知层不抢占截断
+                    if (typeof document !== "undefined" && document.querySelector(".lvct-closeguard")) {
+                        return false;
+                    }
                     const top = activePackets[activePackets.length - 1];
                     if (top) {
                         hub.dismiss(top.id);
@@ -962,6 +966,13 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
     function render() {
         syncNoticeSurface();
         if (!hostEl) return;
+        // 动态提升 z-index，避免在长会话或多弹窗后被思源递增的 window.siyuan.zIndex 反盖
+        try {
+            const currentZ = typeof window !== "undefined" && (window as any).siyuan?.zIndex;
+            if (typeof currentZ === "number" && currentZ > 200) {
+                hostEl.style.zIndex = String(Math.max(999, currentZ + 20));
+            }
+        } catch {}
         hostEl.innerHTML = "";
 
         const visible = activePackets.slice(-3);
@@ -1158,6 +1169,15 @@ function createCoordinator(initialPlugin: string): LvNoticeHub {
             if (!category || typeof localStorage === "undefined") return;
             try {
                 const key = `${STORAGE_PREFIX}${getTodayKey()}`;
+                // 清理往日过期的 mute key，防止 localStorage 无限累积
+                try {
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith(STORAGE_PREFIX) && k !== key) {
+                            localStorage.removeItem(k);
+                        }
+                    }
+                } catch {}
                 const raw = localStorage.getItem(key) || "[]";
                 const list = JSON.parse(raw);
                 if (!list.includes(category)) {
