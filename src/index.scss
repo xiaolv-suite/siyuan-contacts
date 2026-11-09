@@ -14490,10 +14490,21 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         grid-template-columns: repeat(3, minmax(50px, 1fr));
     }
 
-    /* 移动端消除内层面板重复叠加顶部安全区留白 */
+    /* 移动端消除内层面板重复叠加顶部与底部安全区留白 */
     .lvct-workbench .lvct-dialog-panel__header,
-    .lvct-mobile-dialog .lvct-dialog-panel__header {
+    .lvct-mobile-dialog .lvct-dialog-panel__header,
+    .b3-dialog__container .lvct-dialog-panel__header {
         padding-top: var(--lvct-sp-2) !important;
+    }
+
+    .b3-dialog__container .lvct-dialog-panel {
+        padding-bottom: var(--lvct-sp-3) !important;
+    }
+
+    .lvct-review__hero .lvct-review__big,
+    .lvct-dash__stat b {
+        font-size: 18px !important;
+        line-height: 1.15 !important;
     }
 
     /* 移动端次级 svelteDialog 全屏铺满，消除四周悬空黑边 */

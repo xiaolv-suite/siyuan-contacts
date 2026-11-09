@@ -84,6 +84,20 @@ export function orgDocumentHPath(settings: { notebookName?: string; rootPath?: s
     return documentHPath(orgName);
 }
 
+/** 统一小驴空间下为次级沉淀文档（简报/闪卡/人情账/周报/回顾/里程碑等）挂载 /03-小驴人脉 前缀 */
+export function qualifyContactsSubHPath(
+    settings: { notebookName?: string; rootPath?: string } | null | undefined,
+    subHPath: string,
+): string {
+    const cleanSub = subHPath.startsWith("/") ? subHPath : `/${subHPath}`;
+    if (!settings) return cleanSub;
+    const rootSegs = resolveContactsRootSegments(settings);
+    if (rootSegs.length === 0) return cleanSub;
+    const prefix = "/" + rootSegs.join("/");
+    if (cleanSub === prefix || cleanSub.startsWith(prefix + "/")) return cleanSub;
+    return `${prefix}${cleanSub}`;
+}
+
 export function escapeMarkdown(text: string): string {
     return text.replace(/([\\`*_\[\]#<>])/g, "\\$1");
 }

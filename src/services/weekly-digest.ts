@@ -11,6 +11,7 @@ import { loadFollowUpStoreStrict } from "../data/followups.ts";
 import { getRoster } from "./roster.ts";
 import { createDocWithMd } from "../api/client.ts";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks.ts";
+import { qualifyContactsSubHPath } from "../domain/format.ts";
 
 export interface CreateWeeklyDigestDocOptions {
     targetDateOrKey?: Date | string;
@@ -39,7 +40,7 @@ export async function createWeeklyDigestDoc(
     });
 
     const dateRangeLabel = `${weekRange.from.slice(5)} ~ ${weekRange.to.slice(5)}`;
-    const hpath = `/人脉周报/${weekRange.weekLabel} 人脉交往周报（${dateRangeLabel}）`;
+    const hpath = qualifyContactsSubHPath(settings, `/人脉周报/${weekRange.weekLabel} 人脉交往周报（${dateRangeLabel}）`);
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;

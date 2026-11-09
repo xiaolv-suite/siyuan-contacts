@@ -10,6 +10,7 @@ import { loadInteractionStoreStrict } from "../data/interactions";
 import { getRoster } from "./roster";
 import { createDocWithMd } from "../api/client";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks";
+import { qualifyContactsSubHPath } from "../domain/format";
 
 export async function buildReview(
     plugin: Plugin,
@@ -35,7 +36,7 @@ export async function exportReviewReportToDoc(
     const dateRangeStr = report.range.from && report.range.to
         ? `${report.range.from} 至 ${report.range.to}`
         : report.range.from || report.range.to || "全量回顾";
-    const hpath = `/人脉交往回顾/人脉交往回顾 · ${dateRangeStr}`;
+    const hpath = qualifyContactsSubHPath(settings, `/人脉交往回顾/人脉交往回顾 · ${dateRangeStr}`);
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;

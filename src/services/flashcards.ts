@@ -18,6 +18,7 @@ import { loadPersonFactsFromDoc } from "./doc-section.ts";
 import { loadPersonTopics } from "../data/topics.ts";
 import { createDocWithMd } from "../api/client.ts";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks.ts";
+import { qualifyContactsSubHPath } from "../domain/format.ts";
 
 export interface CreateFlashcardsDocOptions {
     deckName?: string;
@@ -43,7 +44,7 @@ export async function createPersonFlashcardsDoc(
     const md = buildFlashcardDocumentMarkdown(person, cards, deckName);
 
     const name = person.name.trim() || "联系人";
-    const hpath = `/人脉闪卡/🎴 人脉记忆闪卡 · ${name}`;
+    const hpath = qualifyContactsSubHPath(settings, `/人脉闪卡/🎴 人脉记忆闪卡 · ${name}`);
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;
@@ -90,7 +91,7 @@ export async function createBatchFlashcardsDoc(
     );
 
     const md = buildBatchFlashcardsDocumentMarkdown(batchInputs, deckName, batchTitle);
-    const hpath = `/人脉闪卡/🎴 人脉记忆闪卡 · ${batchTitle}`;
+    const hpath = qualifyContactsSubHPath(settings, `/人脉闪卡/🎴 人脉记忆闪卡 · ${batchTitle}`);
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;

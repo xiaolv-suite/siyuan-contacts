@@ -12,6 +12,7 @@ import {
 } from "../domain/briefing-export.ts";
 import { createDocWithMd } from "../api/client.ts";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks.ts";
+import { qualifyContactsSubHPath } from "../domain/format.ts";
 
 export async function createBriefingDoc(
     _plugin: Plugin,
@@ -23,7 +24,7 @@ export async function createBriefingDoc(
 
     const md = buildBriefingMarkdown(input);
     const date = dateStr || input.generatedAt.slice(0, 10);
-    const hpath = buildBriefingDocumentHpath(input.person.name, date);
+    const hpath = qualifyContactsSubHPath(settings, buildBriefingDocumentHpath(input.person.name, date));
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;

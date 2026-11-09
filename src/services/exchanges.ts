@@ -15,6 +15,7 @@ import {
 import { getRoster } from "./roster";
 import { createDocWithMd } from "../api/client";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks";
+import { qualifyContactsSubHPath } from "../domain/format";
 import { toLocalDateKey } from "../domain/date-key.ts";
 import type { ContactsSettings } from "../domain/model";
 import type {
@@ -97,7 +98,7 @@ export async function createExchangesLedgerDoc(
     const summary = await loadExchangesSummary(plugin, settings);
     const title = options.title?.trim() || `人情礼尚往来大账簿 · ${toLocalDateKey(new Date())}`;
     const md = buildExchangesLedgerMarkdown(summary, title);
-    const hpath = `/人情账本/🧧 ${title}`;
+    const hpath = qualifyContactsSubHPath(settings, `/人情账本/🧧 ${title}`);
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;

@@ -1,10 +1,10 @@
 import type { Plugin } from "siyuan";
-import type { ContactsSettings } from "../domain/model";
+import { normalizeSettings, SETTINGS_STORAGE_KEY } from "../domain/model";
 import { createDocWithMd, KernelPermissionError, KernelResponseError, newNodeId } from "../api/client";
 import { findOrganizationRequest, OrganizationWriteNotSentError, readOrganizationFact, renameOrganizationTitle, updateOrganizationMarker } from "../api/blocks";
 import { loadOrganizationOperations, saveOrganizationOperation } from "../data/organization-operations.ts";
-import { withStoreLock } from "../data/storage.ts";
-import { documentHPath, markdownHeading, validateDocumentTitle } from "../domain/format.ts";
+import { loadJson, withStoreLock } from "../data/storage.ts";
+import { documentHPath, markdownHeading, orgDocumentHPath, validateDocumentTitle } from "../domain/format.ts";
 import { ORGANIZATION_DRAFT_ATTR, organizationIalAttributes, organizationMarkerMarkdown, organizationOperationComplete, organizationRenameConflict } from "../domain/organization-operations.ts";
 import type { OrganizationCreateOperation, OrganizationOperation, OrganizationOperationReport, OrganizationRenameOperation } from "../domain/organization-operations.ts";
 import { scanOrganizations } from "./org";
@@ -74,7 +74,12 @@ async function createStep(plugin: Plugin, operation: OrganizationCreateOperation
     operation.createState = "pending";
     await persist(plugin, operation);
     try {
-        const docId = await createDocWithMd(operation.notebookId, documentHPath(operation.name),
+        const rawSettings = await loadJson(plugin, SETTINGS_STORAGE_KEY);
+        const currentSettings = normalizeSettings(rawSettings);
+        const targetHPath = currentSettings && currentSettings.notebookId === operation.notebookId
+            ? orgDocumentHPath(currentSettings, operation.name)
+            : documentHPath(operation.name);
+        const docId = await createDocWithMd(operation.notebookId, targetHPath,
             `${markdownHeading(operation.name)}${organizationMarkerMarkdown(operation.name)}\n{: ${ORGANIZATION_DRAFT_ATTR}="${operation.requestId}" custom-lvct-org="1"}\n\n`);
         if (/^\d{14}-[0-9a-z]{7}$/.test(docId)) {
             operation.docId = docId;

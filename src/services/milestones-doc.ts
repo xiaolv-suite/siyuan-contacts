@@ -13,6 +13,7 @@ import {
 } from "../domain/timeline-milestones.ts";
 import { createDocWithMd } from "../api/client.ts";
 import { flushBlockIndex, setBlockAttrs } from "../api/blocks.ts";
+import { qualifyContactsSubHPath } from "../domain/format.ts";
 
 export async function createMilestonesDoc(
     _plugin: Plugin,
@@ -23,7 +24,7 @@ export async function createMilestonesDoc(
     if (!settings.notebookId || !person.docId) return null;
 
     const md = buildMilestonesDocumentMarkdown(person, milestones);
-    const hpath = buildMilestonesDocumentHpath(person.name);
+    const hpath = qualifyContactsSubHPath(settings, buildMilestonesDocumentHpath(person.name));
 
     const docId = await createDocWithMd(settings.notebookId, hpath, md);
     if (!docId) return null;

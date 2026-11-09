@@ -123,8 +123,8 @@ const { kernel, appDir } = resolveKernel();
 const chromePath = resolveBrowser();
 const port = await choosePort();
 const baseURL = `http://127.0.0.1:${port}`;
-const defaultWorkspaceDir = process.platform === "win32" && fs.existsSync("D:\\思源插件")
-    ? path.join("D:\\思源插件", "小驴人脉-isolated-preview")
+const defaultWorkspaceDir = process.platform === "win32" && fs.existsSync("D:\\")
+    ? path.join("D:\\思源插件配套", "测试工作区", "小驴人脉-isolated-preview")
     : path.join(os.tmpdir(), `SiYuan-Lvct-IsolatedWalk-${randomUUID()}`);
 const workspace = process.env.TEST_ISOLATED_WORKSPACE
     ? path.resolve(process.env.TEST_ISOLATED_WORKSPACE)
