@@ -7,7 +7,7 @@
  * 识别现场只认「联系人总表」文档内的数据库块，绝不把同名笔记本里的无关数据库当自己的。
  */
 import { createDocWithMd, createNotebook, listNotebooks, newNodeId } from "../api/client";
-import { validateDocumentTitle } from "../domain/format";
+import { validateDocumentTitle, DEFAULT_CONTACTS_HUB_ROOT, isContactsHubNotebookName } from "../domain/format";
 import type { NotebookMeta } from "../api/client";
 import { countNotebookDocs, listNotebookDocs } from "../api/blocks";
 import {
@@ -126,7 +126,12 @@ async function findHostDoc(notebookId: string): Promise<{ id: string; content: s
     let afterDocId: string | undefined;
     while (true) {
         const docs = await listNotebookDocs(notebookId, ANCHOR_SCAN_PAGE_SIZE, 0, afterDocId);
-        const hostDoc = docs.find((doc) => doc.content === HOST_DOC_TITLE || doc.hpath === `/${HOST_DOC_TITLE}`);
+        const hostDoc = docs.find(
+            (doc) =>
+                doc.content === HOST_DOC_TITLE ||
+                doc.hpath === `/${HOST_DOC_TITLE}` ||
+                doc.hpath.endsWith(`/${HOST_DOC_TITLE}`),
+        );
         if (hostDoc) return hostDoc;
         if (docs.length < ANCHOR_SCAN_PAGE_SIZE) return undefined;
         afterDocId = docs[docs.length - 1].id;
@@ -480,11 +485,13 @@ export async function initializeWorkspace(
     }
 
     let hostDocId = snapshot.hostDocId;
+    const isHubNb = isContactsHubNotebookName(notebook.name);
+    const targetHostHPath = isHubNb ? `${DEFAULT_CONTACTS_HUB_ROOT}/${HOST_DOC_TITLE}` : `/${HOST_DOC_TITLE}`;
     if (hostDocId) {
         onProgress({ key: "wizardStepDocReuse", values: { name: HOST_DOC_TITLE } });
     } else {
         onProgress({ key: "wizardStepDocCreate", values: { name: HOST_DOC_TITLE } });
-        hostDocId = await createDocWithMd(notebook.id, `/${HOST_DOC_TITLE}`, `# ${HOST_DOC_TITLE}\n\n`);
+        hostDocId = await createDocWithMd(notebook.id, targetHostHPath, `# ${HOST_DOC_TITLE}\n\n`);
     }
 
     let avId = snapshot.avId;
@@ -542,6 +549,7 @@ export async function initializeWorkspace(
         avId,
         fieldMap,
         initializedAt: new Date().toISOString(),
+        ...(isHubNb ? { rootPath: DEFAULT_CONTACTS_HUB_ROOT } : {}),
     };
     await persistSettings(plugin, settings);
 

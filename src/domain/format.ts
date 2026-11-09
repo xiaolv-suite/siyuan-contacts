@@ -49,6 +49,41 @@ export function documentHPath(...segments: readonly string[]): string {
     }).join("/");
 }
 
+export const DEFAULT_CONTACTS_HUB_ROOT = "/03-小驴人脉";
+
+export function isContactsHubNotebookName(name: string | undefined): boolean {
+    if (!name) return false;
+    return (
+        name.includes("小驴空间") ||
+        name.includes("小驴笔记本") ||
+        name.includes("小驴生态统一测试空间")
+    );
+}
+
+export function resolveContactsRootSegments(settings: { notebookName?: string; rootPath?: string }): string[] {
+    const rawRoot = settings.rootPath?.trim() || (isContactsHubNotebookName(settings.notebookName) ? DEFAULT_CONTACTS_HUB_ROOT : "");
+    if (!rawRoot) return [];
+    return rawRoot.split("/").map((s) => s.trim()).filter(Boolean);
+}
+
+/** 统一小驴空间下归入 /03-小驴人脉/人物档案/<姓名>；独立笔记本保持兼容路径 */
+export function personDocumentHPath(settings: { notebookName: string; rootPath?: string }, personName: string): string {
+    const rootSegs = resolveContactsRootSegments(settings);
+    if (rootSegs.length > 0) {
+        return documentHPath(...rootSegs, "人物档案", sanitizeHPathSegment(personName));
+    }
+    return documentHPath(settings.notebookName, personName);
+}
+
+/** 统一小驴空间下归入 /03-小驴人脉/组织与机构/<组织名> */
+export function orgDocumentHPath(settings: { notebookName?: string; rootPath?: string }, orgName: string): string {
+    const rootSegs = resolveContactsRootSegments(settings);
+    if (rootSegs.length > 0) {
+        return documentHPath(...rootSegs, "组织与机构", sanitizeHPathSegment(orgName));
+    }
+    return documentHPath(orgName);
+}
+
 export function escapeMarkdown(text: string): string {
     return text.replace(/([\\`*_\[\]#<>])/g, "\\$1");
 }

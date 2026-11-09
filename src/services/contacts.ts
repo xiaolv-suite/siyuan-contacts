@@ -4,7 +4,7 @@
  */
 import { KernelPermissionError, KernelResponseError, listNotebooks, newNodeId, querySql, assertKernelRecord } from "../api/client";
 import { organizationIalAttributes } from "../domain/organization-operations";
-import { documentHPath } from "../domain/format";
+import { documentHPath, personDocumentHPath } from "../domain/format";
 import { ATTRIBUTE_VIEW_BATCH_SIZE, bindDocsAsRows, mapBoundDocIds, renderView, renderViewPage, setCell, unbindRows } from "../api/av";
 import type { AvRenderResult, CellValue } from "../api/av";
 import { CONTACT_DRAFT_ATTR, listNotebookDocs, NOTEBOOK_DOC_PAGE_SIZE, readMarkedBlocks, readNotebookDocument } from "../api/blocks";
@@ -426,7 +426,7 @@ export async function createContact(
     return withStoreLock(`person-create-${settings.avId}`, async () => {
         await assertContactWriteReady(settings);
         const name = draft.name.trim();
-        const path = documentHPath(settings.notebookName, name);
+        const path = personDocumentHPath(settings, name);
         const draftKey = JSON.stringify(buildContactWritePlan(draft, "create").writes);
         const previous = options.request;
         if (previous && (previous.checkpoint.notebookId !== settings.notebookId || previous.checkpoint.avId !== settings.avId

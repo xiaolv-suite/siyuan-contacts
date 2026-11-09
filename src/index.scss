@@ -14490,27 +14490,39 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         grid-template-columns: repeat(3, minmax(50px, 1fr));
     }
 
-    /* 底部大新建按钮：≥52px 触控目标，悬浮于底部导航上方 */
-    .lvct-people__create-fab {
-        position: fixed;
-        right: 16px;
-        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-        z-index: 30;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-height: 52px;
-        padding: 0 18px;
-        border: none;
-        border-radius: 999px;
-        background: var(--lvct-accent-fill, var(--b3-theme-primary));
-        color: var(--b3-theme-on-primary, var(--b3-theme-primary-color, #fff));
-        font-size: 13px;
-        font-weight: 650;
-        box-shadow: 0 6px 20px color-mix(in srgb, var(--lvct-accent-fill, var(--b3-theme-primary)) 36%, rgba(0, 0, 0, 0.24));
-        cursor: pointer;
-        touch-action: manipulation;
-        transition: transform var(--lvct-dur-micro) var(--lvct-ease);
+    /* 移动端消除内层面板重复叠加顶部安全区留白 */
+    .lvct-workbench .lvct-dialog-panel__header,
+    .lvct-mobile-dialog .lvct-dialog-panel__header {
+        padding-top: var(--lvct-sp-2) !important;
+    }
+
+    /* 移动端次级 svelteDialog 全屏铺满，消除四周悬空黑边 */
+    .b3-dialog:has([class*="lvct-"], [id*="lvct-"], .lvct-dialog-root):not(:has(.lvct-workbench)) {
+        padding: 0 !important;
+        align-items: stretch !important;
+
+        .b3-dialog__container:not(.lvct-mobile-dialog) {
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            border: 0 !important;
+            padding-top: env(safe-area-inset-top, 0px) !important;
+            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        }
+    }
+
+    /* 移动端压缩空状态、统计卡与冗余悬浮新建钮（顶部栏已有 + 新建） */
+    .lvct-empty {
+        min-height: 88px !important;
+        padding: 14px 12px !important;
+    }
+
+    .lvct-people__create-fab,
+    .lvct-person-card__quick-dial {
+        display: none !important;
     }
 
     .lvct-people__create-fab:active {

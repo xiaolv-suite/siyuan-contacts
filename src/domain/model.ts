@@ -25,6 +25,8 @@ export interface ContactsSettings {
     readonly fieldMap: Readonly<Record<FieldKey, string>>;
     readonly initializedAt: string;
     readonly checkinItemId?: string;
+    /** 统一小驴空间下的人脉根路径（如 "/03-小驴人脉"） */
+    readonly rootPath?: string;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -53,6 +55,7 @@ export function normalizeSettings(raw: unknown): ContactsSettings | null {
         fieldMap[key as FieldKey] = value;
     }
     const checkinItemId = typeof record.checkinItemId === "string" && record.checkinItemId.length > 0 ? record.checkinItemId : undefined;
+    const rootPath = typeof record.rootPath === "string" && record.rootPath.trim().length > 0 ? record.rootPath.trim() : undefined;
     return {
         schemaVersion: 1,
         notebookId: record.notebookId as string,
@@ -63,5 +66,6 @@ export function normalizeSettings(raw: unknown): ContactsSettings | null {
         fieldMap,
         initializedAt: record.initializedAt as string,
         ...(checkinItemId ? { checkinItemId } : {}),
+        ...(rootPath ? { rootPath } : {}),
     };
 }

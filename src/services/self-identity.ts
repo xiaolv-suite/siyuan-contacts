@@ -7,7 +7,7 @@ import { excludeSelf, isSelfDoc, parseSelfIdentity, parseSelfProfileCheckpoint }
 import { toLocalDateKey } from "../domain/interactions";
 import { invalidateRoster } from "./roster";
 import type { ContactsSettings } from "../domain/model";
-import { documentHPath, markdownHeading } from "../domain/format";
+import { documentHPath, markdownHeading, personDocumentHPath } from "../domain/format";
 import { createDocWithMd, KernelResponseError, KernelPermissionError, newNodeId } from "../api/client";
 import { documentExists, findCreationRequestDoc, flushBlockIndex, listNotebookDocs, NOTEBOOK_DOC_PAGE_SIZE, SELF_DRAFT_ATTR } from "../api/blocks";
 import { bindDocsAsRows, mapBoundDocIds } from "../api/av";
@@ -66,7 +66,7 @@ async function ensureSelfDocument(plugin: Plugin, settings: ContactsSettings): P
     await saveJsonVerified(plugin, SELF_PROFILE_CHECKPOINT_KEY, checkpoint);
     let creationError: unknown;
     try {
-        await createDocWithMd(settings.notebookId, documentHPath(settings.notebookName, SELF_PERSON_NAME),
+        await createDocWithMd(settings.notebookId, personDocumentHPath(settings, SELF_PERSON_NAME),
             `${markdownHeading(SELF_PERSON_NAME).trimEnd()}\n{: ${SELF_DRAFT_ATTR}="${checkpoint.requestId}"}\n\n`);
     } catch (cause) {
         creationError = cause;

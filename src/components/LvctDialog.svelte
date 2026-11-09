@@ -107,9 +107,14 @@
     onMount(() => {
         void tick().then(() => focusables()[0]?.focus());
 
-        // 移动端虚拟键盘避让 (visualViewport)
+        // 移动端虚拟键盘避让 (visualViewport)：若外层工作台/全屏移动容器已通过 --lvct-vv-h 扣减高度，禁止内层二次扣减
         const updateViewport = () => {
             if (typeof window !== "undefined" && window.visualViewport && panel) {
+                if (panel.closest(".lvct-workbench, .lvct-mobile-dialog")) {
+                    panel.style.marginBottom = "";
+                    panel.style.maxHeight = "";
+                    return;
+                }
                 const offset = window.innerHeight - window.visualViewport.height;
                 if (offset > 120) {
                     panel.style.marginBottom = `${offset}px`;

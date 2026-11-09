@@ -13,7 +13,7 @@ import {
     BRIDGE_STORAGE_KEY, BridgeError, BridgePersonAmbiguityError, bridgeEventEvidence, bridgePerson, normalizeBridgeRequestStore,
     resolveBridgePerson,
 } from "../domain/external-bridge.ts";
-import { documentHPath } from "../domain/format.ts";
+import { documentHPath, personDocumentHPath } from "../domain/format.ts";
 import { emptyDraft } from "../domain/person.ts";
 import { invalidateRoster } from "../services/roster";
 import type { ContactsSettings } from "../domain/model";
@@ -80,7 +80,7 @@ export function initExternalBridge(plugin: Plugin, getSettings: () => ContactsSe
         },
         newRequest: (settings, name) => ({
             checkpoint: { requestId: newNodeId(), notebookId: settings.notebookId, avId: settings.avId, dbBlockId: settings.dbBlockId,
-                name, path: documentHPath(settings.notebookName, name), draftKey: "[]", state: "new" },
+                name, path: personDocumentHPath(settings, name), draftKey: "[]", state: "new" },
             bindingState: "new",
         }),
         create: async (settings, name, previous) => {

@@ -92,12 +92,19 @@
     const lifecycleToken = createLifecycleToken(mountToken);
     onDestroy(lifecycleToken.invalidate);
 
-    const views: readonly { id: ViewId; label: string; shortLabel: string; enabled: boolean }[] = $derived([
-        { id: "home", label: text("navHome", "首页"), shortLabel: text("navHome", "首页"), enabled: true },
-        { id: "people", label: text("navPeople", "联系人"), shortLabel: text("navPeople", "联系人"), enabled: true },
-        { id: "graph", label: text("navGraph", "关系图谱"), shortLabel: text("navGraphShort", "关系图"), enabled: true },
-        { id: "orgs", label: text("navOrganizations", "组织"), shortLabel: text("navOrganizations", "组织"), enabled: true },
-    ]);
+    const views: readonly { id: ViewId; label: string; shortLabel: string; enabled: boolean }[] = $derived(
+        isMobile
+            ? [
+                { id: "home", label: text("navHome", "首页"), shortLabel: text("navHome", "首页"), enabled: true },
+                { id: "people", label: text("navPeople", "联系人"), shortLabel: text("navPeople", "联系人"), enabled: true },
+            ]
+            : [
+                { id: "home", label: text("navHome", "首页"), shortLabel: text("navHome", "首页"), enabled: true },
+                { id: "people", label: text("navPeople", "联系人"), shortLabel: text("navPeople", "联系人"), enabled: true },
+                { id: "graph", label: text("navGraph", "关系图谱"), shortLabel: text("navGraphShort", "关系图"), enabled: true },
+                { id: "orgs", label: text("navOrganizations", "组织"), shortLabel: text("navOrganizations", "组织"), enabled: true },
+            ],
+    );
 
     const viewMeta: Record<ViewId, { title: string; subtitle: string }> = $derived.by(() => {
         // Read `messages` in this derived computation so a supplied locale is
@@ -716,6 +723,7 @@
     class="lvct-workbench"
     class:lvct-workbench--keyboard-open={keyboardOpen}
     class:lvct-workbench--hide-bottom-nav={shouldHideBottomNav}
+    data-narrow={isMobile ? "true" : undefined}
     data-lvct-theme={currentPreferences.themeScheme || "cognac"}
     bind:this={workbenchElement}
 >

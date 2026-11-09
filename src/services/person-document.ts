@@ -1,7 +1,7 @@
 import { createDocWithMd, KernelResponseError, KernelPermissionError, newNodeId } from "../api/client";
 import { CONTACT_DRAFT_ATTR, findCreationRequestDoc, VCARD_REQUEST_ATTR } from "../api/blocks";
 import { buildContactWritePlan } from "../domain/contact-write.ts";
-import { documentHPath, markdownHeading } from "../domain/format";
+import { documentHPath, markdownHeading, personDocumentHPath } from "../domain/format";
 import type { ContactsSettings } from "../domain/model";
 import type { ContactDraft } from "../domain/person";
 import type { VcfDocumentCheckpoint } from "../domain/vcard.ts";
@@ -24,7 +24,7 @@ export async function ensurePersonRequestDocument(
     attrName: typeof VCARD_REQUEST_ATTR | typeof CONTACT_DRAFT_ATTR,
 ): Promise<string> {
     const name = plan.draft.name.trim();
-    const path = documentHPath(settings.notebookName, name);
+    const path = personDocumentHPath(settings, name);
     const draftKey = JSON.stringify(buildContactWritePlan(plan.draft, "create").writes);
     const previous = plan.checkpoint;
     if (previous && (previous.notebookId !== settings.notebookId || previous.avId !== settings.avId || previous.dbBlockId !== settings.dbBlockId

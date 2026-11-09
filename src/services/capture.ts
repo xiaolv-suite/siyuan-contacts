@@ -7,7 +7,7 @@
 import { birthdayToMs, emptyDraft, validateDraft } from "../domain/person";
 import type { ContactSummary } from "../domain/person";
 import { createDocWithMd, KernelResponseError, KernelPermissionError, newNodeId } from "../api/client";
-import { documentHPath, markdownHeading } from "../domain/format";
+import { documentHPath, markdownHeading, personDocumentHPath } from "../domain/format";
 import { bindDocsAsRows, mapBoundDocIds } from "../api/av";
 import { findBlockIdByCustomAttr, findOutgoingLinkRoots, getBlockContent, listNotebookDocs, readMarkedBlocks, upsertMarkedBlock, fetchDocMarkdown } from "../api/blocks";
 import {
@@ -178,7 +178,7 @@ async function resolveCapturePerson(
                 return;
             }
             await assertContactWriteReady(settings);
-            const path = documentHPath(settings.notebookName, person.name);
+            const path = personDocumentHPath(settings, person.name);
             person.personDocId = await findNotebookDocByPath(settings.notebookId, path);
             if (!person.personDocId && previous.status === "unknown") {
                 person.contact = { status: "unknown", code: "create_unknown", message: "尚未找到上次可能创建的人物文档，请核实内核结果后再试；未再次创建" };
