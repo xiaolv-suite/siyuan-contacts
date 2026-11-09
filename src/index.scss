@@ -13309,10 +13309,21 @@ html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
     line-height: 1;
     border-radius: 4px;
     color: var(--lvct-text-3);
+    touch-action: manipulation;
 
     &:hover {
         color: var(--lvct-text-1);
         background: var(--lvct-bg-hover);
+    }
+
+    @media (max-width: 640px), (pointer: coarse) {
+        min-height: 38px;
+        min-width: 38px;
+        padding: 6px 10px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 }
 
