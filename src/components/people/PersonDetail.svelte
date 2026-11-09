@@ -4922,60 +4922,91 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         {:else if orgMemberships.length === 0}
             <p class="ft__smaller ft__on-surface">{text("orgSectionEmpty", "未加入任何组织")}</p>
         {:else}
-            <ul class="lvct-detail__timeline">
+            <ul class="lvct-detail__timeline lvct-detail__org-list">
                 {#each orgMemberships as membership (membership.id)}
+                    {@const effKind = membership.orgName?.trim() === "家庭" ? "family" : (membership.affiliationKind ?? "unspecified")}
+                    {@const kindText = affiliationLabel(effKind)}
                     <li class="lvct-detail__timeline-row lvct-detail__org-timeline-row">
-                        <span class="lvct-detail__timeline-note">
-                            {membership.orgName}
-                            <span class="ft__smaller"> · {affiliationLabel(membership.affiliationKind)}</span>
-                            {#if membership.department}<span class="ft__smaller"> · {membership.department}</span>{/if}
-                            {#if membership.title}<span class="ft__smaller"> · {membership.title}</span>{/if}
-                        </span>
-                        <span class="lvct-chip {membership.status === "former" ? "lvct-bucket--stale" : "lvct-bucket--today"}">{orgMembershipStatusLabel(membership)}</span>
-                        {#if membership.removed}<span class="lvct-chip lvct-bucket--stale">组织已移除</span>
-                        {:else if membership.archived}<span class="lvct-chip lvct-bucket--stale">{text("orgMembershipArchived", "组织已归档")}</span>{/if}
-                        {#if membership.reachable === false}<span class="lvct-chip lvct-bucket--stale">{text("orgMembershipUnreachable", "组织待核实")}</span>{/if}
-                        {#if membership.joinedOn || membership.leftOn}
-                            <span class="ft__on-surface">{membership.joinedOn || "?"}{membership.leftOn ? ` – ${membership.leftOn}` : " –"}</span>
-                        {/if}
-                        {#if membership.note}<span class="ft__smaller ft__on-surface" title={membership.note}> · {membership.note}</span>{/if}
+                        <div class="lvct-detail__org-main">
+                            <span class="lvct-detail__timeline-note lvct-detail__org-title-wrap">
+                                <strong class="lvct-detail__org-name">{membership.orgName}</strong>
+                                {#if kindText && kindText !== membership.orgName?.trim()}
+                                    <span class="ft__smaller ft__on-surface"> · {kindText}</span>
+                                {/if}
+                                {#if membership.department}<span class="ft__smaller"> · {membership.department}</span>{/if}
+                                {#if membership.title}<span class="ft__smaller"> · {membership.title}</span>{/if}
+                            </span>
+                            <div class="lvct-detail__org-badges">
+                                <span class="lvct-chip {membership.status === "former" ? "lvct-bucket--stale" : "lvct-bucket--today"}">{orgMembershipStatusLabel({ ...membership, affiliationKind: effKind })}</span>
+                                {#if membership.removed}<span class="lvct-chip lvct-bucket--stale">组织已移除</span>
+                                {:else if membership.archived}<span class="lvct-chip lvct-bucket--stale">{text("orgMembershipArchived", "组织已归档")}</span>{/if}
+                                {#if membership.reachable === false}<span class="lvct-chip lvct-bucket--stale">{text("orgMembershipUnreachable", "组织待核实")}</span>{/if}
+                                {#if membership.joinedOn || membership.leftOn}
+                                    <span class="ft__smaller ft__on-surface lvct-detail__org-period">{membership.joinedOn || "?"}{membership.leftOn ? ` – ${membership.leftOn}` : " – 至今"}</span>
+                                {/if}
+                                {#if membership.note}<span class="ft__smaller ft__on-surface lvct-detail__org-note" title={membership.note}> · {membership.note}</span>{/if}
+                            </div>
+                        </div>
                         {#if orgRemoveSupported || onUpdateOrgMembership}
                             <span class="lvct-detail__org-actions">
+                                {#if onUpdateOrgMembership}
+                                    <button class="b3-button b3-button--text" disabled={addOrgBusy || membership.removed} onclick={() => startEditOrgMembership(membership)}>{text("orgMemberEdit", "编辑")}</button>
+                                {/if}
                                 {#if orgRemoveSupported}
                                     <button type="button" class="b3-button b3-button--cancel" disabled={addOrgBusy || membership.removed}
                                         aria-label={text("orgMembershipRemoveLabel", "移除归属 {name}", { name: membership.orgName })}
                                         onclick={() => { removingOrgMembershipId = membership.id; removingOrgSnapshot = orgMembershipSnapshot(membership); }}>{text("orgMembershipRemove", "移除")}</button>
                                 {/if}
-                                {#if onUpdateOrgMembership}
-                                    <button class="b3-button b3-button--text" disabled={addOrgBusy || membership.removed} onclick={() => startEditOrgMembership(membership)}>{text("orgMemberEdit", "编辑")}</button>
-                                {/if}
                             </span>
                         {/if}
-                        {#if membership.removed}<span class="ft__smaller ft__on-surface">组织已移除；恢复组织后才能维护这段经历。</span>{/if}
+                        {#if membership.removed}<span class="ft__smaller ft__on-surface lvct-detail__org-full-row">组织已移除；恢复组织后才能维护这段经历。</span>{/if}
                         {#if editingOrgMembershipId === membership.id}
-                            <div class="lvct-org-add">
-                                <input class="b3-text-field" bind:value={editOrgDepartment} disabled={addOrgBusy} aria-label={text("orgMemberDeptLabel", "部门")} />
-                                <input class="b3-text-field" bind:value={editOrgTitle} disabled={addOrgBusy} aria-label={text("orgMemberTitleLabel", "职位")} />
-                                <input class="b3-text-field" type="date" bind:value={editOrgJoinedOn} disabled={addOrgBusy} aria-label={text("orgMemberJoinedLabel", "加入日期")} />
-                                <input class="b3-text-field" type="date" bind:value={editOrgLeftOn} disabled={addOrgBusy || editOrgStatus === "active"} aria-label={text("orgMemberLeftLabel", "离开日期")} />
-                                <input class="b3-text-field" maxlength="40" bind:value={editOrgStatusLabel} disabled={addOrgBusy} aria-label="自定义状态" placeholder="自定义状态，如实习、休学" />
-                                <input class="b3-text-field" maxlength="240" bind:value={editOrgNote} disabled={addOrgBusy} aria-label={text("orgMemberNote", "成员备注")} placeholder={text("orgMemberNotePlaceholder", "仅记录这段组织经历")} />
-                                <select class="b3-select" value={editOrgStatus} onchange={(event) => changeEditOrgStatus(event.currentTarget.value as OrgMembershipStatus)} disabled={addOrgBusy} aria-label={text("orgMemberStatusLabel", "状态")}>
-                                    <option value="active" disabled={membership.archived}>{text("orgStatusActive", "当前在职/就读")}</option><option value="former">{text("orgStatusFormer", "已离开/毕业")}</option>
-                                </select>
-                                <select class="b3-select" bind:value={editOrgAffiliationKind} disabled={addOrgBusy} aria-label={text("orgAffiliationKind", "归属分类")}>
-                                    <option value="family">{affiliationLabel("family")}</option><option value="unspecified">{affiliationLabel("unspecified")}</option><option value="work">{affiliationLabel("work")}</option><option value="education">{affiliationLabel("education")}</option>
-                                </select>
-                                <p>{text("orgMembershipEditImpact", "保存会更新这段成员记录及双方当前双链；离开保留历史。恢复在职/在学须清空离开日期。")}</p>
-                                <button class="b3-button b3-button--text" disabled={addOrgBusy} onclick={() => void saveEditOrgMembership()}>{addOrgBusy && orgAction === "edit" ? "保存中…" : text("orgMemberSave", "保存")}</button>
-                                <button class="b3-button b3-button--cancel" disabled={addOrgBusy} onclick={() => (editingOrgMembershipId = "")}>{text("orgMemberCancel", "取消")}</button>
+                            <div class="lvct-org-add lvct-org-add--edit lvct-detail__org-full-row">
+                                <label class="lvct-org-add__field"><span>归属分类</span>
+                                    <select class="b3-select" bind:value={editOrgAffiliationKind} disabled={addOrgBusy} aria-label={text("orgAffiliationKind", "归属分类")}>
+                                        <option value="work">{affiliationLabel("work")}</option><option value="education">{affiliationLabel("education")}</option><option value="family">{affiliationLabel("family")}</option><option value="unspecified">{affiliationLabel("unspecified")}</option>
+                                    </select>
+                                </label>
+                                <label class="lvct-org-add__field"><span>当前状态</span>
+                                    <select class="b3-select" value={editOrgStatus} onchange={(event) => changeEditOrgStatus(event.currentTarget.value as OrgMembershipStatus)} disabled={addOrgBusy} aria-label={text("orgMemberStatusLabel", "状态")}>
+                                        <option value="active" disabled={membership.archived}>{editOrgAffiliationKind === "family" ? "家庭成员" : editOrgAffiliationKind === "education" ? "当前就读" : text("orgStatusActive", "当前在职/就读")}</option>
+                                        <option value="former">{editOrgAffiliationKind === "family" ? "曾是家庭成员" : editOrgAffiliationKind === "education" ? "已毕业/离校" : text("orgStatusFormer", "已离开/毕业")}</option>
+                                    </select>
+                                </label>
+                                <label class="lvct-org-add__field"><span>{text("orgMemberDeptLabel", "部门/院系")}</span>
+                                    <input class="b3-text-field" bind:value={editOrgDepartment} disabled={addOrgBusy} placeholder="选填，如：研发部" aria-label={text("orgMemberDeptLabel", "部门")} />
+                                </label>
+                                <label class="lvct-org-add__field"><span>{text("orgMemberTitleLabel", "职位/身份")}</span>
+                                    <input class="b3-text-field" bind:value={editOrgTitle} disabled={addOrgBusy} placeholder="选填，如：总监、校友" aria-label={text("orgMemberTitleLabel", "职位")} />
+                                </label>
+                                <label class="lvct-org-add__field"><span>{text("orgMemberJoinedLabel", "开始日期")}</span>
+                                    <input class="b3-text-field" type="date" bind:value={editOrgJoinedOn} disabled={addOrgBusy} aria-label={text("orgMemberJoinedLabel", "加入日期")} />
+                                </label>
+                                <label class="lvct-org-add__field"><span>{text("orgMemberLeftLabel", "结束日期")}</span>
+                                    <input class="b3-text-field" type="date" bind:value={editOrgLeftOn} disabled={addOrgBusy || editOrgStatus === "active"} aria-label={text("orgMemberLeftLabel", "离开日期")} />
+                                </label>
+                                <label class="lvct-org-add__field"><span>自定义状态</span>
+                                    <input class="b3-text-field" maxlength="40" bind:value={editOrgStatusLabel} disabled={addOrgBusy} aria-label="自定义状态" placeholder="如：实习、兼职、休学" />
+                                </label>
+                                <label class="lvct-org-add__field"><span>{text("orgMemberNote", "经历备注")}</span>
+                                    <input class="b3-text-field" maxlength="240" bind:value={editOrgNote} disabled={addOrgBusy} aria-label={text("orgMemberNote", "成员备注")} placeholder={text("orgMemberNotePlaceholder", "仅记录这段组织经历")} />
+                                </label>
+                                <div class="lvct-org-add__footer">
+                                    <span class="ft__smaller ft__on-surface">{text("orgMembershipEditImpact", "保存会更新这段成员记录及双方当前双链；离开保留历史。")}</span>
+                                    <div class="lvct-org-add__btns">
+                                        <button class="b3-button b3-button--text" disabled={addOrgBusy} onclick={() => void saveEditOrgMembership()}>{addOrgBusy && orgAction === "edit" ? "保存中…" : text("orgMemberSave", "保存")}</button>
+                                        <button class="b3-button b3-button--cancel" disabled={addOrgBusy} onclick={() => (editingOrgMembershipId = "")}>{text("orgMemberCancel", "取消")}</button>
+                                    </div>
+                                </div>
                             </div>
                         {/if}
                         {#if removingOrgMembershipId === membership.id}
-                            <div role="group" aria-label={text("orgMembershipRemoveConfirm", "确认移除这段成员历史")}>
-                                <p>{text("orgMembershipRemoveImpact", "将删除这段成员历史并重建双方当前双链。普通离职请编辑为已离开；人物和组织文档保留。")}</p>
-                                <button class="b3-button b3-button--cancel" disabled={addOrgBusy} onclick={() => void removeOrgMembership(membership.id)}>{addOrgBusy && orgAction === "remove" ? "移除中…" : text("orgMembershipRemoveConfirm", "确认移除这段成员历史")}</button>
-                                <button class="b3-button b3-button--outline" disabled={addOrgBusy} onclick={() => (removingOrgMembershipId = "")}>{text("orgMemberCancel", "取消")}</button>
+                            <div class="lvct-org-remove-confirm lvct-detail__org-full-row" role="group" aria-label={text("orgMembershipRemoveConfirm", "确认移除这段成员历史")}>
+                                <p class="ft__smaller">{text("orgMembershipRemoveImpact", "将删除这段成员历史并重建双方当前双链。普通离职请编辑为已离开；人物和组织文档保留。")}</p>
+                                <div class="lvct-org-add__btns">
+                                    <button class="b3-button b3-button--cancel" disabled={addOrgBusy} onclick={() => void removeOrgMembership(membership.id)}>{addOrgBusy && orgAction === "remove" ? "移除中…" : text("orgMembershipRemoveConfirm", "确认移除这段成员历史")}</button>
+                                    <button class="b3-button b3-button--outline" disabled={addOrgBusy} onclick={() => (removingOrgMembershipId = "")}>{text("orgMemberCancel", "取消")}</button>
+                                </div>
                             </div>
                         {/if}
                     </li>
@@ -4983,42 +5014,71 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             </ul>
         {/if}
         {#if orgAddSupported}
-            <p>{text("orgMembershipAddImpact", "添加会登记新期间并更新双方当前双链；已离开的期间保留，重复添加当前成员不新增记录。")}</p>
             {#if orgCandidatesError}<p class="lvct-form__error" role="alert">{orgCandidatesError}</p>
                 <button class="b3-button b3-button--outline" disabled={addOrgBusy || orgCandidatesLoading} onclick={() => void loadOrgCandidates()}>{text("orgMembershipReloadCandidates", "重新读取组织候选")}</button>
             {/if}
-            <div class="lvct-org-add">
-                <select class="b3-select" value={addOrgDocId} onchange={(event) => changeAddOrg(event.currentTarget.value)} disabled={addOrgBusy || orgLoading || orgCandidatesLoading} bind:this={addOrganizationSelect}
-                    aria-label={text("orgAddOrgLabel", "选择要加入的组织")}>
-                    <option value="">{text("orgAddOrgPick", "选择组织…")}</option>
-                    {#each orgCandidateOptions as org (org.docId)}
-                        <option value={org.docId}>{org.name}{org.archived ? "（已归档，仅补录历史）" : hasActiveOrgMembership(org.docId) ? "（已有当前归属，可补录历史）" : ""} · {org.docId}</option>
-                    {/each}
-                </select>
-                {#if orgCandidatesLoading}<span class="ft__smaller ft__on-surface" role="status">正在读取组织候选…</span>{/if}
-                <input class="b3-text-field" placeholder={text("orgMemberDeptLabel", "部门")} bind:value={addOrgDepartment}
-                    disabled={addOrgBusy} aria-label={text("orgAddDeptLabel", "归属部门")} />
-                <input class="b3-text-field" placeholder={text("orgMemberTitleLabel", "职位")} bind:value={addOrgTitle}
-                    disabled={addOrgBusy} aria-label={text("orgAddTitleLabel", "归属职位")} />
-                <input class="b3-text-field" type="date" bind:value={addOrgJoinedOn} disabled={addOrgBusy}
-                    aria-label={text("orgAddJoinedLabel", "加入日期")} />
-                <input class="b3-text-field" type="date" bind:value={addOrgLeftOn} disabled={addOrgBusy || !addOrgDocId || addOrgStatus === "active"} aria-label="离开日期" />
-                <select class="b3-select" bind:value={addOrgAffiliationKind} disabled={addOrgBusy} aria-label={text("orgAffiliationKind", "归属分类")}>
-                    <option value="family">{affiliationLabel("family")}</option><option value="unspecified">{affiliationLabel("unspecified")}</option><option value="work">{affiliationLabel("work")}</option><option value="education">{affiliationLabel("education")}</option>
-                </select>
-                <select class="b3-select" value={addOrgStatus} onchange={(event) => changeAddOrgStatus(event.currentTarget.value as OrgMembershipStatus)} disabled={addOrgBusy || !addOrgDocId} aria-label="当前状态">
-                    <option value="active" disabled={Boolean(selectedAddOrg?.archived || (addOrgDocId && hasActiveOrgMembership(addOrgDocId)))}>当前在职/就读</option><option value="former">已离开/毕业</option>
-                </select>
-                <input class="b3-text-field" maxlength="40" bind:value={addOrgStatusLabel} disabled={addOrgBusy || !addOrgDocId} aria-label="自定义状态" placeholder="自定义状态，如实习、休学" />
-                <input class="b3-text-field" maxlength="240" bind:value={addOrgNote} disabled={addOrgBusy || !addOrgDocId} aria-label={text("orgMemberNote", "成员备注")} placeholder={text("orgMemberNotePlaceholder", "仅记录这段组织经历")} />
-                <button type="button" class="b3-button b3-button--text" disabled={addOrgBusy || orgLoading || orgCandidatesLoading || !!orgReadError || !!orgCandidatesError || addOrgDocId === ""}
-                    onclick={() => void addOrgMembership()}>{addOrgBusy && orgAction === "add" ? "添加中…" : text("orgAddSubmit", "添加归属")}</button>
-                {#if selectedAddOrg?.archived}<p class="ft__smaller ft__on-surface">组织已归档，只能补录历史经历；恢复组织后才可添加当前归属。</p>{/if}
-                {#if onCreateOrganization}
-                    <button type="button" class="b3-button b3-button--outline" disabled={addOrgBusy || orgLoading || orgCandidatesLoading} bind:this={createOrganizationTrigger}
-                        onclick={() => void createOrganizationFromDetail()}>{addOrgBusy && orgAction === "create" ? "创建中…" : text("orgCreateFirst", "新建组织")}</button>
-                {/if}
-            </div>
+            <details class="lvct-org-add-details" open={orgMemberships.length === 0 || Boolean(addOrgDocId || addOrgError)}>
+                <summary class="lvct-org-add-summary">
+                    <span class="lvct-org-add-summary__title">+ 添加或新建组织归属</span>
+                    <span class="ft__smaller ft__on-surface">{text("orgMembershipAddImpact", "支持登记单位、学校、家庭及历史经历，自动维护双方双链")}</span>
+                </summary>
+                <div class="lvct-org-add">
+                    <label class="lvct-org-add__field lvct-org-add__field--wide"><span>选择组织</span>
+                        <select class="b3-select" value={addOrgDocId} onchange={(event) => changeAddOrg(event.currentTarget.value)} disabled={addOrgBusy || orgLoading || orgCandidatesLoading} bind:this={addOrganizationSelect}
+                            aria-label={text("orgAddOrgLabel", "选择要加入的组织")}>
+                            <option value="">{text("orgAddOrgPick", "选择已有组织…")}</option>
+                            {#each orgCandidateOptions as org (org.docId)}
+                                <option value={org.docId}>{org.name}{org.archived ? "（已归档，仅补录历史）" : hasActiveOrgMembership(org.docId) ? "（已有当前归属，可补录历史）" : ""}</option>
+                            {/each}
+                        </select>
+                    </label>
+                    {#if orgCandidatesLoading}<span class="ft__smaller ft__on-surface" role="status">正在读取组织候选…</span>{/if}
+                    <label class="lvct-org-add__field"><span>归属分类</span>
+                        <select class="b3-select" bind:value={addOrgAffiliationKind} disabled={addOrgBusy} aria-label={text("orgAffiliationKind", "归属分类")}>
+                            <option value="work">{affiliationLabel("work")}</option><option value="education">{affiliationLabel("education")}</option><option value="family">{affiliationLabel("family")}</option><option value="unspecified">{affiliationLabel("unspecified")}</option>
+                        </select>
+                    </label>
+                    <label class="lvct-org-add__field"><span>当前状态</span>
+                        <select class="b3-select" value={addOrgStatus} onchange={(event) => changeAddOrgStatus(event.currentTarget.value as OrgMembershipStatus)} disabled={addOrgBusy || !addOrgDocId} aria-label="当前状态">
+                            <option value="active" disabled={Boolean(selectedAddOrg?.archived || (addOrgDocId && hasActiveOrgMembership(addOrgDocId)))}>{addOrgAffiliationKind === "family" ? "家庭成员" : addOrgAffiliationKind === "education" ? "当前就读" : "当前在职/就读"}</option>
+                            <option value="former">{addOrgAffiliationKind === "family" ? "曾是家庭成员" : addOrgAffiliationKind === "education" ? "已毕业/离校" : "已离开/毕业"}</option>
+                        </select>
+                    </label>
+                    <label class="lvct-org-add__field"><span>{text("orgMemberDeptLabel", "部门/院系")}</span>
+                        <input class="b3-text-field" placeholder="选填，如：投资部" bind:value={addOrgDepartment}
+                            disabled={addOrgBusy} aria-label={text("orgAddDeptLabel", "归属部门")} />
+                    </label>
+                    <label class="lvct-org-add__field"><span>{text("orgMemberTitleLabel", "职位/身份")}</span>
+                        <input class="b3-text-field" placeholder="选填，如：合伙人" bind:value={addOrgTitle}
+                            disabled={addOrgBusy} aria-label={text("orgAddTitleLabel", "归属职位")} />
+                    </label>
+                    <label class="lvct-org-add__field"><span>开始日期</span>
+                        <input class="b3-text-field" type="date" bind:value={addOrgJoinedOn} disabled={addOrgBusy}
+                            aria-label={text("orgAddJoinedLabel", "加入日期")} />
+                    </label>
+                    <label class="lvct-org-add__field"><span>结束日期</span>
+                        <input class="b3-text-field" type="date" bind:value={addOrgLeftOn} disabled={addOrgBusy || !addOrgDocId || addOrgStatus === "active"} aria-label="离开日期" />
+                    </label>
+                    <label class="lvct-org-add__field"><span>自定义状态</span>
+                        <input class="b3-text-field" maxlength="40" bind:value={addOrgStatusLabel} disabled={addOrgBusy || !addOrgDocId} aria-label="自定义状态" placeholder="选填，如：实习、休学" />
+                    </label>
+                    <label class="lvct-org-add__field"><span>{text("orgMemberNote", "经历备注")}</span>
+                        <input class="b3-text-field" maxlength="240" bind:value={addOrgNote} disabled={addOrgBusy || !addOrgDocId} aria-label={text("orgMemberNote", "成员备注")} placeholder={text("orgMemberNotePlaceholder", "仅记录这段组织经历")} />
+                    </label>
+                    {#if selectedAddOrg?.archived}<p class="ft__smaller ft__on-surface lvct-org-add__field--wide">组织已归档，只能补录历史经历；恢复组织后才可添加当前归属。</p>{/if}
+                    <div class="lvct-org-add__footer">
+                        <span class="ft__smaller ft__on-surface">先选择上方组织再点击「添加归属」，或直接新建组织。</span>
+                        <div class="lvct-org-add__btns">
+                            {#if onCreateOrganization}
+                                <button type="button" class="b3-button b3-button--outline" disabled={addOrgBusy || orgLoading || orgCandidatesLoading} bind:this={createOrganizationTrigger}
+                                    onclick={() => void createOrganizationFromDetail()}>{addOrgBusy && orgAction === "create" ? "创建中…" : text("orgCreateFirst", "新建组织")}</button>
+                            {/if}
+                            <button type="button" class="b3-button b3-button--text" disabled={addOrgBusy || orgLoading || orgCandidatesLoading || !!orgReadError || !!orgCandidatesError || addOrgDocId === ""}
+                                onclick={() => void addOrgMembership()}>{addOrgBusy && orgAction === "add" ? "添加中…" : text("orgAddSubmit", "添加归属")}</button>
+                        </div>
+                    </div>
+                </div>
+            </details>
         {/if}
         <OrgMembershipResult report={orgMembershipReport} {i18n} />
         {#if addOrgError}
@@ -5033,38 +5093,58 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     {/if}
     {#if commonOrgsSupported && (commonOrgs.length > 0 || commonOrgsFailed)}
     <section class="lvct-detail__section">
-        <h4>{text("orgCommonTitle", "共同背景")}</h4>
+        <div class="fn__flex" style="align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <h4 style="margin: 0;">{text("orgCommonTitle", "共同背景")}</h4>
+            <span class="ft__smaller ft__on-surface">{text("orgCommonNote", "依据组织成员记录自动推导同期与同组织人脉")}</span>
+        </div>
         {#if commonOrgsFailed}
             <p class="ft__smaller ft__on-surface" role="alert">{text("orgCommonFailed", "共同背景读取失败。")}</p>
             <button type="button" class="b3-button b3-button--outline" onclick={loadCommonOrgs}>重新读取共同背景</button>
         {:else}
-            {#each commonOrgs as entry (entry.orgDocId)}
-                <div class="lvct-org-common">
-                    <b>{entry.orgName}</b>
-                    {#if onOpenOrganization}
-                        <button class="b3-button b3-button--text" onclick={() => onOpenOrganization?.(entry.orgDocId)}>{text("routeOpenOrganization", "查看组织")}</button>
-                    {/if}
-                    {#each entry.peers as peer (peer.docId)}
-                        {@const contact = peer.contact}
-                        <div class="lvct-org-common__peer">
-                            <span>{peer.name}</span>
-                            <span class="lvct-chip {peer.samePeriod ? "lvct-bucket--today" : "lvct-bucket--stale"}">
-                                {peer.samePeriod ? text("orgCommonSamePeriod", "同期") : text("orgCommonSameOrg", "同组织")}
-                            </span>
-                            <span class="ft__smaller ft__on-surface">{peer.overlapText}</span>
-                            {#if contact}
-                                <button type="button" class="b3-button b3-button--text"
-                                    onclick={() => void (async () => {
-                                        if (!detailAlive) return;
-                                        if (onNavigateDocId) await onNavigateDocId(peer.docId);
-                                        else if (await canLeave.requestClose() && detailAlive) onNavigate(contact);
-                                    })()}>{text("orgCommonOpen", "查看详情")}</button>
+            <div class="lvct-org-common-list">
+                {#each commonOrgs as entry (entry.orgDocId)}
+                    {@const isFamilyOrg = entry.orgName?.trim() === "家庭"}
+                    <div class="lvct-org-common">
+                        <div class="lvct-org-common__head">
+                            <div class="lvct-org-common__title-group">
+                                <span class="lvct-org-common__badge-icon">{isFamilyOrg ? "家" : "组"}</span>
+                                <b>{entry.orgName}</b>
+                                <span class="lvct-chip lvct-bucket--stale">{entry.peers.length} 人</span>
+                            </div>
+                            {#if onOpenOrganization}
+                                <button class="b3-button b3-button--text lvct-org-common__open-org" onclick={() => onOpenOrganization?.(entry.orgDocId)}>{text("routeOpenOrganization", "查看组织")}</button>
                             {/if}
                         </div>
-                    {/each}
-                </div>
-            {/each}
-            <p class="ft__smaller ft__on-surface">{text("orgCommonNote", "依据为组织成员记录；加入时间未知者只标「同组织」，不推断同期。")}</p>
+                        <div class="lvct-org-common__peers">
+                            {#each entry.peers as peer (peer.docId)}
+                                {@const contact = peer.contact}
+                                {@const isUnknownOverlap = peer.overlapText === "同在该组织（加入时间未知）"}
+                                {@const subLabel = isFamilyOrg && isUnknownOverlap ? (contact?.title || "家庭成员") : isUnknownOverlap ? (contact?.title || contact?.organization || "同组织成员") : peer.overlapText}
+                                <div class="lvct-org-common__peer">
+                                    <span class="lvct-org-common__avatar">{(peer.name || "?").trim().slice(0, 1)}</span>
+                                    <div class="lvct-org-common__peer-info">
+                                        <div class="lvct-org-common__peer-top">
+                                            <span class="lvct-org-common__peer-name">{peer.name}</span>
+                                            <span class="lvct-chip {peer.samePeriod ? "lvct-bucket--today" : "lvct-bucket--stale"}">
+                                                {isFamilyOrg ? "家人" : peer.samePeriod ? text("orgCommonSamePeriod", "同期") : text("orgCommonSameOrg", "同组织")}
+                                            </span>
+                                        </div>
+                                        <span class="ft__smaller ft__on-surface lvct-org-common__peer-sub" title={peer.overlapText}>{subLabel}</span>
+                                    </div>
+                                    {#if contact}
+                                        <button type="button" class="b3-button b3-button--text lvct-org-common__peer-btn"
+                                            onclick={() => void (async () => {
+                                                if (!detailAlive) return;
+                                                if (onNavigateDocId) await onNavigateDocId(peer.docId);
+                                                else if (await canLeave.requestClose() && detailAlive) onNavigate(contact);
+                                            })()}>{text("orgCommonOpen", "查看详情")}</button>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/each}
+            </div>
         {/if}
     </section>
     {/if}

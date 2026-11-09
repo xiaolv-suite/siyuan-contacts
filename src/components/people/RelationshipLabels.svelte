@@ -104,7 +104,7 @@
 </script>
 
 <section class="lvct-detail__section lvct-relationship-labels">
-    <div class="lvct-detail__section-head" style="margin-bottom: 6px;">
+    <div class="lvct-detail__section-head" style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
         <div class="fn__flex" style="align-items: center; gap: 8px; flex-wrap: wrap;">
             <h4 style="margin: 0;">与我的关系</h4>
             {#if (snapshot?.record?.labels ?? []).length > 0}

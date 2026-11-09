@@ -9255,31 +9255,283 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 }
 
+/* B12 & B13.5 人物详情内组织归属与添加归属卡片 */
+.lvct-detail__org-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lvct-detail__org-timeline-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    border-radius: var(--lvct-r-card, 12px);
+    background: var(--lvct-bg-surface, var(--b3-theme-surface));
+    border: 1px solid var(--lvct-border-subtle);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+
+    &:hover {
+        border-color: var(--lvct-border-strong);
+    }
+}
+
+.lvct-detail__org-main {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+.lvct-detail__org-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+}
+
+.lvct-detail__org-badges {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.lvct-detail__org-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.lvct-detail__org-full-row {
+    flex: 1 1 100%;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.lvct-org-add-details {
+    margin-top: 10px;
+    border-radius: var(--lvct-r-card, 12px);
+    border: 1px dashed var(--lvct-border-strong, var(--lvct-border-subtle));
+    background: color-mix(in srgb, var(--lvct-bg-surface, var(--b3-theme-surface)) 65%, transparent);
+    overflow: hidden;
+
+    &[open] {
+        border-style: solid;
+        border-color: var(--lvct-border-subtle);
+        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+    }
+}
+
+.lvct-org-add-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 9px 14px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+
+    &__title {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--lvct-accent, var(--b3-theme-primary));
+    }
+}
+
 /* B13.6 共同背景 */
+.lvct-org-common-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
 .lvct-org-common {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-top: var(--lvct-sp-2);
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--lvct-r-card, 12px);
+    background: var(--lvct-bg-surface, var(--b3-theme-surface));
+    border: 1px solid var(--lvct-border-subtle);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--lvct-border-subtle);
+    }
+
+    &__title-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+
+        b {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--b3-theme-on-background);
+        }
+    }
+
+    &__badge-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        display: inline-grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 700;
+        background: var(--lvct-accent-soft, rgba(59, 130, 246, 0.12));
+        color: var(--lvct-accent, var(--b3-theme-primary));
+        flex-shrink: 0;
+    }
+
+    &__peers {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 8px;
+    }
 
     &__peer {
         display: flex;
         align-items: center;
-        gap: var(--lvct-sp-2);
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: var(--b3-theme-background);
+        border: 1px solid var(--lvct-border-subtle);
+        transition: border-color 140ms ease, transform 140ms ease;
+
+        &:hover {
+            border-color: var(--lvct-border-strong);
+            transform: translateY(-1px);
+        }
+    }
+
+    &__avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 600;
+        background: var(--lvct-accent-soft, rgba(59, 130, 246, 0.12));
+        color: var(--lvct-accent, var(--b3-theme-primary));
+        flex-shrink: 0;
+    }
+
+    &__peer-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__peer-top {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         flex-wrap: wrap;
+    }
+
+    &__peer-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--b3-theme-on-background);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__peer-sub {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 11px;
+    }
+
+    &__peer-btn {
+        flex-shrink: 0;
+        padding: 2px 8px;
+        font-size: 11.5px;
     }
 }
 
 /* B13.5 人物详情内添加归属表单 */
 .lvct-org-add {
-    display: flex;
-    gap: var(--lvct-sp-2);
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: var(--lvct-sp-2);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px 12px;
+    align-items: end;
+    padding: 12px 14px;
+    border-top: 1px solid var(--lvct-border-subtle);
 
-    .b3-select { max-width: 180px; }
-    .b3-text-field { max-width: 130px; }
+    &--edit {
+        margin-top: 8px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: 10px;
+        background: var(--b3-theme-background);
+    }
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+        font-size: 11.5px;
+        color: var(--lvct-text-2, var(--b3-theme-on-surface));
+
+        &--wide {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .b3-select,
+    .b3-text-field {
+        max-width: none;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    &__footer {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-top: 4px;
+    }
+
+    &__btns {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+    }
 }
 
 /* 组织资料编辑器：新建/编辑共享的清晰分区，移动端单列。 */
