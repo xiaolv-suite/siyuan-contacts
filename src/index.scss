@@ -13464,51 +13464,74 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     .lvct-dash__stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 8px !important;
-        margin-bottom: 10px !important;
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+        padding: 8px !important;
+        margin-bottom: 8px !important;
     }
 
     .lvct-dash__stat {
-        min-height: 76px !important;
-        padding: 10px 12px !important;
+        min-height: 0 !important;
+        padding: 6px 4px !important;
         gap: 2px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+
+        .lvct-dash__stat-top {
+            justify-content: center !important;
+            gap: 3px !important;
+            font-size: 11px !important;
+        }
 
         b {
-            font-size: 20px !important;
+            font-size: 18px !important;
             line-height: 1.15 !important;
         }
 
         .lvct-dash__stat-ft {
-            font-size: 11px !important;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: none !important;
         }
     }
 
     .lvct-dash__actions .lvct-dash__actions-head {
-        padding: 10px 12px !important;
-        gap: 8px !important;
+        padding: 8px 10px !important;
+        gap: 6px !important;
         flex-wrap: wrap !important;
+
+        .lvct-dash__actions-title p,
+        .lvct-dash__actions-title small {
+            display: none !important;
+        }
     }
 
     .lvct-dash__actions-tools {
         width: 100%;
-        display: flex;
-        flex-wrap: wrap;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        scrollbar-width: none;
         gap: 6px !important;
+        padding: 4px !important;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
 
         .lvct-dash__head-action {
-            min-height: 32px !important;
-            height: 32px !important;
-            padding: 0 10px !important;
-            font-size: 12px !important;
+            flex: 0 0 auto !important;
+            min-height: 30px !important;
+            height: 30px !important;
+            padding: 0 9px !important;
+            font-size: 11.5px !important;
         }
     }
 
     .lvct-week-glance {
-        padding: 8px 12px !important;
+        padding: 6px 10px !important;
     }
 
     .lvct-week-glance__track {
@@ -13566,22 +13589,25 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     .lvct-workbench__header-actions {
+        display: inline-flex !important;
+        align-items: center !important;
         flex: 1 1 auto;
-        width: auto;
+        width: auto !important;
         min-width: 0;
-        flex-wrap: nowrap;
+        flex-wrap: nowrap !important;
         gap: var(--lvct-sp-1);
 
         input.b3-text-field {
             flex: 1 1 88px;
             min-width: 0;
-            width: auto;
+            width: auto !important;
             min-height: 34px;
             height: 34px;
             padding: 0 var(--lvct-sp-2);
         }
 
         .b3-button {
+            width: auto !important;
             min-height: 34px;
             height: 34px;
             padding: 0 var(--lvct-sp-2);
@@ -13589,7 +13615,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         }
 
         .lvct-workbench__header-btn-text {
-            display: none;
+            display: none !important;
         }
     }
 
