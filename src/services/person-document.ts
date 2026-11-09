@@ -1,7 +1,7 @@
 import { createDocWithMd, KernelResponseError, KernelPermissionError, newNodeId } from "../api/client";
 import { CONTACT_DRAFT_ATTR, findCreationRequestDoc, VCARD_REQUEST_ATTR } from "../api/blocks";
 import { buildContactWritePlan } from "../domain/contact-write.ts";
-import { documentHPath, markdownHeading, personDocumentHPath } from "../domain/format";
+import { markdownHeading, personDocumentHPath } from "../domain/format";
 import type { ContactsSettings } from "../domain/model";
 import type { ContactDraft } from "../domain/person";
 import type { VcfDocumentCheckpoint } from "../domain/vcard.ts";

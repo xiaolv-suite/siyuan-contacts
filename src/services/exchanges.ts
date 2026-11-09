@@ -76,7 +76,7 @@ export async function changePersonExchangeStatus(
 }
 
 export async function listAllExchanges(plugin: Plugin): Promise<ExchangeRecord[]> {
-    const store = await loadExchangeStore(plugin).catch(() => ({ schemaVersion: 1 as const, records: [] }));
+    const store = await loadExchangeStore(plugin);
     return store.records;
 }
 

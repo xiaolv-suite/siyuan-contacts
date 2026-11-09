@@ -1,4 +1,5 @@
 import type { Plugin } from "siyuan";
+import type { ContactsSettings } from "../domain/model";
 import { normalizeSettings, SETTINGS_STORAGE_KEY } from "../domain/model";
 import { createDocWithMd, KernelPermissionError, KernelResponseError, newNodeId } from "../api/client";
 import { findOrganizationRequest, OrganizationWriteNotSentError, readOrganizationFact, renameOrganizationTitle, updateOrganizationMarker } from "../api/blocks";

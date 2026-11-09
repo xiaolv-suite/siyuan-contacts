@@ -13,7 +13,7 @@ import {
     BRIDGE_STORAGE_KEY, BridgeError, BridgePersonAmbiguityError, bridgeEventEvidence, bridgePerson, normalizeBridgeRequestStore,
     resolveBridgePerson,
 } from "../domain/external-bridge.ts";
-import { documentHPath, personDocumentHPath } from "../domain/format.ts";
+import { personDocumentHPath } from "../domain/format.ts";
 import { emptyDraft } from "../domain/person.ts";
 import { invalidateRoster } from "../services/roster";
 import type { ContactsSettings } from "../domain/model";

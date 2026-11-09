@@ -7,7 +7,7 @@
 import { birthdayToMs, emptyDraft, validateDraft } from "../domain/person";
 import type { ContactSummary } from "../domain/person";
 import { createDocWithMd, KernelResponseError, KernelPermissionError, newNodeId } from "../api/client";
-import { documentHPath, markdownHeading, personDocumentHPath } from "../domain/format";
+import { markdownHeading, personDocumentHPath } from "../domain/format";
 import { bindDocsAsRows, mapBoundDocIds } from "../api/av";
 import { findBlockIdByCustomAttr, findOutgoingLinkRoots, getBlockContent, listNotebookDocs, readMarkedBlocks, upsertMarkedBlock, fetchDocMarkdown } from "../api/blocks";
 import {

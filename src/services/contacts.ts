@@ -4,7 +4,7 @@
  */
 import { KernelPermissionError, KernelResponseError, listNotebooks, newNodeId, querySql, assertKernelRecord } from "../api/client";
 import { organizationIalAttributes } from "../domain/organization-operations";
-import { documentHPath, personDocumentHPath } from "../domain/format";
+import { personDocumentHPath } from "../domain/format";
 import { ATTRIBUTE_VIEW_BATCH_SIZE, bindDocsAsRows, mapBoundDocIds, renderView, renderViewPage, setCell, unbindRows } from "../api/av";
 import type { AvRenderResult, CellValue } from "../api/av";
 import { CONTACT_DRAFT_ATTR, listNotebookDocs, NOTEBOOK_DOC_PAGE_SIZE, readMarkedBlocks, readNotebookDocument } from "../api/blocks";

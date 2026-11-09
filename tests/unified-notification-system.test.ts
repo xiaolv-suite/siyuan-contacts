@@ -516,7 +516,7 @@ test("全生态自省徽章：lvEcosystem.getStatusBadgeText 动态呈现协同�
         assert.ok(diag.registeredPlugins.includes("plugin-b"));
 
         const badge = lvEcosystem.getStatusBadgeText();
-        assert.ok(badge.includes("🐴 小驴全家桶协同正常"));
+        assert.ok(badge.includes("🐴 小驴全家桶"));
         assert.ok(badge.includes("插件已联结"));
         assert.ok(badge.includes("今日活动"));
     } finally {

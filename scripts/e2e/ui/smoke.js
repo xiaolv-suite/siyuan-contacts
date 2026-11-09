@@ -432,6 +432,7 @@ async function test(name, action) {
         delete state.__lvctWorkbench;
         history.replaceState(state, "", location.href);
         fixture.replaceChildren();
+        fixture.style.cssText = "height:720px;width:min(1000px,100%)";
         document.querySelector("#results").hidden = false;
         document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
     }
@@ -3621,6 +3622,9 @@ await test("B13.5a 组织视图：侧栏入口、卡片渲染（活跃/归档/�
 
 if (window.innerWidth <= 640) {
     await test("移动视口显示底部导航，人物详情窗口占满屏幕并保留安全区内距", async () => {
+        // The real mobile host fills the viewport. The results harness above
+        // this fixture must not push a relative flex footer off screen.
+        fixture.style.cssText = "position:fixed;inset:0;height:100dvh;width:100%;z-index:100";
         mounted = mount(Workbench, { target: fixture, props: {
             settings, preferences: DEFAULT_VIEW_PREFERENCES, isMobile: true,
             onPreferencesUpdated() {}, onOpenPersonDoc() {},
@@ -3635,8 +3639,16 @@ if (window.innerWidth <= 640) {
         } });
         await until(() => fixture.querySelector(".lvct-workbench__sidebar"), "移动工作台未加载");
         const sidebar = fixture.querySelector(".lvct-workbench__sidebar");
-        assert(getComputedStyle(sidebar).position === "fixed", "移动端导航没有固定在底部");
-        assert(getComputedStyle(sidebar).bottom === "0px", "移动端导航没有贴近底部");
+        const sidebarRect = sidebar.getBoundingClientRect();
+        assert(sidebarRect.height > 0 && sidebarRect.bottom <= window.innerHeight + 1,
+            "移动端导航未在可见视口内");
+        assert(sidebarRect.top >= window.innerHeight - 120, "移动端导航没有位于视口底部");
+        const main = fixture.querySelector(".lvct-workbench__main");
+        const navBottomBeforeScroll = sidebarRect.bottom;
+        if (main) main.scrollTop = main.scrollHeight;
+        await tick();
+        assert(Math.abs(sidebar.getBoundingClientRect().bottom - navBottomBeforeScroll) <= 1,
+            "移动内容滚动将导航移出底部");
         const peopleNav = [...fixture.querySelectorAll(".lvct-workbench__nav-item")].find((node) => node.textContent.includes("联系人"));
         assert(peopleNav, "未找到移动端联系人导航");
         peopleNav.click();

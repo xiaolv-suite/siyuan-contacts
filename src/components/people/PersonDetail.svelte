@@ -5095,7 +5095,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     <section class="lvct-detail__section">
         <div class="fn__flex" style="align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
             <h4 style="margin: 0;">{text("orgCommonTitle", "共同背景")}</h4>
-            <span class="ft__smaller ft__on-surface">{text("orgCommonNote", "依据组织成员记录自动推导同期与同组织人脉")}</span>
+            <span class="ft__smaller ft__on-surface">{text("orgCommonNote", "依据为组织成员记录；加入时间未知者只标「同组织」，不推断同期。")}</span>
         </div>
         {#if commonOrgsFailed}
             <p class="ft__smaller ft__on-surface" role="alert">{text("orgCommonFailed", "共同背景读取失败。")}</p>
@@ -5119,7 +5119,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                             {#each entry.peers as peer (peer.docId)}
                                 {@const contact = peer.contact}
                                 {@const isUnknownOverlap = peer.overlapText === "同在该组织（加入时间未知）"}
-                                {@const subLabel = isFamilyOrg && isUnknownOverlap ? (contact?.title || "家庭成员") : isUnknownOverlap ? (contact?.title || contact?.organization || "同组织成员") : peer.overlapText}
+                                {@const subLabel = isFamilyOrg && isUnknownOverlap ? "家庭成员" : isUnknownOverlap ? "同组织成员（加入时间未知）" : peer.overlapText}
                                 <div class="lvct-org-common__peer">
                                     <span class="lvct-org-common__avatar">{(peer.name || "?").trim().slice(0, 1)}</span>
                                     <div class="lvct-org-common__peer-info">

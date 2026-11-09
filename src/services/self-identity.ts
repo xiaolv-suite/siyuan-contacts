@@ -7,7 +7,7 @@ import { excludeSelf, isSelfDoc, parseSelfIdentity, parseSelfProfileCheckpoint }
 import { toLocalDateKey } from "../domain/interactions";
 import { invalidateRoster } from "./roster";
 import type { ContactsSettings } from "../domain/model";
-import { documentHPath, markdownHeading, personDocumentHPath } from "../domain/format";
+import { markdownHeading, personDocumentHPath } from "../domain/format";
 import { createDocWithMd, KernelResponseError, KernelPermissionError, newNodeId } from "../api/client";
 import { documentExists, findCreationRequestDoc, flushBlockIndex, listNotebookDocs, NOTEBOOK_DOC_PAGE_SIZE, SELF_DRAFT_ATTR } from "../api/blocks";
 import { bindDocsAsRows, mapBoundDocIds } from "../api/av";

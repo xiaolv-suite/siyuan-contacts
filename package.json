@@ -12,6 +12,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
+    "test:ecosystem:reliability": "node --test tests/ecosystem-reliability.test.cjs",
     "dev": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",
     "build": "run-s clean build:app build:checksum",
     "build:app": "cross-env NODE_ENV=production vite build",
