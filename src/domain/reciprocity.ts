@@ -77,11 +77,14 @@ export function computeReciprocityAudit(input: ReciprocityAuditInput = {}): Reci
         if (ex.status === "settled") settledExchangesCount += 1;
         else if (ex.status === "open") openExchangesCount += 1;
 
+        const currency = (ex.currency || "CNY").trim().toUpperCase();
         const amt = typeof ex.amount === "number" && Number.isFinite(ex.amount) && ex.amount > 0 ? ex.amount : 0;
-        if (ex.direction === "payable") {
-            totalPayable += amt;
-        } else if (ex.direction === "receivable") {
-            totalReceivable += amt;
+        if (currency === "CNY") {
+            if (ex.direction === "payable") {
+                totalPayable += amt;
+            } else if (ex.direction === "receivable") {
+                totalReceivable += amt;
+            }
         }
     }
 

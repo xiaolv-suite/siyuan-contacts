@@ -26,11 +26,23 @@ export interface ExchangesSummary {
         favor: number;
     };
     moneySummary: {
+        /** Compatibility totals are CNY only; currencies are never converted or added together. */
         receivableTotal: number;
         payableTotal: number;
+        byCurrency?: { currency: string; receivableTotal: number; payableTotal: number }[];
     };
     records: ExchangeRecordWithPerson[];
     openItems: ExchangeRecordWithPerson[];
+}
+
+export function exchangeCurrency(currency?: string): string {
+    return currency?.trim().toUpperCase() || "CNY";
+}
+
+export function formatExchangeAmount(amount: number, currency?: string, fractionDigits?: number): string {
+    const unit = exchangeCurrency(currency);
+    const value = fractionDigits === undefined ? String(amount) : amount.toFixed(fractionDigits);
+    return unit === "CNY" ? `¥${value}` : `${value} ${unit}`;
 }
 
 /**
@@ -54,6 +66,7 @@ export function computeExchangesSummary(
 
     const byKind = { money: 0, item: 0, favor: 0 };
     const moneySummary = { receivableTotal: 0, payableTotal: 0 };
+    const currencyTotals = new Map<string, { currency: string; receivableTotal: number; payableTotal: number }>();
 
     const enrichedRecords: ExchangeRecordWithPerson[] = [];
     const openItems: ExchangeRecordWithPerson[] = [];
@@ -63,7 +76,7 @@ export function computeExchangesSummary(
 
     for (const r of sorted) {
         const personName = personMap.get(r.personDocId) || "未命名联系人";
-        const enriched: ExchangeRecordWithPerson = { ...r, personName };
+        const enriched: ExchangeRecordWithPerson = { ...r, currency: exchangeCurrency(r.currency), personName };
         enrichedRecords.push(enriched);
 
         if (r.status === "open") {
@@ -78,13 +91,21 @@ export function computeExchangesSummary(
         if (r.direction === "receivable") {
             receivableCount += 1;
             if (r.kind === "money" && typeof r.amount === "number") {
-                moneySummary.receivableTotal += r.amount;
+                if (exchangeCurrency(r.currency) === "CNY") moneySummary.receivableTotal += r.amount;
             }
         } else if (r.direction === "payable") {
             payableCount += 1;
             if (r.kind === "money" && typeof r.amount === "number") {
-                moneySummary.payableTotal += r.amount;
+                if (exchangeCurrency(r.currency) === "CNY") moneySummary.payableTotal += r.amount;
             }
+        }
+
+        if (r.kind === "money" && typeof r.amount === "number") {
+            const currency = exchangeCurrency(r.currency);
+            const total = currencyTotals.get(currency) ?? { currency, receivableTotal: 0, payableTotal: 0 };
+            if (r.direction === "receivable") total.receivableTotal += r.amount;
+            else total.payableTotal += r.amount;
+            currencyTotals.set(currency, total);
         }
 
         if (r.kind === "money") byKind.money += 1;
@@ -100,7 +121,7 @@ export function computeExchangesSummary(
         receivableCount,
         payableCount,
         byKind,
-        moneySummary,
+        moneySummary: { ...moneySummary, byCurrency: [...currencyTotals.values()].sort((a, b) => a.currency.localeCompare(b.currency)) },
         records: enrichedRecords,
         openItems,
     };
@@ -129,8 +150,10 @@ export function buildExchangesLedgerMarkdown(
     lines.push(`- **总往来笔数**：共 **${summary.totalRecords}** 笔`);
     lines.push(`- **待办状态**：待处理/待结清 **${summary.openCount}** 笔 · 已结清/已答谢 **${summary.settledCount}** 笔`);
     lines.push(`- **类别分布**：礼品往来 ${summary.byKind.item} 笔 · 资金往来 ${summary.byKind.money} 笔 · 人情帮扶 ${summary.byKind.favor} 笔`);
-    if (summary.moneySummary.receivableTotal > 0 || summary.moneySummary.payableTotal > 0) {
-        lines.push(`- **资金收支**：累计收到 ¥${summary.moneySummary.receivableTotal.toFixed(2)} · 累计送出/借出 ¥${summary.moneySummary.payableTotal.toFixed(2)}`);
+    const totals = summary.moneySummary.byCurrency ?? [{ currency: "CNY", ...summary.moneySummary }];
+    for (const total of totals) {
+        if (total.receivableTotal <= 0 && total.payableTotal <= 0) continue;
+        lines.push(`- **资金收支（${escapeLinkLabel(total.currency)}）**：累计收到 ${formatExchangeAmount(total.receivableTotal, total.currency, 2)} · 累计送出/借出 ${formatExchangeAmount(total.payableTotal, total.currency, 2)}`);
     }
     lines.push("");
 
@@ -144,7 +167,7 @@ export function buildExchangesLedgerMarkdown(
         for (const item of summary.openItems) {
             const dirLabel = item.direction === "receivable" ? "【收】" : "【送/支】";
             const kindLabel = item.kind === "item" ? "礼品" : item.kind === "money" ? "款项" : "人情";
-            const amountStr = item.amount ? ` (¥${item.amount})` : "";
+            const amountStr = item.amount !== undefined ? ` (${escapeLinkLabel(formatExchangeAmount(item.amount, item.currency))})` : "";
             const dueStr = item.dueOn ? ` · 期望日期: ${item.dueOn}` : "";
             const cleanName = escapeLinkLabel(item.personName);
 
@@ -169,7 +192,7 @@ export function buildExchangesLedgerMarkdown(
             const cleanName = escapeLinkLabel(r.personName);
             const dirText = r.direction === "receivable" ? "🎁 收到" : "📤 送出";
             const kindText = r.kind === "item" ? "礼品" : r.kind === "money" ? "礼金/款项" : "人情";
-            const amountText = r.amount ? `¥${r.amount}` : "—";
+            const amountText = r.amount !== undefined ? escapeLinkLabel(formatExchangeAmount(r.amount, r.currency)) : "—";
             const statusText = r.status === "settled" ? "已结清" : r.status === "open" ? "待处理" : "已取消";
             const noteText = r.note ? escapeLinkLabel(r.note) : "—";
             lines.push(`| ${r.occurredOn} | [${cleanName}](siyuan://blocks/${r.personDocId}) | ${dirText} | ${kindText} | ${escapeLinkLabel(r.description)} | ${amountText} | ${statusText} | ${noteText} |`);

@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from "svelte";
     import type { ContactsPluginFacade } from "../../types";
     import type { ExchangesSummary, ExchangeRecordWithPerson } from "../../domain/exchanges-summary.ts";
+    import { formatExchangeAmount } from "../../domain/exchanges-summary.ts";
     import { translateText } from "../../domain/translation";
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import ViewState from "../ViewState.svelte";
@@ -143,6 +144,14 @@
             </div>
         {/if}
 
+        {#if summary.moneySummary.byCurrency?.length}
+            <div class="fn__flex" style="gap: 8px; flex-wrap: wrap;" aria-label="按币种统计，不做汇率换算">
+                {#each summary.moneySummary.byCurrency as total (total.currency)}
+                    <span class="lvct-chip lvct-chip--tag">{total.currency} · 收到 {formatExchangeAmount(total.receivableTotal, total.currency, 2)} · 送出 {formatExchangeAmount(total.payableTotal, total.currency, 2)}</span>
+                {/each}
+            </div>
+        {/if}
+
         <!-- 筛选与控制条 -->
         <div class="lvct-exchanges-hub__filter-bar fn__flex">
             <div class="fn__flex" style="gap: 6px; align-items: center; flex-wrap: wrap;">
@@ -219,7 +228,7 @@
                                 </button>
                                 <b class="lvct-exchanges-hub__desc">{r.description}</b>
                                 {#if r.amount}
-                                    <span class="lvct-chip lvct-chip--tag">¥{r.amount}</span>
+                                    <span class="lvct-chip lvct-chip--tag">{formatExchangeAmount(r.amount, r.currency)}</span>
                                 {/if}
                             </div>
                             {#if r.note}

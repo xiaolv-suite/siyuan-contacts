@@ -78,7 +78,7 @@ function parseRecord(raw: unknown): ExchangeRecord | null {
     if (record.direction !== "receivable" && record.direction !== "payable") return null;
     if (record.status !== "open" && record.status !== "settled" && record.status !== "cancelled") return null;
     if (typeof record.description !== "string" || !record.description.trim()) return null;
-    if (typeof record.currency !== "string" || typeof record.occurredOn !== "string" || !isValidExchangeDate(record.occurredOn)) return null;
+    if ((record.currency !== undefined && typeof record.currency !== "string") || typeof record.occurredOn !== "string" || !isValidExchangeDate(record.occurredOn)) return null;
     if (!validOptionalDate(record.dueOn) || !validOptionalDate(record.settledOn)) return null;
     if (typeof record.note !== "string" || typeof record.createdAt !== "number" || typeof record.updatedAt !== "number") return null;
     if (!Number.isFinite(record.createdAt) || !Number.isFinite(record.updatedAt)) return null;
@@ -94,7 +94,7 @@ function parseRecord(raw: unknown): ExchangeRecord | null {
         direction: record.direction,
         description: record.description.trim(),
         ...(record.amount === undefined ? {} : { amount: record.amount }),
-        currency: record.currency.trim(),
+        currency: record.currency?.trim() || "CNY",
         occurredOn: record.occurredOn,
         dueOn: record.dueOn ?? "",
         status: record.status,

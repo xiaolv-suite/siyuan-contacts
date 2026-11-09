@@ -8,6 +8,7 @@
     import type { ExchangeDirection, ExchangeKind, ExchangeRecord, ExchangeStatus } from "../../domain/exchanges";
     import { translateText } from "../../domain/translation";
     import { confirmDialog } from "../../libs/confirm-dialog";
+    import { formatExchangeAmount } from "../../domain/exchanges-summary";
 
     let {
         personDocId,
@@ -67,22 +68,37 @@
     }
     const formDisabled = $derived(busy || saveUnknown);
     const stats = $derived.by(() => {
-        let receivable = 0;
-        let payable = 0;
+        const byCurrency = new Map<string, { receivable: number; payable: number }>();
         let openCount = 0;
         let settledCount = 0;
         for (const r of records) {
             if (r.status === "open") {
                 openCount += 1;
                 if (r.kind === "money" && typeof r.amount === "number") {
-                    if (r.direction === "receivable") receivable += r.amount;
-                    else payable += r.amount;
+                    const c = (r.currency || "CNY").trim().toUpperCase();
+                    const entry = byCurrency.get(c) || { receivable: 0, payable: 0 };
+                    if (r.direction === "receivable") entry.receivable += r.amount;
+                    else entry.payable += r.amount;
+                    byCurrency.set(c, entry);
                 }
             } else if (r.status === "settled") {
                 settledCount += 1;
             }
         }
-        return { receivable, payable, net: receivable - payable, openCount, settledCount };
+        const currencies = [...byCurrency.entries()].map(([currency, amounts]) => ({
+            currency,
+            receivable: amounts.receivable,
+            payable: amounts.payable,
+            net: amounts.receivable - amounts.payable,
+        }));
+        const primary = currencies.find(c => c.currency === "CNY") || currencies[0] || { currency: "CNY", receivable: 0, payable: 0, net: 0 };
+        return {
+            primary,
+            currencies,
+            isMultiCurrency: currencies.length > 1,
+            openCount,
+            settledCount,
+        };
     });
     useCloseGuard({
         busy: () => busy,
@@ -278,22 +294,32 @@
     {#if records.length > 0}
         <div class="lvct-exchange-stats" role="region" aria-label="往来关键指标">
             <div class="lvct-exchange-stat">
-                <span class="lvct-exchange-stat__label">待收回</span>
-                <span class="lvct-exchange-stat__val lvct-val--receivable">¥{stats.receivable.toFixed(2)}</span>
+                <span class="lvct-exchange-stat__label">待收回{stats.isMultiCurrency ? ` (${stats.primary.currency})` : ""}</span>
+                <span class="lvct-exchange-stat__val lvct-val--receivable">{formatExchangeAmount(stats.primary.receivable, stats.primary.currency, 2)}</span>
             </div>
             <div class="lvct-exchange-stat">
-                <span class="lvct-exchange-stat__label">待偿还</span>
-                <span class="lvct-exchange-stat__val lvct-val--payable">¥{stats.payable.toFixed(2)}</span>
+                <span class="lvct-exchange-stat__label">待偿还{stats.isMultiCurrency ? ` (${stats.primary.currency})` : ""}</span>
+                <span class="lvct-exchange-stat__val lvct-val--payable">{formatExchangeAmount(stats.primary.payable, stats.primary.currency, 2)}</span>
             </div>
             <div class="lvct-exchange-stat">
-                <span class="lvct-exchange-stat__label">净往来</span>
-                <span class="lvct-exchange-stat__val">{stats.net >= 0 ? `+¥${stats.net.toFixed(2)}` : `-¥${Math.abs(stats.net).toFixed(2)}`}</span>
+                <span class="lvct-exchange-stat__label">净往来{stats.isMultiCurrency ? ` (${stats.primary.currency})` : ""}</span>
+                <span class="lvct-exchange-stat__val">{stats.primary.net >= 0 ? "+" : "-"}{formatExchangeAmount(Math.abs(stats.primary.net), stats.primary.currency, 2)}</span>
             </div>
             <div class="lvct-exchange-stat">
                 <span class="lvct-exchange-stat__label">待办 / 已结</span>
                 <span class="lvct-exchange-stat__val">{stats.openCount} / {stats.settledCount} 笔</span>
             </div>
         </div>
+        {#if stats.isMultiCurrency}
+            <div class="lvct-exchange-multi-currency-hint ft__smaller ft__on-surface" style="margin: -6px 0 10px; display: flex; flex-wrap: wrap; gap: 6px;">
+                <span>其他币种：</span>
+                {#each stats.currencies.filter(c => c.currency !== stats.primary.currency) as c}
+                    <span class="lvct-chip lvct-chip--tag">
+                        {c.currency}: 待收 {formatExchangeAmount(c.receivable, c.currency, 2)} · 待还 {formatExchangeAmount(c.payable, c.currency, 2)}
+                    </span>
+                {/each}
+            </div>
+        {/if}
     {/if}
 
     {#if errorText}<div class="lvct-form__error" role="alert">{errorText}</div>{/if}

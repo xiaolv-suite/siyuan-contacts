@@ -1,3 +1,5 @@
+> 当前开发/验收边界：[唯一状态摘要](docs/CURRENT-STATUS.md)。
+
 <div align="center">
 
 # 小驴人脉（Lv Contacts）
