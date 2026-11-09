@@ -13393,7 +13393,9 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     .b3-dialog:has(.lvct-workbench) .b3-dialog__header,
-    .b3-dialog__container.lvct-mobile-dialog > .b3-dialog__header {
+    .b3-dialog:has(.lvct-workbench) .b3-dialog__container > .b3-dialog__close,
+    .b3-dialog__container.lvct-mobile-dialog > .b3-dialog__header,
+    .b3-dialog__container.lvct-mobile-dialog > .b3-dialog__close {
         display: none !important;
     }
 

@@ -52,7 +52,7 @@ export const simpleDialog = (args: {
 
     const dialog = new Dialog({
         title: args.title,
-        content: `<div class="dialog-content" style="display: flex; height: 100%;"/>`,
+        content: `<div class="dialog-content" style="display: flex; flex-direction: column; align-items: stretch; width: 100%; height: 100%; min-width: 0; min-height: 0; box-sizing: border-box;"/>`,
         width: args.width,
         height: args.height,
         disableClose: args.disableClose ?? true,
@@ -76,7 +76,12 @@ export const simpleDialog = (args: {
     });
     dialog.element.querySelector(".dialog-content")?.appendChild(args.ele);
 
-    // Esc-only 关闭面审计：移动端补充可见关闭按钮（思源手机端 Dialog 无关闭钮、手机无 Esc 键）
+    const outerClose = dialog.element.querySelector<HTMLElement | SVGElement>(".b3-dialog__container > .b3-dialog__close");
+    if (outerClose && outerClose.style) {
+        outerClose.style.setProperty("display", "none", "important");
+    }
+
+    // Esc-only 关闭面审计：补充可见关闭按钮（思源手机端 Dialog 无关闭钮、手机无 Esc 键）
     const header = dialog.element.querySelector(".b3-dialog__header");
     if (header && !header.querySelector(".b3-dialog__close, .lvct-mobile-dialog-close")) {
         const closeBtn = document.createElement("button");
