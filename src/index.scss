@@ -14453,6 +14453,13 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 }
 
+@media (max-width: 380px) {
+    .lvct-detail__relationship-grid,
+    .lvct-social-radar__metrics-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 /* 软键盘弹起态（360x420）弹窗紧凑自适应：保障表单输入区与底部保存/取消按钮同屏可达 */
 @media (max-height: 460px) {
     .lvct-dialog-panel,
