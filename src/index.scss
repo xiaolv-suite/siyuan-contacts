@@ -13343,7 +13343,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 }
 
 /* 手机端 Dialog 全屏化：dvh 动态视口（软键盘收展不残留空隙）；桌面不受影响 */
-@media (max-width: 680px) {
+@media (max-width: 760px) {
     .b3-dialog:has(.lvct-dialog-root):not(:has(.lvct-workbench)) .b3-dialog__container {
         width: calc(100vw - 16px) !important;
         max-width: calc(100vw - 16px) !important;
@@ -13449,32 +13449,33 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         overflow-x: hidden !important;
     }
 
-    .lvct-dash__welcome {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 8px !important;
-        padding: 0 2px;
+    .lvct-dash {
+        gap: 8px !important;
+    }
 
-        .lvct-dash__greeting {
-            font-size: 14px !important;
-            margin: 0 !important;
-        }
+    .lvct-dash__welcome,
+    .lvct-dash__summary,
+    .lvct-dash__lowfreq {
+        display: none !important;
+    }
+
+    .lvct-dash__grid:has(.lvct-dash__row) > .lvct-home__card:not(:has(.lvct-dash__row)) {
+        display: none !important;
     }
 
     .lvct-dash__stats {
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         gap: 6px !important;
-        padding: 8px !important;
-        margin-bottom: 8px !important;
+        padding: 4px !important;
+        margin: 0 !important;
     }
 
     .lvct-dash__stat {
         min-height: 0 !important;
+        height: auto !important;
         padding: 6px 4px !important;
-        gap: 2px !important;
+        gap: 1px !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
@@ -13482,14 +13483,18 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         text-align: center !important;
 
         .lvct-dash__stat-top {
-            justify-content: center !important;
-            gap: 3px !important;
-            font-size: 11px !important;
+            display: none !important;
         }
 
         b {
             font-size: 18px !important;
             line-height: 1.15 !important;
+            margin: 0 !important;
+        }
+
+        > span {
+            font-size: 11px !important;
+            line-height: 1.2 !important;
         }
 
         .lvct-dash__stat-ft {

@@ -1458,8 +1458,8 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 </div>
             </div>
 
-            <!-- 周度 7 天时序滑轨（Weekly Glance Strip） -->
-            {#if weekGlanceDays.length > 0}
+            <!-- 周度 7 天时序滑轨（Weekly Glance Strip：手机端仅在本周确有生日或跟进事项时展示，释放首屏给真实联系人） -->
+            {#if weekGlanceDays.length > 0 && (!isMobileScreen || weekGlanceDays.some((d) => d.totalEvents > 0))}
                 <div class="lvct-week-glance" role="region" aria-label="本周人脉日程滑轨">
                     <div class="lvct-week-glance__header">
                         <span class="lvct-week-glance__title" style="display: inline-flex; align-items: center;"><Calendar size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 本周日程视窗</span>
