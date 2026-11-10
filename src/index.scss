@@ -3295,6 +3295,24 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
     }
 }
 
+@media (max-width: 640px), (pointer: coarse) {
+    .lvct-notice {
+        padding: 8px 14px;
+        min-height: 40px;
+    }
+    .lvct-notice__action {
+        min-height: 34px;
+        padding: 4px 12px;
+        font-size: 12px;
+        touch-action: manipulation;
+    }
+    .lvct-notice__dismiss-btn {
+        min-width: 34px;
+        min-height: 34px;
+        touch-action: manipulation;
+    }
+}
+
 html[data-theme-mode="dark"] .lvct-notice {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
