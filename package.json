@@ -45,22 +45,22 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@types/cytoscape": "^3.31.0",
     "@types/livereload": "^0.9.5",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "cross-env": "^10.1.0",
     "fast-glob": "^3.3.3",
     "livereload": "^0.10.3",
     "npm-run-all": "^4.1.5",
-    "sass": "^1.106.1",
+    "sass": "^1.108.1",
     "siyuan": "1.2.7",
-    "svelte": "^5.57.2",
-    "svelte-check": "^4.7.7",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
     "typescript": "^6.0.3",
-    "vite": "^8.3.5",
+    "vite": "^8.3.6",
     "vite-plugin-static-copy": "^4.1.1",
     "vite-plugin-zip-pack": "^1.2.4"
   },
   "dependencies": {
-    "@lucide/svelte": "^1.61.0",
+    "@lucide/svelte": "^1.70.0",
     "cytoscape": "^3.34.4"
   }
 }
