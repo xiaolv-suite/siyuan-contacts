@@ -11,11 +11,31 @@ export async function copyPlainText(value: string): Promise<void> {
             // A rejected asynchronous request is reported to the caller. Starting a
             // second copy after navigation could steal focus from a different view.
             await navigator.clipboard.writeText(value);
+            notifyCopySuccess(value);
             return;
         }
         copyWithSelection(value);
+        notifyCopySuccess(value);
     } finally {
         copyPending = false;
+    }
+}
+
+function notifyCopySuccess(val: string): void {
+    if (typeof window !== "undefined" && typeof (window as any).__LV_NOTICE_HUB__ !== "undefined") {
+        try {
+            const previewText = val.length > 20 ? val.slice(0, 18) + "…" : val;
+            (window as any).__LV_NOTICE_HUB__.post({
+                id: `copy_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+                mode: "capsule",
+                source: "人脉",
+                message: `已复制：${previewText.replace(/\n/g, " ")}`,
+                duration: 1600,
+                level: "success",
+                createdAt: Date.now(),
+                repeatCount: 1,
+            });
+        } catch { /* soft feedback */ }
     }
 }
 
