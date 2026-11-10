@@ -1,0 +1,1155 @@
+<script lang="ts">
+    import { requestErrorMessage } from "../shared/error-presenter";
+    /**
+     * 主工作台：首页(仪表盘) + 联系人(卡片/表格) + 关系图谱。
+     * 人物详情弹窗在此层统一承载，各视图共用。
+     */
+    import PeopleView from "./people/PeopleView.svelte";
+    import PersonDetail from "./people/PersonDetail.svelte";
+    import RelationGraphLoader from "./graph/RelationGraphLoader.svelte";
+    import DashboardView from "./dashboard/DashboardView.svelte";
+    import LvctDialog from "./LvctDialog.svelte";
+    import OrgsView from "./org/OrgsView.svelte";
+    import OrgManagerDialog from "./org/OrgManagerDialog.svelte";
+    import OrganizationProfileEditor from "./org/OrganizationProfileEditor.svelte";
+    import { createCloseScope, anyDirtyChanges } from "./close-guard";
+    import LvctIcon from "./LvctIcon.svelte";
+    import SettingsView from "./SettingsView.svelte";
+    import { getContext, onDestroy, onMount, tick } from "svelte";
+    import { translateText } from "../domain/translation";
+    import { subscribeDataChangedDebounced, subscribePersonNavigation, subscribeWorkbenchNavigation } from "../libs/data-events";
+    import { lvLaunchpad } from "../libs/lv-notice-kit";
+    import { isNavigationDocId, personReturnContext, resolveNavigationPerson } from "../domain/navigation";
+    import type { PersonReturnContext } from "../domain/navigation";
+    import StatusNotice from "./StatusNotice.svelte";
+    import { invalidateRoster } from "../services/roster";
+    import type { ContactsSettings } from "../domain/model";
+    import type { ViewPreferences } from "../domain/preferences";
+    import { normalizeViewPreferences } from "../domain/preferences";
+    import { createPreferenceRequests, savePreferenceChanges } from "../services/preferences";
+    import { createLifecycleToken, LIFECYCLE_CONTEXT, type LifecycleToken } from "../domain/lifecycle";
+    import type { ContactSummary } from "../domain/person";
+    import type { ContactsPluginFacade, WorkbenchView } from "../types";
+    import { OrganizationProfileConflictError } from "../data/organization-profiles";
+    import { normalizeOrganizationProfileDraft } from "../domain/organization-profile";
+
+    let {
+        facade,
+        settings,
+        preferences,
+        initialView,
+        isMobile,
+        onPreferencesUpdated,
+        onOpenPersonDoc,
+    }: {
+        facade: ContactsPluginFacade;
+        settings: ContactsSettings;
+        preferences: ViewPreferences;
+        initialView?: WorkbenchView;
+        onPreferencesUpdated: (preferences: ViewPreferences) => void;
+        isMobile: boolean;
+        onOpenPersonDoc: (docId: string) => void;
+    } = $props();
+
+    type ViewId = WorkbenchView;
+    const validViewIds: readonly ViewId[] = ["home", "people", "graph", "orgs", "settings"];
+    const WORKBENCH_HISTORY_KEY = "__lvctWorkbench";
+    type WorkbenchHistoryEntry = { view: ViewId; index: number };
+    function historyEntry(state: unknown = window.history.state): WorkbenchHistoryEntry | undefined {
+        if (!state || typeof state !== "object") return undefined;
+        const entry = (state as Record<string, unknown>)[WORKBENCH_HISTORY_KEY];
+        if (!entry || typeof entry !== "object") return undefined;
+        const { view, index } = entry as Partial<WorkbenchHistoryEntry>;
+        return validViewIds.includes(view as ViewId) && Number.isSafeInteger(index) && (index as number) >= 0
+            ? { view: view as ViewId, index: index as number }
+            : undefined;
+    }
+    let historyIndex = historyEntry()?.index ?? 0;
+    let historyNavigationRequest = 0;
+    function syncViewHistory(view: ViewId, mode: "push" | "replace"): void {
+        if (typeof window === "undefined" || !window.history?.pushState) return;
+        const previous = window.history.state;
+        // History state is structured-cloneable by definition; retain the host's object fields.
+        const state = previous && typeof previous === "object" && !Array.isArray(previous) ? { ...previous } : {};
+        if (mode === "push") historyIndex += 1;
+        state[WORKBENCH_HISTORY_KEY] = { view, index: historyIndex } satisfies WorkbenchHistoryEntry;
+        try {
+            window.history[mode === "push" ? "pushState" : "replaceState"](state, "", window.location.href);
+        } catch {
+            // Some embedded hosts restrict History API writes; navigation still works in-place.
+        }
+    }
+    // Keep the message object as an explicit reactive dependency.  Returning a
+    // function from `$derived` hid the actual `facade.i18n` read from derived
+    // values such as `viewMeta`, so their first render could retain Chinese
+    // fallback titles while the navigation (which calls `text` directly) had
+    // already switched to English.
+    const messages = $derived(facade.i18n);
+    const text = (key: string, fallback: string, values?: Record<string, string | number>) =>
+        translateText(messages, key, fallback, values);
+    const canLeave = createCloseScope();
+    const mountToken = getContext<LifecycleToken | undefined>(LIFECYCLE_CONTEXT);
+    const lifecycleToken = createLifecycleToken(mountToken);
+    onDestroy(lifecycleToken.invalidate);
+
+    const views: readonly { id: ViewId; label: string; shortLabel: string; enabled: boolean }[] = $derived(
+        isMobile
+            ? [
+                { id: "home", label: text("navHome", "首页"), shortLabel: text("navHome", "首页"), enabled: true },
+                { id: "people", label: text("navPeople", "联系人"), shortLabel: text("navPeople", "联系人"), enabled: true },
+            ]
+            : [
+                { id: "home", label: text("navHome", "首页"), shortLabel: text("navHome", "首页"), enabled: true },
+                { id: "people", label: text("navPeople", "联系人"), shortLabel: text("navPeople", "联系人"), enabled: true },
+                { id: "graph", label: text("navGraph", "关系图谱"), shortLabel: text("navGraphShort", "关系图"), enabled: true },
+                { id: "orgs", label: text("navOrganizations", "组织"), shortLabel: text("navOrganizations", "组织"), enabled: true },
+            ],
+    );
+
+    const viewMeta: Record<ViewId, { title: string; subtitle: string }> = $derived.by(() => {
+        // Read `messages` in this derived computation so a supplied locale is
+        // reflected in the page heading as well as in the sidebar labels.
+        const localized = messages;
+        const t = (key: string, fallback: string) => translateText(localized, key, fallback);
+        return {
+            // The page heading names the workspace section; the dashboard keeps
+            // its more conversational greeting inside the content area.
+            home: { title: t("navHome", "首页"), subtitle: t("dashHomeSubtitle", "把记忆变成下一步；每条提醒都说明出现原因") },
+            people: { title: t("navPeople", "联系人"), subtitle: t("peopleSubtitle", "管理你的联系人与资料") },
+            graph: { title: t("navGraph", "关系图谱"), subtitle: t("graphPageSubtitle", "只呈现当前范围内有来源的连接；没有连线不能证明两人没有关系") },
+            orgs: { title: t("navOrganizations", "组织"), subtitle: t("orgsSubtitle", "公司与学校等归属维度") },
+            settings: { title: t("navSettings", "设置"), subtitle: t("settingsSubtitle", "检查数据锚点与插件行为") },
+        };
+    });
+
+    // svelte-ignore state_referenced_locally
+    let current: ViewId = $state(initialView ?? historyEntry()?.view ?? preferences.defaultView);
+    // svelte-ignore state_referenced_locally
+    let currentSettings: ContactsSettings = $state(settings);
+    // svelte-ignore state_referenced_locally
+    let currentPreferences: ViewPreferences = $state(preferences);
+
+    /* Mobile Spec v1 · 下滑关闭：手机端 Dialog 全屏工作台支持顶部抓手下拉关闭 */
+    let dragStartY: number | null = null;
+    let dragActive = false;
+    function onDragHandleDown(event: PointerEvent) {
+        dragStartY = event.clientY;
+        dragActive = false;
+        try { (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId); } catch { /* 指针捕获失败不阻断 */ }
+    }
+    function onDragHandleMove(event: PointerEvent) {
+        if (dragStartY === null) return;
+        const dy = event.clientY - dragStartY;
+        if (dy <= 0) return;
+        dragActive = true;
+        if (workbenchElement) workbenchElement.style.transform = `translateY(${Math.round(dy)}px)`;
+    }
+    function onDragHandleUp(event: PointerEvent) {
+        if (dragStartY === null) return;
+        const dy = event.clientY - dragStartY;
+        dragStartY = null;
+        if (workbenchElement) workbenchElement.style.transform = "";
+        if (!dragActive) return;
+        dragActive = false;
+        if (dy > 120) {
+            lvLaunchpad.haptic(12);
+            facade.closeWorkbenchDialog?.();
+        }
+    }
+
+    let preferencesNotice = $state("");
+    const preferenceRequests = createPreferenceRequests({
+        load: () => typeof facade.loadViewPreferences === "function"
+            ? facade.loadViewPreferences() : Promise.resolve(currentPreferences),
+        save: (next, baseline) => typeof facade.saveViewPreferences === "function"
+            ? savePreferenceChanges(facade, next, baseline) : Promise.resolve(next),
+        apply: applyPreferences,
+        fail: (error) => {
+            if (!lifecycleToken.isAlive()) return;
+            preferencesNotice = `偏好读取或保存失败，当前结果尚未核实：${requestErrorMessage(error)}`;
+        },
+    });
+    lifecycleToken.onDispose(preferenceRequests.dispose);
+
+    function applyPreferences(updated: ViewPreferences) {
+        if (!lifecycleToken.isAlive()) return;
+        if (updated.revision < currentPreferences.revision) return;
+        currentPreferences = updated;
+        preferencesNotice = "";
+        onPreferencesUpdated(updated);
+    }
+
+    function savePreferences(next: ViewPreferences, baseline?: ViewPreferences): Promise<ViewPreferences> {
+        const effectiveBaseline = normalizeViewPreferences(baseline ?? currentPreferences);
+        return preferenceRequests.save(next, effectiveBaseline);
+    }
+    let detailPerson: ContactSummary | null = $state(null);
+    let peopleGroups: string[] = $state([]);
+    let detailReturn = $state<PersonReturnContext | null>(null);
+    let organizationOpen = $state(false);
+    let organizationDocId = $state("");
+    let organizationProfileOpen = $state(false);
+    let organizationProfileSaving = $state(false);
+    let organizationProfileError = $state("");
+    let organizationProfileReadOnly = $state(false);
+    let organizationProfileDocId = $state("");
+    let organizationProfileInitial = $state<Partial<import("../domain/organization-profile").OrganizationProfileDraft>>({});
+    // 编辑组织资料时保留打开瞬间的基线；保存前由数据层拒绝覆盖其他窗口的新版本。
+    let organizationProfileExpected = $state<import("../domain/organization-profile").OrganizationProfileDraft | null | undefined>(undefined);
+    let organizationProfileCreatedDraft = $state<import("../domain/organization-profile").OrganizationProfileDraft | null>(null);
+    let organizationProfileEditor: { requestClose: () => Promise<boolean> } | undefined = $state();
+    let returnToContactAfterOrganizationProfile = $state(false);
+    let organizationProfileCompletion: ((created?: { docId: string; name: string }) => void) | null = $state(null);
+    let workbenchElement: HTMLDivElement | undefined = $state();
+    let keyboardOpen = $state(false);
+    const shouldHideBottomNav = $derived(
+        keyboardOpen || Boolean(detailPerson || organizationOpen || organizationProfileOpen)
+    );
+
+    async function closeWorkbenchSafely() {
+        if (!(await canLeave.requestClose())) return;
+        if (facade.closeWorkbenchDialog) {
+            facade.closeWorkbenchDialog();
+            return;
+        }
+        const hostClose = workbenchElement?.closest(".b3-dialog")?.querySelector<HTMLElement>(".b3-dialog__close");
+        hostClose?.click();
+    }
+    let peopleView: {
+        focusContact: (itemId: string) => Promise<"restored" | "cancelled" | "missing">;
+        cancelContactFocus: () => void;
+    } | undefined = $state();
+    let graphInitialCenterDocId = $state("");
+    let graphInitialOrgDocId = $state("");
+    let navigationError = $state("");
+    let navigationRequest = 0;
+    type ReturnDom = { trigger: HTMLElement | null; personItemId: string | null; scrolls: Array<{ element: HTMLElement; top: number; left: number }> };
+    let detailDom: ReturnDom | null = null;
+    let organizationDom: ReturnDom | null = null;
+
+    function captureReturn(trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null): ReturnDom {
+        const elements = new Set<HTMLElement>();
+        let ancestor = trigger;
+        while (ancestor) { elements.add(ancestor); ancestor = ancestor.parentElement; }
+        const body = workbenchElement?.querySelector<HTMLElement>(".lvct-workbench__body");
+        if (body) elements.add(body);
+        return { trigger, personItemId: trigger?.closest<HTMLElement>("[data-person-item-id]")?.dataset.personItemId ?? null,
+            scrolls: [...elements].map((element) => ({ element, top: element.scrollTop, left: element.scrollLeft })) };
+    }
+
+    async function restoreReturn(snapshot: ReturnDom | null, context?: PersonReturnContext | null) {
+        const request = navigationRequest;
+        await tick();
+        if (!lifecycleToken.isAlive() || request !== navigationRequest || detailPerson) return;
+        const contactFocus = snapshot?.personItemId && current === "people" && peopleView
+            ? await peopleView.focusContact(snapshot.personItemId) : "missing";
+        if (!lifecycleToken.isAlive() || request !== navigationRequest || detailPerson || contactFocus === "cancelled") return;
+        for (const position of snapshot?.scrolls ?? []) {
+            if (position.element.isConnected) { position.element.scrollTop = position.top; position.element.scrollLeft = position.left; }
+        }
+        if (contactFocus === "restored") return;
+        const documentTrigger = context?.kind === "document"
+            ? document.querySelector<HTMLElement>(`.lvct-doc-strip[data-person-doc-id="${context.docId}"] [data-lvct-person-entry]`) : null;
+        const fallback = organizationOpen ? document.querySelector<HTMLElement>(".lvct-org-manager__members input")
+            : workbenchElement?.querySelector<HTMLElement>("h1");
+        (snapshot?.trigger?.isConnected ? snapshot.trigger : documentTrigger ?? fallback)?.focus({ preventScroll: true });
+    }
+
+    async function closeDetail() {
+        const context = detailReturn;
+        const snapshot = detailDom;
+        detailPerson = null;
+        detailReturn = null;
+        detailDom = null;
+        navigationRequest += 1;
+        if (context?.kind === "document") onOpenPersonDoc(context.docId);
+        await restoreReturn(snapshot, context);
+    }
+
+    async function openOrganization(docId = "") {
+        if (docId && !isNavigationDocId(docId)) { navigationError = "组织导航 ID 非法"; return; }
+        if (!(await canLeave.requestClose()) || !lifecycleToken.isAlive()) return;
+        navigationError = "";
+        if (!organizationOpen) organizationDom = captureReturn();
+        detailPerson = null;
+        detailReturn = null;
+        organizationDocId = docId;
+        organizationOpen = true;
+    }
+
+    function showCreateOrganization(returnToContact = false, initialName = ""): void {
+        if (!lifecycleToken.isAlive()) return;
+        navigationError = "";
+        returnToContactAfterOrganizationProfile = returnToContact;
+        organizationProfileError = "";
+        organizationProfileReadOnly = false;
+        organizationProfileDocId = "";
+        organizationProfileInitial = { name: initialName.trim() };
+        organizationProfileExpected = undefined;
+        organizationProfileCreatedDraft = null;
+        organizationProfileOpen = true;
+    }
+
+    /** 在联系人编辑中创建组织时，等待资料弹窗完成后再刷新候选。 */
+    function openCreateOrganizationForContact(initialName?: string): Promise<void | { docId: string; name: string }> {
+        if (!lifecycleToken.isAlive() || organizationProfileOpen) return Promise.resolve();
+        return new Promise((resolve) => {
+            organizationProfileCompletion = (created) => { organizationProfileCompletion = null; resolve(created); };
+            showCreateOrganization(true, initialName);
+        });
+    }
+
+    async function openCreateOrganization() {
+        if (!(await canLeave.requestClose()) || !lifecycleToken.isAlive()) return;
+        showCreateOrganization();
+    }
+
+    async function openEditOrganizationProfile(docId: string) {
+        if (!(await canLeave.requestClose()) || !lifecycleToken.isAlive()) return;
+        navigationError = "";
+        organizationProfileError = "";
+        organizationProfileReadOnly = true;
+        organizationProfileDocId = docId;
+        organizationProfileInitial = {};
+        organizationProfileExpected = undefined;
+        organizationProfileCreatedDraft = null;
+        let profileError = "";
+        let profile: import("../domain/organization-profile").OrganizationProfileDraft | undefined;
+        let org: { name: string } | undefined;
+        try {
+            profile = (await facade.loadOrganizationProfile?.(docId)) ?? undefined;
+        } catch (error) {
+            profileError = requestErrorMessage(error);
+        }
+        try {
+            org = (await facade.listOrganizations()).find((item) => item.docId === docId);
+        } catch (error) {
+            profileError ||= requestErrorMessage(error);
+        }
+        if (!lifecycleToken.isAlive() || organizationProfileDocId !== docId) return;
+        organizationProfileInitial = profile ?? { name: org?.name ?? "" };
+        organizationProfileExpected = profile ?? null;
+        organizationProfileReadOnly = Boolean(profileError);
+        organizationProfileError = profileError ? `读取组织资料失败：${profileError}。可先核对内容后重试保存。` : "";
+        organizationProfileOpen = true;
+        if (profileError) {
+            queueMicrotask(() => document.querySelector<HTMLElement>(".lvct-org-profile-editor .lvct-form__error")?.focus());
+        }
+    }
+
+    async function retryOrganizationProfile(): Promise<void> {
+        const docId = organizationProfileDocId;
+        if (!docId || organizationProfileSaving) return;
+        organizationProfileOpen = false;
+        await tick();
+        if (lifecycleToken.isAlive()) await openEditOrganizationProfile(docId);
+    }
+
+    async function saveOrganizationProfile(draft: import("../domain/organization-profile").OrganizationProfileDraft) {
+        if (!lifecycleToken.isAlive()) return;
+        organizationProfileSaving = true;
+        organizationProfileError = "";
+        try {
+            let docId = organizationProfileDocId;
+            if (docId && organizationProfileCreatedDraft) {
+                const original = organizationProfileCreatedDraft;
+                const fingerprint = JSON.stringify(normalizeOrganizationProfileDraft(original));
+                if (JSON.stringify(normalizeOrganizationProfileDraft(draft)) !== fingerprint) throw new Error("组织资料仍待核实，请恢复首次提交的名称和资料后重试；不能用新输入覆盖原请求");
+                if (!facade.loadOrganizationProfile || !facade.saveOrganizationProfile) throw new Error("当前环境不能核实组织资料，请重新加载插件后核对；原组织不会再次创建");
+                const current = (await facade.listOrganizations()).find((org) => org.docId === docId);
+                if (!lifecycleToken.isAlive()) return;
+                if (!current || current.name.trim() !== original.name) throw new Error("组织名称或可用状态已变化，请从组织页面重新核对；本次未改名或覆盖资料");
+                const profile = await facade.loadOrganizationProfile(docId);
+                if (!lifecycleToken.isAlive()) return;
+                if (profile && JSON.stringify(normalizeOrganizationProfileDraft(profile)) !== fingerprint) throw new OrganizationProfileConflictError(docId);
+                if (!profile) await facade.saveOrganizationProfile(docId, original, null);
+                if (!lifecycleToken.isAlive()) return;
+            } else if (docId) {
+                if (!facade.saveOrganizationProfile) throw new Error("当前环境不支持编辑组织资料，请重新加载插件后重试");
+                const current = (await facade.listOrganizations()).find((org) => org.docId === docId);
+                if (!lifecycleToken.isAlive()) return;
+                if (current && current.name !== draft.name.trim()) await facade.renameOrganization?.(docId, draft.name.trim());
+                await facade.saveOrganizationProfile(docId, draft, organizationProfileExpected);
+                if (!lifecycleToken.isAlive()) return;
+            } else {
+                const created = await facade.createOrganization(draft.name, draft);
+                if (!lifecycleToken.isAlive()) return;
+                docId = created.docId;
+                if (created.profileSaved === false) {
+                    organizationProfileDocId = docId;
+                    organizationProfileInitial = draft;
+                    organizationProfileExpected = null;
+                    organizationProfileCreatedDraft = normalizeOrganizationProfileDraft(draft);
+                    organizationProfileError = `组织已创建，但资料尚未保存：${created.profileError ?? "请重试"}`;
+                    return;
+                }
+            }
+            organizationProfileOpen = false;
+            organizationProfileDocId = "";
+            organizationProfileInitial = {};
+            organizationProfileExpected = undefined;
+            organizationProfileCreatedDraft = null;
+            organizationProfileReadOnly = false;
+            if (returnToContactAfterOrganizationProfile) {
+                returnToContactAfterOrganizationProfile = false;
+                organizationProfileCompletion?.({ docId, name: draft.name.trim() });
+                return;
+            }
+            await openOrganization(docId);
+        } catch (error) {
+            if (lifecycleToken.isAlive()) {
+                if (error instanceof OrganizationProfileConflictError) organizationProfileReadOnly = true;
+                organizationProfileError = requestErrorMessage(error);
+            }
+        } finally {
+            if (lifecycleToken.isAlive()) organizationProfileSaving = false;
+        }
+    }
+
+    async function closeOrganization() {
+        organizationOpen = false;
+        organizationDocId = "";
+        detailPerson = null;
+        detailReturn = null;
+        navigationRequest += 1;
+        await restoreReturn(organizationDom);
+        organizationDom = null;
+    }
+
+    async function openPersonByDocId(docId: string, context?: PersonReturnContext, trigger?: HTMLElement) {
+        if (!(await canLeave.requestClose()) || !lifecycleToken.isAlive()) return;
+        const request = ++navigationRequest;
+        const snapshot = detailPerson ? detailDom : captureReturn(trigger);
+        try {
+            const people = await facade.listContacts();
+            if (!lifecycleToken.isAlive() || request !== navigationRequest) return;
+            const person = resolveNavigationPerson(people, docId);
+            if (!detailPerson) {
+                detailReturn = context ?? personReturnContext(current, organizationOpen && organizationDocId ? { orgDocId: organizationDocId } : undefined);
+                detailDom = snapshot;
+            }
+            navigationError = "";
+            showDetail(person);
+        } catch (error) {
+            if (lifecycleToken.isAlive() && request === navigationRequest) navigationError = requestErrorMessage(error);
+        }
+    }
+    const detailCloseLabel = $derived(detailReturn?.kind === "organization" ? text("routeReturnOrganization", "返回原组织")
+        : detailReturn?.kind === "document" ? text("routeReturnDocument", "返回原文档")
+            : text("routeReturnView", "返回{view}", { view: viewMeta[detailReturn?.view ?? current].title }));
+    let detailKey = $state(0);
+    let peopleOrder: ContactSummary[] = $state([]);
+    let globalSearch = $state("");
+    let createRequested = $state(0);
+    let importRequested = $state(0);
+    let vcardRequested = $state(0);
+    let occasionRequested = $state(0);
+    let regionExplorerRequested = $state(0);
+    let regionExplorerInitialCity = $state("");
+    let dataRevision = $state(0);
+    let peopleFocusIds: string[] = $state([]);
+    let peopleFocusLabel = $state("");
+    let peopleFocusSort: "name" | "group" | "birthday" | "recent" | undefined = $state(undefined);
+    let detailInitialTab: "overview" | "activity" | "relations" = $state("overview");
+    const currentMeta = $derived(viewMeta[current]);
+
+    async function openDetail(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
+        if (!lifecycleToken.isAlive()) return;
+        if (detailPerson && !(await canLeave.requestClose())) return;
+        if (!lifecycleToken.isAlive()) return;
+        detailInitialTab = initialTab;
+        showDetail(person);
+    }
+
+    function showDetail(person: ContactSummary) {
+        if (!lifecycleToken.isAlive()) return;
+        navigationRequest += 1;
+        peopleView?.cancelContactFocus();
+        if (!detailReturn) {
+            detailReturn = personReturnContext(current);
+            detailDom = captureReturn();
+        }
+        detailPerson = person;
+        detailKey += 1; // 同一人重复打开时重置内部状态
+    }
+
+    function clearPeopleFocus() {
+        peopleFocusIds = [];
+        peopleFocusLabel = "";
+        peopleFocusSort = undefined;
+    }
+
+    async function selectView(view: ViewId, options: { history?: "push" | "replace" | "none" } = {}): Promise<boolean> {
+        if (options.history !== "none") historyNavigationRequest += 1;
+        if (!lifecycleToken.isAlive()) return false;
+        const previousView = current;
+        if ((view !== current || detailPerson || organizationOpen) && !(await canLeave.requestClose())) return false;
+        if (!lifecycleToken.isAlive()) return false;
+        current = view;
+        if (options.history !== "none" && (view !== previousView || detailPerson || organizationOpen)) syncViewHistory(view, options.history ?? "push");
+        detailPerson = null;
+        detailReturn = null;
+        organizationOpen = false;
+        navigationRequest += 1;
+        if (view !== "people") {
+            createRequested = 0;
+            importRequested = 0;
+            vcardRequested = 0;
+            occasionRequested = 0;
+            regionExplorerRequested = 0;
+            regionExplorerInitialCity = "";
+        }
+        clearPeopleFocus();
+        return true;
+    }
+
+    async function requestPeopleAction(action: "create" | "import" | "vcard" | "occasion"): Promise<void> {
+        if (!(await selectView("people"))) return;
+        if (action === "create") createRequested += 1;
+        if (action === "import") importRequested += 1;
+        if (action === "vcard") vcardRequested += 1;
+        if (action === "occasion") occasionRequested += 1;
+    }
+
+    async function submitGlobalSearch() {
+        const query = globalSearch.trim();
+        if (!query) return;
+        globalSearch = query;
+        await selectView("people");
+    }
+
+    async function openPeople(focus?: { itemIds?: readonly string[]; label?: string; sort?: "name" | "group" | "birthday" | "recent"; workQuery?: string; memberDocIds?: readonly string[] }) {
+        if (!lifecycleToken.isAlive()) return;
+        if (current !== "people" && !(await canLeave.requestClose())) return;
+        if (!lifecycleToken.isAlive()) return;
+        const previousView = current;
+        current = "people";
+        if (previousView !== "people") syncViewHistory("people", "push");
+
+        let targetItemIds: string[] = [];
+        if (focus?.itemIds && focus.itemIds.length > 0) {
+            targetItemIds = [...focus.itemIds];
+        } else if (focus?.memberDocIds && focus.memberDocIds.length > 0) {
+            const docIdSet = new Set(focus.memberDocIds);
+            const source = peopleOrder.length > 0 ? peopleOrder : await facade.listContacts().catch(() => []);
+            if (!lifecycleToken.isAlive()) return;
+            targetItemIds = source.filter((p) => docIdSet.has(p.docId)).map((p) => p.itemId);
+        }
+
+        peopleFocusIds = targetItemIds;
+        peopleFocusLabel = focus?.label ?? "";
+        peopleFocusSort = focus?.sort;
+    }
+
+    async function openGraphPerson(docId: string) {
+        if (!lifecycleToken.isAlive()) return;
+        if (detailPerson && !(await canLeave.requestClose())) return;
+        detailPerson = null;
+        graphInitialCenterDocId = docId;
+        graphInitialOrgDocId = "";
+        await selectView("graph");
+    }
+
+    async function openGraphOrg(orgDocId: string) {
+        if (!lifecycleToken.isAlive()) return;
+        if (detailPerson && !(await canLeave.requestClose())) return;
+        detailPerson = null;
+        graphInitialCenterDocId = "";
+        graphInitialOrgDocId = orgDocId;
+        await selectView("graph");
+    }
+
+    onMount(() => {
+        // Store the selected in-plugin view in the current history entry without changing
+        // the host URL; this preserves browser Back/Forward and refresh restoration safely.
+        const restored = historyEntry();
+        if (!initialView && restored) current = restored.view;
+        else syncViewHistory(current, "replace");
+        const handlePopState = (event: PopStateEvent) => {
+            const target = historyEntry(event.state);
+            if (!target || target.index === historyIndex && target.view === current) return;
+            const previousIndex = historyIndex;
+            const request = ++historyNavigationRequest;
+            void selectView(target.view, { history: "none" }).then((accepted) => {
+                if (request !== historyNavigationRequest) return;
+                if (accepted) historyIndex = target.index;
+                else if (target.index !== previousIndex) window.history.go(previousIndex - target.index);
+            });
+        };
+        window.addEventListener("popstate", handlePopState);
+        lifecycleToken.onDispose(() => window.removeEventListener("popstate", handlePopState));
+        const unsubscribePerson = subscribePersonNavigation(facade, (request) => {
+            void (async () => {
+                if (!lifecycleToken.isAlive()) return;
+                await openPersonByDocId(request.docId, personReturnContext(current, { docId: request.docId }), request.trigger);
+            })();
+        }, lifecycleToken);
+        lifecycleToken.onDispose(unsubscribePerson);
+        const unsubscribeWorkbenchNav = subscribeWorkbenchNavigation(facade, (request) => {
+            void (async () => {
+                if (!lifecycleToken.isAlive()) return;
+                if (request.openRegionExplorer) {
+                    if (!(await selectView("people"))) return;
+                    regionExplorerInitialCity = request.openRegionExplorer.city ?? "";
+                    regionExplorerRequested += 1;
+                    return;
+                }
+                if (request.editOrgDocId) {
+                    if (!(await selectView("orgs"))) return;
+                    await openEditOrganizationProfile(request.editOrgDocId);
+                    return;
+                }
+                if (request.view === "people" && request.focus) {
+                    await openPeople(request.focus);
+                } else {
+                    await selectView(request.view);
+                }
+            })();
+        }, lifecycleToken);
+        lifecycleToken.onDispose(unsubscribeWorkbenchNav);
+        const handleRequestedView = (event: Event) => {
+            if (!lifecycleToken.isAlive()) return;
+            const detail = (event as CustomEvent<{
+                view?: string;
+                facade?: ContactsPluginFacade;
+                token?: LifecycleToken;
+                focus?: { itemIds?: readonly string[]; label?: string; sort?: "name" | "group" | "birthday" | "recent"; workQuery?: string; memberDocIds?: readonly string[] };
+            }>).detail;
+            if (detail?.facade && detail.facade !== facade) return;
+            if (detail?.token && !detail.token.isAlive()) return;
+            if (detail?.token && mountToken !== detail.token) return;
+            const view = detail?.view;
+            if (view === "people" && detail?.focus) {
+                void openPeople(detail.focus);
+            } else if (view === "home" || view === "people" || view === "graph" || view === "orgs" || view === "settings") {
+                void selectView(view);
+            }
+        };
+        window.addEventListener("lvct-workbench-view", handleRequestedView);
+        lifecycleToken.onDispose(() => window.removeEventListener("lvct-workbench-view", handleRequestedView));
+        const handleRequestedOrganizationCreate = (event: Event) => {
+            const detail = (event as CustomEvent<{ facade?: ContactsPluginFacade; returnToContact?: boolean; initialName?: string; completion?: (created?: { docId: string; name: string }) => void }>).detail;
+            if (detail?.facade && detail.facade !== facade) return;
+            if (organizationProfileOpen) { detail?.completion?.(); return; }
+            organizationProfileCompletion = detail?.completion ?? null;
+            showCreateOrganization(detail?.returnToContact === true, detail?.initialName);
+        };
+        window.addEventListener("lvct-workbench-create-organization", handleRequestedOrganizationCreate);
+        lifecycleToken.onDispose(() => window.removeEventListener("lvct-workbench-create-organization", handleRequestedOrganizationCreate));
+        // 外部联系人表单可能正在等待组织资料弹窗结束；工作台卸载时也要
+        // 收口该 Promise，避免宿主先卸载工作台后联系人一直停在“组织创建中”。
+        lifecycleToken.onDispose(() => {
+            organizationProfileCompletion?.();
+            organizationProfileCompletion = null;
+            returnToContactAfterOrganizationProfile = false;
+        });
+        // B13.6a：组织管理弹窗成员「查看详情」跨弹窗导航（弹窗先关，人物详情由本层打开）
+        const handleRequestedPerson = (event: Event) => {
+            const person = (event as CustomEvent<{ person?: ContactSummary }>).detail?.person;
+            if (person?.docId) void openDetail(person);
+        };
+        window.addEventListener("lvct-workbench-person", handleRequestedPerson);
+        return () => {
+            lifecycleToken.invalidate();
+            window.removeEventListener("lvct-workbench-view", handleRequestedView);
+            window.removeEventListener("lvct-workbench-create-organization", handleRequestedOrganizationCreate);
+            window.removeEventListener("lvct-workbench-person", handleRequestedPerson);
+        };
+    });
+
+    // FUNC-01.7：跨窗口/宿主数据变化 → 防抖合并后 bump revision 原地刷新（筛选与人物详情上下文保留）；
+    // 有未保存草稿时不静默：追加一条可见提示（草稿在弹窗本地状态中，列表刷新不覆盖草稿）。
+    let dataChangeNotice = $state("");
+    onMount(() => {
+        if (!lifecycleToken.isAlive()) return;
+        let unbindVv: (() => void) | null = null;
+        if (typeof window !== "undefined") {
+            const vv = window.visualViewport;
+            let baselineH = Math.max(window.innerHeight || 0, Math.round(vv?.height ?? 0));
+            const syncViewportAndModals = () => {
+                const innerH = window.innerHeight || 0;
+                const rawH = vv ? vv.height : innerH;
+                const vvH = Math.max(180, Math.round(rawH || innerH));
+                if (vvH > baselineH) baselineH = vvH;
+                workbenchElement?.style.setProperty("--lvct-vv-h", `${vvH}px`);
+                const dialogContainer = workbenchElement?.closest<HTMLElement>(".b3-dialog__container");
+                dialogContainer?.style.setProperty("--lvct-vv-h", `${vvH}px`);
+                keyboardOpen = Math.max(baselineH, innerH) - vvH > 110;
+            };
+            syncViewportAndModals();
+            vv?.addEventListener("resize", syncViewportAndModals);
+            vv?.addEventListener("scroll", syncViewportAndModals);
+            window.addEventListener("resize", syncViewportAndModals);
+            unbindVv = () => {
+                vv?.removeEventListener("resize", syncViewportAndModals);
+                vv?.removeEventListener("scroll", syncViewportAndModals);
+                window.removeEventListener("resize", syncViewportAndModals);
+            };
+        }
+        void preferenceRequests.load().catch(() => {});
+        const unsubscribe = subscribeDataChangedDebounced((change) => {
+            if (!lifecycleToken.isAlive()) return;
+            // 偏好保存已经在当前工作台即时应用。它会通过同一事件通道通知其它
+            // 工作台，但当前实例无需因此重新读取联系人名册；否则切换卡片/表格
+            // 时会被无关的 loading 骨架短暂替换，连续保存还会造成多次闪烁。
+            const hasDataScope = Boolean(change.topics?.length || change.docIds?.length);
+            const preferenceRevision = change.preferencesRevision;
+            const preferenceOnly = preferenceRevision !== undefined && !change.preferencesError && !hasDataScope;
+            if (preferenceOnly && preferenceRevision <= currentPreferences.revision) return;
+            if (change.preferencesError) {
+                preferencesNotice = `偏好读取失败，当前值尚未核实：${change.preferencesError}`;
+            }
+            if (preferenceOnly) {
+                // 外部窗口的偏好变更需要应用到当前工作台，但不应触发联系人名册刷新。
+                void preferenceRequests.load().catch(() => {});
+                return;
+            }
+            dataRevision += 1;
+            void preferenceRequests.load().catch(() => {});
+            if (anyDirtyChanges()) {
+                dataChangeNotice = text("dataChangedWhileEditing", "数据已在其他窗口更新：列表已刷新，未保存的草稿已保留。");
+            }
+        }, { invalidate: () => { invalidateRoster(); preferenceRequests.invalidate(); }, token: lifecycleToken });
+        return () => {
+            unbindVv?.();
+            lifecycleToken.invalidate();
+            unsubscribe();
+            preferenceRequests.dispose();
+        };
+    });
+</script>
+
+<div
+    class="lvct-workbench"
+    class:lvct-workbench--keyboard-open={keyboardOpen}
+    class:lvct-workbench--hide-bottom-nav={shouldHideBottomNav}
+    data-narrow={isMobile ? "true" : undefined}
+    data-lvct-theme={currentPreferences.themeScheme || "cognac"}
+    bind:this={workbenchElement}
+>
+    {#if isMobile}
+        <div
+            class="lvct-workbench__drag-zone"
+            role="presentation"
+            aria-hidden="true"
+            onpointerdown={onDragHandleDown}
+            onpointermove={onDragHandleMove}
+            onpointerup={onDragHandleUp}
+            onpointercancel={onDragHandleUp}
+        >
+            <span class="lvct-workbench__drag-pill"></span>
+        </div>
+    {/if}
+    <aside class="lvct-workbench__sidebar" aria-label={text("navigationLabel", "小驴人脉导航")}>
+        <div class="lvct-workbench__brand">
+            <span class="lvct-workbench__brand-mark">
+                {#if currentPreferences.brandAvatarImage}
+                    <img src={currentPreferences.brandAvatarImage} alt="" width="40" height="40" decoding="async" />
+                {:else}
+                    {currentPreferences.brandAvatar || "驴"}
+                {/if}
+            </span>
+            <span>
+                <b>{text("tabTitle", "小驴人脉")}</b>
+                <small>Lv Contacts</small>
+            </span>
+        </div>
+        <nav class="lvct-workbench__nav">
+            <span class="lvct-workbench__nav-label">{text("navWorkspace", "工作台")}</span>
+            {#each views as view (view.id)}
+                <button
+                    class="lvct-workbench__nav-item"
+                    class:lvct-workbench__nav-item--active={current === view.id}
+                    disabled={!view.enabled}
+                    aria-current={current === view.id ? "page" : undefined}
+                    data-navigation-view={view.id}
+                    onclick={() => selectView(view.id)}
+                >
+            <span class="lvct-workbench__nav-icon" aria-hidden="true">{#if view.id === "home"}<LvctIcon name="iconHome" size={16}/>{:else if view.id === "people"}<LvctIcon name="iconAccount" size={16}/>{:else if view.id === "orgs"}<LvctIcon name="iconInbox" size={16}/>{:else}<LvctIcon name="iconGraph" size={16}/>{/if}</span><span class="lvct-workbench__nav-text">{isMobile ? view.shortLabel : view.label}</span>
+            </button>
+            {/each}
+            <button
+                class="lvct-workbench__nav-item lvct-workbench__nav-item--mobile-settings"
+                class:lvct-workbench__nav-item--active={current === "settings"}
+                aria-current={current === "settings" ? "page" : undefined}
+                onclick={() => selectView("settings")}
+            >
+                <span class="lvct-workbench__nav-icon" aria-hidden="true"><LvctIcon name="iconSettings" size={16}/></span>
+                <span class="lvct-workbench__nav-text">{text("navSettings", "设置")}</span>
+            </button>
+        </nav>
+        <div class="lvct-workbench__sidebar-footer">
+            <button class="lvct-workbench__nav-item" class:lvct-workbench__nav-item--active={current === "settings"} aria-current={current === "settings" ? "page" : undefined} title={text("openSettings", "打开插件设置")} onclick={() => selectView("settings")}>
+                <span class="lvct-workbench__nav-icon" aria-hidden="true"><LvctIcon name="iconSettings" size={16}/></span><span class="lvct-workbench__nav-text">{text("navSettings", "设置")}</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="lvct-workbench__main">
+        <header class="lvct-workbench__header" class:lvct-workbench__header--settings={current === "settings"}>
+            <div class="lvct-workbench__header-title-wrap">
+                <h1 tabindex="-1">{currentMeta.title}</h1>
+                <p>{currentMeta.subtitle}</p>
+            </div>
+            <div class="lvct-workbench__header-side-tools" style="display: flex; align-items: center; gap: 8px;">
+                {#if current === "home"}<div class="lvct-workbench__header-actions">
+                    <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
+                        onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
+                    <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><LvctIcon name="iconSearch" size={16}/><span class="lvct-workbench__header-btn-text">{text("homeSearchAction", "搜索")}</span></button>
+                    <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><LvctIcon name="iconAdd" size={16}/><span class="lvct-workbench__header-btn-text">{text("peopleCreate", "新建联系人")}</span></button>
+                </div>{/if}
+                <button
+                    type="button"
+                    class="lvct-workbench__mobile-close"
+                    aria-label={text("closeWorkbench", "关闭工作台")}
+                    title={text("closeWorkbench", "关闭工作台")}
+                    onclick={() => void closeWorkbenchSafely()}
+                >✕</button>
+            </div>
+        </header>
+        <StatusNotice message={dataChangeNotice} onDismiss={() => (dataChangeNotice = "")} />
+        <StatusNotice message={preferencesNotice} error />
+        <StatusNotice message={navigationError} error onDismiss={() => (navigationError = "")} />
+        {#if preferencesNotice}
+            <button class="b3-button b3-button--outline" onclick={() => preferenceRequests.load().catch(() => {})}>{text("reloadPreferencesBtn", "重新读取偏好")}</button>
+        {/if}
+        <div class="lvct-workbench__body">
+            {#if current === "home"}
+                <DashboardView
+                    {facade}
+                    revision={dataRevision}
+                    preferences={currentPreferences}
+                    onPreferencesChange={savePreferences}
+                    onOpenDetail={openDetail}
+                    onOpenPeople={openPeople}
+                    onOpenGraph={() => selectView("graph")}
+                    onCreate={() => void requestPeopleAction("create")}
+                    onImportVCard={() => void requestPeopleAction("vcard")}
+                    onImportDocuments={() => void requestPeopleAction("import")}
+                    onCreateOccasion={() => void requestPeopleAction("occasion")}
+                    {onOpenPersonDoc}
+                    onOpenOrganizations={() => void selectView("orgs")}
+                    onOpenSettings={() => void selectView("settings")}
+                    {isMobile}
+                />
+            {:else if current === "people"}
+                <PeopleView
+                    bind:this={peopleView}
+                    settings={currentSettings}
+                    i18n={facade.i18n}
+                    isMobile={isMobile}
+                    preferences={currentPreferences}
+                    loadRecentInteractions={() => facade.loadRecentInteractions()}
+                    initialSort={peopleFocusSort ?? currentPreferences.peopleSort}
+                    focusIds={peopleFocusIds}
+                    focusLabel={peopleFocusLabel}
+                    externalSearch={globalSearch}
+                    onExternalSearchCleared={() => (globalSearch = "")}
+                    onExternalSearchChange={(value) => (globalSearch = value)}
+                    {createRequested}
+                    {importRequested}
+                    {vcardRequested}
+                    {occasionRequested}
+                    {regionExplorerRequested}
+                    {regionExplorerInitialCity}
+                    onClearFocus={clearPeopleFocus}
+		                    revision={dataRevision}
+		                    onOpenDetail={openDetail}
+		                    activePersonId={detailPerson?.itemId ?? ""}
+                    onOrderChange={(ordered) => {
+                        if (ordered.map((person) => person.itemId).join("|") !== peopleOrder.map((person) => person.itemId).join("|")) peopleOrder = ordered;
+                    }}
+                    onGroupsChange={(groups) => {
+                        if (groups.join("|") !== peopleGroups.join("|")) peopleGroups = groups;
+                    }}
+                    onPreferencesChange={savePreferences}
+                    {onOpenPersonDoc}
+                    onOpenGraphPerson={openGraphPerson}
+                    onLoadOrgCandidates={async () => (await facade.listOrganizations()).map((org) => ({ docId: org.docId, name: org.name, archived: org.archived }))}
+                    onCreateOrganization={openCreateOrganizationForContact}
+                    onAddOrgMembership={(personDocId, orgDocId, extra) => facade.addOrganizationMember(orgDocId, personDocId, extra)}
+                    onCreateSelfProfile={() => facade.createSelfProfile()}
+                    onLoadSelfCandidates={() => facade.listContacts()}
+                    onCreateOccasion={facade.createOccasion ? async (input) => { await facade.createOccasion!(input); } : undefined}
+                    onExecuteMerge={facade.executeContactMerge ? (plan) => facade.executeContactMerge!(plan) : undefined}
+			                    onCreateBatchFlashcardsDoc={facade.createBatchFlashcardsDoc ? (people, options) => facade.createBatchFlashcardsDoc!(people, options) : undefined}
+			                    onLoadLifecycleStages={facade.loadAllLifecycleStages ? () => facade.loadAllLifecycleStages!() : undefined}
+			                    onBatchUpdateLifecycleStages={facade.batchUpdatePersonLifecycleStages ? (docIds, stage, date, note) => facade.batchUpdatePersonLifecycleStages!(docIds, stage, date, note) : undefined}
+                    onLoadCadences={facade.loadAllCadences ? () => facade.loadAllCadences!() : undefined}
+                    onListTrash={facade.listTrash ? () => facade.listTrash!() : undefined}
+                    onRestoreContactFromTrash={facade.restoreContactFromTrash ? (id) => facade.restoreContactFromTrash!(id) : undefined}
+                    onEmptyTrash={facade.emptyTrash ? () => facade.emptyTrash!() : undefined}
+                    onListOccasions={facade.listOccasions ? () => facade.listOccasions!() : undefined}
+                    onDeleteOccasion={facade.deleteOccasion ? (id) => facade.deleteOccasion!(id) : undefined}
+                    onPreviewSelfIdentityChange={(personItemId) => facade.previewSelfIdentityChange(personItemId)}
+                    onApplySelfIdentityChange={(preview) => facade.applySelfIdentityChange(preview)}
+                    onValidateExtended={async (details) => {
+                        if (details.orgMemberships.length) {
+                            const organizations = await facade.listOrganizations();
+                            for (const membership of details.orgMemberships) {
+                                const selected = organizations.find((org) => org.docId === membership.orgDocId);
+                                if (!selected || (membership.orgStatus === "active" && selected.archived)) throw new Error(`组织 ${membership.orgDocId} 不可用；当前归属不能加入已归档组织，请重新读取并选择`);
+                            }
+                        }
+                        if (details.relationshipLabels.trim() && !await facade.loadSelfIdentity()) {
+                            throw new Error("请先在设置中指定“我”的档案，再创建并填写与我的关系称谓");
+                        }
+                    }}
+                    onSaveExtended={async (person, details) => {
+                        if (details.orgMemberships.length) {
+                            const memberships = await facade.listPersonOrgMemberships(person.docId);
+                            for (const affiliation of details.orgMemberships) {
+                                const same = (membership: typeof memberships[number]) => membership.orgDocId === affiliation.orgDocId
+                                    && membership.status === affiliation.orgStatus && membership.statusLabel === (affiliation.orgStatusLabel.trim() || undefined)
+                                    && membership.affiliationKind === affiliation.orgAffiliationKind && membership.department === affiliation.orgDepartment.trim()
+                                    && membership.title === affiliation.orgTitle.trim() && membership.joinedOn === affiliation.orgJoinedOn && membership.leftOn === affiliation.orgLeftOn
+                                    && (membership.note ?? "") === (affiliation.orgNote?.trim() ?? "");
+                                if (memberships.some(same)) continue;
+                                if (affiliation.orgStatus === "active" && memberships.some((membership) => membership.orgDocId === affiliation.orgDocId && membership.status === "active")) {
+                                    throw new Error(`组织 ${affiliation.orgDocId} 已有当前归属，请核对原记录；未覆盖它`);
+                                }
+                                await facade.addOrganizationMember(affiliation.orgDocId, person.docId, {
+                                    department: affiliation.orgDepartment, title: affiliation.orgTitle, joinedOn: affiliation.orgJoinedOn,
+                                    leftOn: affiliation.orgLeftOn, status: affiliation.orgStatus,
+                                    statusLabel: affiliation.orgStatusLabel.trim(), affiliationKind: affiliation.orgAffiliationKind, note: affiliation.orgNote?.trim() ?? "",
+                                });
+                                memberships.push({ id: "", orgDocId: affiliation.orgDocId, orgName: "", department: affiliation.orgDepartment.trim(),
+                                    title: affiliation.orgTitle.trim(), joinedOn: affiliation.orgJoinedOn, leftOn: affiliation.orgLeftOn,
+                                    status: affiliation.orgStatus, statusLabel: affiliation.orgStatusLabel.trim() || undefined,
+                                    affiliationKind: affiliation.orgAffiliationKind, note: affiliation.orgNote?.trim() || undefined, archived: false, reachable: true });
+                            }
+                        }
+                        if (details.relationshipLabels.trim()) {
+                            const identity = await facade.loadSelfIdentity();
+                            if (!identity) throw new Error("请先在设置中指定“我”的档案，再保存与我的关系称谓");
+                            const labels = details.relationshipLabels.split(/[、,，\n]/).map((label) => label.trim()).filter(Boolean);
+                            const current = await facade.loadPersonRelationshipLabels(person.docId);
+                            if (current.selfDocId !== identity.selfDocId || JSON.stringify(current.record?.labels ?? []) !== JSON.stringify(labels)) {
+                                await facade.savePersonRelationshipLabels(person.docId, identity.selfDocId, labels, current.record);
+                            }
+                        }
+                        if (details.aliases.trim()) {
+                            const existingAliases = await facade.listPersonAliases(person.docId);
+                            const existing = new Set(existingAliases.map((alias) => alias.alias.trim().toLocaleLowerCase()));
+                            const aliases = details.aliases.split(/[、,，\n]/).map((alias) => alias.trim()).filter(Boolean);
+                            for (const alias of aliases) {
+                                const key = alias.toLocaleLowerCase();
+                                if (!existing.has(key)) {
+                                    await facade.addPersonAlias(person.docId, alias);
+                                    existing.add(key);
+                                }
+                            }
+                        }
+                        if (details.note.trim()) {
+                            const currentNote = await facade.loadPersonNote(person.docId);
+                            if (currentNote !== details.note.trim()) await facade.savePersonNote(person.docId, details.note.trim(), currentNote);
+                        }
+                    }}
+                />
+            {:else if current === "graph"}
+                <RelationGraphLoader
+                    settings={currentSettings}
+                    {facade}
+                    revision={dataRevision}
+                    preferences={currentPreferences}
+                    onPreferencesChange={savePreferences}
+                    onOpenDetail={openDetail}
+                    onOpenPeople={(focus) => void openPeople(focus)}
+                    onOpenCreatePerson={() => void requestPeopleAction("create")}
+                    onOpenOrgs={(docId) => docId ? void openOrganization(docId) : selectView("orgs")}
+                    initialCenterDocId={graphInitialCenterDocId}
+                    initialOrgDocId={graphInitialOrgDocId}
+                />
+            {:else if current === "orgs"}
+                <OrgsView
+                    {facade}
+                    revision={dataRevision}
+                    i18n={facade.i18n}
+                    onOpenOrgManager={(docId) => void openOrganization(docId)}
+                    onCreateOrganization={() => void openCreateOrganization()}
+                    onEditOrganization={(docId) => void openEditOrganizationProfile(docId)}
+                    onOpenPeople={(focus) => void openPeople(focus)}
+                    onOpenGraphOrg={openGraphOrg}
+                    onOpenPerson={(docId) => void openPersonByDocId(docId, personReturnContext(current))}
+                />
+            {:else if current === "settings"}
+                <SettingsView
+                    {facade}
+                    i18n={facade.i18n}
+                    settings={currentSettings}
+                    preferences={currentPreferences}
+                    onSettingsUpdated={(updated) => {
+                        currentSettings = updated;
+                        detailPerson = null;
+                        clearPeopleFocus();
+                        dataRevision += 1;
+                    }}
+                    onPreferencesUpdated={applyPreferences}
+                    onBack={() => (current = "home")}
+                    onInteractionsUpdated={() => (dataRevision += 1)}
+                    onOpenPeople={(focus) => void openPeople(focus)}
+                    onOpenDoc={onOpenPersonDoc}
+                />
+            {/if}
+        </div>
+
+    </main>
+</div>
+
+{#if organizationOpen}
+    <LvctDialog title={text("orgManagerTitle", "组织管理")} wide closeOnBackdrop={false} onClose={() => void closeOrganization()}>
+        <OrgManagerDialog {facade} i18n={facade.i18n} initialOrgDocId={organizationDocId}
+            onOpenPerson={(docId, orgDocId) => void openPersonByDocId(docId, personReturnContext(current, { orgDocId }))}
+            onCreateOrganization={() => void openCreateOrganization()}
+            onEditOrganization={(docId) => void openEditOrganizationProfile(docId)}
+            onClose={() => void closeOrganization()} />
+    </LvctDialog>
+{/if}
+
+{#if detailPerson}
+    <LvctDialog title={text("personDetailTitle", "人物详情 · {name}", { name: detailPerson.name })} closeLabel={detailCloseLabel} wide closeOnBackdrop={false} onClose={() => void closeDetail()}>
+        {#key detailKey}
+        <PersonDetail
+            settings={currentSettings}
+            i18n={facade.i18n}
+            preferences={currentPreferences}
+            onPreferencesChange={savePreferences}
+            person={detailPerson}
+            initialTab={detailInitialTab}
+            availableGroups={peopleGroups}
+            revision={dataRevision}
+            collapsedSections={currentPreferences.detailCollapsedSections}
+            onToggleSection={(sectionKey, collapsed) => {
+                const nextSections = {
+                    ...currentPreferences.detailCollapsedSections,
+                    [sectionKey]: collapsed,
+                };
+                void savePreferences({
+                    ...currentPreferences,
+                    detailCollapsedSections: nextSections,
+                });
+            }}
+            onRecord={(personDocId, note, type, options) => facade.recordInteraction(personDocId, note, type, options)}
+            onDeleteInteraction={(personDocId, eventId) => facade.deleteInteraction(personDocId, eventId)}
+            onAmendInteraction={(personDocId, eventId, amendment) => facade.amendInteraction(personDocId, eventId, amendment)}
+            onLoadInsights={(docId) => facade.loadPersonInsights(docId)}
+            onLoadPersonNote={(docId) => facade.loadPersonNote(docId)}
+            onSavePersonNote={(docId, note, expected) => facade.savePersonNote(docId, note, expected)}
+            onInspectLegacyPersonNote={facade.inspectLegacyPersonNote ? (docId) => facade.inspectLegacyPersonNote(docId) : undefined}
+            onDetachLegacyPersonNote={facade.detachLegacyPersonNote ? (docId, expected) => facade.detachLegacyPersonNote(docId, expected) : undefined}
+		            onSyncDocProfile={facade.syncPersonDocument ? (person) => facade.syncPersonDocument!(person) : undefined}
+			            onSaveAvatar={facade.savePersonAvatar ? (docId, url) => facade.savePersonAvatar!(docId, url) : undefined}
+			            onLoadAvatar={facade.loadPersonAvatar ? (docId) => facade.loadPersonAvatar!(docId) : undefined}
+			            onSaveChannels={facade.savePersonChannels ? (docId, channels) => facade.savePersonChannels!(docId, channels) : undefined}
+			            onLoadChannels={facade.loadPersonChannels ? (docId) => facade.loadPersonChannels!(docId) : undefined}
+			            onSaveBusinessCard={facade.savePersonBusinessCard ? (docId, url) => facade.savePersonBusinessCard!(docId, url) : undefined}
+			            onLoadBusinessCard={facade.loadPersonBusinessCard ? (docId) => facade.loadPersonBusinessCard!(docId) : undefined}
+		            onLoadPersonFields={facade.loadPersonFields ? (docId) => facade.loadPersonFields(docId) : undefined}
+            onSavePersonFields={facade.savePersonFields ? (docId, snapshot, expected) => facade.savePersonFields(docId, snapshot, expected) : undefined}
+            onLoadPersonFacts={facade.loadPersonFacts ? (docId) => facade.loadPersonFacts!(docId) : undefined}
+            onSavePersonFacts={facade.savePersonFacts ? (docId, items) => facade.savePersonFacts!(docId, items) : undefined}
+            onLoadExchanges={(docId) => facade.listPersonExchanges(docId)}
+            onCreateExchange={(input) => facade.createPersonExchange(input)}
+            onChangeExchangeStatus={(id, status, settledOn, expected) => facade.changePersonExchangeStatus(id, status, settledOn, expected)}
+            onLoadAliases={(docId) => facade.listPersonAliases(docId)}
+            onAddAlias={(docId, alias) => facade.addPersonAlias(docId, alias)}
+            onRemoveAlias={(id) => facade.removePersonAlias(id)}
+            onLoadRelationshipLabels={facade.loadPersonRelationshipLabels ? (docId) => facade.loadPersonRelationshipLabels(docId) : undefined}
+            onSaveRelationshipLabels={facade.savePersonRelationshipLabels ? (docId, selfDocId, labels, expected) => facade.savePersonRelationshipLabels(docId, selfDocId, labels, expected) : undefined}
+            onLoadOrgMemberships={(docId) => facade.listPersonOrgMemberships(docId)}
+            onLoadCommonOrgs={(docId) => facade.listCommonOrgBackground(docId)}
+            onOpenOrgManager={() => void openOrganization()}
+            onCreateOrganization={openCreateOrganizationForContact}
+            onOpenOrganization={(docId) => void openOrganization(docId)}
+            onLoadOrgCandidates={async () => (await facade.listOrganizations())
+                .map((org) => ({ docId: org.docId, name: org.name, archived: org.archived }))}
+            onAddOrgMembership={(personDocId, orgDocId, extra) => facade.addOrganizationMember(orgDocId, personDocId, extra)}
+            onRemoveOrgMembership={(id, expected) => facade.removeOrganizationMember(id, expected)}
+            onUpdateOrgMembership={(id, patch, expected) => facade.updateOrganizationMember(id, patch, expected)}
+            onListFollowUps={(docId) => facade.listPersonFollowUps(docId)}
+            onCreateFollowUp={(docId, title, dueDate, requestId) => facade.createFollowUp(docId, title, dueDate, requestId)}
+            onSetFollowUpStatus={(id, status) => facade.setFollowUpStatus(id, status)}
+            onSnoozeFollowUp={(id, option, customDate) => facade.snoozeFollowUp(id, option, customDate)}
+            onGetCadence={(docId) => facade.getPersonCadence(docId)}
+            onSaveCadence={(docId, cadence) => facade.savePersonCadence(docId, cadence)}
+            onListTemplates={() => facade.listTemplates()}
+            onSaveTemplates={(templates, expected) => facade.saveTemplates(templates, expected)}
+            onLoadTopics={facade.loadPersonTopics ? (docId) => facade.loadPersonTopics!(docId) : undefined}
+            onAddTopic={facade.addPersonTopic ? (docId, text) => facade.addPersonTopic!(docId, text) : undefined}
+            onRemoveTopic={facade.removePersonTopic ? (docId, topicId) => facade.removePersonTopic!(docId, topicId) : undefined}
+            onRemoveContactToTrash={facade.removeContactToTrash ? (person) => facade.removeContactToTrash!(person) : undefined}
+            onLoadGiftIdeas={facade.loadPersonGiftIdeas ? (docId) => facade.loadPersonGiftIdeas!(docId) : undefined}
+            onAddGiftIdea={facade.addPersonGiftIdea ? (item) => facade.addPersonGiftIdea!(item) : undefined}
+            onUpdateGiftIdea={facade.updatePersonGiftIdea ? (docId, ideaId, patch) => facade.updatePersonGiftIdea!(docId, ideaId, patch) : undefined}
+            onRemoveGiftIdea={facade.removePersonGiftIdea ? (docId, ideaId) => facade.removePersonGiftIdea!(docId, ideaId) : undefined}
+            onLoadAnniversaries={facade.loadPersonAnniversaries ? (docId) => facade.loadPersonAnniversaries!(docId) : undefined}
+            onAddAnniversary={facade.addPersonAnniversary ? (item) => facade.addPersonAnniversary!(item) : undefined}
+            onUpdateAnniversary={facade.updatePersonAnniversary ? (docId, annivId, patch) => facade.updatePersonAnniversary!(docId, annivId, patch) : undefined}
+            onRemoveAnniversary={facade.removePersonAnniversary ? (docId, annivId) => facade.removePersonAnniversary!(docId, annivId) : undefined}
+            onExportAnniversariesIcs={facade.exportPersonAnniversariesIcs ? (person, annivs) => facade.exportPersonAnniversariesIcs!(person, annivs) : undefined}
+            onLoadProjects={facade.loadPersonProjects ? (docId) => facade.loadPersonProjects!(docId) : undefined}
+            onAddProject={facade.addPersonProject ? (item) => facade.addPersonProject!(item) : undefined}
+            onUpdateProject={facade.updatePersonProject ? (docId, projId, patch) => facade.updatePersonProject!(docId, projId, patch) : undefined}
+            onRemoveProject={facade.removePersonProject ? (docId, projId) => facade.removePersonProject!(docId, projId) : undefined}
+            onFindCollaborators={facade.findCollaboratorsByProject ? (matcher) => facade.findCollaboratorsByProject!(matcher) : undefined}
+			            onCreateFlashcardsDoc={facade.createPersonFlashcardsDoc ? (p, f, t) => facade.createPersonFlashcardsDoc!(p, f, t) : undefined}
+			            onCreateBriefingDoc={facade.createBriefingDoc ? (input, dateStr) => facade.createBriefingDoc!(input, dateStr) : undefined}
+			            onCreateMilestonesDoc={facade.createMilestonesDoc ? (person, milestones) => facade.createMilestonesDoc!(person, milestones) : undefined}
+				            onLoadKinships={facade.loadPersonKinships ? (docId) => facade.loadPersonKinships!(docId) : undefined}
+			            onAddKinship={facade.addPersonKinship ? (item) => facade.addPersonKinship!(item) : undefined}
+			            onRemoveKinship={facade.removePersonKinship ? (docId, memberId) => facade.removePersonKinship!(docId, memberId) : undefined}
+			            onLoadPromises={facade.loadPersonPromises ? (docId) => facade.loadPersonPromises!(docId) : undefined}
+			            onAddPromise={facade.addPersonPromise ? (item) => facade.addPersonPromise!(item) : undefined}
+				            onUpdatePromise={facade.updatePersonPromise ? (docId, promiseId, patch) => facade.updatePersonPromise!(docId, promiseId, patch) : undefined}
+				            onRemovePromise={facade.removePersonPromise ? (docId, promiseId) => facade.removePersonPromise!(docId, promiseId) : undefined}
+					            onLoadLifecycleStage={facade.loadPersonLifecycleStage ? (docId) => facade.loadPersonLifecycleStage!(docId) : undefined}
+					            onUpdateLifecycleStage={facade.updatePersonLifecycleStage ? (docId, stage, date, note) => facade.updatePersonLifecycleStage!(docId, stage, date, note) : undefined}
+					            onLoadScratchpads={facade.loadPersonScratchpads ? (docId) => facade.loadPersonScratchpads!(docId) : undefined}
+					            onSaveScratchpad={facade.savePersonScratchpad ? (item) => facade.savePersonScratchpad!(item) : undefined}
+						            onUpdateScratchpad={facade.updatePersonScratchpad ? (docId, noteId, patch) => facade.updatePersonScratchpad!(docId, noteId, patch) : undefined}
+						            onRemoveScratchpad={facade.removePersonScratchpad ? (docId, noteId) => facade.removePersonScratchpad!(docId, noteId) : undefined}
+								            onLoadSocialPreferences={facade.loadPersonSocialPreferences ? (docId) => facade.loadPersonSocialPreferences!(docId) : undefined}
+								            onAddSocialPreference={facade.addPersonSocialPreference ? (item) => facade.addPersonSocialPreference!(item) : undefined}
+								            onUpdateSocialPreference={facade.updatePersonSocialPreference ? (docId, prefId, patch) => facade.updatePersonSocialPreference!(docId, prefId, patch) : undefined}
+								            onRemoveSocialPreference={facade.removePersonSocialPreference ? (docId, prefId) => facade.removePersonSocialPreference!(docId, prefId) : undefined}
+								            onLoadOrigin={facade.loadPersonOrigin ? (docId) => facade.loadPersonOrigin!(docId) : undefined}
+								            onSaveOrigin={facade.savePersonOrigin ? (origin) => facade.savePersonOrigin!(origin) : undefined}
+								            onSendGreetingReminder={facade.sendGreetingReminderToHome ? (name, overdue) => facade.sendGreetingReminderToHome!(name, overdue) : undefined}
+								            onLoadItineraries={facade.loadPersonItineraries ? (docId) => facade.loadPersonItineraries!(docId) : undefined}
+							            onSaveItinerary={facade.savePersonItinerary ? (item) => facade.savePersonItinerary!(item) : undefined}
+							            onRemoveItinerary={facade.removePersonItinerary ? (docId, itnId) => facade.removePersonItinerary!(docId, itnId) : undefined}
+							            onToggleItineraryChecklist={facade.togglePersonItineraryChecklist ? (docId, itnId, chkId) => facade.togglePersonItineraryChecklist!(docId, itnId, chkId) : undefined}
+		            {onOpenPersonDoc}
+            onOpenGraphPerson={openGraphPerson}
+            onOpenPeople={openPeople}
+            onNavigate={showDetail}
+            onNavigateDocId={(docId) => openPersonByDocId(docId)}
+            closeLabel={detailCloseLabel}
+            navigationOrder={current === "people" ? peopleOrder : undefined}
+            onChanged={() => (dataRevision += 1)}
+            onDeleted={() => {
+                void closeDetail();
+                dataRevision += 1;
+            }}
+            onClose={() => void closeDetail()}
+        />
+        {/key}
+    </LvctDialog>
+{/if}
+
+<!-- 详情或编辑窗口内新建组织时，资料窗口必须在已有模态之上。 -->
+{#if organizationProfileOpen}
+    <LvctDialog title={organizationProfileDocId ? text("orgEditTitle", "编辑组织资料") : text("orgCreateTitle", "新建组织")} wide closeOnBackdrop={false} beforeClose={() => organizationProfileEditor?.requestClose() ?? Promise.resolve(false)} onClose={() => { if (!organizationProfileSaving) { organizationProfileOpen = false; returnToContactAfterOrganizationProfile = false; organizationProfileCompletion?.(); organizationProfileCompletion = null; } }}>
+        <OrganizationProfileEditor
+            bind:this={organizationProfileEditor}
+            mode={organizationProfileDocId ? "edit" : "create"}
+            initial={organizationProfileInitial}
+            saving={organizationProfileSaving}
+            error={organizationProfileError}
+            readOnly={organizationProfileReadOnly}
+            onRetry={() => void retryOrganizationProfile()}
+            onSave={saveOrganizationProfile}
+            onCancel={() => { if (!organizationProfileSaving) { organizationProfileOpen = false; returnToContactAfterOrganizationProfile = false; organizationProfileCompletion?.(); organizationProfileCompletion = null; } }}
+        />
+    </LvctDialog>
+{/if}

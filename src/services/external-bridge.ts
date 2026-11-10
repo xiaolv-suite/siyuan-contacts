@@ -1,0 +1,467 @@
+import {
+    BRIDGE_CAPABILITIES, BRIDGE_PROTOCOL, BridgeError, BridgePersonAmbiguityError,
+    bridgeKeyword, bridgePerson, isBridgeId, normalizeBridgeEnsure, normalizeBridgeInteraction,
+    resolveBridgePerson, summarizeBridgeInteraction,
+} from "../domain/external-bridge.ts";
+import type {
+    BridgeAnchors, BridgeCreateRequest, BridgeEnsureOptions, BridgeEnsureRequest, BridgeInteractionMeta,
+    BridgeInteractionRequest, BridgeInteractionResult, BridgeItemResult, BridgeOperation, BridgePerson, BridgeRequestStore,
+} from "../domain/external-bridge.ts";
+import type { ContactsSettings } from "../domain/model";
+import { birthdayToMs } from "../domain/person.ts";
+import { toLocalDateKey } from "../domain/interactions.ts";
+import { lvActivity } from "../libs/lv-notice-kit.ts";
+
+export interface BridgeDependencies {
+    settings(): ContactsSettings;
+    guard(settings?: ContactsSettings): void;
+    lock<T>(task: () => Promise<T>): Promise<T>;
+    readRequests(): Promise<BridgeRequestStore>;
+    saveRequests(store: BridgeRequestStore): Promise<void>;
+    people(settings: ContactsSettings): Promise<BridgePerson[]>;
+    search(settings: ContactsSettings, keyword: string): Promise<BridgePerson[]>;
+    reachable(docId: string): Promise<boolean>;
+    newRequest(settings: ContactsSettings, name: string): BridgeCreateRequest;
+    create(settings: ContactsSettings, name: string, request: BridgeCreateRequest): Promise<BridgePerson>;
+    event(docId: string, ref: string): Promise<{ date: string; note: string } | null>;
+    record(docId: string, ref: string, occurredAt: number, note: string): Promise<{ recorded: boolean }>;
+    loadFacts?(docId: string): Promise<import("../domain/doc-section").PersonFactItem[]>;
+    saveFacts?(docId: string, items: readonly import("../domain/doc-section").PersonFactItem[]): Promise<void>;
+    /** 运行期插件版本（来自 manifest）；缺省时回退到编译期常量 */
+    version?(): string;
+}
+
+export const LVCONTACTS_BRIDGE_PROTOCOL = BRIDGE_PROTOCOL;
+/** 编译期回退版本；运行时一律以插件 manifest 版本为准（见 version() 依赖）。 */
+export const LVCONTACTS_BRIDGE_VERSION = "0.5.19";
+export const LVCONTACTS_API_NAME = "LvContacts";
+export const LVCONTACTS_API_ALIASES = [
+    "LvContacts",
+    "lvContacts",
+    "xiaolvContacts",
+    "siyuanContacts",
+] as const;
+
+export type LvContactsApiAlias = (typeof LVCONTACTS_API_ALIASES)[number];
+
+export interface ContactsBridgeOverview {
+    protocol: number;
+    apiVersion: number;
+    version: string;
+    capabilities: readonly string[];
+    safety: Readonly<{ stableDocIds: true; persistentRequests: true; itemResults: true; unknownWrites: "verify_first" }>;
+    writable: boolean;
+    updatedAt: string;
+}
+
+export interface LvContactsBridgeApi {
+    readonly protocol: number;
+    readonly apiVersion: number;
+    readonly version: string;
+    readonly capabilities: readonly string[];
+    readonly safety: Readonly<{ stableDocIds: true; persistentRequests: true; itemResults: true; unknownWrites: "verify_first" }>;
+    whenReady(): Promise<boolean>;
+    hasCapability(capability: string): boolean;
+    getOverview(): ContactsBridgeOverview;
+    searchPeople(keyword?: string): Promise<BridgePerson[]>;
+    getPerson(docId: string): Promise<BridgePerson | null>;
+    ensurePerson(name: string, options?: BridgeEnsureOptions): Promise<BridgePerson & { created: boolean }>;
+    recordInteraction(personDocIds: readonly string[], meta?: BridgeInteractionMeta): Promise<BridgeInteractionResult>;
+    appendFact(personDocId: string, input: import("../domain/external-bridge").BridgeFactInput): Promise<import("../domain/doc-section").PersonFactItem>;
+    getFacts(personDocId: string): Promise<import("../domain/doc-section").PersonFactItem[]>;
+    executeCommand?(command: string, args?: string[]): Promise<import("../libs/ecosystem-bridge-kit").ActionResult<unknown>>;
+}
+
+function anchors(settings: ContactsSettings): BridgeAnchors {
+    return { notebookId: settings.notebookId, avId: settings.avId, dbBlockId: settings.dbBlockId };
+}
+
+function sameAnchors(previous: BridgeAnchors, settings: ContactsSettings): boolean {
+    return previous.notebookId === settings.notebookId && previous.avId === settings.avId && previous.dbBlockId === settings.dbBlockId;
+}
+
+/**
+ * 桥版本解析：运行时优先取插件 manifest 版本，避免与发布版本漂移；
+ * 依赖未提供或返回空串时回退到编译期常量。
+ */
+function bridgeVersion(deps: BridgeDependencies): string {
+    try {
+        const runtime = deps.version?.();
+        if (typeof runtime === "string" && runtime.trim()) return runtime.trim();
+    } catch {
+        // 版本读取失败不应阻断桥创建
+    }
+    return LVCONTACTS_BRIDGE_VERSION;
+}
+
+export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBridgeApi {
+    const settingsFor = (operation: BridgeOperation): ContactsSettings => {
+        try { deps.guard(); return deps.settings(); }
+        catch (error) {
+            if (error instanceof BridgeError) throw new BridgeError(error.code, operation, error.writeState);
+            throw new BridgeError("not_initialized", operation);
+        }
+    };
+    const freshPeople = async (settings: ContactsSettings, operation: BridgeOperation): Promise<BridgePerson[]> => {
+        try {
+            const people = await deps.people(settings);
+            deps.guard(settings);
+            return people;
+        } catch (error) {
+            if (error instanceof BridgeError) throw new BridgeError(error.code, operation, error.writeState);
+            throw new BridgeError("unavailable", operation);
+        }
+    };
+    const readRequests = async (operation: BridgeOperation): Promise<BridgeRequestStore> => {
+        try { return await deps.readRequests(); }
+        catch { throw new BridgeError("storage_unknown", operation); }
+    };
+    const reachable = async (settings: ContactsSettings, docId: string, operation: BridgeOperation): Promise<boolean> => {
+        try {
+            const exists = await deps.reachable(docId);
+            deps.guard(settings);
+            return exists;
+        } catch (error) {
+            if (error instanceof BridgeError) throw new BridgeError(error.code, operation, error.writeState);
+            throw new BridgeError("unavailable", operation);
+        }
+    };
+    const persist = async (store: BridgeRequestStore, operation: BridgeOperation, issued = false): Promise<void> => {
+        try { await deps.saveRequests(store); }
+        catch { throw new BridgeError("storage_unknown", operation, issued ? "unknown" : "not_sent"); }
+    };
+    const locked = async <Result>(operation: BridgeOperation, task: () => Promise<Result>): Promise<Result> => {
+        try { return await deps.lock(task); }
+        catch (error) {
+            if (error instanceof BridgeError) throw error;
+            throw new BridgeError("unavailable", operation);
+        }
+    };
+
+    let api: LvContactsBridgeApi;
+    api = {
+        protocol: BRIDGE_PROTOCOL,
+        apiVersion: 1,
+        version: bridgeVersion(deps),
+        capabilities: BRIDGE_CAPABILITIES,
+        safety: Object.freeze({ stableDocIds: true, persistentRequests: true, itemResults: true, unknownWrites: "verify_first" as const }),
+        async whenReady() {
+            try {
+                deps.guard();
+                deps.settings();
+                return true;
+            } catch {
+                throw new BridgeError("disposed", "getPerson");
+            }
+        },
+        hasCapability(capability: string) {
+            return (BRIDGE_CAPABILITIES as readonly string[]).includes(capability)
+                || capability === "whenReady"
+                || capability === "getOverview"
+                || capability === "hasCapability"
+                || capability === "appendFact"
+                || capability === "getFacts"
+                || capability === "facts.append"
+                || capability === "facts.read";
+        },
+        getOverview(): ContactsBridgeOverview {
+            deps.guard();
+            const settings = deps.settings();
+            return Object.freeze({
+                protocol: BRIDGE_PROTOCOL,
+                apiVersion: 1,
+                version: bridgeVersion(deps),
+                capabilities: BRIDGE_CAPABILITIES,
+                safety: Object.freeze({ stableDocIds: true, persistentRequests: true, itemResults: true, unknownWrites: "verify_first" as const }),
+                writable: Boolean(settings?.notebookId && settings?.avId),
+                updatedAt: new Date().toISOString(),
+            });
+        },
+        async searchPeople(keyword?: string) {
+            const query = bridgeKeyword(keyword);
+            const settings = settingsFor("searchPeople");
+            try {
+                const people = await deps.search(settings, query);
+                deps.guard(settings);
+                return people.map((person) => {
+                    const resolved = resolveBridgePerson(people, person.docId, "searchPeople");
+                    if (!resolved) throw new BridgeError("identity_unknown", "searchPeople");
+                    return resolved;
+                });
+            } catch (error) {
+                if (error instanceof BridgeError) throw error;
+                throw new BridgeError("unavailable", "searchPeople");
+            }
+        },
+        async getPerson(docId: string) {
+            if (!isBridgeId(docId)) throw new BridgeError("invalid_input", "getPerson");
+            const settings = settingsFor("getPerson");
+            const person = resolveBridgePerson(await freshPeople(settings, "getPerson"), docId, "getPerson");
+            return person && await reachable(settings, docId, "getPerson") ? person : null;
+        },
+        async ensurePerson(name: string, options?: BridgeEnsureOptions) {
+            const input = normalizeBridgeEnsure(name, options);
+            const settings = settingsFor("ensurePerson");
+            return locked("ensurePerson", async () => {
+                deps.guard(settings);
+                if (input.docId) {
+                    const person = resolveBridgePerson(await freshPeople(settings, "ensurePerson"), input.docId, "ensurePerson");
+                    if (!person || !await reachable(settings, input.docId, "ensurePerson")) throw new BridgeError("person_not_found", "ensurePerson");
+                    return { ...person, created: false };
+                }
+                const store = await readRequests("ensurePerson");
+                let entry = store.requests.find((request): request is BridgeEnsureRequest => request.kind === "ensurePerson" && request.ref === input.ref);
+                if (entry && (!sameAnchors(entry.anchors, settings) || entry.name !== input.name)) throw new BridgeError("idempotency_conflict", "ensurePerson");
+                if (!entry) {
+                    if (store.requests.some((request) => request.kind === "ensurePerson" && request.name === input.name
+                        && request.anchors.notebookId === settings.notebookId && ["pending", "unknown"].includes(request.state))) {
+                        throw new BridgeError("write_unknown", "ensurePerson", "unknown");
+                    }
+                    const people = await freshPeople(settings, "ensurePerson");
+                    const candidates = people.filter((person) => person.name === input.name).map((person) => {
+                        const resolved = resolveBridgePerson(people, person.docId, "ensurePerson");
+                        if (!resolved) throw new BridgeError("identity_unknown", "ensurePerson");
+                        return resolved;
+                    });
+                    if (candidates.length) throw new BridgePersonAmbiguityError(candidates);
+                    if (!input.ref) throw new BridgeError("invalid_input", "ensurePerson");
+                    entry = { kind: "ensurePerson", ref: input.ref, anchors: anchors(settings), name: input.name,
+                        state: "pending", request: deps.newRequest(settings, input.name) };
+                    store.requests.push(entry);
+                } else if (entry.state === "applied") {
+                    const person = resolveBridgePerson(await freshPeople(settings, "ensurePerson"), entry.request.checkpoint.docId!, "ensurePerson");
+                    if (!person || person.itemId !== entry.request.checkpoint.itemId || !await reachable(settings, person.docId, "ensurePerson")) throw new BridgeError("identity_unknown", "ensurePerson", "unknown");
+                    return { ...person, created: true };
+                } else if (["pending", "unknown"].includes(entry.state) && entry.request.checkpoint.state === "new") {
+                    entry.request.checkpoint.state = "unknown";
+                    entry.request.bindingState = "unknown";
+                }
+                await persist(store, "ensurePerson", entry.request.checkpoint.state !== "new");
+                deps.guard(settings);
+                let person: BridgePerson;
+                try {
+                    person = await deps.create(settings, entry.name, entry.request);
+                } catch (error) {
+                    const rejected = error instanceof BridgeError && error.writeState === "rejected";
+                    entry.state = rejected ? "rejected" : "unknown";
+                    await persist(store, "ensurePerson", true);
+                    if (error instanceof BridgePersonAmbiguityError) throw error;
+                    throw new BridgeError(rejected ? "write_failed" : "write_unknown", "ensurePerson", rejected ? "rejected" : "unknown");
+                }
+                entry.state = "applied";
+                await persist(store, "ensurePerson", true);
+                const verified = resolveBridgePerson(await freshPeople(settings, "ensurePerson"), person.docId, "ensurePerson");
+                if (!verified || verified.itemId !== person.itemId) throw new BridgeError("identity_unknown", "ensurePerson", "unknown");
+                const outcome = { ...bridgePerson(verified), created: true };
+                if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+                    const detail = {
+                        v: 1,
+                        source: "siyuan-contacts",
+                        type: "person-created",
+                        eventId: `contacts_created_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                        at: new Date().toISOString(),
+                    };
+                    window.dispatchEvent(new CustomEvent("lv-contacts:person-created", { detail }));
+                    window.dispatchEvent(new CustomEvent("lv-contacts:data-changed", { detail: { ...detail, type: "data-changed" } }));
+                }
+                return outcome;
+            });
+        },
+        async recordInteraction(personDocIds: readonly string[], meta?: BridgeInteractionMeta) {
+            const input = normalizeBridgeInteraction(personDocIds, meta);
+            const settings = settingsFor("recordInteraction");
+            if (!input.ids.length) return summarizeBridgeInteraction([], 0);
+            return locked("recordInteraction", async () => {
+                deps.guard(settings);
+                const store = await readRequests("recordInteraction");
+                let entry = store.requests.find((request): request is BridgeInteractionRequest => request.kind === "recordInteraction" && request.ref === input.ref);
+                if (entry && meta?.date === undefined) {
+                    input.date = entry.date;
+                    input.occurredAt = birthdayToMs(entry.date)!;
+                }
+                if (entry && (!sameAnchors(entry.anchors, settings) || entry.date !== input.date || entry.note !== input.note
+                    || JSON.stringify(entry.docIds) !== JSON.stringify(input.docIds))) throw new BridgeError("idempotency_conflict", "recordInteraction");
+                if (!entry) {
+                    entry = { kind: "recordInteraction", ref: input.ref, anchors: anchors(settings), docIds: input.docIds,
+                        date: input.date, note: input.note, items: input.docIds.map((docId) => ({ docId, state: "unissued" })) };
+                    store.requests.push(entry);
+                }
+                const results: BridgeItemResult[] = [];
+                const seen = new Set<string>();
+                let recorded = 0;
+                let storageStopped = false;
+                for (const [index, value] of input.ids.entries()) {
+                    if (!isBridgeId(value)) {
+                        results.push({ index, status: "failed", code: "invalid_input", writeState: "not_sent" });
+                        continue;
+                    }
+                    if (seen.has(value)) {
+                        results.push({ index, docId: value, status: "skipped", code: "duplicate_input", writeState: "not_sent" });
+                        continue;
+                    }
+                    seen.add(value);
+                    const item = entry.items.find((candidate) => candidate.docId === value)!;
+                    const previouslyIssued = ["pending", "unknown", "applied", "skipped"].includes(item.state);
+                    const result: BridgeItemResult = { index, docId: value, status: "unknown", writeState: previouslyIssued ? "unknown" : "not_sent" };
+                    results.push(result);
+                    if (storageStopped) { result.code = "storage_unknown"; continue; }
+                    let issued = false;
+                    let wasRecorded = false;
+                    try {
+                        const person = resolveBridgePerson(await freshPeople(settings, "recordInteraction"), value, "recordInteraction");
+                        if (!person || !await reachable(settings, value, "recordInteraction")) throw new BridgeError("person_not_found", "recordInteraction");
+                        if (item.itemId && item.itemId !== person.itemId) throw new BridgeError("identity_unknown", "recordInteraction",
+                            item.state === "unissued" || item.state === "failed" ? "not_sent" : "unknown");
+                        result.itemId = person.itemId;
+                        const previous = await deps.event(value, entry.ref);
+                        deps.guard(settings);
+                        if (previous) {
+                            if (previous.date !== entry.date || previous.note !== entry.note) throw new BridgeError("idempotency_conflict", "recordInteraction");
+                            item.itemId = person.itemId;
+                            item.state = "skipped";
+                            result.status = "skipped";
+                            result.code = "already_recorded";
+                            result.writeState = "verified";
+                        } else if (["pending", "unknown", "applied", "skipped"].includes(item.state)) {
+                            result.code = "write_unknown";
+                            result.writeState = "unknown";
+                        } else {
+                            item.itemId = person.itemId;
+                            item.state = "pending";
+                            await persist(store, "recordInteraction");
+                            deps.guard(settings);
+                            issued = true;
+                            const outcome = await deps.record(value, entry.ref, input.occurredAt, entry.note);
+                            const evidence = await deps.event(value, entry.ref);
+                            deps.guard(settings);
+                            if (!evidence || evidence.date !== entry.date || evidence.note !== entry.note) throw new BridgeError("write_unknown", "recordInteraction", "unknown");
+                            item.state = outcome.recorded ? "applied" : "skipped";
+                            result.status = item.state;
+                            result.writeState = "verified";
+                            if (!outcome.recorded) result.code = "already_recorded";
+                            wasRecorded = outcome.recorded;
+                        }
+                        await persist(store, "recordInteraction", issued || result.writeState === "verified" || result.writeState === "unknown");
+                        if (wasRecorded) recorded += 1;
+                    } catch (error) {
+                        const known = error instanceof BridgeError ? error : undefined;
+                        result.code = known?.code ?? (issued ? "write_unknown" : "unavailable");
+                        result.writeState = (issued || previouslyIssued) && known?.writeState !== "rejected" ? "unknown" : known?.writeState ?? "not_sent";
+                        result.status = result.writeState === "unknown" || ["unavailable", "identity_unknown", "storage_unknown", "configuration_changed", "disposed"].includes(result.code) ? "unknown" : "failed";
+                        if (result.code === "storage_unknown") { storageStopped = true; continue; }
+                        if (issued) {
+                            item.state = result.writeState === "rejected" ? "failed" : "unknown";
+                            try { await persist(store, "recordInteraction", true); }
+                            catch { result.code = "storage_unknown"; storageStopped = true; }
+                        }
+                    }
+                }
+                const summary = summarizeBridgeInteraction(results, recorded);
+                if (summary.recorded > 0) {
+                    lvActivity.record({
+                        source: "人脉",
+                        category: "contact",
+                        title: `与联系人记录往来互动`,
+                        detail: entry.note || undefined,
+                    });
+                    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+                        const detail = {
+                            v: 1,
+                            source: "siyuan-contacts",
+                            type: "interaction-logged",
+                            eventId: `contacts_interaction_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                            at: new Date().toISOString(),
+                        };
+                        window.dispatchEvent(new CustomEvent("lv-contacts:interaction-logged", { detail }));
+                        window.dispatchEvent(new CustomEvent("lv-contacts:data-changed", { detail: { ...detail, type: "data-changed" } }));
+                    }
+                }
+                return summary;
+            });
+        },
+        appendFact: async (personDocId: string, input: import("../domain/external-bridge").BridgeFactInput) => {
+            deps.guard();
+            const settings = settingsFor("recordInteraction");
+            const person = resolveBridgePerson(await freshPeople(settings, "recordInteraction"), personDocId, "recordInteraction");
+            if (!person || !await reachable(settings, personDocId, "recordInteraction")) {
+                throw new BridgeError("person_not_found", "recordInteraction");
+            }
+            if (!input || typeof input.text !== "string" || !input.text.trim()) {
+                throw new BridgeError("invalid_input", "recordInteraction");
+            }
+            if (!deps.loadFacts || !deps.saveFacts) {
+                throw new BridgeError("unavailable", "recordInteraction");
+            }
+            const existing = await deps.loadFacts(personDocId);
+            const newItem: import("../domain/doc-section").PersonFactItem = {
+                id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                text: input.text.trim(),
+                category: input.category || "quote",
+                date: toLocalDateKey(new Date()),
+                ...(input.sourceRef?.trim() ? { sourceRef: input.sourceRef.trim() } : {}),
+            };
+            const next = [newItem, ...existing];
+            await deps.saveFacts(personDocId, next);
+            if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+                window.dispatchEvent(new CustomEvent("lv-contacts:data-changed", { detail: { v: 1, type: "data-changed", docId: personDocId } }));
+            }
+            return newItem;
+        },
+        getFacts: async (personDocId: string) => {
+            deps.guard();
+            if (!deps.loadFacts) return [];
+            return deps.loadFacts(personDocId);
+        },
+        executeCommand: async (command: string, args: string[] = []): Promise<import("../libs/ecosystem-bridge-kit").ActionResult<unknown>> => {
+            const cmd = command.trim().toLowerCase();
+            const settings = settingsFor("searchPeople");
+            if (cmd === "rm" || cmd === "rm:search") {
+                const keyword = args.join(" ").trim();
+                const people = await deps.search(settings, keyword);
+                return { ok: true, data: people };
+            }
+            if (cmd === "rm+" || cmd === "rm:record") {
+                const name = args[0]?.trim();
+                const note = args.slice(1).join(" ").trim();
+                if (!name) return { ok: false, message: "请输入联系人姓名" };
+                const ensured = await api.ensurePerson(name, { ref: `exoskeleton:${Date.now()}` });
+                if (ensured.docId) {
+                    await api.recordInteraction([ensured.docId], { note: note || "通过思源外骨骼记录互动", ref: `exoskeleton-record:${Date.now()}` });
+                    return { ok: true, data: { docId: ensured.docId, name: ensured.name, recorded: true } };
+                }
+                return { ok: false, message: "未定位到联系人文档" };
+            }
+            return { ok: false, message: `未知人脉指令：${command}` };
+        },
+    };
+    return Object.freeze(api);
+}
+
+export function mountBridgeAliases(
+    host: Record<string, unknown> | undefined,
+    api: LvContactsBridgeApi
+): string[] {
+    if (!host) return [];
+    const mounted: string[] = [];
+    for (const alias of LVCONTACTS_API_ALIASES) {
+        if (!host[alias] || host[alias] === api) {
+            host[alias] = api;
+            mounted.push(alias);
+        }
+    }
+    return mounted;
+}
+
+export function unmountBridgeAliases(
+    host: Record<string, unknown> | undefined,
+    api: LvContactsBridgeApi,
+    aliases: readonly string[]
+): void {
+    if (!host) return;
+    for (const alias of aliases) {
+        if (host[alias] === api) {
+            delete host[alias];
+        }
+    }
+}
+

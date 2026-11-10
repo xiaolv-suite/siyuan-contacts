@@ -1,0 +1,618 @@
+/* ============================================================================
+ * 小驴人脉 · 公共控件层（UX-01.2）
+ * ----------------------------------------------------------------------------
+ * 全部控件沿用宿主 .b3-* 类名，本文件在插件根内把它们统一重肤到 --lvct-* 视觉语言：
+ * 页面不再出现按钮/输入框级特例；宿主「黑色描边」观感在此替换（次按钮 = 表面底 + 柔和描边）。
+ * 规则：只准消费 --lvct-* 令牌；新增变体先在 _tokens.scss 补令牌再在此登记。
+ * ========================================================================== */
+
+@keyframes lvct-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* UX-02.1 浮层/菜单 pop-in 入场：spring 缓动，小位移缩放 */
+@keyframes lvct-pop-in {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-4px);
+    }
+}
+
+.lvct-tab-root,
+.lvct-dialog-root,
+.lvct-doc-strip,
+.lvct-workbench {
+
+    font-family: var(--lvct-font-family);
+    color: var(--lvct-text-1);
+
+    /* Lucide 细线描边图标：全站统一为 1.6 描边线宽，端点与转折圆润一致 */
+    svg.lucide-icon,
+    svg.lucide {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* 数据表达柔和（Soft Visuals）：粗圆头进度条、半透明散点、深色胶囊提示 */
+    .lvct-progress-bar,
+    .lvct-reciprocity-card__scale-fill,
+    .lvct-funnel__bar-fill,
+    progress {
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        stroke-linecap: round !important;
+    }
+
+    /* 散点与图表元素半透明自然过渡 */
+    .lvct-chart-bubble,
+    .lvct-chart-scatter,
+    .lvct-funnel__stage-badge {
+        border-radius: var(--lv-r-pill, 9999px);
+        transition: opacity var(--lvct-dur-fast) var(--lvct-ease), transform var(--lvct-dur-fast) var(--lvct-ease);
+    }
+
+    /* 工具提示深色胶囊化（Dark Capsule Tooltip） */
+    .lvct-tooltip,
+    .b3-tooltips::after {
+        background: var(--lv-dark-block-bg, #1C1815) !important;
+        color: var(--lv-dark-block-text, #FAF8F5) !important;
+        border-radius: var(--lv-r-pill, 9999px) !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        padding: 4px 10px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+        border: none !important;
+        letter-spacing: 0.01em;
+    }
+
+    /* ---------- 按钮：公共基线（尺寸/大圆角胶囊/状态过渡/焦点环） ---------- */
+    .b3-button {
+        border-radius: var(--lv-r-pill, 9999px);
+        font-size: var(--lvct-fs-body);
+        min-height: var(--lvct-control-h);
+        box-sizing: border-box;
+        transition:
+            background var(--lvct-dur-fast) var(--lvct-ease),
+            border-color var(--lvct-dur-fast) var(--lvct-ease),
+            box-shadow var(--lvct-dur-fast) var(--lvct-ease),
+            color var(--lvct-dur-fast) var(--lvct-ease),
+            filter var(--lvct-dur-fast) var(--lvct-ease),
+            transform var(--lvct-dur-micro) var(--lvct-ease);
+    }
+
+    /* UX-02.1 按下回压 */
+    .b3-button:not(:disabled):active {
+        transform: scale(0.97);
+    }
+
+    .b3-button:focus-visible {
+        outline: var(--lvct-focus-ring-width) solid var(--lvct-focus-ring-color);
+        outline-offset: var(--lvct-focus-ring-offset);
+    }
+
+    .b3-button:disabled {
+        opacity: var(--lvct-state-disabled-opacity);
+        cursor: not-allowed;
+    }
+
+    /* 物理按压微触感（Epoch 6 标准） */
+    .b3-button:active:not(:disabled) {
+        transform: translateY(1.5px) scale(0.985);
+    }
+
+    /* 主按钮（无修饰类的填充按钮）：现代自然柔和外投影 + 悬停微上浮 */
+    .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text) {
+        background: var(--lv-brand);
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 1px 3px color-mix(in srgb, var(--lv-brand) 28%, transparent), 0 2px 6px color-mix(in srgb, var(--lv-brand) 18%, transparent);
+
+        &:hover:not(:disabled) {
+            box-shadow: 0 4px 12px color-mix(in srgb, var(--lv-brand) 34%, transparent);
+            background: var(--lv-brand-hover);
+            transform: translateY(-1px);
+            filter: none;
+        }
+
+        &:active:not(:disabled) {
+            box-shadow: none;
+            background: var(--lv-brand-hover);
+            transform: translateY(1.5px) scale(0.985);
+            filter: none;
+        }
+    }
+
+    /* 次按钮：表面底 + 柔和描边 + 统一 Level 1 阴影 */
+    .b3-button--outline,
+    .b3-button--cancel {
+        background: var(--lvct-bg-surface);
+        color: var(--lvct-text-1);
+        border: var(--lvct-control-border-width) solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
+        box-shadow: var(--lvct-shadow-1);
+
+        &:focus { box-shadow: none; }
+
+        &:hover:not(:disabled) {
+            background: var(--lvct-bg-hover);
+            border-color: var(--lvct-border-strong);
+            color: var(--lvct-text-1);
+            box-shadow: var(--lvct-shadow-2);
+            transform: translateY(-1px);
+        }
+
+        &:active:not(:disabled) {
+            background: var(--lvct-bg-active);
+            box-shadow: none;
+            transform: translateY(1.5px) scale(0.985);
+        }
+    }
+
+    /* 胶囊体系贯穿（两档尺寸：标准 32px / 紧凑小档 24px） */
+    .b3-button--small {
+        min-height: 24px;
+        height: 24px;
+        padding: 0 10px;
+        font-size: 11px;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+
+    /* 状态小圆点胶囊体系 */
+    .lvct-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 24px;
+        padding: 0 10px;
+        border-radius: var(--lv-r-pill, 9999px);
+        font-size: 11px;
+        font-weight: 500;
+        background: color-mix(in srgb, var(--lvct-border-subtle) 40%, transparent);
+        color: var(--lvct-text-2);
+        line-height: 1;
+
+        &::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        &--success::before,
+        &--active::before {
+            background: var(--lvct-success, #16A34A);
+        }
+
+        &--warning::before,
+        &--amber::before {
+            background: var(--lv-data-amber, #D97706);
+        }
+
+        &--danger::before,
+        &--cold::before {
+            background: var(--lvct-danger, #E11D48);
+        }
+
+        &--info::before {
+            background: var(--lv-accent-cyan, #0284C7);
+        }
+    }
+
+    /* 文字/幽灵按钮 */
+    .b3-button--text {
+        background: transparent;
+        color: var(--lv-brand);
+
+        &:hover:not(:disabled) {
+            background: var(--lv-brand-soft);
+            color: var(--lv-brand);
+        }
+    }
+
+    /* 危险动作（新代码显式选用）：实底危险色 */
+    .lvct-btn--danger {
+        background: var(--lvct-danger);
+        color: var(--lvct-on-accent);
+        border: none;
+
+        &:hover:not(:disabled) {
+            box-shadow: var(--lvct-shadow-2);
+            filter: brightness(1.06);
+        }
+    }
+
+    /* 提交中（新代码显式选用）：文字让位给旋转指示，防重复点击 */
+    .lvct-btn--loading {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+
+        &::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            width: var(--lvct-spinner-size);
+            height: var(--lvct-spinner-size);
+            border-radius: 50%;
+            border: var(--lvct-spinner-border) solid color-mix(in srgb, var(--lvct-on-accent) 40%, transparent);
+            border-top-color: var(--lvct-on-accent);
+            animation: lvct-spin var(--lvct-dur-loading) linear infinite;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        /* The reduced-motion contract applies to every plugin surface, including
+           popovers and controls added after this shared stylesheet was written.
+           Keep focus/pressed states visible, but remove movement and looping
+           spinners so opening a dialog or waiting on a write is static. */
+        *,
+        *::before,
+        *::after {
+            animation: none !important;
+            transition-duration: var(--lvct-dur-none) !important;
+            scroll-behavior: auto !important;
+        }
+
+        .lvct-btn--loading::after { animation: none !important; }
+
+        /* UX-02.1 动效降级：位移动效只保留透明度，pop-in 直出 */
+        .b3-button:not(:disabled):active { transform: none; }
+
+        .b3-button,
+        .lvct-dash__stat,
+        .lvct-dash__rowmenu,
+        .lvct-people__colmenu,
+        .lvct-people__moremenu,
+        .lvct-graph-view__hover-card,
+        .lvct-dialog-mask,
+        .lvct-dialog-panel {
+            transition-duration: var(--lvct-dur-none) !important;
+            animation: none !important;
+        }
+    }
+
+    /* 文本输入框 / 下拉框：柔和描边 + 平整表面 + 焦点品牌呼吸环 */
+    .b3-text-field,
+    .b3-select {
+        border-radius: var(--lv-r-sm, 8px);
+        border: var(--lvct-control-border-width) solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
+        background: var(--lvct-bg-surface);
+        color: var(--lvct-text-1);
+        min-height: var(--lvct-touch-min);
+        box-sizing: border-box;
+        box-shadow: none;
+        transition:
+            border-color var(--lvct-dur-fast) var(--lvct-ease),
+            box-shadow var(--lvct-dur-fast) var(--lvct-ease),
+            background-color var(--lvct-dur-fast) var(--lvct-ease);
+
+        &::placeholder { color: var(--lvct-text-3); }
+
+        &:hover:not(:disabled):not(:focus) {
+            border-color: var(--lvct-border-strong);
+        }
+
+        &:focus {
+            border-color: var(--lv-brand, #ea580c);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-brand, #ea580c) 18%, transparent);
+            outline: none;
+        }
+
+        &:disabled {
+            opacity: var(--lvct-state-disabled-opacity);
+            cursor: not-allowed;
+        }
+    }
+
+    /* 胶囊控件（Chip）：自控高度、圆角与对比度，摆脱宿主灰色污染 */
+    .b3-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--lvct-sp-1, 4px);
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.2;
+        padding: 3px 8px;
+        border-radius: var(--lv-r-pill, 9999px);
+        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
+        color: var(--lvct-text-1);
+        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--lvct-accent) 12%, transparent);
+            color: var(--lvct-accent);
+            border-color: color-mix(in srgb, var(--lvct-accent) 30%, transparent);
+        }
+
+        &--primary {
+            background: var(--lv-brand, #ea580c);
+            color: #ffffff;
+            border-color: var(--lv-brand, #ea580c);
+            font-weight: 600;
+
+            &:hover:not(:disabled) {
+                background: color-mix(in srgb, var(--lv-brand, #ea580c) 88%, #000);
+                color: #ffffff;
+            }
+        }
+    }
+
+    /* 下拉选择框：强制文字水平与垂直精确居中，修正与按钮等高 */
+    .b3-select {
+        height: var(--lvct-control-h-compact, 36px);
+        min-height: var(--lvct-control-h-compact, 36px);
+        max-height: var(--lvct-control-h-compact, 36px);
+        line-height: calc(var(--lvct-control-h-compact, 36px) - 2px);
+        padding: 0 16px;
+        text-align: center;
+        text-align-last: center;
+        -webkit-text-align-last: center;
+        -moz-text-align-last: center;
+        vertical-align: middle;
+        cursor: pointer;
+
+        option {
+            text-align: center;
+        }
+    }
+
+    /* Keep native input semantics while drawing checkbox/radio states from theme tokens. */
+    input[type="checkbox"]:not(.b3-switch):not(.lvct-switch input),
+    input[type="radio"]:not(.b3-switch):not(.lvct-switch input) {
+        appearance: none;
+        flex: 0 0 var(--lvct-check-size);
+        width: var(--lvct-check-size);
+        height: var(--lvct-check-size);
+        margin: 0;
+        display: inline-grid;
+        place-content: center;
+        border: var(--lvct-control-border-width) solid var(--lvct-border-strong);
+        border-radius: var(--lvct-r-sm);
+        background: var(--lvct-bg-surface);
+        color: var(--lvct-on-accent);
+        cursor: pointer;
+        transition:
+            background var(--lvct-dur-fast) var(--lvct-ease),
+            border-color var(--lvct-dur-fast) var(--lvct-ease),
+            box-shadow var(--lvct-dur-fast) var(--lvct-ease);
+
+        &::before {
+            content: "";
+            width: var(--lvct-check-mark-w);
+            height: var(--lvct-check-mark-h);
+            border: 0 solid currentColor;
+            border-left-width: var(--lvct-check-mark-stroke);
+            border-bottom-width: var(--lvct-check-mark-stroke);
+            transform: rotate(-45deg) scale(0);
+            transition: transform var(--lvct-dur-fast) var(--lvct-ease);
+        }
+
+        &:hover:not(:disabled) { border-color: var(--lvct-accent); }
+        &:checked { border-color: var(--lvct-accent); background: var(--lvct-accent); }
+        &:checked::before { transform: rotate(-45deg) scale(1); }
+        &:indeterminate { border-color: var(--lvct-accent); background: var(--lvct-accent); }
+        &:indeterminate::before {
+            width: var(--lvct-check-indeterminate-w);
+            height: var(--lvct-check-indeterminate-h);
+            border: 0;
+            background: currentColor;
+            transform: none;
+        }
+        &:disabled {
+            background: var(--lvct-bg-app);
+            border-color: var(--lvct-border-subtle);
+            cursor: not-allowed;
+            opacity: var(--lvct-state-disabled-opacity);
+        }
+        &:focus-visible {
+            outline: var(--lvct-focus-ring-width) solid var(--lvct-focus-ring-color);
+            outline-offset: var(--lvct-focus-ring-offset);
+            box-shadow: 0 0 0 var(--lvct-focus-ring-size) var(--lvct-accent-soft);
+        }
+
+        &[type="checkbox"] { border-radius: var(--lvct-r-control); }
+        &[type="radio"] {
+            border-radius: var(--lvct-r-pill);
+
+            &::before {
+                width: var(--lvct-radio-dot-size);
+                height: var(--lvct-radio-dot-size);
+                border: 0;
+                border-radius: var(--lvct-r-pill);
+                background: currentColor;
+                transform: scale(0);
+            }
+
+            &:checked::before { transform: scale(1); }
+        }
+    }
+
+    /* ---------- 强制颜色与高对比度无障碍体系 (forced-colors & prefers-contrast) ---------- */
+    @media (forced-colors: active) {
+        .lvct-sheet,
+        .lvct-sheet__bar,
+        .lvct-home__card,
+        .lvct-person-card,
+        .lvct-dash__stat,
+        .lvct-kpi-card,
+        .b3-button,
+        .b3-text-field,
+        .b3-select,
+        .lvct-people__savedview,
+        .lvct-people__conditions,
+        .lvct-filter-chip,
+        .lvct-pill,
+        .lvct-recovery__candidates article {
+            border: 1px solid CanvasText;
+        }
+
+        .lvct-dialog-panel,
+        .lvct-sheet,
+        .lvct-people__moremenu,
+        .lvct-people__colmenu,
+        .lvct-people__viewsmenu {
+            border: 2px solid CanvasText;
+            background: Canvas;
+        }
+
+        .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text),
+        .lvct-btn--primary {
+            background: Highlight;
+            color: HighlightText;
+            border: 1px solid Highlight;
+        }
+
+        .selected,
+        [aria-selected="true"],
+        .lvct-people__savedview.active,
+        .lvct-tab-btn.active {
+            outline: 2px solid Highlight;
+            outline-offset: 1px;
+            border-color: Highlight;
+        }
+
+        :where(button, a, input, select, textarea, [tabindex="0"]):focus-visible {
+            outline: 2px solid Highlight;
+            outline-color: Highlight;
+            outline-offset: 2px;
+        }
+
+        /* 关键视觉标记与指示器：禁止系统颜色破坏语义辨识度 */
+        .lvct-avatar,
+        .lvct-status-dot,
+        .lvct-badge,
+        .lvct-tag,
+        .lvct-dot,
+        .lvct-group-dot,
+        .lvct-recovery__icon,
+        .lvct-cadence-pill,
+        svg.lucide-icon {
+            forced-color-adjust: none;
+        }
+    }
+
+    /* 用户高对比度偏好 (prefers-contrast: more)：强化边框、卡片区隔与焦点环 */
+    @media (prefers-contrast: more) {
+        & {
+            --lvct-border-subtle: color-mix(in srgb, var(--lvct-text-1) 45%, transparent);
+            --lvct-border-strong: var(--lvct-text-1);
+            --lvct-text-2: var(--lvct-text-1);
+            --lvct-text-3: var(--lvct-text-1);
+        }
+
+        .lvct-person-card,
+        .lvct-home__card,
+        .lvct-sheet,
+        .lvct-dash__stat,
+        .b3-button,
+        .b3-text-field,
+        .b3-select,
+        .lvct-people__savedview,
+        .lvct-recovery__candidates article {
+            border: 1px solid var(--lvct-text-1);
+        }
+
+        .selected,
+        [aria-selected="true"],
+        .lvct-people__savedview.active,
+        .lvct-tab-btn.active {
+            outline: 2px solid var(--lvct-accent);
+            outline-offset: 1px;
+            font-weight: 700;
+        }
+
+        :where(button, a, input, select, textarea, [tabindex="0"]):focus-visible {
+            outline: 3px solid var(--lvct-accent);
+            outline-offset: 2px;
+        }
+    }
+}
+
+/* ============================================================================
+ * Body-Level Dialog Isolation & High-Contrast System Bridge (Epoch 5)
+ * ============================================================================ */
+@media (forced-colors: active) {
+    .b3-dialog:has(.b3-dialog__content),
+    .b3-dialog:has(.b3-dialog__action),
+    .b3-dialog {
+        .b3-dialog__container {
+            border: 2px solid CanvasText !important;
+            background: Canvas !important;
+            color: CanvasText !important;
+            box-shadow: none !important;
+        }
+
+        .b3-dialog__header {
+            background: Canvas !important;
+            color: CanvasText !important;
+            border-bottom: 1px solid CanvasText !important;
+        }
+
+        .b3-dialog__content {
+            background: Canvas !important;
+            color: CanvasText !important;
+        }
+
+        .b3-dialog__action {
+            background: Canvas !important;
+            color: CanvasText !important;
+            border-top: 1px solid CanvasText !important;
+        }
+
+        .b3-button--primary,
+        #confirmDialogConfirmBtn {
+            background: Highlight !important;
+            color: HighlightText !important;
+            border: 1px solid Highlight !important;
+        }
+
+        :is(.b3-button, .b3-text-field, .b3-select) {
+            border: 1px solid CanvasText;
+            background: Canvas;
+            color: CanvasText;
+        }
+
+        :where(button, a, input, select, textarea, [tabindex="0"]):focus-visible,
+        :focus-visible {
+            outline: 2px solid Highlight !important;
+            outline-color: Highlight !important;
+            outline-offset: 2px;
+        }
+    }
+}
+
+@media (prefers-contrast: more) {
+    .b3-dialog:has(.b3-dialog__content),
+    .b3-dialog:has(.b3-dialog__action),
+    .b3-dialog {
+        .b3-dialog__container {
+            border: 2px solid var(--b3-theme-on-background, currentColor) !important;
+        }
+
+        .b3-dialog__header {
+            border-bottom: 1px solid var(--b3-theme-on-background, currentColor) !important;
+        }
+
+        .b3-dialog__action {
+            border-top: 1px solid var(--b3-theme-on-background, currentColor) !important;
+        }
+
+        :is(.b3-button, .b3-text-field, .b3-select) {
+            border: 1px solid var(--b3-theme-on-background, currentColor);
+        }
+
+        :where(button, a, input, select, textarea, [tabindex="0"]):focus-visible,
+        :focus-visible {
+            outline: 3px solid var(--b3-theme-primary, Highlight) !important;
+            outline-offset: 2px;
+        }
+    }
+}
+
