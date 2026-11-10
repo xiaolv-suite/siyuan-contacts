@@ -3,9 +3,9 @@
   "version": "0.7.9",
   "type": "module",
   "description": "小驴人脉 (Lv Contacts)：在思源笔记里管理人脉与人际关系——一人一文档，数据库主干，关系图谱与农历生日提醒",
-  "repository": "https://github.com/ai68298100/siyuan-contacts",
-  "homepage": "https://github.com/ai68298100/siyuan-contacts",
-  "author": "ai68298100",
+  "repository": "https://github.com/xiaolv-suite/siyuan-contacts",
+  "homepage": "https://github.com/xiaolv-suite/siyuan-contacts",
+  "author": "xiaolv-suite",
   "license": "MIT",
   "packageManager": "pnpm@12.14.0",
   "engines": {

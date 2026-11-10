@@ -2,14 +2,14 @@
 
 # Lv Contacts (小驴人脉)
 
-[![CI](https://github.com/ai68298100/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/ai68298100/siyuan-contacts/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/ai68298100/siyuan-contacts)](https://github.com/ai68298100/siyuan-contacts/releases)
+[![CI](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-contacts)](https://github.com/xiaolv-suite/siyuan-contacts/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![SiYuan](https://img.shields.io/badge/SiYuan-%3E%3D%203.8.5-blue)
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.8** · [Download and install](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.8) · [Open an issue](https://github.com/ai68298100/siyuan-contacts/issues)
+**Latest stable release: v0.7.8** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.8) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -50,7 +50,7 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 | **🎪 Group Occasions & Gatherings Hub** | Connecting multi-attendee gatherings to individual dossiers. | • Reverse-chronological timeline of seminars, dinners, weddings, salons, and summits<br>• Metrics on total occasions, cumulative attendees, and linked notes<br>• Attendee avatar ribbons with 1-click "Roster Drilldown" to filter attendee contacts |
 | **🗑️ Roster Soft-Delete Trash Bin** | 30-day safety buffer preventing irreversible accidental deletions. | • Card roster displaying deleted contact name, phone, group, and tags snapshot<br>• Real-time countdown (`N days remaining`, red warning for ≤3 days)<br>• 1-click restoration to database and roster; permanent purge confirmation |
 | **🧹 Advanced Filters, Tidy Drawer & Export** | High-volume contact management and clean local interoperability. | • Multi-dimensional filters (temperature, stage, region, organization, data gaps) with saved views<br>• "Tidy Drawer" recommending groups and inferred tags for unorganized contacts<br>• UTF-8 BOM CSV export and formatted Markdown roster tables<br>• vCard 2.1/3.0/4.0 import & vCard 3.0 export |
-| **🔒 Local-First & Lossless Migration** | True data sovereignty: zero cloud dependency, zero data leaks, full backup. | • 100% stored in local SiYuan workspace, zero telemetry, zero external network requests<br>• Web Lock concurrency protection with double read-after-write verification<br>• Complete 23-module migration bundle (export, preview, current-first merge) |
+| **🔒 Local-First & Lossless Migration** | True data sovereignty: zero cloud dependency, zero data leaks, full backup. | • 100% stored in local SiYuan workspace, zero telemetry, zero external network requests<br>• Web Lock concurrency protection with double read-after-write verification<br>• Complete 24-module migration bundle (export, preview, current-first merge) |
 
 ---
 
@@ -204,7 +204,7 @@ For earlier release notes, please see the full [CHANGELOG](CHANGELOG.md).
 
 Manual installation from GitHub Releases is currently recommended:
 
-1. Download `package.zip` from the [latest stable Release](https://github.com/ai68298100/siyuan-contacts/releases/latest).
+1. Download `package.zip` from the [latest stable Release](https://github.com/xiaolv-suite/siyuan-contacts/releases/latest).
 2. Extract its contents into `data/plugins/siyuan-contacts/` in your SiYuan workspace. `plugin.json` must be at that directory root.
 3. Restart SiYuan and enable **Lv Contacts** under **Settings → Marketplace → Installed**.
 
@@ -263,14 +263,14 @@ Person documents, notes, and the contact database are SiYuan workspace content. 
 
 Each plugin is maintained independently and can be used on its own or alongside the others:
 
-- [**小驴雷切 (Speed Switch)**](https://github.com/ai68298100/siyuan-speed-switch) — Unified workspace navigation and context switcher.
-- [**小驴打卡 (Checkin)**](https://github.com/ai68298100/siyuan-checkin) — Local-first habits, goals, and daily streak review.
+- [**小驴雷切 (Speed Switch)**](https://github.com/xiaolv-suite/siyuan-speed-switch) — Unified workspace navigation and context switcher.
+- [**小驴打卡 (Checkin)**](https://github.com/xiaolv-suite/siyuan-checkin) — Local-first habits, goals, and daily streak review.
 - **小驴人脉 (Lv Contacts)** (this project) — Personal relationship and network management.
-- [**小驴拾遗 (Glean)**](https://github.com/ai68298100/siyuan-glean) — Clippings organizer, reading management, and review.
-- [**小驴考试 (Exam)**](https://github.com/ai68298100/siyuan-exam) — Local question bank and exam practice.
-- [**小驴管家 (Home)**](https://github.com/ai68298100/siyuan-home) — Household ledger and task management.
-- [**小驴闪卡 (Cards)**](https://github.com/ai68298100/siyuan-lv-cards) — Spaced-repetition flashcards learning platform.
-- [**小驴常用 (Common)**](https://github.com/ai68298100/xiaolv-common) — Quick snippets and reusable blocks.
+- [**小驴拾遗 (Glean)**](https://github.com/xiaolv-suite/siyuan-glean) — Clippings organizer, reading management, and review.
+- [**小驴考试 (Exam)**](https://github.com/xiaolv-suite/siyuan-exam) — Local question bank and exam practice.
+- [**小驴管家 (Home)**](https://github.com/xiaolv-suite/siyuan-home) — Household ledger and task management.
+- [**小驴闪卡 (Cards)**](https://github.com/xiaolv-suite/siyuan-lv-cards) — Spaced-repetition flashcards learning platform.
+- [**小驴常用 (Common)**](https://github.com/xiaolv-suite/xiaolv-common) — Quick snippets and reusable blocks.
 
 ## Development
 

@@ -6,7 +6,7 @@
 
 ## Reporting a vulnerability
 
-请不要在公开 Issue 中发布可利用的漏洞、工作区数据、token 或完整日志。请通过 GitHub 个人主页联系仓库维护者 `ai68298100`，并提供：
+请不要在公开 Issue 中发布可利用的漏洞、工作区数据、token 或完整日志。请通过 GitHub 个人主页联系仓库维护者 `xiaolv-suite`，并提供：
 
 - 受影响的 Release、思源版本和前端类型；
 - 最小复现步骤与影响范围；

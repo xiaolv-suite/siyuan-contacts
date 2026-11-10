@@ -2008,7 +2008,7 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
                         <span class="lvct-ecosystem-badge">{lvEcosystem.getStatusBadgeText()}</span>
                     </div>
                     <p class="lvct-settings__inline-hint">
-                        <a href="https://github.com/ai68298100/siyuan-contacts" target="_blank" rel="noreferrer">项目主页</a>
+                        <a href="https://github.com/xiaolv-suite/siyuan-contacts" target="_blank" rel="noreferrer">项目主页</a>
                         · 数据契约与桥接协议随仓库文档发布。
                     </p>
                 </section>

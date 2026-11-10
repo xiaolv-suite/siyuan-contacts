@@ -1,17 +1,16 @@
-> 当前开发/验收边界：[唯一状态摘要](docs/CURRENT-STATUS.md)。
 
 <div align="center">
 
 # 小驴人脉（Lv Contacts）
 
-[![CI](https://github.com/ai68298100/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/ai68298100/siyuan-contacts/actions/workflows/ci.yml)
-[![最新版本](https://img.shields.io/github/v/release/ai68298100/siyuan-contacts?label=最新版本)](https://github.com/ai68298100/siyuan-contacts/releases)
+[![CI](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml)
+[![最新版本](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-contacts?label=最新版本)](https://github.com/xiaolv-suite/siyuan-contacts/releases)
 [![许可证：MIT](https://img.shields.io/badge/许可证-MIT-yellow.svg)](LICENSE)
 ![思源笔记](https://img.shields.io/badge/思源笔记-%3E%3D%203.8.5-blue)
 
 **在思源笔记中管理联系人、人际关系、组织归属与重要日期。**
 
-**最新稳定版：v0.7.8** · [下载与安装](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.7.8) · [提交问题](https://github.com/ai68298100/siyuan-contacts/issues)
+**最新稳定版：v0.7.8** · [下载与安装](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.8) · [提交问题](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 [English README](README.en-US.md)
 
@@ -56,7 +55,7 @@
 
 ---
 
-## 最新版本（v0.7.8 · 2026-11-04）
+## 最新发布（v0.7.8 · 2026-11-04）
 
 小驴全生态统一协同与通知降噪系统、内核写锁排队加固、日记双向撤销闭环与穿透搜索版本：
 
@@ -342,9 +341,8 @@
 
 ## 安装
 
-当前建议通过 GitHub Release 手动安装；集市上架已合并。
-
-1. 从 [最新稳定版 Release](https://github.com/ai68298100/siyuan-contacts/releases/latest) 下载 `package.zip`。
+1. **思源集市安装（推荐）**：打开思源笔记 `设置` → `集市` → `插件`，搜索 **「小驴人脉」**，点击安装并启用；
+2. **GitHub Release 手动安装**：从 [最新稳定版 Release](https://github.com/xiaolv-suite/siyuan-contacts/releases/latest) 下载 `package.zip`。
 2. 将压缩包内容解压到思源工作空间的 `data/plugins/siyuan-contacts/`，确认 `plugin.json` 位于该目录根部。
 3. 重启思源，在“设置 → 集市 → 已安装”中启用“小驴人脉”。
 
@@ -389,7 +387,7 @@
 ### ❓ 常见问题与故障排查（FAQ）
 
 - **Q: 为什么重装或换电脑后数据不见了？**
-  - **A**: 思源笔记的插件数据存放在工作空间本地。在更换设备或重装前，请前往「设置 → 数据与字段 → 导出中心」，点击「导出插件完整迁移包 (.zip)」。在新电脑上点击「导入迁移包」，即可实现 23 模块全要素等价往返与现状优先安全合并。
+  - **A**: 思源笔记的插件数据存放在工作空间本地。在更换设备或重装前，请前往「设置 → 数据与字段 → 导出中心」，点击「导出插件完整迁移包 (.zip)」。在新电脑上点击「导入迁移包」，即可实现 24 模块全要素等价往返与现状优先安全合并。
 - **Q: 农历除夕或大月 30 日的生日/纪念日会漏提醒吗？**
   - **A**: 不会。小驴人脉内置专为中国民俗设计的农历双轨自适应算法，遇上只有 29 天的腊月份（平月），系统会自动将腊月三十除夕自适应平移到廿九当天提醒，确保除夕生日与迎春纪念永不落空。
 - **Q: 导出的 CSV 文件用 Excel 打开中文为什么不乱码？**
@@ -401,7 +399,7 @@
 
 联系人文档、人物独立备注、补充资料条目和联系人数据库属于思源工作区内容。保存在人物文档中，随思源文档备份，不单独放进插件数据迁移包，也不会自动用于快捷联系、全局搜索、vCard 或 AI。插件不发送遥测；AI 识别只在用户主动操作时调用思源配置的 AI 服务。
 
-互动、跟进、联系节奏、提醒暂缓、收编索引、模板、往来账本、别名、本人身份、组织成员、组织资料、社交偏好、承诺、闪念、纪念日与关系称谓等插件自管数据保存在思源的插件数据目录。卸载或删除插件数据前，请先在“设置 → 导出中心”导出插件数据迁移包。
+互动、跟进、联系节奏、提醒暂缓、收编索引、模板、往来账本、别名、本人身份、组织成员、组织资料、社交偏好、承诺、闪念、纪念日与关系称谓等插件自管数据保存在思源工作空间的 `data/storage/petal/siyuan-contacts/` 目录（仅本地，随工作空间备份/同步，不外发）。卸载或删除插件数据前，请先在“设置 → 导出中心”导出插件数据迁移包。
 
 ## 小驴系列插件与交流
 
@@ -409,14 +407,14 @@
 
 | 插件名称 | 一句话简介 | GitHub 仓库 |
 |---|---|---|
-| [小驴雷切](https://github.com/ai68298100/siyuan-speed-switch) | 思源中的统一导航与工作上下文平台。 | [ai68298100/siyuan-speed-switch](https://github.com/ai68298100/siyuan-speed-switch) |
-| [小驴打卡](https://github.com/ai68298100/siyuan-checkin) | 本地优先的习惯、目标打卡与复盘工作台。 | [ai68298100/siyuan-checkin](https://github.com/ai68298100/siyuan-checkin) |
-| **小驴人脉**（本项目） | 在思源中管理联系人、人际关系、组织归属和生日提醒。 | [ai68298100/siyuan-contacts](https://github.com/ai68298100/siyuan-contacts) |
-| [小驴拾遗](https://github.com/ai68298100/siyuan-glean) | 整理思源剪藏文章，支持阅读管理与日后回顾。 | [ai68298100/siyuan-glean](https://github.com/ai68298100/siyuan-glean) |
-| [小驴考试](https://github.com/ai68298100/siyuan-exam) | 本地题库、刷题、模考、错题复盘与 AI 辅助。 | [ai68298100/siyuan-exam](https://github.com/ai68298100/siyuan-exam) |
-| [小驴管家](https://github.com/ai68298100/siyuan-home) | 家庭与生活台账、到期提醒及事务跟进。 | [ai68298100/siyuan-home](https://github.com/ai68298100/siyuan-home) |
-| [小驴闪卡](https://github.com/ai68298100/siyuan-lv-cards) | 本地优先的闪卡学习平台，覆盖制卡、练习与复习。 | [ai68298100/siyuan-lv-cards](https://github.com/ai68298100/siyuan-lv-cards) |
-| [小驴常用](https://github.com/ai68298100/xiaolv-common) | 基于思源块快速调用常用语、模板、代码和链接。 | [ai68298100/xiaolv-common](https://github.com/ai68298100/xiaolv-common) |
+| [小驴雷切](https://github.com/xiaolv-suite/siyuan-speed-switch) | 思源中的统一导航与工作上下文平台。 | [xiaolv-suite/siyuan-speed-switch](https://github.com/xiaolv-suite/siyuan-speed-switch) |
+| [小驴打卡](https://github.com/xiaolv-suite/siyuan-checkin) | 本地优先的习惯、目标打卡与复盘工作台。 | [xiaolv-suite/siyuan-checkin](https://github.com/xiaolv-suite/siyuan-checkin) |
+| **小驴人脉**（本项目） | 在思源中管理联系人、人际关系、组织归属和生日提醒。 | [xiaolv-suite/siyuan-contacts](https://github.com/xiaolv-suite/siyuan-contacts) |
+| [小驴拾遗](https://github.com/xiaolv-suite/siyuan-glean) | 整理思源剪藏文章，支持阅读管理与日后回顾。 | [xiaolv-suite/siyuan-glean](https://github.com/xiaolv-suite/siyuan-glean) |
+| [小驴考试](https://github.com/xiaolv-suite/siyuan-exam) | 本地题库、刷题、模考、错题复盘与 AI 辅助。 | [xiaolv-suite/siyuan-exam](https://github.com/xiaolv-suite/siyuan-exam) |
+| [小驴管家](https://github.com/xiaolv-suite/siyuan-home) | 家庭与生活台账、到期提醒及事务跟进。 | [xiaolv-suite/siyuan-home](https://github.com/xiaolv-suite/siyuan-home) |
+| [小驴闪卡](https://github.com/xiaolv-suite/siyuan-lv-cards) | 本地优先的闪卡学习平台，覆盖制卡、练习与复习。 | [xiaolv-suite/siyuan-lv-cards](https://github.com/xiaolv-suite/siyuan-lv-cards) |
+| [小驴常用](https://github.com/xiaolv-suite/xiaolv-common) | 基于思源块快速调用常用语、模板、代码和链接。 | [xiaolv-suite/xiaolv-common](https://github.com/xiaolv-suite/xiaolv-common) |
 
 交流 QQ 群：**871707735**（反馈 Bug、提交需求、交流使用体验）
 
