@@ -31,8 +31,21 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
         const touch = getTouch(event);
         if (!touch) return;
 
-        // 如果触摸发生在可滚动的子容器内且子容器未滚动到顶部，则允许正常内部滚动，不抢手势
+        // 表单输入与软键盘状态豁免：触摸目标是输入表单或焦点处于输入状态时，严禁抢夺手势触发关闭
         const target = event.target as HTMLElement | null;
+        if (target && typeof target.closest === "function") {
+            if (target.closest("input, textarea, select, [contenteditable='true'], form, .b3-text-field")) {
+                return;
+            }
+        }
+        if (typeof document !== "undefined" && document.activeElement) {
+            const tag = document.activeElement.tagName?.toLowerCase();
+            if (tag === "input" || tag === "textarea" || tag === "select" || document.activeElement.getAttribute("contenteditable") === "true") {
+                return;
+            }
+        }
+
+        // 如果触摸发生在可滚动的子容器内且子容器未滚动到顶部，则允许正常内部滚动，不抢手势
         const scrollable = typeof target?.closest === "function"
             ? target.closest(".lvct-sheet__body, .trash-content-list, .lvct-dialog-panel")
             : null;

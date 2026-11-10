@@ -3004,6 +3004,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     openDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions) {
         if (!this.isLifecycleActive() || !docId) return;
+        // 手机端：打开具体文档后主动关闭全屏工作台弹窗，让底层打开的人物文档清晰呈现给用户
+        if (this.isMobile && this.workbenchDialog) {
+            try {
+                this.closeWorkbenchDialog();
+            } catch { /* soft */ }
+        }
         const opening = openSiYuanDocument(this.app, docId, options);
         // 按钮旧入口可能没有 await：旁路处理避免未处理拒绝，原 Promise 仍供图谱等调用方捕获。
         void opening.catch((error: unknown) => {
