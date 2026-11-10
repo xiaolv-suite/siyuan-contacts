@@ -51,7 +51,7 @@
     "livereload": "^0.10.3",
     "npm-run-all": "^4.1.5",
     "sass": "^1.106.1",
-    "siyuan": "1.2.7",
+    "siyuan": "1.2.9",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.7",
     "typescript": "^6.0.3",
