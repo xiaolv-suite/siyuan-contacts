@@ -100,7 +100,7 @@ export function attachPopover(
             });
         });
     resizeObserver?.observe(panel);
-    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
     window.addEventListener("resize", onResize);
     window.addEventListener("keydown", onKeyDown);
 

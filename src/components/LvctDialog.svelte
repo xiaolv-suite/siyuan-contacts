@@ -127,7 +127,7 @@
         };
         if (typeof window !== "undefined" && window.visualViewport) {
             window.visualViewport.addEventListener("resize", updateViewport);
-            window.visualViewport.addEventListener("scroll", updateViewport);
+            window.visualViewport.addEventListener("scroll", updateViewport, { passive: true });
         }
 
         return () => {

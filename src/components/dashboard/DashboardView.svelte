@@ -1584,7 +1584,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 <span class="lvct-dash__row-primary">
                                     <span class="lvct-dash__person-avatar" data-group={card.person.group || "未分组"}>
                                         {#if card.person.avatar}
-                                            <img src={resolveAvatarUrl(card.person.avatar)} alt="" class="lvct-avatar-img" />
+                                            <img loading="lazy" decoding="async" src={resolveAvatarUrl(card.person.avatar)} alt="" class="lvct-avatar-img" />
                                         {:else}
                                             {card.person.name.slice(0, 1)}
                                         {/if}
@@ -1743,7 +1743,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 <button type="button" class="lvct-dash__row-main" aria-label={`查看 ${item.person.name} 的详情`} onclick={() => onOpenDetail(item.person)}>
                                     <span class="lvct-dash__person-avatar" data-group={item.person.group || "未分组"}>
                                         {#if item.person.avatar}
-                                            <img src={resolveAvatarUrl(item.person.avatar)} alt="" class="lvct-avatar-img" />
+                                            <img loading="lazy" decoding="async" src={resolveAvatarUrl(item.person.avatar)} alt="" class="lvct-avatar-img" />
                                         {:else}
                                             {item.person.name.slice(0, 1)}
                                         {/if}
@@ -1822,7 +1822,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                                 <button type="button" class="lvct-dash__row-main" aria-label={`查看 ${item.person.name} 的详情`} onclick={() => onOpenDetail(item.person)}>
                                     <span class="lvct-dash__person-avatar" data-group={item.person.group || "未分组"}>
                                         {#if item.person.avatar}
-                                            <img src={resolveAvatarUrl(item.person.avatar)} alt="" class="lvct-avatar-img" />
+                                            <img loading="lazy" decoding="async" src={resolveAvatarUrl(item.person.avatar)} alt="" class="lvct-avatar-img" />
                                         {:else}
                                             {item.person.name.slice(0, 1)}
                                         {/if}

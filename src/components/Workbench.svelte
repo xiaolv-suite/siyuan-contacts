@@ -682,7 +682,7 @@
             };
             syncViewportAndModals();
             vv?.addEventListener("resize", syncViewportAndModals);
-            vv?.addEventListener("scroll", syncViewportAndModals);
+            vv?.addEventListener("scroll", syncViewportAndModals, { passive: true });
             window.addEventListener("resize", syncViewportAndModals);
             unbindVv = () => {
                 vv?.removeEventListener("resize", syncViewportAndModals);

@@ -3099,7 +3099,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             };
             syncMobileDialog();
             vv?.addEventListener("resize", syncMobileDialog);
-            vv?.addEventListener("scroll", syncMobileDialog);
+            vv?.addEventListener("scroll", syncMobileDialog, { passive: true });
             window.addEventListener("resize", syncMobileDialog);
             mql?.addEventListener?.("change", syncMobileDialog);
             unbindMobileViewport = () => {

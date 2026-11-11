@@ -337,7 +337,7 @@
                             <div class="anniv-person-info">
                                 <span class="anniv-avatar">
                                     {#if matchedPerson?.avatar}
-                                        <img class="anniv-avatar-img" src={resolveAvatarUrl(matchedPerson.avatar)} alt={item.personName} />
+                                        <img loading="lazy" decoding="async" class="anniv-avatar-img" src={resolveAvatarUrl(matchedPerson.avatar)} alt={item.personName} />
                                     {:else}
                                         {item.personName.slice(0, 1)}
                                     {/if}
