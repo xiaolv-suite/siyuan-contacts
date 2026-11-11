@@ -350,7 +350,11 @@
                     class:lvct-orgs-view__card--selected={activeOrgDocId === org.docId}
                     data-org-doc-id={org.docId}
                     class:lvct-orgs-view__card--archived={org.archived}
+                    role="button"
+                    tabindex="0"
+                    aria-pressed={activeOrgDocId === org.docId}
                     onclick={() => void selectOrgCard(org.docId)}
+                    onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); void selectOrgCard(org.docId); } }}
                 >
                     <div class="lvct-orgs-view__card-head">
                         {#if logoUrlOf(org) && failedLogoUrls[org.docId] !== logoUrlOf(org)}
