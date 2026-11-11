@@ -428,6 +428,7 @@
                                 role="button"
                                 tabindex="0"
                                 onclick={() => { if (matched && onSelectPerson) onSelectPerson(matched); }}
+                                onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (matched && onSelectPerson) onSelectPerson(matched); } }}
                                 title={`点击在侧栏速览 ${event.personName}`}
                             >
                                 <span class="lvct-context-timeline__dot"></span>

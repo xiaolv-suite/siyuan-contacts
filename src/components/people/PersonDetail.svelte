@@ -3683,6 +3683,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 title="左键上传本地图片，右键从思源资源库挑选头像"
                 style="cursor: pointer; position: relative;"
                 onclick={() => avatarFileInput?.click()}
+                onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); avatarFileInput?.click(); } }}
                 oncontextmenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

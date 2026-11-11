@@ -73,6 +73,7 @@
                 onmouseenter={() => (hoveredIndex = node.index)}
                 onmouseleave={() => (hoveredIndex = null)}
                 onclick={() => onNavigate(node.person)}
+                onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onNavigate(node.person); } }}
             >
                 <circle
                     cx={node.x}
