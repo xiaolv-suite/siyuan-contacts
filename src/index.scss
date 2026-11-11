@@ -10377,7 +10377,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     .lvct-workbench__header-actions { gap: var(--lvct-sp-2); }
-    .lvct-workbench__body { padding: 0 14px 96px; }
+    /* 与上方 640px 块的文档化补偿对齐：64px 底部导航 + 12px 呼吸位 + iOS 安全区（原 96px 死值既多留白又丢安全区） */
+    .lvct-workbench__body { padding: 0 14px calc(76px + env(safe-area-inset-bottom)); }
     .lvct-home__card { padding: 16px; }
     .lvct-dash__stat { min-height: 124px; padding: 15px; }
     .lvct-dash__stat b { font-size: 26px; }
