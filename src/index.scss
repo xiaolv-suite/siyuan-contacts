@@ -2332,6 +2332,10 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
         color: var(--lv-brand, #ea580c);
         font-weight: 650;
         box-shadow: none;
+
+        > span[aria-hidden="true"] {
+            color: var(--lv-brand, #ea580c);
+        }
     }
 }
 
@@ -2362,8 +2366,24 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     box-shadow: 0 4px 20px -2px rgba(28, 24, 21, 0.04);
 
     h2 {
-        margin: 0 0 var(--lvct-sp-1);
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 var(--lvct-sp-3);
+        padding-bottom: var(--lvct-sp-2);
         font-size: var(--lvct-fs-heading);
+        border-bottom: 1px solid var(--lvct-border-subtle);
+
+        /* 分区标题前置品牌色锚点：与左侧激活导航一致 */
+        &::before {
+            content: "";
+            flex: none;
+            width: 4px;
+            height: 16px;
+            border-radius: 2px;
+            background: var(--lv-brand, #ea580c);
+        }
     }
 }
 
