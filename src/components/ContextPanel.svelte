@@ -735,9 +735,10 @@
 
         input {
             flex: 1;
-            font-size: 11.5px;
+            /* ≥16px 防 iOS 聚焦自动放大 */
+            font-size: 16px;
             border-radius: 9999px;
-            padding: 3px 10px;
+            padding: 5px 10px;
         }
 
         button {

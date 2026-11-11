@@ -302,9 +302,10 @@
     }
 
     .search-box input {
-        font-size: 11px;
-        padding: 4px 12px;
-        width: 180px;
+        /* ≥16px 防 iOS 聚焦自动放大 */
+        font-size: 16px;
+        padding: 6px 12px;
+        width: min(180px, 60vw);
         border-radius: var(--lv-r-pill, 9999px);
         border: 1px solid var(--lvct-color-border-200);
     }
