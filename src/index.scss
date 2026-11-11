@@ -15227,3 +15227,22 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         white-space: nowrap;
     }
 }
+
+/* ══════════ 下拉菜单专项：选项可读性 / 选人器弹层滚动 ══════════ */
+:is(.lvct-tab-root, .lvct-dialog-root, .lvct-sheet) {
+    :is(select, .b3-select) {
+        cursor: pointer;
+    }
+
+    :is(select, .b3-select) :is(option, optgroup) {
+        background-color: var(--lvct-bg-surface, var(--b3-theme-background));
+        color: var(--lvct-text-1, var(--b3-theme-on-background));
+    }
+}
+
+/* 选人器选项列表：限高滚动 + 边界防抖，长名单不再撑爆弹窗 */
+.lvct-picker__list {
+    max-height: 280px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
