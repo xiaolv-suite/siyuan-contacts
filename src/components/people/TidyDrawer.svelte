@@ -386,7 +386,7 @@
         gap: 3px;
         background: var(--b3-theme-surface-lighter);
         border: 1px solid var(--b3-border-color);
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     .sugg-chip.is-adopted,

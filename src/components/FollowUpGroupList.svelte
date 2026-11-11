@@ -157,7 +157,7 @@
     color: var(--b3-theme-on-surface);
     background: transparent;
     opacity: 0.8;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 .lvct-fu-group__pill--active {
     background: var(--lv-brand);

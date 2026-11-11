@@ -609,7 +609,7 @@
         cursor: pointer;
         text-align: left;
         color: inherit;
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
     .lvct-region-dialog__city-item:hover {
         background: var(--lvct-bg-hover, rgba(0, 0, 0, 0.04));
@@ -732,7 +732,7 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
     .lvct-region-dialog__person-card:hover {
         border-color: var(--lvct-border-strong, var(--b3-theme-primary-lighter));

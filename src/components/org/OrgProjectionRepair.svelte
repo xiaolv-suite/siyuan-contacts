@@ -455,7 +455,7 @@
         border-radius: var(--lv-r-pill, 9999px) !important;
         padding: 4px 14px;
         font-size: 12px;
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     /* 桌面端悬停淡入 */

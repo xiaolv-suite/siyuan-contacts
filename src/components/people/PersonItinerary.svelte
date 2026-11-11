@@ -415,6 +415,7 @@
                             class="b3-button b3-button--outline"
                             onclick={addChecklistItem}
                             disabled={busy || !newChecklistText.trim()}
+                            aria-label={text("addChecklistItem", "添加准备项")}
                         >
                             <Plus size={12} strokeWidth={1.6} />
                         </button>
@@ -669,7 +670,7 @@
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         color: var(--lvct-text-2);
-        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {
@@ -911,7 +912,7 @@
         font-size: 11px;
         cursor: pointer;
         color: var(--b3-theme-on-surface);
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     .checklist-chip.is-done {

@@ -209,7 +209,7 @@
         border: 1px solid var(--lvct-color-border-200);
         font-size: 11.5px;
         color: var(--lvct-text-1);
-        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
             border-color: var(--lvct-border-subtle);

@@ -234,7 +234,7 @@
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         color: var(--lvct-text-2, var(--b3-theme-on-surface));
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     .segment-pill.is-active {

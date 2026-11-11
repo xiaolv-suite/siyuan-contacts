@@ -4672,6 +4672,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         style="padding: 2px 7px;"
                         onclick={handleDeleteBusinessCard}
                         disabled={cardSaving}
+                        aria-label="删除名片图片"
                     >
                         <Trash2 size={12} />
                     </button>

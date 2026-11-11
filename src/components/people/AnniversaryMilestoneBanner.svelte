@@ -131,7 +131,7 @@
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-card, 14px);
         box-shadow: var(--lvct-shadow-1);
-        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
             box-shadow: var(--lvct-shadow-2);

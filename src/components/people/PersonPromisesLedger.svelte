@@ -548,7 +548,7 @@
         padding: 3px 10px;
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     .filter-pill.is-active {

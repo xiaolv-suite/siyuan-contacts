@@ -1308,7 +1308,7 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
     &--copied {
         border-color: var(--lv-heat-warm, #16a34a);
@@ -1569,7 +1569,7 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
             border: 1px dashed var(--lvct-border-subtle);
             color: var(--b3-theme-on-surface);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
             &:hover {
                 background: color-mix(in srgb, var(--lvct-accent) 15%, var(--b3-theme-surface));
@@ -1763,7 +1763,7 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
     font-size: var(--lvct-fs-caption);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover {
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 18%, var(--lvct-bg-surface));
@@ -3044,7 +3044,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     color: var(--lvct-text-2);
     cursor: pointer;
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     @media (max-height: 480px) {
         min-width: 18px;
@@ -3106,7 +3106,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     color: var(--lvct-text-2);
     cursor: pointer;
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover:not(&--active) {
         background: var(--lvct-bg-hover);
@@ -3583,7 +3583,7 @@ html[data-theme-mode="dark"] .lvct-notice {
     color: var(--b3-theme-on-surface);
     cursor: pointer;
     box-sizing: border-box;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover:not(.b3-chip--primary) {
         background: var(--b3-theme-surface-lighter);
@@ -4234,7 +4234,7 @@ html[data-theme-mode="dark"] .lvct-dialog-panel {
     color: var(--lvct-text-2);
     font-size: var(--lvct-fs-caption);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover,
     &:focus-visible {
@@ -4260,7 +4260,7 @@ html[data-theme-mode="dark"] .lvct-dialog-panel {
     color: var(--lvct-text-3);
     font-size: var(--lvct-fs-caption);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover {
         color: var(--lvct-danger, #e11d48);
@@ -4400,7 +4400,7 @@ html[data-theme-mode="dark"] .lvct-dialog-panel {
     border: 1px solid var(--lvct-border-subtle);
     font-size: 12px;
     color: var(--lvct-text-1);
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover {
         background: var(--lvct-bg-hover);
@@ -4585,7 +4585,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         cursor: pointer;
         text-align: left;
         white-space: nowrap;
-        transition: all var(--lvct-dur-fast) ease;
+        transition: transform var(--lvct-dur-fast) ease, background var(--lvct-dur-fast) ease, border-color var(--lvct-dur-fast) ease, box-shadow var(--lvct-dur-fast) ease, color var(--lvct-dur-fast) ease, opacity var(--lvct-dur-fast) ease;
 
         &:hover {
             background: var(--b3-theme-surface-lighter);
@@ -4695,7 +4695,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     padding: 2px 7px;
     font-size: 11px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     color: var(--lvct-text-2);
 
     &:hover {
@@ -4812,7 +4812,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     color: var(--lvct-text-1);
     font-size: 13px;
     cursor: pointer;
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover {
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, transparent);
@@ -4871,7 +4871,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-full, 9999px);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
         color: var(--lvct-text-2);
 
         &:hover {
@@ -5197,7 +5197,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
 }
 
 .lvct-drawer-fact-item {
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover {
         border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 30%, var(--lvct-border-subtle));
@@ -5280,7 +5280,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         border-radius: var(--lv-r-pill, 9999px);
         background: color-mix(in srgb, var(--lvct-bg-surface) 60%, transparent);
         border: 1px solid transparent;
-        transition: all var(--lvct-dur-fast) var(--lvct-ease);
+        transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
     }
 
     b {
@@ -6043,7 +6043,7 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
         border-radius: var(--lvct-r-lg);
         background: var(--lvct-bg-surface);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
         &:hover {
             border-color: color-mix(in srgb, var(--b3-theme-primary) 35%, var(--lvct-border-subtle));
@@ -6387,7 +6387,7 @@ html[data-theme-mode="dark"] .lvct-detail__timeline-row {
     background: color-mix(in srgb, var(--lvct-bg-app) 70%, var(--lvct-bg-surface));
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 70%, transparent);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
     &::before {
         display: none; // 隐藏原有侧边微小实心点，由微图标徽章接管
@@ -6688,7 +6688,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 }
 
 .lvct-picker__option--active,
@@ -6813,7 +6813,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     border: none;
     position: relative;
     z-index: 1;
-    transition: all var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover {
         background: var(--lv-brand-hover, #c2410c);
@@ -9220,7 +9220,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         border: 1px solid var(--lvct-color-border-200);
         border-radius: var(--lv-r-md, 8px);
         font-size: 11px;
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
         &:hover {
             background: var(--lvct-bg-hover);
@@ -10026,7 +10026,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     background: var(--lvct-bg-surface);
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     min-width: 0;
 
     &:hover {
@@ -10239,7 +10239,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover {
         background: var(--lvct-bg-hover);
@@ -11587,7 +11587,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
-    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), background 0.18s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover {
         border-color: color-mix(in srgb, var(--lv-accent-cyan, #0284c7) 32%, var(--lvct-border-subtle));
@@ -11631,7 +11631,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     .b3-chip {
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
         cursor: pointer;
 
         &:active {
@@ -12260,7 +12260,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
             border-radius: var(--lv-r-pill, 9999px);
             font-weight: 500;
             cursor: pointer;
-            transition: all var(--lvct-dur-fast) var(--lvct-ease);
+            transition: transform var(--lvct-dur-fast) var(--lvct-ease), background var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease), opacity var(--lvct-dur-fast) var(--lvct-ease);
 
             &.b3-chip--primary {
                 background: var(--lv-brand);
@@ -12400,7 +12400,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         fill: color-mix(in srgb, var(--lv-brand, #ea580c) 20%, transparent);
         stroke: var(--lv-brand, #ea580c);
         stroke-width: 1.5;
-        transition: all 0.3s ease;
+        transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease, opacity 0.3s ease;
     }
 
     &__vertex {
@@ -12645,7 +12645,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 30%, var(--lvct-border-subtle));
     background: color-mix(in srgb, var(--lv-brand, #ea580c) 4%, var(--lvct-bg-surface));
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 
     &[open] {
         box-shadow: var(--lvct-shadow-card, 0 2px 10px rgba(0, 0, 0, 0.05));
@@ -12875,7 +12875,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     max-width: 16px;
     border-radius: 3px 3px 0 0;
     background: var(--lvct-bg-hover, rgba(0, 0, 0, 0.06));
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 
     &--active {
         background: linear-gradient(180deg, var(--lv-data-amber, #d97706), color-mix(in srgb, var(--lv-data-amber, #d97706) 68%, transparent));
@@ -13235,7 +13235,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     border-radius: 8px;
     background: var(--lvct-bg-surface, #ffffff);
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover {
         border-color: color-mix(in srgb, var(--lv-brand, #ea580c) 35%, var(--lvct-border-subtle));
@@ -13441,7 +13441,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     background: color-mix(in srgb, var(--lv-brand, #ea580c) 2%, var(--b3-theme-surface));
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 
     &:hover {
         border-color: var(--lv-brand, #ea580c);
@@ -14694,7 +14694,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     background: color-mix(in srgb, var(--lvct-text-3, #94a3b8) 45%, transparent);
     cursor: pointer;
     touch-action: manipulation;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lvct-premeeting-brief__dot:active {
@@ -14963,7 +14963,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     font-weight: 500;
     cursor: pointer;
     touch-action: manipulation;
-    transition: all 0.15s ease;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &--active {
         border-color: var(--lv-brand);
@@ -15035,7 +15035,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
             border-radius: 6px;
             color: var(--b3-theme-on-surface);
             opacity: 0.7;
-            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1);
             box-sizing: border-box;
 
             &:hover {

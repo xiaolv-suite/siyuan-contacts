@@ -127,7 +127,7 @@
         border: 1px solid var(--b3-border-color);
         border-radius: var(--lvct-r-card, 12px);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     .stage-option-row:hover {
