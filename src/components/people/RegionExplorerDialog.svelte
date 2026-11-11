@@ -16,6 +16,7 @@
     import { onDestroy, untrack } from "svelte";
     import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText, ExternalLink, Sparkles } from "@lucide/svelte";
     import { syncCityTopicDocument, createTripItineraryDoc } from "../../services/city-topic";
+    import { safeDocTitleFromHPath } from "../../libs/lv-notice-kit";
 
     let {
         contacts = [],
@@ -429,7 +430,7 @@
                                 class="b3-button b3-button--text b3-button--small"
                                 style="color: var(--lvct-success, #16a34a);"
                                 onclick={() => onOpenDoc?.(lastTripDocId)}
-                                title={`打开《${lastTripDocPath.split("/").pop()}》`}
+                                title={`打开《${safeDocTitleFromHPath(lastTripDocPath)}》`}
                             >
                                 <ExternalLink size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 打开行程文档 ↗
                             </button>

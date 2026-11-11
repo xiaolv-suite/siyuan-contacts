@@ -2,6 +2,7 @@
     import type { TrashContactEntry } from "../../domain/trash.ts";
     import { daysUntilTrashExpiration, filterTrashEntries } from "../../domain/trash.ts";
     import { translateText } from "../../domain/translation.ts";
+    import { resolveAvatarUrl } from "../../shared/avatar-processor.ts";
     import ViewState from "../ViewState.svelte";
     import { confirmDialog } from "../../libs/confirm-dialog.ts";
     import { onDestroy } from "svelte";
@@ -181,7 +182,7 @@
                         <div class="trash-item-left">
                             <span class="trash-avatar">
                                 {#if entry.snapshot.avatar}
-                                    <img class="trash-avatar-img" src={entry.snapshot.avatar} alt={entry.name} />
+                                    <img class="trash-avatar-img" src={resolveAvatarUrl(entry.snapshot.avatar)} alt={entry.name} />
                                 {:else}
                                     {entry.name.slice(0, 1)}
                                 {/if}

@@ -2072,7 +2072,7 @@
                         <span>{node.kind === "org" ? "组织" : "人物"} · 图内连接 {node.degree}</span>
                         <button class="b3-button b3-button--outline" onclick={() => void locateNode(node.id)}>{text("graphLocateCanvas", "定位画布")}</button>
                         {#if node.kind === "org" && onOpenOrgs}<button class="b3-button b3-button--text" onclick={() => onOpenOrgs?.(node.id)}>{text("graphOrgHoverOpen", "打开组织视图")}</button>{/if}
-                        {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === node.id} onclick={() => void openSourceDocument(node.id)}>{sourceOpeningDocId === node.id ? "正在打开…" : "打开来源文档"}</button>{/if}
+                        {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === node.id} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => void openSourceDocument(node.id)} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); void facade.openDocMenu?.(node.id, e); }}>{sourceOpeningDocId === node.id ? "正在打开…" : "打开来源文档"}</button>{/if}
                     </li>
                 {/each}
             </ul>
@@ -2394,7 +2394,7 @@
                     <button class="b3-button b3-button--text" onclick={() => { const id = displayedOrg?.id; clearHover(); if (id) focusOrganization(id); }}>{text("graphOrgFocus", "聚焦该组织")}</button>
                     <button class="b3-button b3-button--text" onclick={() => { selectedOrgId = ""; clearHover(); }}>关闭组织信息</button>
                     {#if onOpenOrgs}<button class="b3-button b3-button--text" onclick={() => onOpenOrgs?.(displayedOrg?.id)}>{text("graphOrgHoverOpen", "打开组织视图")}</button>{/if}
-                    {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === displayedOrg.id} onclick={() => { if (displayedOrg) void openSourceDocument(displayedOrg.id); }}>{sourceOpeningDocId === displayedOrg.id ? "正在打开…" : "打开来源文档"}</button>{/if}
+                    {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === displayedOrg.id} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => { if (displayedOrg) void openSourceDocument(displayedOrg.id); }} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); if (displayedOrg) void facade.openDocMenu?.(displayedOrg.id, e); }}>{sourceOpeningDocId === displayedOrg.id ? "正在打开…" : "打开来源文档"}</button>{/if}
                 </div>
             {:else if hoveredPerson}
                 <div
@@ -2437,7 +2437,7 @@
                         <button type="button" class="b3-chip font-size-11" onclick={() => { const docId = hoveredPerson?.docId; clearHover(); if (docId) { focusId = docId; compareId = ""; } }} title="将该节点设为关系分析中心">🎯 设为中心</button>
                     </div>
                     <button class="b3-button b3-button--text" onclick={() => { if (hoveredPerson) onOpenPeople({ itemIds: [hoveredPerson.itemId], label: `图谱定位 · ${hoveredPerson.name}` }); }}>{text("graphFocusInPeople", "在名册中定位")}</button>
-                    {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === hoveredPerson.docId} onclick={() => { if (hoveredPerson) void openSourceDocument(hoveredPerson.docId); }}>{sourceOpeningDocId === hoveredPerson.docId ? "正在打开…" : "打开来源文档"}</button>{/if}
+                    {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === hoveredPerson.docId} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => { if (hoveredPerson) void openSourceDocument(hoveredPerson.docId); }} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); if (hoveredPerson) void facade.openDocMenu?.(hoveredPerson.docId, e); }}>{sourceOpeningDocId === hoveredPerson.docId ? "正在打开…" : "打开来源文档"}</button>{/if}
                 </div>
             {/if}
             {#if drawerPerson}
@@ -2634,7 +2634,8 @@
                                 type="button"
                                 class="b3-button b3-button--outline lvct-graph-drawer__btn"
                                 onclick={() => void openSourceDocument(drawerPerson!.docId)}
-                                title="在思源主编辑器中打开该文档"
+                                oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); void facade.openDocMenu?.(drawerPerson!.docId, e); }}
+                                title="在思源主编辑器中打开该文档（右键呼出原生菜单）"
                             >
                                 打开文档 ↗
                             </button>

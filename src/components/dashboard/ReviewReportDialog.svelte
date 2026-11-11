@@ -9,6 +9,7 @@
     import StatusNotice from "../StatusNotice.svelte";
     import { useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
+    import { safeDocTitleFromHPath } from "../../libs/lv-notice-kit";
     import type { AuditModuleKey, AuditModuleResult, AuditIssue, AuditIssueKind, HealthAuditReport } from "../../domain/health-audit";
 
     let {
@@ -396,7 +397,7 @@
                     </button>
                     {#if createdDocInfo}
                         <span class="ft__smaller" style="color: var(--lvct-success, #16a34a);">
-                            已生成《{createdDocInfo.hpath.split("/").pop()}》
+                            已生成《{safeDocTitleFromHPath(createdDocInfo.hpath)}》
                             {#if onOpenDoc}
                                 <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => onOpenDoc?.(createdDocInfo!.docId)}>在主编辑器打开 ↗</button>
                             {/if}

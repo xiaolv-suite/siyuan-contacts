@@ -336,6 +336,8 @@ export interface ContactsPluginFacade {
     aiExtractFromDoc(docId: string, confirmation?: AiExtractionConfirmation): Promise<AiExtractOutcome>;
     /** 打开任意思源文档（捕获完成页等快捷入口使用，支持子块级高亮精准滚动定位） */
     openDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions): void | Promise<void>;
+    /** 弹出文档原生上下文菜单（SiYuan 3.8.10+ 原生树菜单） */
+    openDocMenu?(docId: string, event: MouseEvent): Promise<boolean>;
     openHostDoc(): void | Promise<void>;
     /** 打开人物文档（联系人详情页 = 人物文档，支持子块级高亮精准滚动定位） */
     openPersonDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions): void | Promise<void>;

@@ -11,6 +11,7 @@
     import type { PersonCardField } from "../../domain/preferences";
     import { onDestroy } from "svelte";
     import { lvLaunchpad } from "../../libs/lv-notice-kit";
+    import { resolveAvatarUrl } from "../../shared/avatar-processor";
 
     let {
         person,
@@ -200,7 +201,7 @@
                 {/if}
                 <span class="lvct-person-card__avatar lvct-person-card__avatar--sm" data-group={person.group || "未分组"}>
                     {#if person.avatar}
-                        <img src={person.avatar} alt="" class="lvct-avatar-img" />
+                        <img src={resolveAvatarUrl(person.avatar)} alt="" class="lvct-avatar-img" />
                     {:else}
                         {person.name.slice(0, 1)}
                     {/if}
@@ -280,7 +281,7 @@
             <button type="button" class="lvct-person-card__details" aria-label={`查看 ${person.name} 的详情`} onclick={(event) => { event.stopPropagation(); onOpen(person); }}>
                 <span class="lvct-person-card__avatar" data-group={person.group || "未分组"}>
                     {#if person.avatar}
-                        <img src={person.avatar} alt="" class="lvct-avatar-img" />
+                        <img src={resolveAvatarUrl(person.avatar)} alt="" class="lvct-avatar-img" />
                     {:else}
                         {person.name.slice(0, 1)}
                     {/if}

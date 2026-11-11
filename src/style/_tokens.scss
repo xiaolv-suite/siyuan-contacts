@@ -136,8 +136,9 @@
     --lv-heat-muted: #64748B;     /* 未互动/暂停：雅致冷蓝灰 */
     --lv-heat-muted-soft: color-mix(in srgb, var(--lv-heat-muted) 12%, transparent);
 
-    /* Cytoscape 不能直接消费 CSS 变量；图谱保留稳定 fallback，同时响应宿主主题的显式颜色变量。 */
-    --lvct-graph-text: var(--b3-theme-on-surface, #45475a);
+    /* Cytoscape 不能直接消费 CSS 变量；图谱文本固定使用插件自有文本色，
+       不读取宿主主题变量，避免宿主换主题时图谱配色被污染。 */
+    --lvct-graph-text: var(--lvct-text-2);
     --lvct-graph-edge: var(--lvct-text-3); /* 连线是信息，不能沿用低对比度的面板边框色。 */
     --lvct-graph-surface: var(--lvct-bg-surface);
 
@@ -285,10 +286,19 @@
      * 强行接管宿主主色、背景与边框变量，阻断一切第三方杂乱主题对插件内部的恶性污染。 */
     --b3-theme-primary: var(--lv-brand);
     --b3-theme-primary-light: color-mix(in srgb, var(--lv-brand) 12%, transparent);
+    --b3-theme-primary-lighter: color-mix(in srgb, var(--lv-brand) 6%, transparent);
+    --b3-theme-on-primary: #ffffff;
     --b3-theme-background: var(--lvct-bg-canvas);
+    --b3-theme-background-light: var(--lvct-bg-app);
     --b3-theme-surface: var(--lvct-bg-surface);
+    --b3-theme-surface-light: var(--lvct-bg-canvas);
     --b3-theme-surface-lighter: var(--lvct-border-subtle);
+    --b3-theme-on-background: var(--lvct-text-1);
+    --b3-theme-on-surface: var(--lvct-text-2);
+    --b3-theme-on-surface-light: var(--lvct-text-3);
+    --b3-border-color: var(--lvct-border-subtle);
     --b3-theme-error: var(--lvct-danger);
+    --b3-theme-error-soft: var(--lvct-danger-soft);
     --b3-theme-success: var(--lvct-success);
     --b3-theme-info: var(--lvct-info);
     --b3-theme-secondary: #d97706;
@@ -390,10 +400,19 @@ body[data-theme-mode="dark"] .lvct-sheet,
     /* 宿主主题隔离屏障暗色对齐 */
     --b3-theme-primary: #f97316;
     --b3-theme-primary-light: color-mix(in srgb, #f97316 16%, transparent);
+    --b3-theme-primary-lighter: color-mix(in srgb, #f97316 8%, transparent);
+    --b3-theme-on-primary: #ffffff;
     --b3-theme-background: var(--lvct-bg-canvas);
+    --b3-theme-background-light: var(--lvct-bg-app);
     --b3-theme-surface: var(--lvct-bg-surface);
+    --b3-theme-surface-light: var(--lvct-bg-canvas);
     --b3-theme-surface-lighter: var(--lvct-border-subtle);
+    --b3-theme-on-background: var(--lvct-text-1);
+    --b3-theme-on-surface: var(--lvct-text-2);
+    --b3-theme-on-surface-light: var(--lvct-text-3);
+    --b3-border-color: var(--lvct-border-subtle);
     --b3-theme-error: var(--lvct-danger);
+    --b3-theme-error-soft: var(--lvct-danger-soft);
     --b3-theme-success: var(--lvct-success);
     --b3-theme-info: var(--lvct-info);
     --b3-theme-secondary: #f59e0b;

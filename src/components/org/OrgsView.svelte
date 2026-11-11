@@ -391,8 +391,9 @@
                             onclick={() => onOpenGraphOrg?.(org.docId)}>
                             <Network size={13} /> {text("orgsViewGraph", "图谱")}</button>{/if}
                         {#if facade?.openDoc}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
-                            title="在思源笔记中打开该组织的实体文档，撰写会议记录与组织随笔"
-                            onclick={() => facade.openDoc?.(org.docId)}>
+                            title="在思源笔记中打开该组织的实体文档，撰写会议记录与组织随笔（右键呼出原生菜单）"
+                            onclick={() => facade.openDoc?.(org.docId)}
+                            oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(org.docId, e); }}>
                             <ExternalLink size={13} /> {text("detailOpenDoc", "文档")}</button>{/if}
                     </div>
                 </div>
@@ -414,7 +415,8 @@
                                 type="button"
                                 class="b3-button b3-button--text b3-button--small"
                                 onclick={() => facade.openDoc?.(activeSelectedOrg.docId)}
-                                title="在思源笔记中打开该组织的实体文档"
+                                oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(activeSelectedOrg.docId, e); }}
+                                title="在思源笔记中打开该组织的实体文档（右键呼出原生菜单）"
                             >
                                 <ExternalLink size={13} class="lvct-icon-inline" /> 打开文档 &gt;
                             </button>

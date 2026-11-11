@@ -17,6 +17,7 @@
     import { toLocalDateKey } from "../../domain/interactions.ts";
     import { translateText } from "../../domain/translation.ts";
     import { copyPlainText } from "../../shared/clipboard.ts";
+    import { resolveAvatarUrl } from "../../shared/avatar-processor.ts";
     import ViewState from "../ViewState.svelte";
     import { onDestroy } from "svelte";
     import {
@@ -336,7 +337,7 @@
                             <div class="anniv-person-info">
                                 <span class="anniv-avatar">
                                     {#if matchedPerson?.avatar}
-                                        <img class="anniv-avatar-img" src={matchedPerson.avatar} alt={item.personName} />
+                                        <img class="anniv-avatar-img" src={resolveAvatarUrl(matchedPerson.avatar)} alt={item.personName} />
                                     {:else}
                                         {item.personName.slice(0, 1)}
                                     {/if}
@@ -555,7 +556,7 @@
         left: 8px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         pointer-events: none;
         display: flex;
         align-items: center;
@@ -680,7 +681,7 @@
         padding: 0;
         font-size: 14px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         cursor: pointer;
     }
 
@@ -693,11 +694,11 @@
 
     .anniv-category-tag {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .anniv-item-title {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .anniv-countdown-badge {
@@ -727,7 +728,7 @@
 
     .countdown-date {
         font-size: 10px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .anniv-years-badge {
@@ -754,7 +755,7 @@
     .greeting-text {
         margin: 0;
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         line-height: 1.5;
         font-style: italic;
     }

@@ -1,5 +1,7 @@
 import { getFrontend, openMobileFileById, openTab } from "siyuan";
 import type { App } from "siyuan";
+import { querySql } from "../api/client";
+import { showDocTreeNativeMenu } from "./lv-notice-kit";
 
 export interface OpenDocOptions {
     /** 精确高亮并滚动定位到的子块 ID */
@@ -28,4 +30,30 @@ export async function openSiYuanDocument(
             ...(hasBlockTarget || options?.highlight ? { action: ["cb-get-hl", "cb-get-context"] } : {}),
         },
     });
+}
+
+/** 弹出思源官方原生文档树右键菜单（支持移动端原生底栏菜单） */
+export async function openDocumentContextMenu(
+    docId: string,
+    event: MouseEvent,
+    notebookId?: string,
+): Promise<boolean> {
+    if (!docId) return false;
+    let nbId = notebookId;
+    if (!nbId) {
+        try {
+            const rows = await querySql<{ box: string }>(`SELECT box FROM blocks WHERE id = '${docId.replace(/'/g, "''")}' LIMIT 1`);
+            if (rows && rows[0]?.box) {
+                nbId = String(rows[0].box);
+            }
+        } catch {}
+    }
+    if (nbId) {
+        return await showDocTreeNativeMenu({
+            notebookId: nbId,
+            docId,
+            position: { x: event.clientX, y: event.clientY },
+        });
+    }
+    return false;
 }

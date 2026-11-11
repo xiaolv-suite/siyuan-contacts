@@ -561,3 +561,29 @@ test("exportSinglePersonVcf：单人物完整全要素导出为 vCard 3.0", () =
     assert.ok(vcf.includes("ADR;TYPE=HOME:;;;;深圳市;;"));
     assert.ok(vcf.includes("END:VCARD"));
 });
+
+test("VCF 跨格式号码智能去重、城市地址归一化、组织部门派生与备注换行保真", () => {
+    const vcf = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        "FN:王小强",
+        "TEL;TYPE=CELL:138-0013-8000",
+        "TEL;TYPE=HOME:+86 13800138000",
+        "TEL;TYPE=WORK:010-88888888",
+        "TEL;TYPE=OTHER:138 0013 8000",
+        "ORG:小米集团;智能汽车部;座舱感知组",
+        "ADR:;;海淀区中关村南大街1号;北京市;;100081;中国",
+        "NOTE:第一行便签\\n第二行便签",
+        "END:VCARD",
+    ].join("\r\n");
+
+    const [contact] = parseVcf(vcf);
+    assert.ok(contact);
+    assert.equal(contact.name, "王小强");
+    // Cross-format duplicate of 13800138000 is removed; 010-88888888 is preserved
+    assert.equal(contact.phone, "138-0013-8000 / 010-88888888");
+    assert.equal(contact.org, "小米集团");
+    assert.equal(contact.title, "智能汽车部 · 座舱感知组");
+    assert.equal(contact.city, "北京");
+    assert.equal(contact.note, "第一行便签\n第二行便签");
+});

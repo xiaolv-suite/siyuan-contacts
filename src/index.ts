@@ -158,7 +158,7 @@ import { previewInteractionImportDiff } from "./services/interaction-import";
 import { initExternalBridge, disposeExternalBridge } from "./bridge/external-bridge";
 import { handleProtyleEvent, type PanelContext } from "./panels/person-panel";
 import { svelteDialog } from "./libs/dialog";
-import { openSiYuanDocument } from "./libs/open-document";
+import { openSiYuanDocument, openDocumentContextMenu } from "./libs/open-document";
 import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation, subscribeDataChanged } from "./libs/data-events";
 import { schedulePersonDocMirror, disposeDocMirrorScheduler } from "./services/doc-mirror";
 import { syncOrganizationDocSection } from "./services/org-dossier";
@@ -3021,6 +3021,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     openPersonDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions) {
         return this.openDoc(docId, options);
+    }
+
+    async openDocMenu(docId: string, event: MouseEvent): Promise<boolean> {
+        if (!this.isLifecycleActive() || !docId) return false;
+        return openDocumentContextMenu(docId, event, this.settings?.notebookId);
     }
 
     openSetting(): void {

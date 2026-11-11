@@ -45,7 +45,8 @@
         Upload,
         Quote,
     } from "@lucide/svelte";
-    import { processAvatarFile, processBusinessCardFile } from "../../shared/avatar-processor.ts";
+    import { processAvatarFile, processBusinessCardFile, resolveAvatarUrl } from "../../shared/avatar-processor.ts";
+    import { openNativeAssetPicker } from "../../libs/lv-notice-kit.ts";
     import {
         CHANNEL_TYPES,
         CHANNEL_TYPE_MAP,
@@ -3606,6 +3607,27 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
+    async function handlePickAssetAvatar() {
+        if (avatarSaving) return;
+        avatarSaving = true;
+        avatarError = "";
+        try {
+            const res = await openNativeAssetPicker({ exts: ["png", "jpg", "jpeg", "webp", "gif"] });
+            if (res?.path) {
+                const assetPath = res.path.trim();
+                if (onSaveAvatar) {
+                    await onSaveAvatar(current.docId, assetPath);
+                }
+                current = { ...current, avatar: assetPath };
+                onChanged();
+            }
+        } catch (err) {
+            avatarError = requestErrorMessage(err);
+        } finally {
+            avatarSaving = false;
+        }
+    }
+
     function handleDetailGlobalKeydown(event: KeyboardEvent) {
         if (cardViewerOpen && event.key === "Escape") {
             event.preventDefault();
@@ -3652,12 +3674,17 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 data-group={current.group || "未分组"}
                 role="button"
                 tabindex="0"
-                title="点击上传或更换真人头像照片"
+                title="左键上传本地图片，右键从思源资源库挑选头像"
                 style="cursor: pointer; position: relative;"
                 onclick={() => avatarFileInput?.click()}
+                oncontextmenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void handlePickAssetAvatar();
+                }}
             >
                 {#if current.avatar}
-                    <img src={current.avatar} alt={current.name} class="lvct-avatar-img" />
+                    <img src={resolveAvatarUrl(current.avatar)} alt={current.name} class="lvct-avatar-img" />
                 {:else}
                     {current.name.slice(0, 1)}
                 {/if}
@@ -3666,16 +3693,26 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 </span>
                 {#if isStarred}<span class="lvct-detail__avatar-star" title="星标联系人">⭐</span>{/if}
             </div>
-            {#if current.avatar}
+            <div class="lvct-detail__avatar-actions" style="display: flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: wrap;">
                 <button
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
-                    style="font-size: 10px; padding: 0 4px; line-height: 1.2; color: var(--lvct-text-3);"
-                    title="移除照片，恢复默认单字头像"
+                    style="font-size: 10px; padding: 0 4px; line-height: 1.2; color: var(--lvct-primary);"
+                    title="从思源资源库直接选取图片作为头像"
                     disabled={avatarSaving}
-                    onclick={handleClearAvatar}
-                >移除照片</button>
-            {/if}
+                    onclick={handlePickAssetAvatar}
+                >资源库</button>
+                {#if current.avatar}
+                    <button
+                        type="button"
+                        class="b3-button b3-button--text b3-button--small"
+                        style="font-size: 10px; padding: 0 4px; line-height: 1.2; color: var(--lvct-text-3);"
+                        title="移除照片，恢复默认单字头像"
+                        disabled={avatarSaving}
+                        onclick={handleClearAvatar}
+                    >移除</button>
+                {/if}
+            </div>
             {#if avatarError}
                 <span class="ft__smaller ft__error" role="alert">{avatarError}</span>
             {/if}

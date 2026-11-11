@@ -52,6 +52,21 @@ export function isValidAvatarUrl(value: unknown): boolean {
 }
 
 /**
+ * 将头像相对路径（如 assets/xxx.png）或 dataUrl 解析为可供 img 标签正常加载的有效 URL
+ */
+export function resolveAvatarUrl(avatar?: string | null): string {
+    if (!avatar || typeof avatar !== "string") return "";
+    const clean = avatar.trim();
+    if (!clean) return "";
+    try {
+        const base = typeof location !== "undefined" && location?.origin ? location.origin : "http://127.0.0.1:6806";
+        return new URL(clean, base).href;
+    } catch {
+        return clean;
+    }
+}
+
+/**
  * 对输入的图片 File 进行中心正方形裁切（Center Crop）并缩小到目标尺寸（160×160）
  */
 export async function processAvatarFile(file: File, targetSize: number = AVATAR_TARGET_SIZE): Promise<ProcessAvatarResult> {

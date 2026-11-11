@@ -208,8 +208,7 @@
         {#if people.length > 0 && onSelectPerson}
             <div class="lvct-context-panel__search-row">
                 <input
-                    class="b3-text-field fn__block font-size-11"
-                    style="border-radius: 9999px; padding: 3px 10px; height: 26px;"
+                    class="b3-text-field fn__block lvct-context-panel__search-input"
                     type="search"
                     placeholder="快速切人…"
                     bind:value={searchQuery}
@@ -563,6 +562,13 @@
         padding-bottom: 2px;
     }
 
+    .lvct-context-panel__search-input {
+        border-radius: 9999px;
+        padding: 3px 10px;
+        height: 28px;
+        font-size: 11px;
+    }
+
     .lvct-context-panel__switch-chip {
         border: 1px solid var(--lvct-border-subtle, rgba(44, 28, 16, 0.1));
         background: var(--lvct-bg-surface, #ffffff);
@@ -583,6 +589,23 @@
             border-color: var(--lv-brand, #EA580C);
             color: var(--lv-brand, #EA580C);
             font-weight: 600;
+        }
+    }
+
+    @media (max-width: 640px), (pointer: coarse) {
+        .lvct-context-panel__search-input {
+            height: 44px;
+            min-height: 44px;
+            font-size: 16px;
+            padding: 6px 12px;
+        }
+
+        .lvct-context-panel__switch-chip {
+            min-height: 44px;
+            padding: 8px 14px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
         }
     }
 

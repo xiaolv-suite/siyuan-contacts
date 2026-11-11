@@ -6,7 +6,7 @@
  */
 import { isValidDateKey } from "./date-key.ts";
 import type { ContactSummary } from "./person.ts";
-import { extractNormalizedRegion } from "./region.ts";
+import { extractNormalizedRegion, extractCityFromAddress } from "./region.ts";
 import { profileText } from "./people-profiles.ts";
 
 /** 源卡片中的联系方式候选；只供本次导入预览，不是持久条目身份。 */
@@ -204,6 +204,25 @@ export interface ContactFromCardOptions {
     fallbackToPhoneOrEmail?: boolean;
 }
 
+/**
+ * 手机通讯录号码跨格式去重（兼容识别带 +86、国家码、空格、短横线格式的同一号码）
+ */
+export function deduplicateVcfPhones(phones: readonly string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const p of phones) {
+        const trimmed = p.trim();
+        if (!trimmed) continue;
+        const key = trimmed.replace(/[^\d+]/g, "").replace(/^(\+86|0086)/, "");
+        const comparisonKey = key.length >= 7 ? key : trimmed.toLowerCase();
+        if (!seen.has(comparisonKey)) {
+            seen.add(comparisonKey);
+            result.push(trimmed);
+        }
+    }
+    return result;
+}
+
 function contactFromCard(lines: string[], options: ContactFromCardOptions = {}): VCardContact | null {
     const props: VCardProperty[] = [];
     for (const line of lines) {
@@ -223,7 +242,14 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
     // frequently emitted by Xiaomi/Android contact exports) to serve as fallback.
     const fn = first("FN").trim();
     const nickname = first("NICKNAME").trim();
-    const org = first("ORG").split(";")[0]?.trim() || "";
+    const orgRaw = first("ORG").trim();
+    const orgParts = orgRaw ? splitUnescaped(orgRaw, ";").map((p) => unescapeVcf(p).trim()) : [];
+    const org = orgParts[0] || "";
+    const orgDept = orgParts.slice(1).filter(Boolean).join(" · ");
+    let title = first("TITLE").trim();
+    if (!title && orgDept) {
+        title = orgDept;
+    }
 
     const phones = all("TEL")
         .map((value) => unescapeVcf(value).trim())
@@ -233,10 +259,10 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
     let name = fn || structuredName(rawFirst("N")).trim() || nickname || org;
     const isFallbackName = !name && Boolean(options.fallbackToPhoneOrEmail);
     if (!name && options.fallbackToPhoneOrEmail) {
-        const title = first("TITLE").trim();
-        const rawNote = first("NOTE").trim();
-        const noteFirstLine = rawNote ? rawNote.split("\n")[0].trim().slice(0, 30) : "";
-        name = title || noteFirstLine || (phones.length > 0 ? `未命名 (${phones[0]})` : emails.length > 0 ? `未命名 (${emails[0]})` : "");
+        const fallbackTitle = title || first("TITLE").trim();
+        const rawNoteFallback = unescapeVcf(rawFirst("NOTE")).trim();
+        const noteFirstLine = rawNoteFallback ? rawNoteFallback.split("\n")[0].trim().slice(0, 30) : "";
+        name = fallbackTitle || noteFirstLine || (phones.length > 0 ? `未命名 (${phones[0]})` : emails.length > 0 ? `未命名 (${emails[0]})` : "");
     }
     if (!name) return null;
 
@@ -267,19 +293,20 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
     if (first("X-LVCT-BDAY-LUNAR") && !isLunar && !birthday) needsReview.push("X-LVCT-BDAY-LUNAR");
 
     const wechat = first("X-WECHAT").trim();
-    const title = first("TITLE").trim();
-    const rawNote = first("NOTE").trim();
+    const rawNote = unescapeVcf(rawFirst("NOTE")).replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
     const adr = first("ADR").trim();
     let city = "";
     if (adr) {
         const parts = splitUnescaped(adr, ";").map((p) => unescapeVcf(p).trim());
-        city = parts[3] || parts[4] || parts.filter(Boolean).join(" ");
+        const combined = parts.filter(Boolean).join(" ");
+        const resolved = extractCityFromAddress(combined) || extractCityFromAddress(parts[3] || parts[4]);
+        city = resolved?.city || parts[3] || parts[4] || combined;
     }
 
     // Keep source order and duplicate values for the import preview. The
     // legacy scalar phone field still de-duplicates before joining, so this
     // does not change the existing AV-compatible value.
-    const uniquePhones = [...new Set(phones)];
+    const uniquePhones = deduplicateVcfPhones(phones);
     const websites = all("URL").map((value) => unescapeVcf(value).trim()).filter((value) => value.length > 0);
     const methodPreview = contactMethodPreview(props);
     if (phones.length > 1) needsReview.push("TEL（多项已合并到电话字段）");
