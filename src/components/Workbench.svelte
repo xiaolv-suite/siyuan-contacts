@@ -1118,9 +1118,14 @@
 								            onLoadItineraries={facade.loadPersonItineraries ? (docId) => facade.loadPersonItineraries!(docId) : undefined}
 							            onSaveItinerary={facade.savePersonItinerary ? (item) => facade.savePersonItinerary!(item) : undefined}
 							            onRemoveItinerary={facade.removePersonItinerary ? (docId, itnId) => facade.removePersonItinerary!(docId, itnId) : undefined}
-							            onToggleItineraryChecklist={facade.togglePersonItineraryChecklist ? (docId, itnId, chkId) => facade.togglePersonItineraryChecklist!(docId, itnId, chkId) : undefined}
-		            {onOpenPersonDoc}
-            onOpenGraphPerson={openGraphPerson}
+								            onToggleItineraryChecklist={facade.togglePersonItineraryChecklist ? (docId, itnId, chkId) => facade.togglePersonItineraryChecklist!(docId, itnId, chkId) : undefined}
+			            onOpenPersonDoc={(docId) => {
+                detailPerson = null;
+                detailReturn = null;
+                detailDom = null;
+                onOpenPersonDoc(docId);
+            }}
+	            onOpenGraphPerson={openGraphPerson}
             onOpenPeople={openPeople}
             onNavigate={showDetail}
             onNavigateDocId={(docId) => openPersonByDocId(docId)}

@@ -1232,7 +1232,7 @@
                     <div class="lvct-org-manager__remove-confirm" role="group" aria-label="移除组织确认">
                         <b>从插件移除「{currentOrg.name}」？</b>
                         <p>组织将从日常列表和选组织入口隐藏。原始组织文档、组织资料和全部成员历史均保留；从“已移除”中恢复后，组织会回到活跃状态。</p>
-                        <p>保留文档：<button type="button" class="b3-button b3-button--text" onclick={() => facade.openDoc(currentOrg.docId)}>{currentOrg.name}</button>
+                        <p>保留文档：<button type="button" class="b3-button b3-button--text" onclick={() => { void facade.openDoc(currentOrg.docId); onClose?.(); }}>{currentOrg.name}</button>
                             · 当前成员 {currentOrg.memberships.filter((entry) => entry.status === "active").length} 条
                             · 历史成员 {currentOrg.memberships.filter((entry) => entry.status === "former").length} 条</p>
                         <div class="fn__flex" style="gap: 8px; flex-wrap: wrap;">
@@ -1243,7 +1243,7 @@
                 {/if}
                 {#if currentOrg.removed}
                     <p class="ft__smaller ft__on-surface" role="status">此组织已从插件移除。组织文档及 {currentOrg.memberships.length} 条成员历史已保留；恢复后组织回到活跃状态，可继续管理。</p>
-                    <button type="button" class="b3-button b3-button--text" onclick={() => facade.openDoc(currentOrg.docId)}>打开保留的组织文档</button>
+                    <button type="button" class="b3-button b3-button--text" onclick={() => { void facade.openDoc(currentOrg.docId); onClose?.(); }}>打开保留的组织文档</button>
                     <div class="lvct-org-manager__members lvct-org-manager__members--removed" aria-busy={memberLoading}>
                         <div class="fn__flex" style="gap: 8px; align-items: center; flex-wrap: wrap;">
                             <b>已保留的成员历史</b>

@@ -126,7 +126,10 @@
     });
 
     function openOptionalDoc(docId: string | undefined): void {
-        if (docId) void facade.openDoc(docId);
+        if (docId) {
+            void facade.openDoc(docId);
+            onClose();
+        }
     }
 
     const checkedIds = $derived(Object.entries(checked).filter(([, on]) => on).map(([id]) => id));
@@ -503,11 +506,11 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
             <p class="ft__smaller ft__on-surface">{text("captureDoneIdempotent", "同一篇笔记重复捕获不会重复记录。")}</p>
         </div>
         <div class="lvct-form__actions lvct-capture__result-actions">
-            <button class="b3-button b3-button--outline" onclick={() => facade.openDoc(docId)} oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(docId, e); }} title="点击打开文档（右键呼出原生菜单）">{text("captureOpenNote", "打开原笔记")}</button>
+            <button class="b3-button b3-button--outline" onclick={() => { void facade.openDoc(docId); onClose(); }} oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(docId, e); }} title="点击打开文档（右键呼出原生菜单）">{text("captureOpenNote", "打开原笔记")}</button>
             {#if result.dateDocId}<button class="b3-button b3-button--outline" onclick={() => openOptionalDoc(result?.dateDocId)} oncontextmenu={(e) => { e.preventDefault(); const id = result?.dateDocId; if (id) void facade.openDocMenu?.(id, e); }} title="点击打开文档（右键呼出原生菜单）">{text("captureOpenDiary", "打开当日日记")}</button>{/if}
             {#if result.placeDocId}<button class="b3-button b3-button--outline" onclick={() => openOptionalDoc(result?.placeDocId)} oncontextmenu={(e) => { e.preventDefault(); const id = result?.placeDocId; if (id) void facade.openDocMenu?.(id, e); }} title="点击打开文档（右键呼出原生菜单）">{text("captureOpenPlace", "打开地点")}</button>{/if}
             {#each createdPeople as person (person.docId)}
-                <button class="b3-button b3-button--outline" onclick={() => facade.openPersonDoc(person.docId)} oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(person.docId, e); }} title="点击打开文档（右键呼出原生菜单）">{text("captureOpenPerson", "打开{nm}", { nm: person.name })}</button>
+                <button class="b3-button b3-button--outline" onclick={() => { void facade.openPersonDoc(person.docId); onClose(); }} oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(person.docId, e); }} title="点击打开文档（右键呼出原生菜单）">{text("captureOpenPerson", "打开{nm}", { nm: person.name })}</button>
             {/each}
         </div>
         {#if result.complete === false}
