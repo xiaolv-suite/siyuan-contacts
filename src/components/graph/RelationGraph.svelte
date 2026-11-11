@@ -1997,6 +1997,8 @@
                             class={`lvct-graph-legend__item lvct-graph-legend__item--${group.className}`}
                             class:lvct-graph-legend__item--active={isActive}
                             class:lvct-graph-legend__item--dimmed={group.className === "org" ? !showOrgs : groupFilter && groupFilter !== group.label}
+                            /* 图例项是筛选切换钮：向读屏播报按下状态（org 组=显示组织节点，其余=按标签过滤） */
+                            aria-pressed={group.className === "org" ? showOrgs : groupFilter === group.label}
                             onclick={() => {
                                 if (group.className === "org") {
                                     showOrgs = !showOrgs;
