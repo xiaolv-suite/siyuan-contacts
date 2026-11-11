@@ -387,7 +387,7 @@
                             <button
                                 type="button"
                                 class="b3-button b3-button--text b3-button--small"
-                                onclick={() => onOpenDoc?.(lastSyncedDocId)}
+                                onclick={() => { onClose?.(); onOpenDoc?.(lastSyncedDocId); }}
                                 title="在思源主编辑器中打开该城市实体文档，撰写美食攻略与出行随笔"
                             >
                                 <ExternalLink size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 打开《{selectedCity}》文档 ↗
@@ -429,7 +429,7 @@
                                 type="button"
                                 class="b3-button b3-button--text b3-button--small"
                                 style="color: var(--lvct-success, #16a34a);"
-                                onclick={() => onOpenDoc?.(lastTripDocId)}
+                                onclick={() => { onClose?.(); onOpenDoc?.(lastTripDocId); }}
                                 title={`打开《${safeDocTitleFromHPath(lastTripDocPath)}》`}
                             >
                                 <ExternalLink size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 打开行程文档 ↗

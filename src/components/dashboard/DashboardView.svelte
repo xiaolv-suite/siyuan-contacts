@@ -2107,7 +2107,10 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             i18n={facade.i18n}
             buildReport={(range) => facade.buildReviewReport(range.from, range.to)}
             createDocReport={facade.createReviewReportDoc ? (range) => facade.createReviewReportDoc!(range) : undefined}
-            onOpenDoc={(docId) => facade.openDoc?.(docId)}
+            onOpenDoc={(docId) => {
+                reviewOpen = false;
+                facade.openDoc?.(docId);
+            }}
             onOpenPeople={(focus) => {
                 reviewOpen = false;
                 onOpenPeople(focus);
@@ -2127,7 +2130,10 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 const matched = data?.allPeople ? filterPeopleByRegion(data.allPeople, region) : [];
                 onOpenPeople({ itemIds: matched.map((p) => p.itemId), label: `城市 · ${region}` });
             }}
-            onOpenDoc={(docId) => facade.openDoc?.(docId)}
+            onOpenDoc={(docId) => {
+                regionExplorerOpen = false;
+                facade.openDoc?.(docId);
+            }}
             onClose={() => (regionExplorerOpen = false)}
         />
     </LvctDialog>
@@ -2310,7 +2316,10 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 occasionsHubOpen = false;
                 onOpenPeople({ ...filter, label: filter.label ?? "群体活动参会人" });
             }}
-            onOpenDoc={onOpenPersonDoc}
+            onOpenDoc={(docId) => {
+                occasionsHubOpen = false;
+                onOpenPersonDoc?.(docId);
+            }}
             onClose={() => (occasionsHubOpen = false)}
             {i18n}
         />
