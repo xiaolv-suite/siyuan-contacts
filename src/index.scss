@@ -15201,3 +15201,29 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         background: color-mix(in srgb, var(--lvct-accent, var(--b3-theme-primary)) 26%, transparent);
     }
 }
+
+/* ══════════ 按钮专项：按压反馈 / 忙碌态拦截 / 文字显示 ══════════ */
+:is(.lvct-tab-root, .lvct-dialog-root, .lvct-sheet) {
+    /* 主次按钮按压反馈（禁用/忙碌态不响应） */
+    :is(.b3-button, button):not(:disabled):not([aria-busy="true"]):active {
+        transform: scale(0.97);
+    }
+
+    /* 忙碌态：拦截连点 + 视觉降透明 */
+    button[aria-busy="true"] {
+        pointer-events: none;
+        opacity: 0.72;
+    }
+
+    button {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* 设置分区行内的操作按钮：长文案单行截断 */
+    .lvct-settings__row :is(.b3-button, button):not(:only-child) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
