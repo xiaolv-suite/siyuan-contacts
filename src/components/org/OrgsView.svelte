@@ -49,7 +49,7 @@
     async function selectOrgCard(docId: string) {
         activeOrgDocId = docId;
         await tick();
-        cockpitElement?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+        cockpitElement?.scrollIntoView({ behavior: (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ? "auto" : "smooth", block: "nearest" });
     }
     let refreshVersion = 0;
     let organizationLoadGeneration = 0;

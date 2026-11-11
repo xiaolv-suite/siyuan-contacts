@@ -71,20 +71,20 @@ export function generateBusinessCardSvg(input: BusinessCardInput): string {
         bgFill = "#0F172A";
         bgCardGradient = `
             <defs>
-                <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="bgGrad--brand" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#0F172A" />
                     <stop offset="50%" stop-color="#1E293B" />
                     <stop offset="100%" stop-color="#0F172A" />
                 </linearGradient>
-                <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="avatarGrad--brand" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#EA580C" />
                     <stop offset="100%" stop-color="#F97316" />
                 </linearGradient>
-                <radialGradient id="glowTop" cx="10%" cy="10%" r="50%">
+                <radialGradient id="glowTop--brand" cx="10%" cy="10%" r="50%">
                     <stop offset="0%" stop-color="#EA580C" stop-opacity="0.3" />
                     <stop offset="100%" stop-color="#EA580C" stop-opacity="0" />
                 </radialGradient>
-                <radialGradient id="glowBottom" cx="90%" cy="90%" r="50%">
+                <radialGradient id="glowBottom--brand" cx="90%" cy="90%" r="50%">
                     <stop offset="0%" stop-color="#0284C7" stop-opacity="0.25" />
                     <stop offset="100%" stop-color="#0284C7" stop-opacity="0" />
                 </radialGradient>
@@ -99,7 +99,7 @@ export function generateBusinessCardSvg(input: BusinessCardInput): string {
         bgFill = "#18181B";
         bgCardGradient = `
             <defs>
-                <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="avatarGrad--dark" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#3F3F46" />
                     <stop offset="100%" stop-color="#27272A" />
                 </linearGradient>
@@ -115,7 +115,7 @@ export function generateBusinessCardSvg(input: BusinessCardInput): string {
         // minimal
         bgCardGradient = `
             <defs>
-                <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="avatarGrad--minimal" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#0284C7" />
                     <stop offset="100%" stop-color="#38BDF8" />
                 </linearGradient>
@@ -179,15 +179,15 @@ export function generateBusinessCardSvg(input: BusinessCardInput): string {
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
     ${bgCardGradient}
     <!-- 卡片外框与背景 -->
-    <rect width="${width}" height="${height}" rx="20" fill="${theme === "brand" ? "url(#bgGrad)" : bgFill}" stroke="${borderColor}" stroke-width="1.5" />
+    <rect width="${width}" height="${height}" rx="20" fill="${theme === "brand" ? "url(#bgGrad--brand)" : bgFill}" stroke="${borderColor}" stroke-width="1.5" />
     ${theme === "brand" ? `
-    <rect width="${width}" height="${height}" rx="20" fill="url(#glowTop)" pointer-events="none" />
-    <rect width="${width}" height="${height}" rx="20" fill="url(#glowBottom)" pointer-events="none" />
+    <rect width="${width}" height="${height}" rx="20" fill="${theme === "brand" ? "url(#glowTop--brand)" : "none"}" pointer-events="none" />
+    <rect width="${width}" height="${height}" rx="20" fill="${theme === "brand" ? "url(#glowBottom--brand)" : "none"}" pointer-events="none" />
     ` : ""}
 
     <!-- 头像圆形徽章 -->
     <g transform="translate(${isVertical ? 24 : 36}, 32)">
-        <circle cx="32" cy="32" r="32" fill="url(#avatarGrad)" />
+        <circle cx="32" cy="32" r="32" fill="url(#avatarGrad--${theme})" />
         <text x="32" y="42" font-size="28" font-weight="bold" fill="#FFFFFF" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">${avatarChar}</text>
     </g>
 

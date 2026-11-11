@@ -2490,7 +2490,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     async function scrollToRecordSection() {
         if (await selectTab("overview")) {
             await tick();
-            recordInputEl?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+            recordInputEl?.scrollIntoView({ behavior: (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ? "auto" : "smooth", block: "center" });
             recordInputEl?.focus();
         }
     }
