@@ -15257,3 +15257,25 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         overflow-wrap: anywhere;
     }
 }
+
+/* ══════════ 手机端专项：粘滞 hover 抑制（导航底色透明系，激活态保留） ══════════ */
+@media (hover: none) and (pointer: coarse) {
+    :is(.lvct-tab-root, .lvct-dialog-root, .lvct-sheet) {
+        :is(.lvct-settings__nav-item, .lvct-workbench__nav-item, .lvct-nav-tabs button):hover:not(.lvct-settings__nav-item--active):not(.is-active):not([aria-selected="true"]) {
+            background: transparent;
+        }
+    }
+}
+
+/* ══════════ 手机端专项：卡片/行按压反馈 ══════════ */
+@media (hover: none) and (pointer: coarse) {
+    :is(.lvct-tab-root, .lvct-dialog-root) {
+        .lvct-person-card:active {
+            filter: brightness(0.96);
+        }
+
+        .lvct-settings__row:active {
+            background: color-mix(in srgb, var(--lvct-accent, var(--b3-theme-primary)) 8%, transparent);
+        }
+    }
+}
