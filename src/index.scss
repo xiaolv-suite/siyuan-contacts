@@ -2335,8 +2335,8 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     }
 }
 
-html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 18%, var(--lvct-bg-surface));
+:is([data-theme-mode="dark"], [data-appearance="dark"], body.body--dark, body.theme--dark, html.dark, body.dark) .lvct-settings__nav-item--active {
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 22%, var(--lvct-bg-surface, #1e222d));
     color: var(--lv-brand, #ea580c);
     box-shadow: none;
 }
@@ -11424,22 +11424,24 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 /* 暗色模式下卡片与面板采用金属/玻璃微发丝内切光与环境漫反射 */
-html[data-theme-mode="dark"] .lvct-home__card,
-html[data-theme-mode="dark"] .lvct-dash__quickstart,
-html[data-theme-mode="dark"] .lvct-dash__actions,
-html[data-theme-mode="dark"] .lvct-dash__stat,
-html[data-theme-mode="dark"] .lvct-dash__chart-card,
-html[data-theme-mode="dark"] .lvct-settings__panel,
-html[data-theme-mode="dark"] .lvct-orgs-view__card,
-html[data-theme-mode="dark"] .lvct-orgs-overview-bar,
-html[data-theme-mode="dark"] .lvct-person-card,
-html[data-theme-mode="dark"] .lvct-people__control-surface,
-html[data-theme-mode="dark"] .lvct-people__alphabet-bar,
-html[data-theme-mode="dark"] .lvct-detail__quick-bar,
-html[data-theme-mode="dark"] .lvct-org-manager__member-toolbar,
-html[data-theme-mode="dark"] .lvct-org-manager__batch-bar,
-html[data-theme-mode="dark"] .lvct-org-manager__member-list--grid .lvct-org-manager__member,
-html[data-theme-mode="dark"] .lvct-org-profile-editor__section {
+:is([data-theme-mode="dark"], [data-appearance="dark"], body.body--dark, body.theme--dark, html.dark, body.dark) :is(
+    .lvct-home__card,
+    .lvct-dash__quickstart,
+    .lvct-dash__actions,
+    .lvct-dash__stat,
+    .lvct-dash__chart-card,
+    .lvct-settings__panel,
+    .lvct-orgs-view__card,
+    .lvct-orgs-overview-bar,
+    .lvct-person-card,
+    .lvct-people__control-surface,
+    .lvct-people__alphabet-bar,
+    .lvct-detail__quick-bar,
+    .lvct-org-manager__member-toolbar,
+    .lvct-org-manager__batch-bar,
+    .lvct-org-manager__member-list--grid .lvct-org-manager__member,
+    .lvct-org-profile-editor__section
+) {
     border-color: rgba(255, 255, 255, 0.08);
     box-shadow: var(--lvct-shadow-card);
 }
