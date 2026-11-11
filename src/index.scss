@@ -15281,3 +15281,18 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         }
     }
 }
+
+/* R14 桌面 hover 收口（触屏不生效） */
+@media (hover: hover) {
+    .lvct-fu-group__summary:hover,
+    .lvct-graph-explore > summary:hover,
+    .lvct-graph-summary__details > summary:hover,
+    .lvct-graph-advanced > summary:hover {
+        color: var(--lvct-accent);
+    }
+    .anniv-name-btn:hover,
+    .lvct-context-quick__type-chip:hover,
+    .tab-btn:hover {
+        background: color-mix(in srgb, var(--lvct-accent) 8%, transparent);
+    }
+}
