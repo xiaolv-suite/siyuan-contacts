@@ -3102,7 +3102,10 @@
                     extraFilter = { ...extraFilter, region };
                     visibleCount = PAGE_SIZE;
                 }}
-                onOpenDoc={(docId) => onOpenPersonDoc?.(docId)}
+                onOpenDoc={(docId) => {
+                    regionExploring = false;
+                    onOpenPersonDoc?.(docId);
+                }}
                 onClose={() => (regionExploring = false)}
             />
         </LvctDialog>
@@ -3194,7 +3197,10 @@
                         visibleCount = PAGE_SIZE;
                     }
                 }}
-                onOpenDoc={(docId) => onOpenPersonDoc?.(docId)}
+                onOpenDoc={(docId) => {
+                    occasionsHubOpen = false;
+                    onOpenPersonDoc?.(docId);
+                }}
                 onClose={() => (occasionsHubOpen = false)}
                 {i18n}
             />
