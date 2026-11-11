@@ -393,4 +393,10 @@
 .lvct-occ-dialog__footer button {
     border-radius: var(--lv-r-pill, 9999px);
 }
+@media (max-width: 480px) {
+    .lvct-occ-dialog__grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
 </style>

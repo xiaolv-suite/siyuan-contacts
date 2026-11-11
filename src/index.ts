@@ -2031,7 +2031,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 facade: this,
                 i18n: this.i18n,
                 onOpenPerson: (docId: string) => {
-                    this.openWorkbench("people");
+                    if (!this.isMobile) this.openWorkbench("people");
                     this.openPersonDoc(docId);
                     emitDataChanged({ topics: ["people"], docIds: [docId] }, this.lifecycleToken);
                 },
@@ -2052,7 +2052,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
                 facade: this,
                 i18n: this.i18n,
                 onOpenPerson: (docId: string) => {
-                    this.openWorkbench("people");
+                    if (!this.isMobile) this.openWorkbench("people");
                     this.openPersonDoc(docId);
                     emitDataChanged({ topics: ["people"], docIds: [docId] }, this.lifecycleToken);
                 },

@@ -818,4 +818,28 @@
     .font-size-12 { font-size: 12px; }
     :global(.lvct-text-primary) { color: var(--b3-theme-primary); }
     .lvct-text-muted { color: var(--b3-theme-on-surface); }
+    @media (max-width: 640px) {
+        .lvct-region-dialog {
+            height: auto;
+            max-height: none;
+        }
+        .lvct-region-dialog__header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+        .lvct-region-dialog__header-search {
+            min-width: 0;
+            width: 100%;
+        }
+        .lvct-region-dialog__body {
+            flex-direction: column;
+        }
+        .lvct-region-dialog__sidebar {
+            width: 100%;
+            max-height: 150px;
+            border-right: none;
+            border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        }
+    }
 </style>

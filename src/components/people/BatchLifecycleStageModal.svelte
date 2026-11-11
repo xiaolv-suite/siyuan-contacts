@@ -108,7 +108,7 @@
         flex-direction: column;
         gap: 12px;
         padding: 4px;
-        min-width: 320px;
+        min-width: min(100%, 320px);
         max-width: 480px;
     }
 

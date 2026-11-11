@@ -702,6 +702,12 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     async function navigate(person: ContactSummary | null) {
         if (person && await canLeave.requestClose()) onNavigate(person);
     }
+    async function handleOpenPersonDoc(docId: string) {
+        if (!docId) return;
+        if (await canLeave.requestClose()) {
+            onOpenPersonDoc(docId);
+        }
+    }
     let recorded: boolean = $state(false);
     let insights: import("../../services/insights").PersonInsights | null = $state(null);
     let insightsLoading = $state(true);
@@ -3834,7 +3840,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             <button
                 type="button"
                 class="b3-button b3-button--outline b3-button--small"
-                onclick={() => onOpenPersonDoc(current.docId)}
+                onclick={() => void handleOpenPersonDoc(current.docId)}
                 title={text("detailOpenNoteDocTip", "在思源中打开该联系人的独立文档")}
             >
                 <FileText size={13} /> {text("detailOpenNoteDoc", "打开笔记文档")}
@@ -3956,7 +3962,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
                     style="padding: 0 4px; font-size: 11.5px; color: var(--b3-theme-primary);"
-                    onclick={() => onOpenPersonDoc(flashcardsDocInfo!.docId)}
+                    onclick={() => void handleOpenPersonDoc(flashcardsDocInfo!.docId)}
                 >
                     {text("detailOpenInMainEditor", "在主编辑器打开 ↗")}
                 </button>
@@ -4923,7 +4929,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         <strong>带旧标记的末段原文</strong>
                         <pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:var(--lvct-sp-2) 0" aria-label="旧备注末段原文">{personNoteLegacySnapshot.content || "（空段落）"}</pre>
                         <div class="lvct-person-fields__actions">
-                            <button type="button" class="b3-button b3-button--outline" disabled={personNoteLegacyBusy} onclick={() => onOpenPersonDoc(current.docId)}>打开人物文档核对</button>
+                            <button type="button" class="b3-button b3-button--outline" disabled={personNoteLegacyBusy} onclick={() => void handleOpenPersonDoc(current.docId)}>打开人物文档核对</button>
                             <button type="button" class="b3-button b3-button--outline" disabled={personNoteLegacyBusy} onclick={() => void detachPersonNoteLegacy()}>保留原文并解除旧备注关联</button>
                             <button type="button" class="b3-button b3-button--text" disabled={personNoteLegacyBusy} onclick={() => { personNoteLegacySnapshot = null; personNoteLegacyError = ""; }}>取消核对</button>
                         </div>
@@ -5403,7 +5409,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <div class="lvct-origin-row">
                         <span class="lvct-origin-label">引荐伙伴：</span>
                         {#if currentIntroducer}
-                            <button type="button" class="b3-button b3-button--text lvct-origin-link" onclick={() => onOpenPersonDoc?.(currentIntroducer!.docId)}>
+                            <button type="button" class="b3-button b3-button--text lvct-origin-link" onclick={() => void handleOpenPersonDoc(currentIntroducer!.docId)}>
                                 🤝 {currentIntroducer.name} ↗
                             </button>
                         {:else}
@@ -5432,7 +5438,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 const res = await onRemoveKinship!(current.docId, id);
                 kinships = res;
             }}
-            onOpenDoc={onOpenPersonDoc}
+            onOpenDoc={(docId) => void handleOpenPersonDoc(docId)}
             {i18n}
         />
     {/if}
@@ -5944,7 +5950,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                             type="button"
                                             class="b3-button b3-button--text ft__smaller"
                                             style="padding: 0 4px; margin-left: 4px;"
-                                            onclick={() => onOpenPersonDoc(proj.docId!)}
+                                            onclick={() => void handleOpenPersonDoc(proj.docId!)}
                                         >打开项目文档 ↗</button>
                                     {/if}
                                 </span>
@@ -5966,7 +5972,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     {/if}
 
     {#if onLoadPersonFields && onSavePersonFields}
-        <PersonFieldsEditor personDocId={current.docId} {revision} onLoad={onLoadPersonFields} onSave={onSavePersonFields} onOpenDocument={onOpenPersonDoc ? () => onOpenPersonDoc?.(current.docId) : undefined} />
+        <PersonFieldsEditor personDocId={current.docId} {revision} onLoad={onLoadPersonFields} onSave={onSavePersonFields} onOpenDocument={() => void handleOpenPersonDoc(current.docId)} />
     {/if}
 
     <div class="lvct-detail__briefing-row">
@@ -6059,7 +6065,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 person={current}
                 milestones={contactMilestones}
                 onCreateDoc={onCreateMilestonesDoc ? (p, m) => onCreateMilestonesDoc!(p, m) : undefined}
-                onOpenDoc={onOpenPersonDoc}
+                onOpenDoc={(docId) => void handleOpenPersonDoc(docId)}
                 {i18n}
             />
         {:else}
@@ -6360,7 +6366,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                                 type="button"
                                                 class="b3-button b3-button--text b3-button--small"
                                                 title="在思源中打开该日志文档"
-                                                onclick={() => onOpenPersonDoc(bItem.rootId)}
+                                                onclick={() => void handleOpenPersonDoc(bItem.rootId)}
                                             >打开原笔记</button>
                                             <button
                                                 type="button"
@@ -6492,7 +6498,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             <div class="lvct-detail__relations">
                 {#each relatedPeople as other (other.itemId)}
                     <span class="lvct-detail__relation">
-                        <button class="lvct-detail__relation-name" onclick={() => { onOpenPersonDoc(other.docId); }}>{other.name}</button>
+                        <button class="lvct-detail__relation-name" onclick={() => void handleOpenPersonDoc(other.docId)}>{other.name}</button>
                         <button
                             class="lvct-detail__relation-remove"
                             title="解除关系"
@@ -6586,7 +6592,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         {#if onOpenGraphPerson}
             <button class="b3-button b3-button--outline" onclick={() => void (async () => { if (await canLeave.requestClose()) { onClose(); onOpenGraphPerson?.(current.docId); } })()}><Network size={14}/>{text("detailOpenGraph", "图谱聚焦")}</button>
         {/if}
-        <button class="b3-button b3-button--text" onclick={() => onOpenPersonDoc(current.docId)}>{text("detailOpenDoc", "打开文档")}</button>
+        <button class="b3-button b3-button--text" onclick={() => void handleOpenPersonDoc(current.docId)}>{text("detailOpenDoc", "打开文档")}</button>
         <button class="b3-button b3-button--cancel lvct-detail__delete" onclick={confirmDelete} disabled={busy || deleting}>{deleting ? text("detailRemoving", "移除中…") : text("detailRemove", "从人脉移除")}</button>
     </div>
 </div>
@@ -6649,10 +6655,12 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                             type="button"
                             class="b3-button b3-button--outline ft__primary"
                             style="border-radius: var(--lv-r-pill, 9999px);"
-                            onclick={() => {
-                                onOpenPersonDoc?.(briefingDocCreated!.docId);
-                                briefingExportOpen = false;
-                            }}
+                            onclick={() => void (async () => {
+                                if (await canLeave.requestClose()) {
+                                    briefingExportOpen = false;
+                                    onOpenPersonDoc?.(briefingDocCreated!.docId);
+                                }
+                            })()}
                         >
                             <ExternalLink size={14} strokeWidth={1.6} style="margin-right: 4px;" />
                             {text("briefingDocOpen", "在主编辑器中打开 ↗")}

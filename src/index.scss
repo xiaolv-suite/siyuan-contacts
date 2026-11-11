@@ -3312,6 +3312,11 @@ html[data-theme-mode="dark"] .lvct-settings__nav-item--active {
         min-height: 34px;
         touch-action: manipulation;
     }
+    .lvct-person-card__open-doc, .lvct-people__open-doc {
+        min-width: 36px;
+        min-height: 36px;
+        touch-action: manipulation;
+    }
 }
 
 html[data-theme-mode="dark"] .lvct-notice {

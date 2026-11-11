@@ -345,4 +345,17 @@
         border-radius: var(--lv-r-pill, 9999px);
     }
 }
+@media (max-width: 640px) {
+    .lvct-merge__headrow { display: none; }
+    .lvct-merge__row {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    .lvct-merge__custom {
+        width: 100%;
+        min-width: 0;
+    }
+}
 </style>

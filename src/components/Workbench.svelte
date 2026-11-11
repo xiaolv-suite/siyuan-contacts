@@ -645,8 +645,12 @@
         });
         // B13.6a：组织管理弹窗成员「查看详情」跨弹窗导航（弹窗先关，人物详情由本层打开）
         const handleRequestedPerson = (event: Event) => {
-            const person = (event as CustomEvent<{ person?: ContactSummary }>).detail?.person;
-            if (person?.docId) void openDetail(person);
+            const raw = (event as CustomEvent<{ person?: ContactSummary | string }>).detail?.person;
+            if (typeof raw === "string" && raw) {
+                void openPersonByDocId(raw);
+            } else if (raw && typeof raw === "object" && raw.docId) {
+                void openDetail(raw);
+            }
         };
         window.addEventListener("lvct-workbench-person", handleRequestedPerson);
         return () => {

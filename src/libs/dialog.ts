@@ -171,7 +171,7 @@ export const svelteDialog = (args: {
                 return;
             }
         } else if (event.type === "click") {
-            if (!target?.closest?.(".b3-dialog__scrim, .b3-dialog__close")) return;
+            if (!target?.closest?.(".b3-dialog__scrim, .b3-dialog__close") && target !== dialog.element) return;
         } else {
             return;
         }

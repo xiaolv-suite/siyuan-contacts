@@ -49,6 +49,8 @@
     let factCategory = $state<FactCategory>("quote");
     let busy = $state(false);
     let interactionRecorded = $state(false);
+    let factRecorded = $state(false);
+    let savedFactId = $state<string | null>(null);
     let errorMessage = $state("");
     let textareaEl: HTMLTextAreaElement | undefined = $state();
 
@@ -96,26 +98,7 @@
                     linkBlockId: person.docId,
                 });
 
-                let createdFactId: string | null = null;
                 let appendDiaryPromise: Promise<unknown> | null = null;
-
-                if (saveAsFact && note.trim() && person?.docId) {
-                    try {
-                        const existing = await loadPersonFactsFromDoc(person.docId);
-                        const newFact: PersonFactItem = {
-                            id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                            text: note.trim(),
-                            category: factCategory,
-                            date: targetDate,
-                        };
-                        createdFactId = newFact.id;
-                        await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
-                    } catch (e) {
-                        onSaved?.();
-                        errorMessage = `互动已记录，但写入人物事实段未完成（可再次点击保存重试事实段）：${requestErrorMessage(e)}`;
-                        return;
-                    }
-                }
 
                 const pluginSettings = (plugin as Plugin & { settings?: ContactsSettings }).settings;
                 if (syncToDailyNote && pluginSettings?.notebookId) {
@@ -149,10 +132,10 @@
                                         await appendDiaryPromise.catch(() => {});
                                     }
                                     await removeDailyNoteInteractionByEventId(eventId).catch(() => {});
-                                    if (createdFactId) {
+                                    if (savedFactId) {
                                         try {
                                             const existing = await loadPersonFactsFromDoc(person.docId);
-                                            await savePersonFactsToDoc(person.docId, existing.filter((f) => f.id !== createdFactId));
+                                            await savePersonFactsToDoc(person.docId, existing.filter((f) => f.id !== savedFactId));
                                         } catch (factErr) {
                                             console.warn("[LvContacts] 撤销回滚事实段异常", factErr);
                                         }
@@ -185,10 +168,27 @@
                     }).catch(() => {});
                 }
                 emitDataChanged({ topics: ["people"], docIds: [person.docId] });
-                if (saveAsFact && note.trim() && person?.docId) {
+                void syncInteractionDocSection(plugin, person.docId).catch(() => {});
+            }
+
+            if (saveAsFact && !factRecorded && note.trim() && person?.docId) {
+                try {
+                    const existing = await loadPersonFactsFromDoc(person.docId);
+                    const newFact: PersonFactItem = {
+                        id: `fact-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        text: note.trim(),
+                        category: factCategory,
+                        date: targetDate,
+                    };
+                    await savePersonFactsToDoc(person.docId, [newFact, ...existing]);
+                    savedFactId = newFact.id;
+                    factRecorded = true;
+                    emitDataChanged({ topics: ["people"], docIds: [person.docId] });
                     await syncInteractionDocSection(plugin, person.docId).catch(() => {});
-                } else {
-                    void syncInteractionDocSection(plugin, person.docId).catch(() => {});
+                } catch (e) {
+                    onSaved?.();
+                    errorMessage = `互动已记录，但写入人物事实段未完成（可再次点击保存重试事实段）：${requestErrorMessage(e)}`;
+                    return;
                 }
             }
             onSaved?.();
@@ -201,6 +201,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        if (busy) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
             event.preventDefault();
             void handleSave();

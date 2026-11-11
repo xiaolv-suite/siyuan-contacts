@@ -251,7 +251,7 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-        min-width: 340px;
+        min-width: min(100%, 340px);
         max-width: 680px;
         max-height: 80vh;
     }
