@@ -798,7 +798,7 @@
             <div class="lvct-workbench__header-side-tools" style="display: flex; align-items: center; gap: 8px;">
                 {#if current === "home"}<div class="lvct-workbench__header-actions">
                     <input class="b3-text-field" type="search" aria-label={text("homeSearchPlaceholder", "搜索联系人")} placeholder={text("homeSearchPlaceholder", "搜索联系人")} bind:value={globalSearch}
-                        onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
+                        onkeydown={(event) => { if (event.isComposing || event.keyCode === 229) return; if (event.key === "Enter") { event.preventDefault(); void submitGlobalSearch(); } }} />
                     <button type="button" class="b3-button b3-button--outline" disabled={!globalSearch.trim()} title={!globalSearch.trim() ? text("homeSearchDisabled", "请输入联系人姓名或其他关键词") : undefined} onclick={() => void submitGlobalSearch()}><LvctIcon name="iconSearch" size={16}/><span class="lvct-workbench__header-btn-text">{text("homeSearchAction", "搜索")}</span></button>
                     <button type="button" class="b3-button b3-button--primary" onclick={() => void requestPeopleAction("create")}><LvctIcon name="iconAdd" size={16}/><span class="lvct-workbench__header-btn-text">{text("peopleCreate", "新建联系人")}</span></button>
                 </div>{/if}

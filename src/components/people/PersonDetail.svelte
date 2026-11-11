@@ -4303,7 +4303,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         class="b3-text-field b3-text-field--small fn__flex-1"
                         placeholder={CHANNEL_TYPE_MAP[draftType].placeholder}
                         bind:value={draftValue}
-                        onkeydown={(e) => { if (e.key === "Enter") void handleSaveNewChannel(); }}
+                        onkeydown={(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter") void handleSaveNewChannel(); }}
                     />
                     <label class="fn__flex" style="align-items: center; gap: 4px; font-size: 11.5px; cursor: pointer;">
                         <input type="checkbox" bind:checked={draftIsPrimary} />
@@ -4363,7 +4363,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                     class="b3-text-field b3-text-field--small fn__flex-1"
                                     placeholder="条目内容"
                                     bind:value={editValue}
-                                    onkeydown={(e) => { if (e.key === "Enter") void handleSaveEditedChannel(ch.id); }}
+                                    onkeydown={(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter") void handleSaveEditedChannel(ch.id); }}
                                 />
                                 <label class="fn__flex" style="align-items: center; gap: 4px; font-size: 11px; cursor: pointer;">
                                     <input type="checkbox" bind:checked={editIsPrimary} />
@@ -4834,7 +4834,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                          newFactCategory === "background" ? "记录过往任职、学术背景或家庭情况…" : "记录关键事实备忘…"}
                             bind:value={newFactText}
                             disabled={factsSaving}
-                            onkeydown={(e) => { if (e.key === "Enter" && newFactText.trim()) { e.preventDefault(); void handleAddFact(); } }}
+                            onkeydown={(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter" && newFactText.trim()) { e.preventDefault(); void handleAddFact(); } }}
                         />
                         <div class="fn__flex" style="gap: 8px; align-items: center;">
                             <input
@@ -5595,7 +5595,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         aria-label={text("topicsAddAria", "新增谈资备忘")}
                         bind:value={newTopicText}
                         disabled={addingTopic || topicsLoading}
-                        onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void handleAddTopic(); } }}
+                        onkeydown={(event) => { if (event.isComposing || event.keyCode === 229) return; if (event.key === "Enter") { event.preventDefault(); void handleAddTopic(); } }}
                     />
                     <button
                         type="button"
@@ -5673,7 +5673,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         aria-label={text("giftsTitleAria", "礼物或偏好名称")}
                         bind:value={newGiftTitle}
                         disabled={addingGift || giftIdeasLoading}
-                        onkeydown={(event) => { if (event.key === "Enter") { event.preventDefault(); void handleAddGiftIdea(); } }}
+                        onkeydown={(event) => { if (event.isComposing || event.keyCode === 229) return; if (event.key === "Enter") { event.preventDefault(); void handleAddGiftIdea(); } }}
                     />
                     {#if newGiftType === "idea"}
                         <input
@@ -5792,7 +5792,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         placeholder="纪念日名称（如：结婚十周年、相识纪念）"
                         bind:value={newAnnivTitle}
                         disabled={addingAnniv || anniversariesLoading}
-                        onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddAnniversary(); } }}
+                        onkeydown={(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter") { e.preventDefault(); void handleAddAnniversary(); } }}
                     />
                     <select class="b3-select" aria-label="纪念日分类" bind:value={newAnnivCategory} disabled={addingAnniv || anniversariesLoading}>
                         {#each ANNIVERSARY_CATEGORIES as cat}
@@ -5899,7 +5899,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                         placeholder="项目或主题名称（如：Q4 战略复盘、开源人脉）"
                         bind:value={newProjTitle}
                         disabled={addingProj || projectsLoading}
-                        onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddProject(); } }}
+                        onkeydown={(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter") { e.preventDefault(); void handleAddProject(); } }}
                     />
                     <input
                         class="b3-text-field"

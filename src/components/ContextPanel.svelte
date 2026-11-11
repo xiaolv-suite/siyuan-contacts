@@ -348,6 +348,7 @@
                         bind:value={quickNote}
                         disabled={quickBusy}
                         onkeydown={(e) => {
+                            if (e.isComposing || e.keyCode === 229) return;
                             if (e.key === "Enter" || ((e.ctrlKey || e.metaKey) && e.key === "Enter")) {
                                 e.preventDefault();
                                 void handleQuickRecord();

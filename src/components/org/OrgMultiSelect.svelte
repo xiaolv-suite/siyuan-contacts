@@ -53,6 +53,8 @@
         search?.focus({ preventScroll: true });
     }
     function onKeydown(event: KeyboardEvent): void {
+        /* IME 合成期（拼音/候选导航）键盘语义归输入法，组件导航整体让路。 */
+        if (event.isComposing || event.keyCode === 229) return;
         if (event.key === "Escape") {
             event.preventDefault();
             event.stopPropagation();

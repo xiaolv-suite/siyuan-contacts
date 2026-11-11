@@ -1199,7 +1199,7 @@
                     <div class="fn__flex" style="gap: 8px; align-items: center;">
                         <input class="b3-text-field fn__flex-1" bind:value={renameValue} disabled={busy}
                             aria-label={text("orgRenameLabel", "新组织名称")}
-                            onkeydown={(event) => { if (event.key === "Enter") saveRename(); }} />
+                            onkeydown={(event) => { if (event.isComposing || event.keyCode === 229) return; if (event.key === "Enter") saveRename(); }} />
                         <button type="button" class="b3-button b3-button--text" disabled={busy || !renameValue.trim()}
                             onclick={saveRename}>{text("orgRenameSave", "保存名称")}</button>
                         <button type="button" class="b3-button b3-button--cancel" disabled={busy}

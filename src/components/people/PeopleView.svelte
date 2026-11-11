@@ -2173,6 +2173,7 @@
                     value={searchInput}
                     oninput={(event) => handleSearchInput((event.currentTarget as HTMLInputElement).value)}
                     onkeydown={(event) => {
+                        if (event.isComposing || event.keyCode === 229) return;
                         if (event.key === "Enter" && filtered.length === 1 && searchInput.trim()) {
                             event.preventDefault();
                             onOpenDetail(filtered[0]);
@@ -2208,6 +2209,7 @@
                 value={searchInput}
                 oninput={(event) => handleSearchInput((event.currentTarget as HTMLInputElement).value)}
                 onkeydown={(event) => {
+                    if (event.isComposing || event.keyCode === 229) return;
                     if (event.key === "Escape") {
                         if (searchInput) {
                             event.preventDefault();

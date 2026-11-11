@@ -182,7 +182,7 @@
             placeholder={text("personAliasesPlaceholder", "例如：老张、英文名")}
             aria-label={text("personAliasesInputLabel", "新增别名")}
             disabled={busy || !!pendingRemoveId}
-            onkeydown={(event) => { if (event.key === "Enter") void add(); }}
+            onkeydown={(event) => { if (event.isComposing || event.keyCode === 229) return; if (event.key === "Enter") void add(); }}
         />
         <button type="button" class="b3-button b3-button--text" disabled={busy || !!pendingRemoveId || loading || readFailed || !aliasDraft.trim()} onclick={() => void add()}>
             {busy ? text("personAliasesSaving", "保存中…") : text("personAliasesAdd", "添加")}

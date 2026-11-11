@@ -131,7 +131,7 @@
                 bind:value={draft}
                 disabled={busy || unknown}
                 maxlength="1600"
-                onkeydown={(e) => { if (e.key === "Enter" && dirty && !busy && !unknown) { e.preventDefault(); void save(); } }}
+                onkeydown={(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter" && dirty && !busy && !unknown) { e.preventDefault(); void save(); } }}
             />
             <button
                 bind:this={saveButtonElement}

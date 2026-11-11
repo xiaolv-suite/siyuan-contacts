@@ -184,6 +184,8 @@
         void tick().then(() => triggerEl?.focus());
     }
     function onSearchKeydown(event: KeyboardEvent): void {
+        /* IME 合成期让路：ArrowUp/Down 是候选导航，Enter 是确认选字。 */
+        if (event.isComposing || event.keyCode === 229) return;
         if (event.key === "ArrowDown") {
             if (filtered.length === 0) return;
             event.preventDefault();
