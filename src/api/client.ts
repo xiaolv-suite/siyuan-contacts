@@ -1,0 +1,470 @@
+/**
+ * 内核 HTTP 传输层：api/ 目录是唯一允许发内核请求的地方。
+ * 全部端点形状经 M0 spike 在 v3.8.5 真内核实证（scripts/spike/）。
+ * CODE-02.6 API 边界：统一超时/取消与错误解码；仅登记的只读端点允许并发去重，
+ * 仅传输失败可限次重试。写入不自动去重或重试，避免把未知结果变成重复数据。
+ */
+import * as siyuanSdk from "siyuan";
+import { AsyncAbortError, AsyncTimeoutError, withTimeout } from "../shared/async";
+import { newNodeId, validateDocumentTitle } from "../domain/format.ts";
+import {
+    assertKernelArray,
+    assertKernelRecord,
+    decodeKernelResponse,
+    decodeNodeId,
+    KernelProtocolError,
+    KernelResponseError,
+    KernelTransportError,
+} from "./kernel-contract.ts";
+
+export type {
+    KernelDataState,
+    KernelFailureKind,
+    KernelResponse,
+} from "./kernel-contract.ts";
+export {
+    assertKernelArray,
+    assertKernelRecord,
+    classifyKernelData,
+    decodeKernelResponse,
+    KernelError,
+    KernelPermissionError,
+    KernelProtocolError,
+    KernelResponseError,
+    KernelTransportError,
+} from "./kernel-contract.ts";
+
+/** 内核请求等待上限；宿主卡顿时以超时拒绝，用户可在界面重试（写入严禁自动重试） */
+export const kernelConfig = { timeoutMs: 15_000 };
+
+/** 只允许明确的读取端点共享并发请求/进行一次传输失败重试。 */
+const SAFE_READ_ROUTES = new Set([
+    "/api/notebook/lsNotebooks",
+    "/api/query/sql",
+    "/api/av/renderAttributeView",
+    "/api/av/getAttributeView",
+    "/api/av/getAttributeViewItemIDsByBoundIDs",
+]);
+const MAX_READ_TRANSPORT_RETRIES = 1;
+const READ_RETRY_DELAY_MS = 80;
+const inFlightReads = new Map<string, Promise<unknown>>();
+
+function canonicalJson(value: unknown): string {
+    if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+    if (typeof value === "object" && value !== null) {
+        const record = value as Record<string, unknown>;
+        return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(",")}}`;
+    }
+    const encoded = JSON.stringify(value);
+    if (encoded === undefined) throw new TypeError("内核请求体包含不可序列化的值");
+    return encoded;
+}
+
+function isSafeRead(route: string, body: Record<string, unknown>): boolean {
+    if (!SAFE_READ_ROUTES.has(route)) return false;
+    // querySql is a general SQL transport. Only a single SELECT statement is
+    // provably read-only here; callers using UPDATE/INSERT/CTE or multiple
+    // statements get ordinary no-retry, no-dedupe semantics.
+    if (route === "/api/query/sql") {
+        const statement = body.stmt;
+        return typeof statement === "string" && /^\s*SELECT\b/i.test(statement) && !statement.includes(";");
+    }
+    return true;
+}
+
+function waitBeforeRetry(route: string, delayMs: number, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return Promise.reject(new AsyncAbortError(route));
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            signal?.removeEventListener("abort", abort);
+            resolve();
+        }, delayMs);
+        const abort = () => {
+            clearTimeout(timer);
+            signal?.removeEventListener("abort", abort);
+            reject(new AsyncAbortError(route));
+        };
+        signal?.addEventListener("abort", abort, { once: true });
+    });
+}
+
+export interface KernelPostOptions<T> {
+    timeoutMs?: number;
+    signal?: AbortSignal;
+    /** Freshness-sensitive callers can bypass in-flight sharing while keeping retry/timeout policy. */
+    dedupe?: boolean;
+    decode?: (data: unknown) => T;
+}
+
+function kernelPost<T>(
+    route: string,
+    body: Record<string, unknown> = {},
+    options: KernelPostOptions<T> = {},
+): Promise<T> {
+    if (options.signal?.aborted) return Promise.reject(new AsyncAbortError(route));
+    const timeoutMs = options.timeoutMs ?? kernelConfig.timeoutMs;
+    const safeRead = isSafeRead(route, body);
+    // A caller-supplied signal belongs to that consumer. It cannot safely control a
+    // request shared with other readers, so signalled reads stay independent.
+    const canShareRead = safeRead && options.dedupe !== false && !options.signal;
+    const sendOnce = () => new Promise<unknown>((resolve, reject) => {
+            const handleResponse = (response: unknown) => {
+                resolve(response);
+            };
+
+            const handleFailure = (response: unknown) => {
+                if (typeof response === "object" && response !== null &&
+                    ("code" in response || "msg" in response || "data" in response)) {
+                    handleResponse(response);
+                    return;
+                }
+                reject(new KernelTransportError(route, response));
+            };
+
+            try {
+                const isRealHost = typeof window !== "undefined"
+                    && Boolean((window as unknown as { siyuan?: { ws?: unknown } }).siyuan?.ws)
+                    && typeof siyuanSdk.fetchSyncPost === "function";
+                if (isRealHost) {
+                    (siyuanSdk.fetchSyncPost as (
+                        url: string,
+                        data?: unknown,
+                        headers?: unknown,
+                        showMsg?: boolean,
+                    ) => Promise<unknown>)(route, body, undefined, false).then(handleResponse, handleFailure);
+                } else {
+                    siyuanSdk.fetchPost(
+                        route,
+                        body,
+                        handleResponse,
+                        undefined,
+                        handleFailure,
+                    );
+                }
+            } catch (error) {
+                reject(new KernelTransportError(route, error));
+            }
+        });
+
+    const sendWithPolicy = async (): Promise<unknown> => {
+        const deadline = Date.now() + timeoutMs;
+        let attempt = 0;
+        while (true) {
+            const remainingMs = deadline - Date.now();
+            if (remainingMs <= 0) throw new AsyncTimeoutError(route, timeoutMs);
+            try {
+                return await withTimeout(sendOnce, remainingMs, route, { signal: options.signal });
+            } catch (error) {
+                if (!safeRead || !(error instanceof KernelTransportError) || attempt >= MAX_READ_TRANSPORT_RETRIES) throw error;
+                attempt += 1;
+                const delay = Math.min(READ_RETRY_DELAY_MS, Math.max(0, deadline - Date.now()));
+                if (delay <= 0) throw error;
+                await waitBeforeRetry(route, delay, options.signal);
+            }
+        }
+    };
+
+    let rawRequest: Promise<unknown>;
+    let key: string | undefined;
+    if (canShareRead) {
+        key = `${route}\n${timeoutMs}\n${canonicalJson(body)}`;
+        const existing = inFlightReads.get(key);
+        if (existing) rawRequest = existing;
+        else {
+            rawRequest = sendWithPolicy();
+            inFlightReads.set(key, rawRequest);
+            void rawRequest.finally(() => {
+                if (inFlightReads.get(key!) === rawRequest) inFlightReads.delete(key!);
+            }).catch(() => undefined);
+        }
+    } else {
+        rawRequest = sendWithPolicy();
+    }
+
+    // Each caller owns its cancellation; aborting one consumer must not cancel a read
+    // shared with another consumer. fetchPost itself has no cancellation API, so a
+    // timeout/abort only ends this caller's wait; the host operation may still finish.
+    return withTimeout(() => rawRequest, timeoutMs, route, { signal: options.signal }).then((response) => {
+        const envelope = decodeKernelResponse<T>(route, response);
+        return options.decode ? options.decode(envelope.data) : envelope.data;
+    });
+}
+
+function decodeNotebookList(route: string, data: unknown): NotebookMeta[] {
+    const record = assertKernelRecord(route, data);
+    const notebooks = assertKernelArray<unknown>(route, record.notebooks);
+    if (notebooks.some((notebook) => {
+        if (typeof notebook !== "object" || notebook === null || Array.isArray(notebook)) return true;
+        const candidate = notebook as Record<string, unknown>;
+        return typeof candidate.id !== "string" || typeof candidate.name !== "string";
+    })) {
+        throw new KernelProtocolError(route, `${route} 返回异常形状（notebooks 项缺 id/name）`);
+    }
+    return notebooks as NotebookMeta[];
+}
+
+function decodeString(route: string, data: unknown): string {
+    if (typeof data !== "string") {
+        throw new KernelProtocolError(route, `${route} 返回异常形状（非字符串）`);
+    }
+    return data;
+}
+
+function decodeDocumentExport(route: string, data: unknown): { hPath: string; content: string } {
+    const record = assertKernelRecord(route, data);
+    if (typeof record.hPath !== "string" || typeof record.content !== "string") {
+        throw new KernelProtocolError(route, `${route} 返回异常形状（缺 hPath/content）`);
+    }
+    return { hPath: record.hPath, content: record.content };
+}
+
+function decodeStringMap(route: string, data: unknown): Record<string, string> {
+    const record = assertKernelRecord(route, data);
+    /* 思源不同版本对 getAttributeViewItemIDsByBoundIDs 有两种成功形状：
+       直接返回 {boundId: itemId}，或包在 itemIDsByBoundBlockIDs 下。 */
+    const mapping = assertKernelRecord(route, Object.hasOwn(record, "itemIDsByBoundBlockIDs")
+        ? record.itemIDsByBoundBlockIDs
+        : record);
+    for (const value of Object.values(mapping)) {
+        if (typeof value !== "string") throw new KernelProtocolError(route, `${route} 返回异常形状（映射值非字符串）`);
+    }
+    return mapping as Record<string, string>;
+}
+
+function decodeArray<T>(route: string, data: unknown): T[] {
+    return assertKernelArray<T>(route, data);
+}
+
+export {
+    decodeArray,
+    decodeDocumentExport,
+    decodeNodeId,
+    decodeNotebookList,
+    decodeString,
+    decodeStringMap,
+};
+
+export { newNodeId };
+
+/* ---------- notebook / filetree ---------- */
+
+export interface NotebookMeta {
+    id: string;
+    name: string;
+}
+
+export async function listNotebooks(): Promise<NotebookMeta[]> {
+    return kernelPost("/api/notebook/lsNotebooks", {}, { decode: (data) => decodeNotebookList("/api/notebook/lsNotebooks", data) });
+}
+
+/** 思源在部分版本下 createNotebook 的返回值不是 ID，创建后统一重新列表获取（spike 结论） */
+export async function createNotebook(name: string): Promise<NotebookMeta> {
+    const existing = (await listNotebooks()).find((notebook) => notebook.name === name);
+    if (existing) throw new Error(`已存在同名笔记本「${name}」`);
+    await kernelPost<unknown>("/api/notebook/createNotebook", { name });
+    const created = (await listNotebooks()).find((notebook) => notebook.name === name);
+    if (!created) throw new Error(`笔记本「${name}」创建后未在列表中出现`);
+    return created;
+}
+
+/**
+ * SiYuan 3.8.8+/3.8.9 真内核实证：
+ * 1) 刚启动或 createNotebook 后异步初始化 docMetadata，短暂返回 code=-1 "document metadata is not ready"；
+ * 2) 3.8.9 起对父路径尚不存在的多级 hPath（如 "/人脉/张三"）直接调 createDocWithMd，内核自动补建父级时
+ *    因父级 docMetadata 尚未刷入索引会持续返回 "document metadata is not ready"（零落盘）。
+ * 正常路径零额外请求；仅在命中该明确拒绝错误时按需逐级确保父文档就绪并重试。
+ */
+async function ensureAncestorHPathsReady(notebookId: string, hPath: string): Promise<void> {
+    const segments = hPath.split("/").map((s) => s.trim()).filter(Boolean);
+    if (segments.length <= 1) return;
+    let prefix = "";
+    for (let i = 0; i < segments.length - 1; i++) {
+        const seg = segments[i];
+        prefix += `/${seg}`;
+        const ids = await kernelPost<string[]>("/api/filetree/getIDsByHPath", { notebook: notebookId, path: prefix }, {
+            decode: (data) => Array.isArray(data) ? data.filter((item): item is string => typeof item === "string") : [],
+        });
+        if (ids.length === 0) {
+            await retryWhileDocMetadataNotReady(() =>
+                kernelPost("/api/filetree/createDocWithMd", { notebook: notebookId, path: prefix, markdown: `# ${seg}\n\n` }, {
+                    decode: (data) => decodeNodeId("/api/filetree/createDocWithMd", data),
+                }),
+            );
+            await kernelPost("/api/sqlite/flushTransaction").catch(() => undefined);
+        }
+    }
+}
+
+async function retryWhileDocMetadataNotReady<T>(
+    operation: () => Promise<T>,
+    onNotReady?: (attempt: number) => Promise<void>,
+): Promise<T> {
+    const MAX_ATTEMPTS = 20;
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await operation();
+        } catch (error) {
+            const notReady = error instanceof KernelResponseError
+                && /document metadata is not ready/i.test(error.responseMessage ?? "");
+            if (!notReady || attempt >= MAX_ATTEMPTS) throw error;
+            await new Promise((resolve) => setTimeout(resolve, Math.min(400, 100 * attempt)));
+            if (onNotReady) await onNotReady(attempt);
+        }
+    }
+}
+
+export async function createDocWithMd(notebookId: string, hPath: string, markdown: string): Promise<string> {
+    let ancestorsEnsured = false;
+    return retryWhileDocMetadataNotReady(
+        () => kernelPost("/api/filetree/createDocWithMd", { notebook: notebookId, path: hPath, markdown }, {
+            decode: (data) => decodeNodeId("/api/filetree/createDocWithMd", data),
+        }),
+        async () => {
+            if (!ancestorsEnsured) {
+                ancestorsEnsured = true;
+                await ensureAncestorHPathsReady(notebookId, hPath);
+            }
+        },
+    );
+}
+
+/** 创建或获取当天的日记文档（Daily Note） */
+export async function createDailyNote(notebookId: string, app = ""): Promise<string> {
+    return retryWhileDocMetadataNotReady(() =>
+        kernelPost("/api/filetree/createDailyNote", { notebook: notebookId, app }, {
+            decode: (data) => decodeNodeId("/api/filetree/createDailyNote", data),
+        }),
+    );
+}
+
+/**
+ * 文档改名（B13 组织改名）。spike:b13 通道7 实证（v3.8.6）：
+ * path 参数必须是回读核实的物理路径（含嵌套父文档；传 hpath 报 invalid document path）；
+ * 改名后 blocks.content（文档标题）更新，正文与 custom-* 标记块 IAL 保留。
+ */
+export async function renameDoc(notebookId: string, docId: string, title: string): Promise<void> {
+    if (!/^\d{14}-[0-9a-z]{7}$/.test(docId)) throw new Error("docId 不是合法的思源 ID");
+    if (!/^\d{14}-[0-9a-z]{7}$/.test(notebookId)) throw new Error("notebookId 不是合法的思源 ID");
+    const titleError = validateDocumentTitle(title);
+    if (titleError) throw new Error(titleError);
+    await kernelPost("/api/sqlite/flushTransaction");
+    const rows = await querySql<unknown>(`SELECT path, box, content FROM blocks WHERE type='d' AND id='${docId}'`);
+    const target = rows.length === 1 ? assertKernelRecord("/api/query/sql", rows[0]) : null;
+    if (!target || target.box !== notebookId || typeof target.content !== "string" || typeof target.path !== "string"
+        || !/^\/(?:\d{14}-[0-9a-z]{7}\/)*\d{14}-[0-9a-z]{7}\.sy$/.test(target.path)
+        || !target.path.endsWith(`/${docId}.sy`)) {
+        throw new KernelProtocolError("/api/query/sql", "改名目标的文档路径与笔记本尚未核实，未写入");
+    }
+    const requestedTitle = title.trim();
+    if (target.content === requestedTitle) return;
+    let writeError: unknown;
+    try {
+        await kernelPost("/api/filetree/renameDoc", { notebook: notebookId, path: target.path, title: requestedTitle });
+    } catch (error) {
+        writeError = error;
+    }
+    try {
+        await kernelPost("/api/sqlite/flushTransaction");
+        const verifiedRows = await querySql<unknown>(`SELECT content, box FROM blocks WHERE type='d' AND id='${docId}'`);
+        const verified = verifiedRows.length === 1 ? assertKernelRecord("/api/query/sql", verifiedRows[0]) : null;
+        if (!verified || verified.box !== notebookId || verified.content !== requestedTitle) throw new Error("标题未核实");
+    } catch (cause) {
+        throw new Error(`文档 ${docId} 改名请求已发出，但结果未知；请先重新读取核实，未自动重放`, { cause: writeError ?? cause });
+    }
+}
+
+/* ---------- SQL（仅用于文档/块查询；数据库没有 SQL 表，见 DATA-CONTRACT §1.5） ---------- */
+
+export interface DocRow {
+    id: string;
+    content: string;
+    hpath: string;
+    box?: string;
+}
+
+import { assertSafeBlockId, BLOCK_ID_REGEX, cleanBlockRefText, escapeSqlString } from "../domain/format.ts";
+
+export { assertSafeBlockId, BLOCK_ID_REGEX, cleanBlockRefText, escapeSqlString };
+
+/** 跑一条只读 SQL；思源索引异步刷新，写后立刻查可能短暂滞后 */
+export async function querySql<T = Record<string, unknown>>(
+    stmt: string,
+    options: Pick<KernelPostOptions<T[]>, "dedupe" | "signal" | "timeoutMs"> = {},
+): Promise<T[]> {
+    if (!/^\s*SELECT\s/i.test(stmt)) {
+        throw new Error("仅允许只读 SELECT 语句");
+    }
+    return kernelPost("/api/query/sql", { stmt }, {
+        ...options,
+        decode: (data) => decodeArray<T>("/api/query/sql", data),
+    });
+}
+
+/* ---------- block ---------- */
+
+interface DoOperation {
+    id: string;
+    action: string;
+}
+
+interface TransactionResult {
+    operations?: DoOperation[];
+    doOperations?: DoOperation[];
+}
+
+/**
+ * insertBlock 等写入端点的 data 形状：
+ * v3.8.5 实测（spike/init-resume 通道）是**事务结果数组** `[{doOperations:[…]}]`，
+ * 早期代码按对象读导致首次引导在建库一步抛"未返回新块 ID"。
+ * 两种形状都容忍，取第一个带 id 的操作。
+ */
+export type InsertBlockData = TransactionResult[] | TransactionResult;
+
+function isDoOperation(value: unknown): value is DoOperation {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+    const candidate = value as Record<string, unknown>;
+    return typeof candidate.id === "string" && typeof candidate.action === "string";
+}
+
+function isTransactionResult(value: unknown): value is TransactionResult {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+    const candidate = value as Record<string, unknown>;
+    const hasOperations = Array.isArray(candidate.operations) || Array.isArray(candidate.doOperations);
+    return hasOperations
+        && (candidate.operations === undefined || (Array.isArray(candidate.operations) && candidate.operations.every(isDoOperation)))
+        && (candidate.doOperations === undefined || (Array.isArray(candidate.doOperations) && candidate.doOperations.every(isDoOperation)));
+}
+
+export function decodeInsertBlockData(route: string, data: unknown): InsertBlockData {
+    if (Array.isArray(data)) {
+        if (!data.every(isTransactionResult)) {
+            throw new KernelProtocolError(route, `${route} 返回异常形状（事务结果数组非法）`);
+        }
+        return data as TransactionResult[];
+    }
+    if (isTransactionResult(data)) return data;
+    throw new KernelProtocolError(route, `${route} 返回异常形状（事务结果非法）`);
+}
+
+export function firstOperationId(data: InsertBlockData | undefined): string {
+    const results: TransactionResult[] = Array.isArray(data) ? data : data ? [data] : [];
+    for (const result of results) {
+        const operation = result?.doOperations?.[0] ?? result?.operations?.[0];
+        if (operation?.id) return operation.id;
+    }
+    return "";
+}
+
+/** 向文档追加一个块（DOM），返回新块 ID */
+export async function appendBlockDom(parentBlockId: string, dom: string): Promise<string> {
+    const data = await kernelPost("/api/block/insertBlock", {
+        dataType: "dom",
+        parentID: parentBlockId,
+        data: dom,
+    }, { decode: (value) => decodeInsertBlockData("/api/block/insertBlock", value) });
+    const id = firstOperationId(data);
+    if (!id) throw new KernelProtocolError("/api/block/insertBlock", "/api/block/insertBlock 返回异常形状（未返回新块 ID）");
+    return id;
+}
+
+export { kernelPost };

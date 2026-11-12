@@ -1,0 +1,345 @@
+import type { ContactsSettings } from "./domain/model";
+import type { ContactSummary } from "./domain/person";
+import type { DashboardData, DashboardOptions } from "./services/dashboard";
+import type { CaptureOptions, CapturePreview, CaptureResult } from "./services/capture";
+import type { AiExtractOutcome, AiExtractionConfirmation } from "./services/ai-extract";
+import type { AiPreflight, AiPreflightOptions } from "./domain/ai-preflight";
+import type { PersonInsights } from "./services/insights";
+import type { FieldMapPatch, FieldRebuildPreview, SettingsRebindPreview, SettingsAnchorPatch, SettingsHealth } from "./services/settings-health";
+import type { ViewPreferences } from "./domain/preferences";
+import type { InteractionImportSummary } from "./domain/interaction-backup";
+import type { FollowUpItem, SnoozeOption } from "./domain/followups";
+import type { PersonCadence } from "./domain/cadence";
+import type { NoteTemplate } from "./domain/interaction-templates";
+import type { ReviewReport } from "./domain/review-report";
+import type { FollowUpImportPreview } from "./services/followups";
+import type { InteractionImportDiff } from "./domain/interaction-backup";
+import type { MigrationImportResult, MigrationModulePreview } from "./services/migration-bundle";
+import type { ExportSummary } from "./services/export-center";
+import type { AnchorScanOptions, AnchorScanResult, InitProgressStep, WorkspaceSnapshot } from "./services/init";
+import type { CreatePersonExchangeInput, ExchangePatch, ExchangeRecord, ExchangeStatus } from "./services/exchanges";
+import type { PersonIdentityResolution as AliasResolution, PersonAlias } from "./services/person-aliases";
+import type { WorkspaceState } from "./domain/workspace-state";
+
+export type WorkbenchView = "home" | "people" | "graph" | "orgs" | "settings";
+
+/**
+ * 插件实例暴露给组件层的结构化视图（避免组件 import 插件入口造成循环依赖）。
+ */
+export interface ContactsPluginFacade {
+    readonly i18n?: Readonly<Record<string, string>>;
+    readonly settings: ContactsSettings | null;
+    readonly workspaceState: WorkspaceState;
+    readonly viewPreferences: ViewPreferences;
+    readonly isMobile: boolean;
+    reloadWorkspaceState(): Promise<WorkspaceState>;
+    loadPersonRelationshipLabels(personDocId: string): Promise<import("./services/people-profiles").RelationshipLabelEditorState>;
+    savePersonRelationshipLabels(personDocId: string, selfDocId: string, labels: string[], expected: import("./domain/person-relationship-labels").PersonRelationshipLabels | null): Promise<import("./domain/person-relationship-labels").PersonRelationshipLabels>;
+    /** 执行工作空间初始化并向导日志回调进度；幂等可续建，失败抛错 */
+    initialize(notebookName: string, onProgress: (step: InitProgressStep) => void, options?: { createSelf?: boolean }): Promise<ContactsSettings>;
+    /** 初始化前预检：同名笔记本/宿主文档/数据库/可复用字段（向导据此提示将复用哪些内容） */
+    previewInitialize(notebookName: string): Promise<WorkspaceSnapshot>;
+    /** FUNC-01.8：分页只读扫描可复用锚点；返回游标后由设置页显式续做 */
+    scanAnchorCandidates(options?: AnchorScanOptions): Promise<AnchorScanResult>;
+    /** 仪表盘聚合（近期生日/久未联系/统计） */
+    loadDashboard(options?: Partial<DashboardOptions>): Promise<DashboardData>;
+    /** 记一笔互动（幂等，支持指定历史发生时间与来源） */
+    recordInteraction(
+        personDocId: string,
+        note?: string,
+        type?: import("./domain/interactions").InteractionType,
+        options?: { occurredAt?: number; source?: import("./domain/interactions").InteractionSource; externalRef?: string; skipDocSync?: boolean; skipDailyNoteSync?: boolean },
+    ): Promise<void>;
+    deleteInteraction(personDocId: string, eventId: string): Promise<void>;
+    /** 修改一条互动（墓碑旧事件 + 追加修正事件），同步人物文档互动区块 */
+    amendInteraction(personDocId: string, eventId: string, amendment: import("./domain/interactions").InteractionAmendment): Promise<void>;
+    /** 划词直接记一笔互动 (Selection-to-Interaction) */
+    openSelectionToInteraction?(args: { rawText: string; rootId: string; protyleElement?: HTMLElement }): Promise<void>;
+    /** 人物洞察：互动时间线 + 共同出席统计 */
+    loadPersonInsights(docId: string): Promise<PersonInsights>;
+    /** 人物独立备注：写入对应人物文档的 custom-lvct-person-note 标记块，不计入互动统计 */
+    loadPersonNote(personDocId: string): Promise<string>;
+    savePersonNote(personDocId: string, note: string, expected?: string): Promise<string>;
+    /** 联系人头像与照片：保存至思源文档属性（带尺寸压缩） */
+    savePersonAvatar?(personDocId: string, avatarDataUrl: string): Promise<void>;
+    loadPersonAvatar?(personDocId: string): Promise<string>;
+    /** 联系人多通讯条目与多维度资料条目：保存至思源文档属性 custom-lvct-channels */
+    savePersonChannels?(personDocId: string, channels: import("./domain/person-channels").ContactChannel[]): Promise<void>;
+    loadPersonChannels?(personDocId: string): Promise<import("./domain/person-channels").ContactChannel[]>;
+    /** 联系人实体名片照片：保存至思源文档属性 custom-lvct-business-card */
+    savePersonBusinessCard?(personDocId: string, cardDataUrl: string): Promise<void>;
+    loadPersonBusinessCard?(personDocId: string): Promise<string>;
+    syncPersonDocument?(person: ContactSummary): Promise<void>;
+    inspectLegacyPersonNote(personDocId: string): Promise<import("./domain/person-note").LegacyPersonNoteSnapshot>;
+    detachLegacyPersonNote(personDocId: string, expected: import("./domain/person-note").LegacyPersonNoteSnapshot): Promise<void>;
+    /** 原生人物文档中的可重复资料条目与两层分组；不投影主联系方式。 */
+    loadPersonFields(personDocId: string): Promise<import("./domain/person-fields").PersonFieldsState>;
+    savePersonFields(personDocId: string, snapshot: import("./domain/person-fields").PersonFieldsSnapshot, expected: import("./domain/person-fields").PersonFieldsState): Promise<import("./domain/person-fields").PersonFieldsState>;
+    loadRecentInteractions(): Promise<Record<string, { occurredAt: number; localDate: string; count?: number }>>;
+    /** 读取全量有效互动事件列表（供图谱推断共同出席弱联系等） */
+    loadInteractionEvents?(): Promise<readonly import("./domain/interactions").InteractionEvent[]>;
+    /** 个人往来账本：金钱、物品、人情均按人物独立记录 */
+    listPersonExchanges(personDocId: string): Promise<ExchangeRecord[]>;
+    createPersonExchange(input: CreatePersonExchangeInput): Promise<ExchangeRecord>;
+    updatePersonExchange(id: string, patch: ExchangePatch, expected?: Pick<ExchangeRecord, "updatedAt">): Promise<ExchangeRecord>;
+    changePersonExchangeStatus(id: string, status: ExchangeStatus, settledOn?: string, expected?: Pick<ExchangeRecord, "updatedAt">): Promise<ExchangeRecord>;
+    listPersonAliases(personDocId: string): Promise<PersonAlias[]>;
+    addPersonAlias(personDocId: string, alias: string): Promise<PersonAlias>;
+    removePersonAlias(id: string): Promise<void>;
+    resolvePersonAlias(alias: string): Promise<AliasResolution>;
+    /** 检查固化字段 ID 是否仍存在于联系人数据库 */
+    checkSettingsHealth(): Promise<SettingsHealth>;
+    /** FUNC-01.4 资料体检：只读巡检名册数据质量（缺字段/悬空关系/孤儿互动等），零写入 */
+    runHealthAudit(): Promise<import("./domain/health-audit").AuditIssue[]>;
+    runHealthAuditReport(previous?: import("./domain/health-audit").HealthAuditReport): Promise<import("./domain/health-audit").HealthAuditReport>;
+    retryFailedHealthAuditModules(previous: import("./domain/health-audit").HealthAuditReport): Promise<import("./domain/health-audit").HealthAuditReport>;
+    /** 显式补建健康检查发现的缺失字段，并返回新的字段映射 */
+    previewMissingFields(): Promise<FieldRebuildPreview>;
+    rebuildMissingFields(preview: FieldRebuildPreview): Promise<ContactsSettings>;
+    /** 显式验证并重新绑定已有联系人数据库的文档/数据库/视图锚点 */
+    previewRebindSettings(patch: SettingsAnchorPatch): Promise<SettingsRebindPreview>;
+    rebindSettings(patch: SettingsAnchorPatch, preview: SettingsRebindPreview): Promise<ContactsSettings>;
+    repairFieldMap(patch: FieldMapPatch): Promise<ContactsSettings>;
+    /** 导出插件自管互动事件，不修改当前存储 */
+    exportInteractionJson(): Promise<string>;
+    exportMigrationBundle(): Promise<string>;
+    previewMigrationImport(text: string): Promise<MigrationModulePreview[]>;
+    importMigrationBundle(text: string): Promise<MigrationImportResult>;
+    /** 全生态联合灾备数据转储与恢复切面 (lvBackup) */
+    dumpData?(): Promise<Record<string, unknown>>;
+    restoreData?(data: Record<string, unknown>): Promise<boolean>;
+    /** 获取全生态协同状态指示徽章文案 (lvEcosystem) */
+    getEcosystemStatusBadgeText?(): string;
+    /** 小驴罗盘相关操作与状态 (lvLaunchpad) */
+    getFollowupDueCount?(): number;
+    openContactsView?(): void;
+    handleQuickAction?(action: string): void;
+    /** Mobile Spec v1：关闭移动端全屏工作台 Dialog（下拉手势/罗盘返回共用出口） */
+    closeWorkbenchDialog?(): void;
+    /** 全生态穿透搜索切面 (lvOmnisearch) */
+    searchOmniContacts?(keyword: string): Promise<import("./libs/lv-notice-kit").LvSearchResultItem[]>;
+    /** 跟进事项（F05）：日期型联系计划，独立于互动事实 */
+    listPersonFollowUps(personDocId: string): Promise<FollowUpItem[]>;
+    /** 创建跟进计划；dueDate 为 YYYY-MM-DD，非法日期抛错 */
+    createFollowUp(personDocId: string, title: string, dueDate: string, requestId?: string): Promise<FollowUpItem>;
+    /** 用原创建 key 补同步或核实跟进；未知结果不得自动换 key。 */
+    retryCreateFollowUp(requestId: string, personDocId: string, title: string, dueDate: string): Promise<FollowUpItem>;
+    /** 状态变更：open（重新打开）/ done（完成）/ cancelled（取消）；完成不自动写互动 */
+    setFollowUpStatus(id: string, status: "open" | "done" | "cancelled"): Promise<void>;
+    /** 语义化推迟：tomorrow/threeDays/nextMonday/nextMonth 或 custom（需合法日期） */
+    snoozeFollowUp(id: string, option: SnoozeOption, customDate?: string): Promise<void>;
+    exportFollowUpsJson(): Promise<string>;
+    previewFollowUpsImport(text: string): Promise<FollowUpImportPreview>;
+    importFollowUpsJson(text: string): Promise<FollowUpImportPreview>;
+    /** 联系节奏（F06）：按人覆盖久未联系阈值或暂停；未登记返回 null（跟随全局），保存 null 清除覆盖 */
+    getPersonCadence(personDocId: string): Promise<PersonCadence | null>;
+    savePersonCadence(personDocId: string, cadence: PersonCadence | null): Promise<void>;
+    /** B08 提醒暂缓（reminder-dismissals.json）：只屏蔽提醒呈现，统计口径不变 */
+    dismissReminder(personDocId: string, kind: "birthday" | "stale", until: string): Promise<void>;
+    resumeReminder(personDocId: string, kind: "birthday" | "stale"): Promise<void>;
+    /** 已暂缓提醒列表（设置页恢复入口用） */
+    loadReminderDismissals(): Promise<import("./domain/reminder-dismissals").ReminderDismissal[]>;
+    /** 互动备注模板（F09）：空存储返回内置默认；全量保存必须核对编辑基线。 */
+    listTemplates(): Promise<NoteTemplate[]>;
+    saveTemplates(templates: readonly NoteTemplate[], expected: readonly NoteTemplate[]): Promise<NoteTemplate[]>;
+    /** E-32：会面谈资与备忘（Conversation Starters / Topics to Mention） */
+    loadPersonTopics?(personDocId: string): Promise<import("./domain/topics").PersonTopicItem[]>;
+    addPersonTopic?(personDocId: string, text: string): Promise<import("./domain/topics").PersonTopicItem[]>;
+    removePersonTopic?(personDocId: string, topicId: string): Promise<import("./domain/topics").PersonTopicItem[]>;
+    /** E-33：联系人软删除回收站（Trash & Soft Delete Buffer） */
+    removeContactToTrash?(person: import("./domain/person").ContactSummary): Promise<void>;
+    listTrash?(): Promise<import("./domain/trash").TrashContactEntry[]>;
+    restoreContactFromTrash?(entryId: string): Promise<{ docId: string; itemId: string; name: string }>;
+    emptyTrash?(): Promise<void>;
+    /** E-31 重复联系人字段级安全合并并迁移关联自管数据 */
+    executeContactMerge?(plan: import("./domain/duplicate-merge").ContactMergePlan): Promise<import("./services/duplicate-merge").ExecuteMergeResult>;
+    /** E-26：礼物点子与偏好清单（Gift Ideas & Preferences） */
+    loadPersonGiftIdeas?(personDocId: string): Promise<import("./domain/gift-ideas").GiftIdeaItem[]>;
+    addPersonGiftIdea?(item: import("./domain/gift-ideas").GiftIdeaItem): Promise<import("./domain/gift-ideas").GiftIdeaItem[]>;
+    updatePersonGiftIdea?(personDocId: string, ideaId: string, patch: Partial<import("./domain/gift-ideas").GiftIdeaItem>): Promise<import("./domain/gift-ideas").GiftIdeaItem[]>;
+    removePersonGiftIdea?(personDocId: string, ideaId: string): Promise<import("./domain/gift-ideas").GiftIdeaItem[]>;
+    /** E-30：群体活动与场合实体（Occasions & Multi-attendee Clustering） */
+    listOccasions?(): Promise<import("./domain/occasion-cluster").OccasionEntity[]>;
+    createOccasion?(input: import("./services/occasions").CreateOccasionInput): Promise<import("./domain/occasion-cluster").OccasionEntity>;
+    deleteOccasion?(occasionId: string): Promise<void>;
+    /** E-36：重要日期与周年纪念日（Anniversaries & Milestones） */
+    loadPersonAnniversaries?(personDocId: string): Promise<import("./domain/anniversaries").AnniversaryItem[]>;
+    addPersonAnniversary?(item: import("./domain/anniversaries").AnniversaryItem): Promise<import("./domain/anniversaries").AnniversaryItem[]>;
+    updatePersonAnniversary?(personDocId: string, annivId: string, patch: Partial<import("./domain/anniversaries").AnniversaryItem>): Promise<import("./domain/anniversaries").AnniversaryItem[]>;
+    removePersonAnniversary?(personDocId: string, annivId: string): Promise<import("./domain/anniversaries").AnniversaryItem[]>;
+    listUpcomingAnniversaries?(windowDays?: number): Promise<import("./domain/anniversaries").AnniversaryProjection[]>;
+    /** E-43：导出单人物重要日期/纪念日为 iCalendar (.ics) 标准日历文本 */
+    exportPersonAnniversariesIcs?(person: import("./domain/person").ContactSummary, anniversaries?: readonly import("./domain/anniversaries").AnniversaryItem[], options?: import("./domain/ical-export").IcsExportOptions): import("./services/ical").IcsExportResult;
+    /** E-43：导出全库重要日期/纪念日为全量 iCalendar (.ics) 标准日历文件 */
+    exportAllAnniversariesIcs?(options?: import("./domain/ical-export").IcsExportOptions): Promise<import("./services/ical").IcsExportResult>;
+    /** E-37：人物协作项目与主题双向关联（Project & Initiative Collaborators） */
+    loadPersonProjects?(personDocId: string): Promise<import("./domain/projects").PersonProjectItem[]>;
+    addPersonProject?(item: import("./domain/projects").PersonProjectItem): Promise<import("./domain/projects").PersonProjectItem[]>;
+    updatePersonProject?(personDocId: string, projectId: string, patch: Partial<import("./domain/projects").PersonProjectItem>): Promise<import("./domain/projects").PersonProjectItem[]>;
+    removePersonProject?(personDocId: string, projectId: string): Promise<import("./domain/projects").PersonProjectItem[]>;
+    findCollaboratorsByProject?(matcher: { title?: string; docId?: string }): Promise<Array<{ personDocId: string; role?: string; status: import("./domain/projects").ProjectStatus; title: string }>>;
+    /** E-54：会客拜访行程备忘与准备清单（Meeting & Visit Itineraries） */
+    loadPersonItineraries?(personDocId: string): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    savePersonItinerary?(item: import("./domain/itineraries").PersonItineraryItem): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    removePersonItinerary?(personDocId: string, itineraryId: string): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    togglePersonItineraryChecklist?(personDocId: string, itineraryId: string, checklistId: string): Promise<import("./domain/itineraries").PersonItineraryItem[]>;
+    /** E-38：人物家庭与重要亲属关系（Family & Kinship Members） */
+    loadPersonKinships?(personDocId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
+    addPersonKinship?(item: import("./domain/kinship").KinshipMemberItem): Promise<import("./domain/kinship").KinshipMemberItem[]>;
+    removePersonKinship?(personDocId: string, memberId: string): Promise<import("./domain/kinship").KinshipMemberItem[]>;
+    /** E-39：双向承诺与信诺履约追踪（Mutual Promises & Commitments） */
+    loadPersonPromises?(personDocId: string): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    addPersonPromise?(item: import("./domain/promises").PersonPromiseItem): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    updatePersonPromise?(personDocId: string, promiseId: string, patch: Partial<import("./domain/promises").PersonPromiseItem>): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    removePersonPromise?(personDocId: string, promiseId: string): Promise<import("./domain/promises").PersonPromiseItem[]>;
+    /** E-40：交往生命周期阶段与历程演进（Relationship Lifecycle Stage） */
+    loadPersonLifecycleStage?(personDocId: string): Promise<import("./domain/lifecycle-stage").PersonLifecycleRecord>;
+    updatePersonLifecycleStage?(personDocId: string, stage: import("./domain/lifecycle-stage").RelationshipStageKey, dateStr?: string, note?: string): Promise<import("./domain/lifecycle-stage").PersonLifecycleRecord>;
+    /** 批量获取全量联系人交往阶段映射表 */
+    loadAllLifecycleStages?(): Promise<Record<string, import("./domain/lifecycle-stage").RelationshipStageKey>>;
+    /** 批量为多位联系人更新交往生命周期阶段并落盘 */
+    batchUpdatePersonLifecycleStages?(
+        personDocIds: readonly string[],
+        stage: import("./domain/lifecycle-stage").RelationshipStageKey,
+        dateStr?: string,
+        note?: string,
+    ): Promise<{ updatedCount: number; currentStages: Record<string, import("./domain/lifecycle-stage").RelationshipStageKey> }>;
+    /** 批量获取全量联系人节奏配置表 */
+    loadAllCadences?(): Promise<Record<string, import("./domain/cadence").PersonCadence>>;
+    /** E-42：联系人自管闪念速记便签板（Person Scratchpad & Ephemeral Memo Pinboard） */
+    loadPersonScratchpads?(personDocId: string): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    savePersonScratchpad?(item: import("./domain/person-scratchpad").PersonScratchpadItem): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    updatePersonScratchpad?(personDocId: string, noteId: string, patch: Partial<import("./domain/person-scratchpad").PersonScratchpadItem>): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    removePersonScratchpad?(personDocId: string, noteId: string): Promise<import("./domain/person-scratchpad").PersonScratchpadItem[]>;
+    /** E-49：联系人自管社交偏好与交往忌口档案 */
+    loadPersonSocialPreferences?(personDocId: string): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    addPersonSocialPreference?(item: import("./domain/social-preferences").PersonSocialPreferenceItem): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    updatePersonSocialPreference?(personDocId: string, prefId: string, patch: Partial<import("./domain/social-preferences").PersonSocialPreferenceItem>): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    removePersonSocialPreference?(personDocId: string, prefId: string): Promise<import("./domain/social-preferences").PersonSocialPreferenceItem[]>;
+    /** Monica 对标：初识溯源与引荐人档案（How We Met / Introduced by） */
+    loadPersonOrigin?(personDocId: string): Promise<import("./domain/person-origin").PersonOrigin | null>;
+    savePersonOrigin?(origin: import("./domain/person-origin").PersonOrigin): Promise<import("./domain/person-origin").PersonOrigin>;
+    loadAllPersonOrigins?(): Promise<Record<string, import("./domain/person-origin").PersonOrigin>>;
+    /** Simple-PRM / Monica 对标：向小驴管家输出到期问候提醒 */
+    sendGreetingReminderToHome?(personName: string, daysOverdue: number): Promise<boolean>;
+    /** IDEA-17：将重要相识/相聚纪念日及生日自动同步至小驴管家日历日程 */
+    syncAnniversariesToHome?(title: string, dueDate: string): Promise<boolean>;
+    /** RF-09 / Issue #135：谈资备忘与关键事实画像（Person Facts & Quotes） */
+    loadPersonFacts?(personDocId: string): Promise<import("./domain/doc-section").PersonFactItem[]>;
+    savePersonFacts?(personDocId: string, items: readonly import("./domain/doc-section").PersonFactItem[]): Promise<void>;
+    /** RF-10 / 3.2：潜在人脉关联智能挖掘（Potential Connection Discovery） */
+    discoverPotentialConnections?(options?: import("./domain/connections-discovery").DiscoverConnectionsOptions): Promise<import("./domain/connections-discovery").PotentialConnection[]>;
+    establishPotentialConnection?(firstPersonDocId: string, secondPersonDocId: string): Promise<import("./domain/relations").RelationMutationReport>;
+    /** 跟进日程与定期联络到期卡片提醒 (Epoch 7 Standard) */
+    checkFollowUpReminders?(force?: boolean): Promise<{ delivered: boolean; count: number; cardId?: string }>;
+    /** 定期扫描联系人跟进日程 (Phase 2 统一心跳调度出口) */
+    checkFollowups?(force?: boolean): Promise<{ delivered: boolean; count: number; cardId?: string }>;
+    /** 交往回顾报表（F12）：区间互动统计（只读投影，人物条数与同场活动分口径） */
+    buildReviewReport(from: string, to: string): Promise<ReviewReport>;
+    /** RF-03：将交往回顾沉淀为思源实体文档 */
+    createReviewReportDoc?(range: import("./domain/review-report").ReviewRange): Promise<{ docId: string; hpath: string } | null>;
+    /** 周度人脉交往简报（Weekly Social Review）：沉淀为思源实体文档 */
+    createWeeklyDigestDoc?(options?: import("./services/weekly-digest").CreateWeeklyDigestDocOptions): Promise<{ docId: string; hpath: string; weekLabel: string } | null>;
+    /** 人脉记忆复习闪卡（Spaced Repetition Flashcards）：沉淀为思源实体文档 */
+    createPersonFlashcardsDoc?(
+        person: import("./domain/person").ContactSummary,
+        facts?: readonly import("./domain/doc-section").PersonFactItem[],
+        topics?: readonly import("./domain/topics").PersonTopicItem[],
+        options?: import("./services/flashcards").CreateFlashcardsDocOptions,
+    ): Promise<{ docId: string; hpath: string; count: number } | null>;
+    /** 批量联系人常识复习闪卡（Batch Flashcards Deck）：沉淀为思源实体文档 */
+    createBatchFlashcardsDoc?(
+        people: readonly import("./domain/person").ContactSummary[],
+        options?: import("./services/flashcards").CreateBatchFlashcardsDocOptions,
+    ): Promise<{ docId: string; hpath: string; count: number } | null>;
+    /** 会面准备简报：沉淀为思源实体文档 */
+    createBriefingDoc?(input: import("./domain/briefing-export").BriefingExportInput, dateStr?: string): Promise<{ docId: string; hpath: string } | null>;
+    /** E-46：人脉交往编年史里程碑文档生成 */
+    createMilestonesDoc?(person: import("./domain/person").ContactSummary, milestones: readonly import("./domain/timeline-milestones").MilestoneEvent[]): Promise<{ docId: string; hpath: string } | null>;
+    /** 全库人情往来汇总与大账本（Exchanges Hub） */
+    loadExchangesSummary?(): Promise<import("./domain/exchanges-summary").ExchangesSummary>;
+    createExchangesLedgerDoc?(options?: { title?: string }): Promise<{ docId: string; hpath: string; count: number } | null>;
+    /** E-50：会前速查与偏好雷区大盘 */
+    loadAllPreMeetingDossiers?(): Promise<import("./domain/pre-meeting-hub").ContactPreMeetingDossier[]>;
+    /** E-53：关系降温预警与破冰重联服务 */
+    loadCoolingRadarSummary?(): Promise<import("./services/cooling-radar").CoolingRadarSummaryData>;
+    /** 导出中心摘要：名册人数与活跃互动条数（展示用，容错读取） */
+    loadExportSummary(): Promise<ExportSummary>;
+    /** 导出全量名册为 vCard 3.0 文本（联系人页选中导出外的设置页统一入口） */
+    exportRosterVcf(): Promise<string>;
+    previewInteractionImport(text: string): Promise<InteractionImportSummary>;
+    importInteractionJson(text: string): Promise<InteractionImportSummary>;
+    /** 备份差异明细（F15）：按事件展开将新增/将跳过与删除标记影响（零写入） */
+    previewInteractionImportDiff(text: string): Promise<InteractionImportDiff>;
+    loadViewPreferences(): Promise<ViewPreferences>;
+    saveViewPreferences(preferences: ViewPreferences): Promise<ViewPreferences>;
+    /** 从笔记捕获：预览出链指向的联系人 */
+    previewCapture(docId: string): Promise<CapturePreview>;
+    /** FAST-01.4：按全字段更新联系人资料（编辑弹窗语义，空=清空） */
+    updatePersonFields(personItemId: string, draft: import("./domain/person").ContactDraft): Promise<import("./domain/contact-write").ContactWriteReport>;
+    /** B11：本人身份读取（null = 未建立） */
+    loadSelfIdentity(): Promise<import("./domain/self-identity").SelfIdentity | null>;
+    /** B11.3：确保本人档案「我自己」存在（幂等；失败返回 null） */
+    createSelfProfile(): Promise<import("./domain/self-identity").SelfIdentity | null>;
+    /** B11.3/B11.5：把本人身份显式指定到一名已有联系人（显式改绑，原资料保留） */
+    designateSelfIdentity(personItemId: string): Promise<import("./domain/self-identity").SelfIdentity>;
+    previewSelfIdentityChange(targetItemId: string | null): Promise<import("./domain/self-identity").SelfIdentityChangePreview>;
+    applySelfIdentityChange(preview: import("./domain/self-identity").SelfIdentityChangePreview): Promise<import("./domain/self-identity").SelfIdentity | null>;
+    /** B11.3：全量名册（设置页本人档案指定用） */
+    listContacts(): Promise<import("./domain/person").ContactSummary[]>;
+    /** B13.3：组织列举（含成员记录） */
+    listOrganizations(options?: { includeRemoved?: boolean }): Promise<import("./services/org").OrganizationWithMembers[]>;
+    /** B13.5c：组织标记 keyset 分页；旧宿主未提供时由组织页回退全量列举 */
+    listOrganizationsPage?(options?: { afterRootId?: string; limit?: number; includeRemoved?: boolean }): Promise<import("./services/org").OrganizationPage>;
+    /** B13.3：新建组织（文档 + custom-lvct-org 标记区块；同名拒绝） */
+    createOrganization(name: string, profile?: import("./domain/organization-profile").OrganizationProfileDraft): Promise<{ docId: string; profileSaved?: boolean; profileError?: string }>;
+    loadOrganizationProfile?(orgDocId: string): Promise<import("./domain/organization-profile").OrganizationProfileDraft | null>;
+    saveOrganizationProfile?(orgDocId: string, profile: import("./domain/organization-profile").OrganizationProfileDraft, expected?: import("./domain/organization-profile").OrganizationProfileDraft | null): Promise<import("./domain/organization-profile").OrganizationProfileDraft>;
+    /** B13.3：组织成员列举（join 名册姓名） */
+    listOrganizationMembers(orgDocId: string): Promise<import("./services/org").OrganizationMember[]>;
+    /** B13.5b：组织成员稳定分页与筛选；旧宿主未提供时由 UI 回退全量列举 */
+    listOrganizationMembersPage?(orgDocId: string, options?: { query?: string; status?: "all" | "active" | "former"; offset?: number; limit?: number }): Promise<import("./services/org").OrganizationMemberPage>;
+    /** B13.3：添加组织成员（active） */
+    addOrganizationMember(orgDocId: string, personDocId: string, extra?: { department?: string; title?: string; joinedOn?: string; leftOn?: string; status?: import("./domain/org-membership").OrgMembershipStatus; statusLabel?: string; affiliationKind?: import("./domain/org-membership").OrgAffiliationKind; note?: string }): Promise<import("./services/org-member-writes").OrgMembershipWriteReport | void>;
+    /** B13.3：移除组织成员记录 */
+    removeOrganizationMember(id: string, expected?: import("./domain/org-membership").OrgMembership): Promise<import("./services/org-member-writes").OrgMembershipWriteReport | void>;
+    /** B13.4：更新成员记录字段（部门/职位/入职/离职/状态；身份字段不可变） */
+    updateOrganizationMember(id: string, patch: import("./domain/org-membership").OrgMembershipPatch, expected?: import("./domain/org-membership").OrgMembership): Promise<import("./services/org-member-writes").OrgMembershipWriteReport | void>;
+    moveOrganizationMember?(id: string, targetOrgDocId: string, expected?: import("./domain/org-membership").OrgMembership): Promise<import("./services/org-member-writes").OrgMembershipWriteReport | void>;
+    replaceOrganizationMember(formerMembershipId: string, successorPersonDocId: string, extra: { department?: string; title?: string; joinedOn: string; leftOn: string; affiliationKind?: import("./domain/org-membership").OrgAffiliationKind }, expected?: import("./domain/org-membership").OrgMembership): Promise<import("./services/org-member-writes").OrgMembershipWriteReport | void>;
+    /** B13：归档组织（标记区块值 archived；文档与成员记录保留可恢复） */
+    archiveOrganization(orgDocId: string): Promise<void>;
+    /** B13：恢复归档组织 */
+    restoreOrganization(orgDocId: string): Promise<void>;
+    /** B13.4：组织改名（同名检查；标记块文案同步，归档值保持） */
+    renameOrganization(orgDocId: string, name: string): Promise<void>;
+    removeOrganization?(orgDocId: string): Promise<void>;
+    listPendingOrganizationOperations?(): Promise<import("./domain/organization-operations").OrganizationOperationReport[]>;
+    inspectOrganizationOperation?(requestId: string): Promise<import("./domain/organization-operations").OrganizationOperationReport>;
+    resumeOrganizationOperation?(requestId: string): Promise<import("./domain/organization-operations").OrganizationOperationReport>;
+    /** B13.9：移除悬空的 org-links 区块（体检修复入口；逐块隔离返回失败清单） */
+    removeOrgLinkBlocks(blockIds: readonly string[]): Promise<Array<{ id: string; message: string }>>;
+    /** B13.3：打开组织管理弹窗（B13.5 人物详情维护入口复用；B13.6a 可携目标组织定位，目标缺失回退首个） */
+    openOrgManagerDialog(initialOrgDocId?: string): void;
+    /** B12：某人的组织归属投影（成员记录 join 组织名） */
+    listPersonOrgMemberships(personDocId: string): Promise<import("./services/org").PersonOrgMembershipView[]>;
+    previewOrganizationProjections?(docIds?: readonly string[]): Promise<import("./services/org-projections").OrgProjectionPreview>;
+    repairOrganizationProjection?(preview: import("./services/org-projections").OrgProjectionPreview, retryKey: string): Promise<import("./services/org-projections").OrgProjectionRepairResult>;
+    /** B13.6：共同背景（同组织联系人，重叠期间/同期口径，零写入） */
+    listCommonOrgBackground(personDocId: string): Promise<import("./domain/org-membership").CommonOrgBackground[]>;
+    /** FUNC-01.14：AI 资料候选受限补丁写——只写补丁字段，最新名册回读逐字段冲突核对 */
+    updatePersonCandidateFields(personItemId: string, patches: readonly import("./domain/contact-patch").CandidateFieldPatch[]): Promise<import("./services/contacts").CandidateFieldApplyResult>;
+    /** 从笔记捕获：确认执行（互动事件 + 参与人区块 + 新人收编） */
+    captureDoc(docId: string, options: CaptureOptions): Promise<CaptureResult>;
+    /** AI 抽取本页人名/日期/地点（需思源内置 AI；结果须经确认 UI） */
+    prepareAiExtraction(docId: string, options?: AiPreflightOptions): Promise<AiPreflight>;
+    aiExtractFromDoc(docId: string, confirmation?: AiExtractionConfirmation): Promise<AiExtractOutcome>;
+    /** 打开任意思源文档（捕获完成页等快捷入口使用，支持子块级高亮精准滚动定位） */
+    openDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions): void | Promise<void>;
+    /** 弹出文档原生上下文菜单（SiYuan 3.8.10+ 原生树菜单） */
+    openDocMenu?(docId: string, event: MouseEvent): Promise<boolean>;
+    openHostDoc(): void | Promise<void>;
+    /** 打开人物文档（联系人详情页 = 人物文档，支持子块级高亮精准滚动定位） */
+    openPersonDoc(docId: string, options?: import("./libs/open-document").OpenDocOptions): void | Promise<void>;
+    openSettings(): void;
+}
