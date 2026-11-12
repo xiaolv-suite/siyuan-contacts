@@ -8,7 +8,7 @@
 
 一人一文档 · 原生属性视图 · 圈层联络周期 · 会前30秒破冰备忘 · 关系引荐图谱
 
-**当前版本：v0.7.9** ｜ [English Documentation](README.en-US.md) ｜ [更新日志](CHANGELOG.md)
+**当前版本：v0.7.10** ｜ [English Documentation](README.en-US.md) ｜ [更新日志](CHANGELOG.md)
 
 [![CI](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml)
 [![最新版本](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-contacts?label=最新版本)](https://github.com/xiaolv-suite/siyuan-contacts/releases)
@@ -152,6 +152,14 @@
 ---
 
 ## 📝 最近更新动态
+
+- **思源 3.8.10+ 原生特性适配**：联系人详情头像支持右键唤出原生文件选择器（`openNativeAssetPicker`）；全域头像 URL 解析加固（支持相对资产路径与 DataURL）；图谱抽屉与组织文档支持原生文档树菜单；半角斜杠标题防截断。
+- **输入法合成期全域守卫**：双端搜索框、人物速选器、别名、关系称谓、随手记、组织重命名、详情页七类输入等 16 处输入全面增加 IME 合成期守卫，Enter 选字不再误触发提交或弹出新建。
+- **无障碍键盘可达闭环**：侧栏互动时间线条目、关系雷达节点、头像上传、组织卡片 4 处补齐 Enter/Space 键盘激活；关系图谱图例补齐 `aria-pressed` 状态播报。
+- **移动端与视觉优化**：工作台底部留白对齐 64px 导航 + iOS 安全区（消除 20px 空白）；搜索框 16px 防缩放；名片 SVG 渐变 ID 增加主题后缀防碰撞。
+
+<details>
+<summary>展开查看历史版本更新（v0.7.9 及更早版本 · 完整记录见 <a href="./CHANGELOG.md">CHANGELOG.md</a>）</summary>
 
 ### v0.7.9（2026-11-10 · GitHub 组织迁移与体验加固）
 

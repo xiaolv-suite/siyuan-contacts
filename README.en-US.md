@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.8** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.8) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
+**Latest stable release: v0.7.10** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.10) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -54,28 +54,22 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 ---
 
-## This release: v0.7.8 (2026-11-04)
+## 📝 Recent Updates
 
-Xiaolv Ecosystem Federation Suite Epoch 7 Integration, Concurrency Write Lock Hardening, Bi-Directional Daily Note Undo & Cross-Plugin Omnisearch:
-
-- **Xiaolv Ecosystem Federation Suite (Epoch 7 Protocol v1.6.0)**:
-  - **Progressive Noise-Reduction Notifications (`lvNotify`)**: 4-tier anti-interruption architecture (inline micro-animation -> transient micro-capsule -> interactive card -> silent logging); interaction logging and relation mutations feature 5-second "Undo" actions with snooze and today-do-not-disturb support;
-  - **Launchpad Dock Integration (`lvLaunchpad`)**: Registered Contacts dock entry with digit `7`, badge count of overdue follow-ups, and 4 quick sub-actions;
-  - **Omnisearch Data Provider (`lvOmnisearch`)**: Cross-plugin millisecond-level retrieval for contacts, aliases, phone numbers, interaction logs, and organizations with 1-second timeout fuse and direct document navigation;
-  - **Unified Ecosystem Backup Bus (`lvBackup`)**: Registered `dumpData` & `restoreData` contracts across all 24 modules for seamless whole-ecosystem disaster recovery;
-  - **Heartbeat Main Clock (`lvTicker`)**: Aligned 10s micro-heartbeat with hourly audits, automatically throttling to 60s in low-power/background state with 00:00 midnight broadcast;
-  - **Shared AI Gateway (`lvAi`)**: Structured profile extraction powered by ecosystem-shared AI endpoints and keys with graceful fallback to SiYuan kernel AI.
-- **Resource & Concurrency Hardening**:
-  - **Document Write Queue Lock (`withDocLock`)**: Fixed Map key retention leak on lock release; extended mutex coverage across person profile, follow-ups, favor ledger, anniversaries, and related connections to eliminate SiYuan `document is locked` conflicts;
-  - **Daily Note Bi-Directional Undo Loop**: Attached `eventId` to quick-record daily note entries ensuring complete removal on undo;
-  - **Console Drilldown & Dialog Resilience**: Defensive parameter safeguards for Pre-Meeting Hub (`PreMeetingHubDialog`) and Cooling Radar (`CoolingRadarDialog`) with direct jumps to person documents.
-
-Validation: `pnpm check` 0 errors / 0 warnings, unit tests **1130/1130 PASS**, UI smoke **528/528 PASS**, and `pnpm e2e:isolated` (11/11 kernel services + 12/12 real desktop walkthroughs) all passed with 10 desktop screenshots.
+- **SiYuan 3.8.10+ Native Adaptations**: Contact detail avatar supports right-click `openNativeAssetPicker` to select workspace assets; robust avatar URL resolution (`resolveAvatarUrl`) for both relative paths and DataURLs; relation graph drawer and org docs support native document tree context menus; half-width slash title protection (`safeDocTitleFromHPath`).
+- **Input Method & Keyboard Defense**: All 16 search/input handlers (dual-end search boxes, person picker, aliases, relation labels, quick memo, org rename, and 7 detail-view inputs) yield during IME composition to prevent premature submission; 4 `role="button"` elements gained Enter/Space keyboard activation; graph legend items announce `aria-pressed`.
+- **Responsive & Visual Polish**: Mobile workbench bottom whitespace reduced by 20px aligned with 64px nav + safe area; search inputs standardized to 16px font-size to prevent iOS auto-zoom; business card SVG gradient IDs theme-suffixed to prevent DOM ID collision.
 
 ---
 
 <details>
-<summary><b>📜 Historical Release Notes (v0.7.7 ~ v0.5.2 Click to Expand)</b></summary>
+<summary><b>📜 Historical Release Notes (v0.7.9 ~ v0.5.2 Click to Expand)</b></summary>
+
+### v0.7.9 (2026-11-10)
+
+- Migration to `xiaolv-suite` organization; mobile full-screen exit flow via `openMobileFileById`; pull-down gesture input guards; instant haptic feedback.
+
+### v0.7.8 (2026-11-04)
 
 ### v0.7.7 (2026-11-02)
 
