@@ -53,11 +53,7 @@ export const DEFAULT_CONTACTS_HUB_ROOT = "/03-小驴人脉";
 
 export function isContactsHubNotebookName(name: string | undefined): boolean {
     if (!name) return false;
-    return (
-        name.includes("小驴空间") ||
-        name.includes("小驴笔记本") ||
-        name.includes("小驴生态统一测试空间")
-    );
+    return /^(🐴\s*)?小驴(生态|空间|笔记本)/.test(name.trim());
 }
 
 export function resolveContactsRootSegments(settings: { notebookName?: string; rootPath?: string }): string[] {
