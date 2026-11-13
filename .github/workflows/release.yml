@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check (tsc + svelte-check)
+        run: pnpm check
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v2
+        id: chrome
+        with:
+          install-dependencies: true
+
+      - name: Unit tests
+        run: pnpm test
+        env:
+          LVCT_TEST_BROWSER: ${{ steps.chrome.outputs.chrome-path }}
+
+      - name: Build
+        run: pnpm build
+
+      - name: Release gate
+        run: node scripts/check-release.mjs
+
+      - name: Extract release notes
+        id: notes
+        shell: bash
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const tag = process.env.GITHUB_REF_NAME || "";
+            const ver = tag.replace(/^v/, "");
+            const lines = fs.readFileSync("CHANGELOG.md", "utf8").split(/\r?\n/);
+            const out = [];
+            let active = false;
+            for (const line of lines) {
+              if (/^##\s+/.test(line)) {
+                if (active) break;
+                if (line.includes(ver)) {
+                  active = true;
+                  out.push("### 小驴人脉 v" + ver);
+                  continue;
+                }
+              }
+              if (active) out.push(line);
+            }
+            const sha = fs.existsSync("package.zip.sha256")
+              ? fs.readFileSync("package.zip.sha256", "utf8").trim().split(/\s+/)[0]
+              : "";
+            const body = (out.join("\n").trim() || `### 小驴人脉 ${tag}`) + (sha ? `\n\n- **package.zip SHA-256**: \`${sha}\`` : "");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `body<<RELEASE_NOTES_EOF\n${body}\nRELEASE_NOTES_EOF\n`);
+          '
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          files: |
+            package.zip
+            package.zip.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

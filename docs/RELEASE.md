@@ -1,0 +1,346 @@
+# 发布清单（RELEASE）
+
+> v0.7.1 为标杆融合全链路加固、24模块无损数据迁移与界面令牌校准版本：修复图谱有向引荐边字典序反转（BUG-01）、初识溯源首次空库保存与 24 模块迁移包覆盖（BUG-02）、重复联系人合并补齐初识溯源/关系称谓/群体活动出席人迁移（BUG-03）、初识溯源编辑草稿保护与错误反馈（BUG-04）、已保存视图枚举白名单与全仓 26 处 UTC 日期切片清零（BUG-05）以及温度胶囊/会前速览卡/Twenty 柱状图令牌校准（UX-01）。保留上一版可回滚产物 `package-v0.7.0.zip`。
+
+## v0.7.1 发布状态
+
+- [x] `package.json`、`plugin.json`、`README.md` 与 `PLUGIN_VERSION` 四处版本统一为 0.7.1
+- [x] 保留上一版可回滚产物 `package-v0.7.0.zip`
+- [x] 图谱 `orderGraph` 保持 `introducer` 有向引荐边原始方向（BUG-01）
+- [x] `person-origins.json` 首次空库保存、清空移除与 24 模块迁移包往返闭环（BUG-02/BUG-04）
+- [x] `executeContactMerge` 补齐初识溯源、引荐人重定向、关系称谓与群体活动出席人迁移（BUG-03）
+- [x] `saved-views.ts` 枚举白名单校验与全仓 `toLocalDateKey` 本地时区统一（BUG-05）
+- [x] 待问候/星标胶囊真实令牌、会前速览卡窄屏折行与 Twenty 柱状图高对比度适配（UX-01）
+- [x] `pnpm check`（0 error, 0 warning）、全量单测 1075/1075、三套 UI 回归 529/529、构建与 `pnpm check:release` 通过
+
+> v0.5.19 为全面缺陷修复、无障碍体验加固与性能索引优化大版本：修复归档成员编辑状态丢失（F-01）、模板并发覆盖（F-02）、迁移墓碑预览（F-03）与农历周岁（FC-06）；引入无障碍 confirmDialog 替代原生 window.confirm（K-10）；档案条一键复制联系方式（E-15）；跟进日历去重防注入（CODE-02.14）；简报跨平台安全文件名（K-11）；表格行焦点解耦（D-28）；首页行动分组与设置分区无障碍 tablist 升级（D-27/D-36/D-29）；全库日期校验统一（C-30）；全方位性能索引优化（G-07~G-12）与时间线确定性排序（M-10）。
+
+## v0.5.19 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.19
+- [x] 归档成员状态保留（F-01）、模板并发冲突保护（F-02）与迁移墓碑预览（F-03）
+- [x] 引入 confirmDialog，全面替换交互流程中的原生 window.confirm（K-10）
+- [x] 人物文档档案条联系方式一键复制、视觉反馈与 `:focus-visible` 焦点环（E-15）
+- [x] 跟进任务受控日历标记去重规范化与防注入加固（CODE-02.14）
+- [x] 简报导出跨平台安全文件名清洗（K-11）
+- [x] 表格行焦点与空格选择解耦（D-28）
+- [x] 首页行动分组折叠无障碍双向绑定（D-27/D-36）与快捷互动切人草稿守卫（D-16）
+- [x] 消除桌面端与移动端控件 DOM ID 重复冲突（D-39）
+- [x] 捕获向导步骤进度指示、region 关联与完成播报（D-34）
+- [x] 设置分区导航无障碍 tablist 升级（D-29）与分区标题焦点迁移（D-25）
+- [x] 关闭守卫确认弹窗背景元素 aria-hidden/inert 隔离与 Tab 焦点圈定（D-18）
+- [x] 移动筛选抽屉 Tab/Shift+Tab 焦点圈定与防穿出（D-19）
+- [x] 全库公历日期校验统一（C-30）与 Markdown 链接标签文本转义（C-14）
+- [x] 首页行动清单 O(1)、共同背景预剪枝、生日排序惰性化、图谱节点 O(1) 性能优化（G-09/10/11/12）
+- [x] 查重大桶配对及早退出与选择分配优化（G-07/G-08）
+- [x] 互动时间线与交往报表稳定确定性 tie-breaker 排序（M-10）
+- [x] 统一自管存储严格结构与条目级错误定位 StoreIntegrityError（C-31）
+- [x] 外部桥接请求受控日期校验规范化（C-06）
+- [x] 原型与设计规范对齐（UI-20261018-03）
+- [x] `pnpm check`（0 error, 0 warning）、全量单测通过、Release 门禁全部通过
+- [ ] 真实日常用户工作区和 Android 真机复测
+
+> v0.5.18 为联系人选择器与组织归属统一多选补丁：修复真实点击下的 outside-click 竞态，支持组织多选、同组织历史、新建组织和筛选/表单边界收口。
+
+## v0.5.18 发布状态
+
+- [x] PR #57 通过完整 CI 并以普通 merge 合入 main（合并提交 `9473e2b`）
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.18
+- [x] 联系人选择器可信点击、Enter、Esc、外点关闭和焦点恢复
+- [x] 组织归属统一多选、独立经历字段、同组织多段历史和真实新建组织
+- [x] 搜索、筛选、批量选择、缺失候选和表单保存边界回归
+- [x] `pnpm check`、728 项单测、Chrome UI 473/473
+- [x] `pnpm build`、主分支 CI、`pnpm check:release`
+- [x] 远端 Release 附件下载复核：616,803 B，SHA-256 `5b93d0de228fb1c41e0311249736130e8deccfe5335a40a7df640b74c1f83cfe`；[GitHub Release v0.5.18](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.18)
+- [ ] 真实日常用户工作区和 Android 真机复测
+
+> v0.5.17 为 #51/#54 重复资料与个人备注闭环补丁：支持重复条目、两层分组、详情筛选/复制、备注冲突重读，以及旧版拆块备注的安全恢复。Issue #35 仍等待真实脱敏小米 VCF，vCard 候选修复未宣称为已确认根因。
+
+## v0.5.17 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.17
+- [x] 重复资料、两层分组、改组/解除组、排序、删除、清空重建和完整回读
+- [x] 个人备注冲突重读、草稿选择、清空重开及旧版拆块备注安全恢复
+- [x] `pnpm check`、`pnpm test` 710/710、桌面/390px/宿主样式 UI 各 416/416
+- [x] E2E 安全与 Kernel smoke 17/17；真实隔离 Chrome 联合轮通过
+- [x] `pnpm build`、`pnpm check:release`、`git diff --check`
+- [x] annotated tag `v0.5.17` 已推送；[GitHub Release v0.5.17](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.17) 已创建
+- [x] Release 附件下载复核一致：`package.zip` 601,897 B，SHA-256 `472918deacd8aa985e4a8effb9af3796382aa4336cd546bb59db1e4c7317f11d`
+- [x] Issue #51/#54 已回复并关闭；#35 仍保持开放等待原始小米 VCF
+- [ ] Issue #35 原始小米 VCF 未提供，不能确认 vCard 候选修复命中根因
+
+> v0.5.16 为图谱组织成员生命周期补丁：当前单位只投影 active 成员，图谱统一表达 active/former/mixed。Issue #35 仍等待真实脱敏小米 VCF，vCard 候选修复未宣称为已确认根因。
+
+## v0.5.16 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.16
+- [x] 组织当前单位投影排除 former 成员；成员边合并并保留 active/former/mixed 生命周期
+- [x] 文本视图、Markdown 导出、画布线型和图例显示成员生命周期；related 查询边界保持不变
+- [x] `pnpm check`、`pnpm test` 597/597、桌面/移动/宿主样式 UI 381/381
+- [x] `pnpm build`、`pnpm check:release`、`git diff --check`
+- [x] 本地 `package.zip`：582,401 B；SHA-256 `91c2d4bece34509a2a72468a7d097af4d1bd566ceadfcb2a392fc4331cd731b8`
+- [x] PR [#42](https://github.com/ai68298100/siyuan-contacts/pull/42) 通过两条 CI 后普通合并；annotated tag `v0.5.16` 指向 `43725933e516fb36b8c8f108e47687c98872c798`
+- [x] [GitHub Release v0.5.16](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.16) 已发布；附件下载复核一致：582,401 B，SHA-256 `91c2d4bece34509a2a72468a7d097af4d1bd566ceadfcb2a392fc4331cd731b8`
+- [ ] Issue #35 原始小米 VCF 未提供，不能确认 vCard 候选修复命中根因
+
+发布后 main CI [run 38815793263，attempt 1](https://github.com/ai68298100/siyuan-contacts/actions/runs/38815793263/attempts/1) 首次桌面 UI 为 380/381，B03 在 Esc 关闭后再次打开时报“选人浮层未打开”。同提交无代码变更的 [attempt 2](https://github.com/ai68298100/siyuan-contacts/actions/runs/38815793263/attempts/2) 已全部通过（类型、单测、桌面/移动 UI、构建、发布门禁）；首次失败仍保留为待复现的 CI 稳定性记录，不宣称根因已修复。
+
+> v0.5.15 为往来账本陈旧回读竞态补丁：确认写入后保留新记录和最新状态。Issue #35 仍等待真实脱敏小米 VCF，vCard 候选修复未宣称为已确认根因。
+
+## v0.5.15 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.15
+- [x] 往来账本创建/连续写入/状态变更陈旧回读修复
+- [x] `pnpm check`、`pnpm test` 596/596、桌面/移动/宿主样式 UI 381/381
+- [x] `pnpm build`、`pnpm check:release`、`git diff --check`
+- [x] 本地 `package.zip`：581,946 B；SHA-256 `cd271b7b62db1b1ce86d99b17e64e4a7a547963f79db70016bac467553ab2f8b`
+- [x] annotated tag `v0.5.15` 已推送；[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.15) 已创建
+- [x] Release 附件下载复核一致：`package.zip` 581,946 B，SHA-256 `cd271b7b62db1b1ce86d99b17e64e4a7a547963f79db70016bac467553ab2f8b`
+- [ ] Issue #35 原始小米 VCF 未提供，不能确认 vCard 候选修复命中根因
+
+> v0.5.14 为 vCard 导入补丁版本：无名卡片逐卡跳过并继续处理后续有效卡。Issue #35 仍等待真实脱敏小米 VCF，候选修复未宣称为已确认根因。
+
+## v0.5.14 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.14
+- [x] vCard 无名卡片逐卡跳过，整文件无有效卡片时明确失败
+- [x] `pnpm check`、`pnpm test` 596/596、桌面/移动 UI 378/378
+- [x] `pnpm build`、`pnpm check:release`、`git diff --check`
+- [x] annotated tag `v0.5.14` 已推送；[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.14) 已创建
+- [x] Release 附件下载复核一致：`package.zip` 581,455 B，SHA-256 `c3b55321df8b8dfeb36693e96b60783e1e9dec8de548f2b52a7d3c40f9cb319a`
+- [ ] Issue #35 原始小米 VCF 未提供，不能确认候选修复命中根因
+
+本地候选包：`package.zip` 581,455 B，SHA-256 `c3b55321df8b8dfeb36693e96b60783e1e9dec8de548f2b52a7d3c40f9cb319a`。
+
+> v0.5.13 已发布：[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.13)。组织历史成员图谱、组织管理切换草稿、联系人文字对齐和 vCard 兼容性修复已通过隔离验证；#35 仍等待脱敏 VCF。
+
+## v0.5.13 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.13
+- [x] README、README.en-US、CHANGELOG 与 v0.5.13 发布说明已更新
+- [x] #36、#37、#38、#39、#40 的代码路径修复并完成回归
+- [x] `pnpm check`、`pnpm test` 596/596、桌面 UI 378/378、移动 UI 378/378
+- [x] `pnpm build`、`pnpm check:release`、`git diff --check`
+- [ ] Issue #35 的原始小米 VCF 未提供，不能确认报告根因
+- [x] annotated tag `v0.5.13` 指向候选提交 `325bb98`
+- [x] GitHub Release 已创建；下载附件复核一致：`package.zip` 581,735 B，SHA-256 `2fb0d7e0c6dab395dd76c4208480db3ff06a6650f41e2e41139a9b37ca222cf3`
+
+> v0.5.12 已发布：[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.12)。修复 vCard 导入中空白 `FN` 遮住有效 `N` 姓名回退的边界；Issue #35 仍缺脱敏 VCF 样本，不能确认报告根因。
+
+## v0.5.12 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.12
+- [x] README、README.en-US、CHANGELOG 与 v0.5.12 发布说明已更新
+- [x] 空白 `FN` 回退有效 `N`，严格导入新增回归测试
+- [x] `pnpm check`、`pnpm test` 594/594、桌面 UI 378/378
+- [x] 移动隔离 UI 378/378；C03 通过移动“筛选与整理”抽屉路径
+- [x] `pnpm build`、`pnpm check:release`；GitHub Actions [run 38748666687](https://github.com/ai68298100/siyuan-contacts/actions/runs/38748666687) 全部通过
+- [x] annotated tag `v0.5.12` 指向候选提交 `589da09584a4946c641eba047e1f0b7f33c93d60`
+- [x] GitHub Release 已创建；重新下载附件核对一致：`package.zip` 581,557 B，SHA-256 `df49569967bd6c93e63728da62e42f1512e6eb973d85870ba5e46ae57986e660`
+- [x] 集市目录已有 `ai68298100/siyuan-contacts`；上架 PR [#2289](https://github.com/siyuan-note/bazaar/pull/2289) 已合并
+- [ ] Issue #35 的原始小米 VCF 未提供，不能确认本修复覆盖报告根因
+- [ ] 真实思源宿主、Android 真机、多窗口、原生图入口、任务管理器互读和集市客户端可见性仍需单独验收
+
+> v0.5.11 历史发布记录：[GitHub Release v0.5.11](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.11)
+
+## v0.5.11 发布状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.11
+- [x] README、README.en-US、CHANGELOG 与 v0.5.11 发布说明已更新
+- [x] Issue #34 修复：空状态关系选择器保持打开
+- [x] `pnpm check`、`pnpm test` 594/594、桌面 UI 378/378
+- [x] `pnpm build`、`pnpm check:release`、`git diff --check`
+- [x] `package.zip` 581,145 B，SHA-256 `74a74877995a66a650cb1b4133d5fd81a4ba4d1dd0e32f6ba550111ea9b88883`
+- [ ] `pnpm test:ui:mobile`：现有 C03 夹具时序问题仍有 1 项失败（“资料完整度筛选组未显示”或“视图面板未打开”），与本次修复无关，未作为移动全绿证据
+- [ ] 真实思源宿主、Android 真机、原生图入口、任务管理器互读、集市客户端可见性和 CardDAV 在线同步仍需单独验收
+
+> v0.5.10 本轮发布：修复首页久未联系排版问题，全面梳理新建、编辑与组织管理等核心页面的文字与表单选项合理性。 [GitHub Release v0.5.10](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.10)
+
+## v0.5.10 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.10
+- [x] README、README.en-US、CHANGELOG 与 v0.5.10 发布说明已更新
+- [x] 彻底根除久未联系文字挤压竖排缺陷，优化紧凑资料摘要单行防换行与平滑省略
+- [x] 久未联系与近期生日列表重构为“主信息层 + 状态/行动层”现代双层卡片排版，增加 32px Squircle 渐变微头像
+- [x] 新建与编辑弹窗保存动作升级为实色高光主按钮，表单提示语去技术化，组织归属分类按高频直觉排序
+- [x] `pnpm check`、`pnpm test` 594/594、桌面 UI 378/378、移动 UI 378/378 全部通过
+- [x] `pnpm build`、`pnpm check:release` 通过
+- [x] `package.zip` 580,794 B，SHA-256 `1eed20907102bb80bab1205ac33f6424a0f8eb1eb4233dc097f13fec20bd030c`
+
+> v0.5.9 已发布：提交 `35df172` 已推送至 `dev/thispc-1010-org-affiliations`，annotated tag、GitHub Release 与附件校验均已完成。 [GitHub Release v0.5.9](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.9)
+
+## v0.5.9 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.9
+- [x] README、README.en-US、CHANGELOG 与 v0.5.9 发布说明已更新
+- [x] `pnpm check`、`pnpm test` 594/594、桌面 UI 378/378、移动 UI 378/378 全部通过
+- [x] 复合微质感、Squircle 双色渐变、分段滑轨、磨砂玻璃与时间轴现代高级 UI 落地
+- [x] `pnpm build`、`pnpm check:release` 通过
+- [x] `package.zip` 579,325 B，SHA-256 `b515c522f703eb046ec1a2338097fe8f48be43d26bc407a4bc1f010c8b13aa94`
+
+> v0.5.8 已发布：提交 `7416531` 已推送至 `dev/thispc-1010-org-affiliations`，annotated tag、GitHub Release 与附件校验均已完成。 [GitHub Release v0.5.8](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.8)
+
+## v0.5.8 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.8
+- [x] README、README.en-US、CHANGELOG、PROGRESS 与 v0.5.8 发布说明已更新
+- [x] Issue #29–#32 已修复、评论并关闭
+- [x] `pnpm check`、`pnpm test` 594/594、桌面 UI 378/378、移动 UI 378/378
+- [x] `pnpm build`、`pnpm check:release`、推送、annotated tag、GitHub Release 与附件校验
+- [x] `package.zip` 575,158 B，SHA-256 `528768fcbbbd19570bf7bc02f352769b85ff508f6ef082db074b3938aeb2c790`
+
+## v0.5.7 本轮状态
+
+- [x] package.json 与 plugin.json 版本统一为 0.5.7
+- [x] README、README.en-US、CHANGELOG、PROGRESS 与 v0.5.7 发布说明已更新
+- [x] 令牌审计基线与收敛后数据已保存，报告给出覆盖率和硬编码变化
+- [x] pnpm check、pnpm test 591/591、桌面 UI 373/373、移动 UI 373/373、pnpm build、pnpm check:release、git diff --check
+- [x] 推送当前分支并创建 annotated tag v0.5.7 与 GitHub Release，附件上传后复核 SHA-256（package.zip 572,221 B，SHA-256 ff17a1ada80333a5e4b916b9df8131e06fd42cad34475d107969dac493d443ab）
+- [ ] 真实思源宿主、Android 真机、原生图入口、任务管理器互读、集市客户端可见性和 CardDAV 在线同步仍需单独验收
+
+## v0.5.6 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.6
+- [x] README 中英文安装入口、CHANGELOG 与发布说明已切换到 v0.5.6
+- [x] `pnpm check`、`pnpm test` 555/555、桌面 330/330、移动 331/331、宿主 330/330
+- [x] 独立内核加载、联系人 13/13、实际服务 9/9、真实 browser-desktop 与清理
+- [x] `pnpm build` 与 `pnpm check:release`
+- [x] PR #27 已通过 GitHub Actions build（runs [38078754990](https://github.com/ai68298100/siyuan-contacts/actions/runs/38078754990)、[38078780875](https://github.com/ai68298100/siyuan-contacts/actions/runs/38078780875)）并以普通合并方式进入 `main`
+- [x] annotated tag `v0.5.6`、[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.6) 与附件下载校验；`package.zip` 548327 bytes，SHA-256 `c655261c8e6588042f27445ce2e2c5ad678e9f239628bca14b98aefce725aa14`
+- [ ] 真实思源宿主、Android 真机、真实多窗口、原生图入口、任务管理器互读和集市客户端可见性仍需单独验收；CardDAV 在线同步未实现
+
+新增：真实前端独立内核验收
+- 双页面、组织成员、生日、账本、别名、跟进和跨窗口操作均已通过。
+
+优化：E2E 认证与清理
+- 在两个浏览器页面导航前注入 `api.token`，临时库清理不再被认证限流阻断。
+
+修复：首屏认证竞态
+- 修复新版内核 `conf.api.token` 未进入真实 browser-desktop 请求头的问题。
+
+> v0.5.4 已于 2026-10-09 发布：[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.4)，annotated tag 指向 PR #23 main 合并提交 `7fa442471901a53d8d32900d2aeac22463870468`。安装包来自该提交的 [main CI run 37898536920](https://github.com/ai68298100/siyuan-contacts/actions/runs/37898536920)，下载附件后再次核对校验和一致。
+
+## v0.5.4 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.4
+- [x] README 中英文安装入口、CHANGELOG 与发布说明已切换到 v0.5.4
+- [x] 最近完整门禁：`pnpm check`、549/549 单测、桌面 322/322、移动 323/323、宿主样式 322/322、构建与发布门禁
+- [x] 发布候选经 PR #23 普通合并进 `main`；main CI run 37898536920 全部通过
+- [x] annotated tag `v0.5.4`、GitHub Latest Release 与附件下载校验完成；ZIP 527779 bytes，SHA-256 `0130fbc7eeeab99bbaa127e0a7e58392ba792e523648936d4b69227c9a39b5c3`
+- [ ] 真实思源宿主、Android 真机、真实多窗口、原生图入口、任务管理器互读和集市客户端可见性仍需单独验收；CardDAV 在线同步未实现
+
+> v0.5.3 已于 2026-10-09 发布：[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.3)，annotated tag 指向 main 合并提交 `2e2f465b9979152a952c810ba4dcfb4c7be03e61`。
+
+## v0.5.3 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本统一为 0.5.3
+- [x] README 中英文安装入口和发布说明已切换到 v0.5.3
+- [x] `pnpm check`、549 项单测、桌面 322/322、移动 323/323、宿主 322/322、`pnpm build`、`pnpm check:release`
+- [x] 开发分支通过 PR #21 普通合并进 `main`
+- [x] annotated tag `v0.5.3`、GitHub Release 和 package.zip 校验和
+- [ ] 真实思源宿主、Android 真机、真实多窗口、原生图入口、任务管理器互读和 CardDAV 在线同步仍需单独验收
+
+> v0.5.1 已于 2026-10-08 发布：[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.1)，annotated tag 指向 PR #18 merge commit `3a3de430f6b08f3cbfb20df55a113dc8beb1125c`。本版本包含自定义联系人分组、README 系列介绍恢复和已验证的常规依赖更新；未修改 bazaar。
+
+## v0.5.1 本轮状态
+
+- [x] `package.json` 与 `plugin.json` 版本均为 0.5.1
+- [x] `pnpm check`、`pnpm test`、桌面/移动 UI 回归、`pnpm build`、`pnpm check:release` 全部通过
+- [x] 通过开发分支 PR #18 普通合并进 `main`
+- [x] annotated tag `v0.5.1` 与 GitHub Release 已创建，`package.zip` 为 506502 bytes，SHA-256 为 `31792cc96764c4a10f92678cb06d5b579cdaa3e50da7fb96bc2148dafd6a5d6f`
+- [x] GitHub Actions build run `37761460576` 成功（含类型、538 项单测、桌面/移动 UI、构建和发布门禁）
+- [ ] 真实思源宿主、Android 真机、真实多窗口、原生图入口、任务管理器互读和集市可见性仍按下方手工清单单独验收
+
+## v0.5.0 历史发布记录
+
+v0.5.0 已于 2026-10-08 发布：[GitHub Release](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.0)，annotated tag 指向 PR #13 merge commit `bd66a2ed0ef371fdbdddea9bf745182f247eaa67`。两机开发线先经 PR #12 合并。集市 PR #2289 已于 2026-09-30 合并，且目录索引已包含本插件；v0.5.0 发布时未修改 bazaar，客户端可见性仍未实机验收。真实思源宿主、Android 真机和真实多窗口尚未验证，隔离测试不能代替。
+
+## 1. 质量门禁（历史模板；v0.5.1 仍沿用）
+
+```bash
+pnpm check    # tsc + svelte-check 0 错误
+pnpm test     # 全部单测（域层/守门/i18n parity）
+pnpm test:ui  # 桌面隔离回归
+pnpm test:ui:mobile # 移动视口隔离回归，不等于真机
+pnpm build    # dist/ + package.zip
+pnpm check:release # 发布包检查
+node scripts/spike/av-spike.mjs          # 9/9（可选回归）
+node scripts/e2e/load-check.mjs          # 隔离内核加载
+node scripts/e2e/contacts-flow.mjs       # 联系人流程 10/10
+
+写型内核脚本的隔离靶场、token、残留清扫和共享工作区拒跑规则见
+[E2E-SMOKE-RUNBOOK](E2E-SMOKE-RUNBOOK.md)。不要把写型脚本直接指向日常工作区。
+```
+
+- [x] 版本字段：`package.json` 与 `plugin.json` 均为 0.5.0；PR #13 普通合并、annotated tag 与 GitHub Release 已完成
+- [x] README.md / README.en-US.md 已更新 v0.5.0 范围；人物备注的数据边界与未验证环境已写入 Release 正文
+- [x] main CI run `37742167395` 成功；`package.zip` 509797 bytes，SHA-256 `0a5e6b04684021e8d369dac098db93df67710de331d7d5fd49999decd2beb089`；已与 Release 下载附件核对一致
+- [x] Annotated tag `v0.5.0` 指向 `bd66a2ed0ef371fdbdddea9bf745182f247eaa67`；[GitHub Release 已发布](https://github.com/ai68298100/siyuan-contacts/releases/tag/v0.5.0)
+- [ ] icon.png/preview.png 终稿（当前为脚本生成的家庭视觉版，可请人重绘后替换，重跑 gen-icon 逻辑不变）
+
+v0.5.0 已按 [RELEASE-NOTES-v0.5.0](RELEASE-NOTES-v0.5.0.md) 发布，附件来自 CI 且校验和匹配。后续版本 Release 继续按模板填写真实宿主、Android、多窗口和集市状态，不能用隔离浏览器结果代替。
+
+CI 在构建和上传产物前执行两套浏览器回归。内核脚本只在隔离工作区执行，先核实目标；故障模拟先保存原文件，不对用户笔记做破坏性测试。隔离 UI 使用内存替身，不证明真实 AV 写入或宿主行为。
+
+内核测试执行前验证回环端口空闲、工作区标记 JSON 与创建者匹配，拒绝未标记/损坏标记、项目或宽泛目录；数据与插件安装目标不得通过链接越出工作区。每次请求前后检查本次内核进程仍存活，请求超时为 5 秒。启动未确认或进程已退出时不向端口发送退出请求，仅处理本次子进程。端口预检不是持续保留端口，仍应避免同时启动其他服务抢占测试端口。
+
+### 自动验收记录（v0.5.0，2026-10-08；后续记录按日期追加）
+
+| 检查 | 环境与范围 | 结果 | 限制 |
+|---|---|---|---|
+| v0.5.0 自动门禁 | Node 24.15.0 / pnpm 12.5.1；本地及 GitHub main CI run 37742167395，含 check、537 单测、桌面/移动 UI、build、check:release | 全部通过；537/537、319/319、320/320 | 隔离移动视口不等于 Android 真机 |
+| v0.5.0 隔离内核 | 本机思源内核 3.8.6；API spike、插件 load、contacts-flow | 9/9、通过（加载 v0.5.0）、13/13 | 独立临时工作区，不证明真实用户库、多窗口或 Android 行为 |
+| 联系人内核流程 | 标记隔离工作区、本机安装内核；建库/建人/字段/关系/双链/笔记捕获 API 序列 | 10/10 通过 | 不执行完整前端，也不验证真实插件互动持久化 |
+| 插件加载 | 同一隔离工作区，安装当前 dist，信任/启用/下发 JS 与 CSS | 通过 | 不证明前端生命周期、视觉与触控正确 |
+| 脚本安全单测 | 临时目录与回环端口；标记、越界链接、占用端口、进程错误 | 4/4 通过 | 不替代真实多窗口互斥与用户设备验收 |
+| 浏览器跨上下文存储 | 两个独立同源 iframe、真实服务模块、Web Locks、共享隔离 localStorage | 通过 | 不证明思源窗口的 origin/存储分区相同或宿主文件读写一致 |
+
+以上自动验收不代替下方手工验收；v0.5.0 已重跑 API spike，历史结果不会覆盖本轮记录。
+
+## 2. 手工验收（真机）
+
+本次 v0.5.0 未执行以下真实宿主、真机和多窗口验收，项目保持未勾选，并已在 Release 正文披露；不能将隔离测试表述为真实环境通过。
+
+- [ ] 桌面：向导初始化 → 新建/导入 → 卡片/表格/搜索 → 图谱 → 编辑资料 → 详情记互动 → 首页生日/久未联系
+- [ ] 人物文档：档案条出现、编辑后刷新；建立关系后"相关人物"双链区块出现在文档里
+- [ ] 移动端：顶栏入口 Dialog 全屏化、工作台四视图、新建/详情/图谱触控（真机）
+- [ ] 亮/暗主题各过一遍（b3 变量应自动适配）
+- [ ] 多窗口：两窗口同时写不丢数据（写后回读 + Web Lock 生效）
+- [ ] 时间线加载更多、搜索与来源筛选；删除取消/失败重试/成功刷新，保留其他参与者和来源笔记
+- [ ] 备份导出原始 JSON 值快照（非字节备份）；恢复预览后确认，重复幂等、保留并发新增与删除标记
+- [ ] 读取异常、损坏与未知版本停止写入且不覆盖；恢复合法文件后可继续操作。宿主可能返回缓存值，未抛错不代表底层读取成功
+- [ ] 真机软键盘、长备注、文件选择、安全区与图谱手势无遮挡
+- [ ] 多窗口同时新增、删除及合并备份；实际验证 Web Locks。降级队列仅保护同一 JS 上下文，不承诺跨窗口互斥
+- [ ] AI 只在主动点击后发送到配置端点，失败不落库；人员桥重复调用与安装/卸载生命周期符合协议
+
+### v0.3.0 新增真机核对项（2026-09-29）
+
+- [ ] **B07 任务块收敛**：人物文档里勾选/取消勾选跟进任务后，首页与详情的跟进状态同步翻转；文档里改标题/📅日期后插件按文档为准；删掉任务块后事项呈现「不可达」而非静默消失；反复操作不产生重复任务
+- [ ] **B07 任务管理器互读**：作者自己的任务管理器插件能读到人物文档里带 `custom-lvct-followup` 关联键的原生待办
+- [ ] **C08 迁移演练**：导出完整迁移包 → 清空/换机 → 恢复预览 → 确认合并；互动/跟进不重复（现状优先），节奏/暂缓/索引/模板恢复一致
+- [ ] **B09-8 锚点找回**：笔记本改名/移动「联系人总表」后，设置页「扫描全库候选」能找回并重绑成功
+- [ ] **粘贴识别**（FAST-01.1）：名片文字/聊天记录粘贴后分组预览，冲突默认不覆盖
+- [ ] **C06 撤销**：顺延/跳过/不再提醒/完成/取消后通知条「撤销」可精确恢复
+- [ ] **i18n 文件名**：真机宿主实际加载的资源文件名（zh-CN.json vs zh_CN.json）
+- [ ] **原型状态条**：docs/ui-prototype.html 各屏状态标识与实际能力一致
+
+验收结果逐项记录，未执行不得勾选：
+
+| 场景 | 设备/宿主版本/主题 | 预期 | 实际结果 | 日期与证据 |
+|---|---|---|---|---|
+| 桌面核心流程 | 待填写 | 文档、数据库与界面一致 | 待验收 | 待填写 |
+| 真机触控与键盘 | 待填写 | 操作可达、内容无遮挡 | 待验收 | 待填写 |
+| 多窗口与备份恢复 | 待填写 | 无覆盖、删除标记保持 | 待验收 | 待填写 |
+
+## 3. 后续版本与集市发布 ❙
+
+1. ❙ 审查差异及验收记录，确认下一版本；推送现有仓库 `ai68298100/siyuan-contacts` 并确认 CI 通过
+2. ❙ GitHub Release：tag 使用用户确认版本，附已验证的 package.zip 与说明（zip mtime 按真实构建时间，防集市回滚）
+3. ❙ fork `siyuan-note/bazaar` → `plugins.txt` 追加一行 `ai68298100/siyuan-contacts` → PR（一次 PR 只做上架一件事）
+4. PR CI 通过后合并，索引 1-3 小时更新，思源重启刷新集市可见
+
+## 4. 发布后
+
+- [x] GitHub Issues 已打开；README 已提供反馈渠道
+- [ ] 崩溃/丢数据类问题优先：存储纪律层已带写后回读，事件问题查 `data/storage/petal/siyuan-contacts/`
+- [ ] 后续候选（见 ROADMAP）：图谱深化、完整英文 UI、关系库、组织维度与官方 Agent；vCard、AI 抽取及人员桥已交付

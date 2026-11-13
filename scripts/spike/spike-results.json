@@ -1,0 +1,51 @@
+{
+  "version": "3.8.5",
+  "at": "2026-09-27T10:44:13.319Z",
+  "results": [
+    {
+      "name": "内核启动",
+      "ok": true,
+      "detail": "v3.8.5"
+    },
+    {
+      "name": "① DOM 插库块 + createIfNotExist 建库",
+      "ok": "20260927184412-7tv0tk1",
+      "detail": "dbBlockID=20260927184412-7tv0tk1 av创建=true"
+    },
+    {
+      "name": "② addAttributeViewKey 建九类字段",
+      "ok": true,
+      "detail": "字段总数(含主键)=11"
+    },
+    {
+      "name": "③ transactions 配置 relation 自关联双向",
+      "ok": true,
+      "detail": "txn 响应={\"code\":0,\"msg\":\"\",\"data\":[{\"timestamp\":1790505852590,\"doOperations\":[{\"action\":\"updateAttrViewColRelation\",\"id\":\"20260927184412-w48t6yc\",\"rootID\":\"\",\"parentID\":\"\",\"previousID\":\"\",\"nextID\":\"\",\"blockIDs\":null,\"blockID\":\"\",\"deckID\":\"\",\"avID\":\"20260927184412-w48t6yc\",\"srcIDs\":null,\"srcs\":null,\"isDetach relation={\"avID\":\"20260927184412-w48t6yc\",\"isTwoWay\":true,\"backKeyID\":\"20260927184412-g2ti0ca\"} 回链字段=被相关人"
+    },
+    {
+      "name": "④ 绑定文档为行 + itemID 映射",
+      "ok": true,
+      "detail": "itemA=20260927184413-re44n3q itemB=20260927184413-c4u89s1 映射端点返回={\"20260927184412-gbdjye0\":\"20260927184413-c4u89s1\",\"20260927184412-zy90l0x\":\"20260927184413-re44n3q\"}"
+    },
+    {
+      "name": "⑤ 九类单元格值写入回读",
+      "ok": true,
+      "detail": "{\"checks\":{\"电话\":true,\"生日\":true,\"分组\":true,\"标签\":true,\"农历\":true,\"相关人\":true},\"分组选项\":[\"朋友\"]}"
+    },
+    {
+      "name": "⑥ 解绑不删文档",
+      "ok": true,
+      "detail": "删除行 code=0 文档仍在=true 行已移除=true"
+    },
+    {
+      "name": "⑦ 带值建独立行（导入通道）",
+      "ok": true,
+      "detail": "code=0 msg="
+    },
+    {
+      "name": "⑧ 数据库 SQL 表探测（预期不存在）",
+      "ok": true,
+      "detail": "\"av_20260927…→ code=1 (no such table: av_20260927184412-w48t6yc) | \"av202609271…→ code=1 (no such table: av20260927184412-w48t6yc) | \"20260927184…→ code=1 (no such table: 20260927184412-w48t6yc)"
+    }
+  ]
+}

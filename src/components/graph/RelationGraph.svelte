@@ -1,0 +1,2804 @@
+<script lang="ts">
+    /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
+    import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
+    import { onDestroy, onMount, tick, untrack } from "svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw, Share2 } from "@lucide/svelte";
+    import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
+    import { copyPlainText } from "../../shared/clipboard";
+    import { profileText } from "../../domain/people-profiles";
+    import { extractNormalizedRegion } from "../../domain/region";
+    import ViewState from "../ViewState.svelte";
+    import StatusNotice from "../StatusNotice.svelte";
+    import LvctDialog from "../LvctDialog.svelte";
+    import NetworkHubsModal from "./NetworkHubsModal.svelte";
+    import { loadGraphSources, loadGraphReferences } from "../../services/graph-query";
+    import { GRAPH_MAX_NODES, filterGraphEdges, filterGraphByMaxYear, extractDetailedGraphTimeSpan, filterGraphByMaxDateKey, type DetailedGraphTimeSpan } from "../../domain/graph";
+    import { buildGraphQuerySnapshot, graphEdgeLabel } from "../../domain/graph-query";
+    import type { GraphSources, GraphQuery, GraphReferenceSource, GraphScope } from "../../domain/graph-query";
+    import type { GraphNode } from "../../domain/graph";
+    import { DEFAULT_VIEW_PREFERENCES, type GraphViewMode, type ViewPreferences } from "../../domain/preferences";
+    import { renderGraphSnapshotMarkdown } from "../../domain/graph-export";
+    import { exportCytoscapeSvg, exportCytoscapePng } from "../../domain/graph-image-export";
+    import { toLocalDateKey } from "../../domain/interactions";
+    import { translateText } from "../../domain/translation";
+    import type { ContactsSettings } from "../../domain/model";
+    import type { ContactSummary } from "../../domain/person";
+    import type { PersonInsights } from "../../services/insights";
+    import type { ContactsPluginFacade } from "../../types";
+    import PersonPicker from "../people/PersonPicker.svelte";
+    import type { PickerItem } from "../people/PersonPicker.svelte";
+    import { requestErrorMessage } from "../../shared/error-presenter";
+    import { addRelation } from "../../services/relations";
+    import { emitDataChanged } from "../../libs/data-events";
+    import { pushFlashcardSafely } from "../../libs/ecosystem-bridge-kit";
+
+    let {
+        settings,
+        revision = 0,
+        facade,
+        i18n,
+        preferences = DEFAULT_VIEW_PREFERENCES,
+        onPreferencesChange,
+        onOpenDetail,
+        onOpenPeople,
+        onOpenCreatePerson,
+        onOpenOrgs,
+        initialCenterDocId = "",
+        initialOrgDocId = "",
+    }: {
+        settings: ContactsSettings;
+        revision?: number;
+        facade?: ContactsPluginFacade;
+        i18n?: Readonly<Record<string, string>>;
+        /** B14.5：图谱数据源模式保存在视图偏好中，重开仍用用户选定模式 */
+        preferences?: ViewPreferences;
+        onPreferencesChange?: (next: ViewPreferences) => Promise<ViewPreferences>;
+        onOpenDetail: (person: ContactSummary, initialTab?: "overview" | "activity" | "relations") => void;
+        onOpenPeople: (focus?: { itemIds: readonly string[]; label: string; sort?: "name" | "group" | "birthday" | "recent" }) => void;
+        /** 空图谱时直接进入新建联系人流程；未接线时回退到联系人列表。 */
+        onOpenCreatePerson?: () => void;
+        /** B14 组织入口（可选）：点击组织节点跳转组织视图；未接线时组织节点点击无动作 */
+        onOpenOrgs?: (orgDocId?: string) => void;
+        /** 外部显式指定聚焦的联系人中心（双向闭环联动） */
+        initialCenterDocId?: string;
+        /** 外部显式指定聚焦收窄的组织（双向闭环联动） */
+        initialOrgDocId?: string;
+    } = $props();
+    const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
+        translateText(i18n, key, fallback, values));
+
+    let container: HTMLElement | undefined = $state();
+    let sources: GraphSources = $state({ people: [], organizations: [], selfDocId: null,
+        status: { roster: "unknown", organizations: "unknown", self: "unknown" }, errors: {}, revision: 0 });
+    const people = $derived(sources.people);
+    let loading: boolean = $state(true);
+    let errorText: string = $state("");
+    // svelte-ignore state_referenced_locally
+    let graphMode: GraphViewMode = $state(preferences.graphMode);
+    let references: GraphReferenceSource = $state({ status: "unknown", graph: { nodes: [], edges: [] } });
+    let nativeLoading = $state(false);
+    let nativeVersion = 0;
+    /* B14.8 引用图范围（B14.5 重开保留）：self=本人中心一度；person=指定联系人中心；global=全部登记文档 */
+    // svelte-ignore state_referenced_locally
+    let nativeScope: GraphScope = $state(preferences.nativeScope);
+    // svelte-ignore state_referenced_locally
+    let nativeCenterDocId = $state(preferences.nativeCenterDocId);
+    // 关系图的“组织中心”是当前会话范围，不写入偏好；只在偏好 revision
+    // 变化时同步持久化选项，避免本地临时范围被同一份旧 props 立即覆盖。
+    // svelte-ignore state_referenced_locally
+    let syncedPreferenceRevision = $state(preferences.revision);
+    /* B14.6 组织增强：组织节点+成员边只叠加渲染，关系查询仍只按 related 边 */
+    let showOrgs = $state(true);
+    let relationScope: GraphScope = $state("global");
+    let relationCenterDocId = $state("");
+
+    $effect(() => {
+        if (initialCenterDocId) {
+            relationScope = "person";
+            relationCenterDocId = initialCenterDocId;
+            if (graphMode === "native") {
+                nativeScope = "person";
+                nativeCenterDocId = initialCenterDocId;
+            }
+        }
+    });
+
+    $effect(() => {
+        if (initialOrgDocId) {
+            orgNarrowId = initialOrgDocId;
+            showOrgs = true;
+        }
+    });
+    let presentation: "canvas" | "text" = $state("canvas");
+    let hubsModalOpen = $state(false);
+    let graphFiltersOpen = $state(false);
+    let graphExploreOpen = $state(false);
+    let graphExpanded = $state(false);
+    let textLimit = $state(100);
+    let resultHeading: HTMLElement | undefined = $state();
+    let canvasFocusId = $state("");
+    let preferenceError = $state("");
+    type GraphPreferencePatch = Partial<Pick<ViewPreferences, "graphMode" | "nativeScope" | "nativeCenterDocId">>;
+    let pendingPreferencePatch: GraphPreferencePatch | null = $state(null);
+    let preferenceRetrying = $state(false);
+    function preferencePatchMatches(value: ViewPreferences, patch: GraphPreferencePatch): boolean {
+        return Object.entries(patch).every(([key, expected]) => value[key as keyof ViewPreferences] === expected);
+    }
+    let alive = true;
+    let returnObserver: MutationObserver | undefined;
+    /* B14.8 按组织收窄（会话态：组织可能被归档/改名，不持久化） */
+    let orgNarrowId = $state("");
+    let searchInput: string = $state("");
+    let debouncedSearchText: string = $state("");
+    let searchTimer: ReturnType<typeof setTimeout> | null = null;
+    let groupFilter: string = $state("");
+    let tagFilter: string = $state("");
+    let isolatedOnly = $state(false);
+    let relationDepth: "direct" | "second" = $state("direct");
+    let graphInstance: cytoscape.Core | null = $state.raw(null);
+    let focusId = $state("");
+    let compareId = $state("");
+    let queryMode: "common" | "path" = $state("common");
+    let hoveredPerson: ContactSummary | null = $state(null);
+    /* B14：组织节点 hover 卡（与人物 hover 互斥） */
+    let hoveredOrg: { id: string; label: string; degree: number } | null = $state(null);
+    let selectedOrgId = $state("");
+    let hoverInsights: PersonInsights | null = $state(null);
+    let hoverInsightsLoading = $state(false);
+    let hoverInsightsError = $state(false);
+    let hoverPosition: { x: number; y: number } = $state({ x: 12, y: 12 });
+    let hoverCard: HTMLElement | undefined = $state();
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    let clearHoverTimer: ReturnType<typeof setTimeout> | undefined;
+    interface EdgeEvidence {
+        kind: "related" | "member" | "ref" | "co_occurrence" | "introducer";
+        sourceId: string;
+        targetId: string;
+        sourceName: string;
+        targetName: string;
+        memberStatus?: "active" | "former" | "mixed";
+        coCount?: number;
+        commonOrgNames?: string[];
+        coAttendanceCount?: number;
+    }
+    let activeEvidence: EdgeEvidence | null = $state(null);
+    let establishingRelation = $state(false);
+    let establishRelationError = $state("");
+    let refreshVersion = 0;
+    // 同一视图只允许一个名册读取在途；显式重复点击直接忽略，外部 revision 可排队一次。
+    let refreshInFlight = $state(false);
+    let refreshQueued = false;
+    let preferenceSaveVersion = 0;
+    function preferencePatchesEqual(left: GraphPreferencePatch | null, right: GraphPreferencePatch): boolean {
+        if (!left) return false;
+        const leftEntries = Object.entries(left);
+        return leftEntries.length === Object.keys(right).length
+            && leftEntries.every(([key, value]) => right[key as keyof GraphPreferencePatch] === value);
+    }
+    let hoverInsightsVersion = 0;
+    let drawerPerson: ContactSummary | null = $state(null);
+    let drawerFacts: import("../../domain/doc-section").PersonFactItem[] = $state([]);
+
+    async function loadDrawerFacts(personDocId: string) {
+        if (!facade?.loadPersonFacts) return;
+        try {
+            drawerFacts = await facade.loadPersonFacts(personDocId);
+        } catch {
+            drawerFacts = [];
+        }
+    }
+
+    $effect(() => {
+        if (drawerPerson?.docId) {
+            void loadDrawerFacts(drawerPerson.docId);
+        } else {
+            drawerFacts = [];
+        }
+    });
+    let copyToast: string = $state("");
+    let copyToastTimer: ReturnType<typeof setTimeout> | null = null;
+    let drawerFlashcardToastId = $state("");
+    let drawerFlashcardToastTimer: ReturnType<typeof setTimeout> | null = null;
+    // svelte-ignore state_referenced_locally
+    let drawerPrivacyActive = $state(preferences.privacyShieldEnabled ?? false);
+    let drawerRevealSeconds = $state(0);
+    let drawerRevealInterval: ReturnType<typeof setInterval> | null = null;
+
+    $effect(() => {
+        if (typeof preferences.privacyShieldEnabled === "boolean") {
+            drawerPrivacyActive = preferences.privacyShieldEnabled;
+        }
+    });
+
+    function toggleDrawerPrivacy(): void {
+        if (drawerPrivacyActive) {
+            if (drawerRevealSeconds > 0) {
+                drawerPrivacyActive = false;
+                drawerRevealSeconds = 0;
+                if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+            } else {
+                drawerRevealSeconds = 5;
+                if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+                drawerRevealInterval = setInterval(() => {
+                    drawerRevealSeconds -= 1;
+                    if (drawerRevealSeconds <= 0) {
+                        if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+                    }
+                }, 1000);
+            }
+        } else {
+            drawerPrivacyActive = true;
+            drawerRevealSeconds = 0;
+        }
+    }
+
+    async function makeDrawerFlashcard(fact: import("../../domain/doc-section").PersonFactItem) {
+        if (!drawerPerson) return;
+        const catLabels: Record<string, string> = { quote: "观点", preference: "喜好/忌口", background: "背景经历", fact: "关键事实" };
+        const catLabel = catLabels[fact.category] || "社交备忘";
+        const front = `[人脉常识] ${drawerPerson.name} 的【${catLabel}】是什么？`;
+        const back = `${fact.text}${fact.sourceRef ? `（出处：${fact.sourceRef}）` : ""}`;
+        try {
+            const pushed = await pushFlashcardSafely({
+                front,
+                back,
+                deckName: "人脉常识",
+                tags: ["人脉常识", drawerPerson.name],
+                sourceDocId: drawerPerson.docId,
+            });
+            if (!pushed) {
+                await copyPlainText(`Q: ${front}\nA: ${back}`);
+            }
+            drawerFlashcardToastId = fact.id;
+            if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
+            drawerFlashcardToastTimer = setTimeout(() => { drawerFlashcardToastId = ""; }, 1800);
+        } catch (err) {
+            console.warn("[LvContacts] 图谱抽屉制作闪卡失败", err);
+        }
+    }
+
+    async function copyField(textToCopy: string | undefined, fieldName: string) {
+        if (!textToCopy) return;
+        try {
+            await copyPlainText(textToCopy);
+            copyToast = fieldName;
+            if (copyToastTimer) clearTimeout(copyToastTimer);
+            copyToastTimer = setTimeout(() => {
+                copyToast = "";
+            }, 1800);
+        } catch (err) {
+            console.warn("[LvContacts] 图谱抽屉复制字段失败", err);
+        }
+    }
+
+    function closeDrawer() {
+        drawerPerson = null;
+    }
+
+    let hiddenEdgeKinds: Set<string> = $state(new Set());
+    const edgeLegends = $derived.by(() => {
+        const list = [
+            { kind: "related", label: "直接关系", lineClass: "solid" },
+            { kind: "introducer", label: "引荐关系", lineClass: "dashed" },
+            { kind: "member", label: "组织成员", lineClass: "dashed" },
+            { kind: "co_occurrence", label: "共同出席", lineClass: "dotted" },
+        ];
+        if (graphMode === "native") {
+            list.push({ kind: "ref", label: "文档引用", lineClass: "ref" });
+        }
+        return list;
+    });
+
+    function toggleEdgeKind(kind: string) {
+        const next = new Set(hiddenEdgeKinds);
+        if (next.has(kind)) {
+            next.delete(kind);
+        } else {
+            next.add(kind);
+        }
+        hiddenEdgeKinds = next;
+    }
+
+    const groupLegend = [
+        { label: "家人", className: "family" },
+        { label: "朋友", className: "friend" },
+        { label: "同事", className: "work" },
+        { label: "同学", className: "school" },
+        { label: "其他", className: "other" },
+        { label: "组织", className: "org" },
+    ] as const;
+
+    const groups = $derived.by(() => [...new Set(snapshot.people.map((person) => person.group).filter(Boolean))].sort());
+    const allTags = $derived.by(() => [...new Set(snapshot.people.flatMap((person) => person.tags))].filter(Boolean).sort());
+    /* B03 可搜索选人器：图内节点 → 候选项（带分组提示与联系方式关键词） */
+    const graphPickerItems = $derived.by((): PickerItem[] => snapshot.people.map((person) => {
+        return {
+            id: person.docId,
+            label: person.name,
+            docId: person.docId,
+            itemId: person.itemId,
+            hint: [person.group, person.phone || person.email, ...person.tags].filter(Boolean).join(" · ") || undefined,
+            keywords: `${person.phone} ${person.wechat} ${person.email}`.toLowerCase(),
+        };
+    }));
+    /* B14.8 按组织收窄：选中组织后画布人物=该组织成员（成员边来自组织覆盖层） */
+    const query: GraphQuery = $derived({ mode: graphMode, scope: graphMode === "native" ? nativeScope : relationScope,
+        centerDocId: graphMode === "native" ? nativeCenterDocId : relationCenterDocId, orgDocId: orgNarrowId,
+        search: debouncedSearchText, group: groupFilter, tag: tagFilter, isolatedOnly, showOrgs, depth: relationDepth, focusId, compareId, queryMode });
+    const activeFilterCount = $derived(Number(Boolean(orgNarrowId)) + Number(query.scope !== "global")
+        + (graphMode === "relations" ? Number(Boolean(groupFilter)) + Number(Boolean(tagFilter)) + Number(isolatedOnly) + Number(!showOrgs) : 0)
+        + hiddenEdgeKinds.size);
+    const snapshot = $derived(buildGraphQuerySnapshot(sources, query, references));
+    // G-12：节点与联系人预建 Map 索引，避免在渲染、hover、点击与路径导出时频繁对全量数组做 .find 扫描
+    const nodeById = $derived(new Map(snapshot.graph.nodes.map((node) => [node.id, node])));
+    const peopleByDocId = $derived(new Map(snapshot.people.map((person) => [person.docId, person])));
+    const allPeopleByDocId = $derived(new Map(people.map((person) => [person.docId, person])));
+
+    const displayedOrg = $derived(hoveredPerson ? undefined : hoveredOrg ?? (selectedOrgId && nodeById.get(selectedOrgId)?.kind === "org" ? nodeById.get(selectedOrgId) : undefined));
+
+    let timelineEnabled = $state(false);
+    let timelineGranularity = $state<"year" | "month" | "day">("year");
+    let selectedYear = $state<number | null>(null);
+    let selectedMonthIndex = $state<number | null>(null);
+    let selectedDayIndex = $state<number | null>(null);
+    let dayStep = $state(7);
+    let isPlayingTimeline = $state(false);
+    let timelinePlayTimer: ReturnType<typeof setInterval> | null = null;
+
+    const detailedTimeSpan = $derived.by<DetailedGraphTimeSpan>(() => extractDetailedGraphTimeSpan(snapshot.graph));
+    const timeSpan = $derived(detailedTimeSpan);
+    const activeYear = $derived(selectedYear ?? timeSpan.maxYear);
+    const activeMonthKey = $derived.by(() => {
+        if (!detailedTimeSpan.months.length) return "";
+        const idx = selectedMonthIndex ?? (detailedTimeSpan.months.length - 1);
+        return detailedTimeSpan.months[Math.min(idx, detailedTimeSpan.months.length - 1)] || "";
+    });
+    const totalDays = $derived.by(() => {
+        const d1 = new Date(detailedTimeSpan.minDateKey.replace(/-/g, "/")).getTime();
+        const d2 = new Date(detailedTimeSpan.maxDateKey.replace(/-/g, "/")).getTime();
+        if (Number.isNaN(d1) || Number.isNaN(d2) || d2 <= d1) return 1;
+        return Math.max(1, Math.round((d2 - d1) / 86400000));
+    });
+    const activeDayKey = $derived.by(() => {
+        const d1 = new Date(detailedTimeSpan.minDateKey.replace(/-/g, "/")).getTime();
+        if (Number.isNaN(d1)) return detailedTimeSpan.maxDateKey;
+        const offset = selectedDayIndex ?? totalDays;
+        const cur = new Date(d1 + offset * 86400000);
+        return toLocalDateKey(cur);
+    });
+
+    const timeFilteredGraph = $derived.by(() => {
+        const base = filterGraphEdges(snapshot.graph, hiddenEdgeKinds);
+        if (!timelineEnabled) return base;
+        if (timelineGranularity === "year") {
+            if (selectedYear === null) return base;
+            return filterGraphByMaxYear(base, selectedYear);
+        }
+        if (timelineGranularity === "month") {
+            if (selectedMonthIndex === null) return base;
+            return filterGraphByMaxDateKey(base, activeMonthKey);
+        }
+        if (timelineGranularity === "day") {
+            if (selectedDayIndex === null) return base;
+            return filterGraphByMaxDateKey(base, activeDayKey);
+        }
+        return base;
+    });
+    const displayGraph = $derived(timeFilteredGraph);
+
+    function togglePlayTimeline() {
+        if (isPlayingTimeline) {
+            pauseTimeline();
+        } else {
+            playTimeline();
+        }
+    }
+
+    function playTimeline() {
+        if (isPlayingTimeline) return;
+        isPlayingTimeline = true;
+        timelinePlayTimer = setInterval(() => {
+            if (timelineGranularity === "year") {
+                const cur = selectedYear ?? timeSpan.minYear;
+                if (cur >= timeSpan.maxYear) {
+                    pauseTimeline();
+                } else {
+                    selectedYear = cur + 1;
+                }
+            } else if (timelineGranularity === "month") {
+                const cur = selectedMonthIndex ?? 0;
+                if (cur >= detailedTimeSpan.months.length - 1) {
+                    pauseTimeline();
+                } else {
+                    selectedMonthIndex = cur + 1;
+                }
+            } else if (timelineGranularity === "day") {
+                const cur = selectedDayIndex ?? 0;
+                if (cur >= totalDays) {
+                    pauseTimeline();
+                } else {
+                    selectedDayIndex = Math.min(totalDays, cur + dayStep);
+                }
+            }
+        }, 800);
+    }
+
+    function pauseTimeline() {
+        isPlayingTimeline = false;
+        if (timelinePlayTimer) {
+            clearInterval(timelinePlayTimer);
+            timelinePlayTimer = null;
+        }
+    }
+
+    function resetTimeline() {
+        pauseTimeline();
+        selectedYear = timeSpan.maxYear;
+        selectedMonthIndex = detailedTimeSpan.months.length - 1;
+        selectedDayIndex = totalDays;
+    }
+    const canvasData = $derived(JSON.stringify(displayGraph));
+    const snapshotStatusText = $derived.by(() => loading || nativeLoading
+        ? text("graphSnapshotLoading", "正在核实图查询…")
+        : snapshot.state === "unknown" || snapshot.state === "center_missing" ? "范围尚未核实"
+            : snapshot.state === "partial" ? "已显示核实部分" : "查询完成");
+    const canvasCanRender = $derived(snapshot.state !== "unknown" && snapshot.state !== "center_missing");
+    const orgOverlay = $derived({ nodes: snapshot.organizations });
+    const searchNeedle = $derived(debouncedSearchText.trim().toLowerCase());
+    const emptyStateDescription = $derived.by(() => {
+        if (graphMode === "native" && people.length === 0) return text("graphEmptyNativeNoPeopleDesc", "还没有可绘制的登记文档。创建或导入联系人后，可查看其与本人或组织文档之间的双链；没有引用不代表没有关联。");
+        if (graphMode === "native") return text("graphEmptyNoNativeMatchDesc", "当前文档引用范围没有匹配节点。请调整引用范围、搜索关键词或组织范围；没有引用不代表没有关联。");
+        if (people.length === 0) return text("graphEmptyNoPeopleDesc", "创建或导入联系人后，在人物详情中建立关系。");
+        return text("graphEmptyNoMatchDesc", "当前关系范围没有匹配节点。请清除搜索、分组、组织或无关系筛选。");
+    });
+    /* B14 原生模式：搜索只按节点 label/ID 过滤，再统一走规模裁剪 */
+    const truncated = $derived(snapshot.truncated);
+    /* native 模式 hover 卡的图内连接数（related 度数在引用图语境不适用，B14.8 边来源标识）；-1=非本模式。
+       先取局部快照：svelte-check 对 $state 跨表达式不收窄（既有坑位） */
+    const hoveredNativeDegree = $derived.by(() => {
+        const person = hoveredPerson;
+        if (graphMode !== "native" || !person) return -1;
+        return nodeById.get(person.docId)?.degree ?? 0;
+    });
+    const relations = $derived({ neighborIds: snapshot.result.neighborIds });
+    const secondMode = $derived.by(() => !compareId && relationDepth === "second");
+    const resultIds = $derived(snapshot.result.ids);
+    const resultPeople = $derived(resultIds.map((id) => peopleByDocId.get(id)).filter((person): person is ContactSummary => person !== undefined));
+    const pathMode = $derived.by(() => Boolean(compareId) && queryMode === "path");
+    const pathIds = $derived(snapshot.result.pathIds);
+    const pathPeople = $derived(pathIds.map((id) => peopleByDocId.get(id)).filter((person): person is ContactSummary => person !== undefined));
+
+    // ---- 查询结果导出（F16） ----
+    let resultExportMessage = $state("");
+    let sourceOpenError = $state("");
+    let sourceOpenStatus = $state("");
+    let sourceOpeningDocId = $state("");
+    async function openSourceDocument(docId: string) {
+        if (!alive || !facade?.openDoc || sourceOpeningDocId) return;
+        sourceOpeningDocId = docId;
+        sourceOpenError = "";
+        sourceOpenStatus = "";
+        try {
+            await facade.openDoc(docId);
+            if (alive) sourceOpenStatus = "已请求打开来源文档";
+        }
+        catch {
+            if (alive) sourceOpenError = "来源文档暂时无法打开，请重试，或在思源中搜索该文档。";
+        } finally {
+            if (alive) sourceOpeningDocId = "";
+        }
+    }
+    function exportResultMarkdown() {
+        const pad = (value: number) => String(value).padStart(2, "0");
+        const now = new Date();
+        const markdown = renderGraphSnapshotMarkdown(snapshot, `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`);
+        const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+        anchor.download = `小驴人脉_关系结果_${stamp}.md`;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        resultExportMessage = "结果说明已导出为 Markdown";
+    }
+
+    function exportResultSvg() {
+        if (!graphInstance) return;
+        const pad = (value: number) => String(value).padStart(2, "0");
+        const now = new Date();
+        const palette = themeColors();
+        const svg = exportCytoscapeSvg(graphInstance, { bg: palette.surface, title: "小驴人脉关系图谱" });
+        const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        anchor.download = `小驴人脉_关系图谱_${stamp}.svg`;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        resultExportMessage = "图谱矢量图已导出为 SVG";
+    }
+
+    function exportResultPng() {
+        if (!graphInstance) return;
+        const pad = (value: number) => String(value).padStart(2, "0");
+        const now = new Date();
+        const palette = themeColors();
+        try {
+            const dataUrl = exportCytoscapePng(graphInstance, { bg: palette.surface, scale: 2 });
+            const anchor = document.createElement("a");
+            anchor.href = dataUrl;
+            const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+            anchor.download = `小驴人脉_关系图谱_${stamp}.png`;
+            anchor.click();
+            resultExportMessage = "图谱高清图已导出为 PNG";
+        } catch (err) {
+            resultExportMessage = `导出 PNG 失败：${requestErrorMessage(err)}`;
+        }
+    }
+
+    onDestroy(() => {
+        alive = false;
+        refreshVersion += 1;
+        nativeVersion += 1;
+        pauseTimeline();
+        returnObserver?.disconnect();
+        clearHover();
+        if (copyToastTimer) clearTimeout(copyToastTimer);
+        if (drawerFlashcardToastTimer) clearTimeout(drawerFlashcardToastTimer);
+        if (drawerRevealInterval) clearInterval(drawerRevealInterval);
+        if (searchTimer) clearTimeout(searchTimer);
+    });
+
+    function openSnapshotPerson(person: ContactSummary, initialTab: "overview" | "activity" | "relations" = "overview") {
+        const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        returnObserver?.disconnect();
+        onOpenDetail(person, initialTab);
+        void tick().then(() => {
+            if (!alive) return;
+            const dialog = [...document.querySelectorAll(".lvct-dialog-panel")].at(-1);
+            if (!dialog) return;
+            returnObserver = new MutationObserver(() => {
+                if (dialog.isConnected || document.querySelector(".lvct-dialog-panel")) return;
+                returnObserver?.disconnect();
+                void tick().then(() => {
+                    if (!alive) return;
+                    const active = document.activeElement;
+                    if (active instanceof HTMLElement && active !== document.body && active.isConnected) return;
+                    const target = trigger?.isConnected ? trigger : [...document.querySelectorAll<HTMLElement>("[data-graph-id]")].find((element) => element.dataset.graphId === person.docId);
+                    (target ?? resultHeading)?.focus();
+                });
+            });
+            returnObserver.observe(document.body, { childList: true, subtree: true });
+        });
+    }
+
+    async function locateNode(id: string) {
+        presentation = "canvas";
+        canvasFocusId = id;
+        await tick();
+        const node = graphInstance?.getElementById(id);
+        if (node?.nonempty()) { graphInstance?.fit(node.closedNeighborhood(), 60); node.addClass("lvct-graph-focus"); }
+        container?.focus();
+    }
+
+    $effect(() => {
+        const instance = graphInstance;
+        const selected = focusId;
+        const other = compareId;
+        const hits = pathMode ? pathIds : resultIds;
+        const path = pathMode ? pathIds : null;
+        const bridges = secondMode ? relations.neighborIds : [];
+        const expandSecond = secondMode;
+        const canHighlight = graphMode === "relations" && (snapshot.result.status === "ready" || snapshot.result.status === "no_path");
+        if (!instance || instance.destroyed()) return;
+        instance.batch(() => {
+            instance.elements().removeClass("lvct-graph-muted lvct-graph-focus lvct-graph-path-highlight");
+            if (!selected || !canHighlight) return;
+            const visible = new Set([selected, other, ...hits, ...bridges]);
+            const hitIds = new Set(hits);
+            const bridgeIds = new Set(bridges);
+            const nextOnPath = new Map((path ?? []).slice(0, -1).map((id, index) => [id, path![index + 1]]));
+            const pathEles = path && path.length > 0 ? instance.collection() : null;
+
+            instance.nodes().forEach((node) => {
+                if (!visible.has(node.id())) node.addClass("lvct-graph-muted");
+                if (node.id() === selected || node.id() === other) node.addClass("lvct-graph-focus");
+                if (path && path.includes(node.id())) {
+                    node.addClass("lvct-graph-path-highlight");
+                    pathEles?.merge(node);
+                }
+            });
+            instance.edges().forEach((edge) => {
+                const source = edge.source().id();
+                const target = edge.target().id();
+                const isPathEdge = path !== null && (nextOnPath.get(source) === target || nextOnPath.get(target) === source);
+                if (isPathEdge) {
+                    edge.addClass("lvct-graph-path-highlight");
+                    pathEles?.merge(edge);
+                }
+                const connectsHit = edge.data("kind") === "related" && (path !== null
+                    ? isPathEdge
+                    : expandSecond
+                    ? (source === selected && bridgeIds.has(target)) || (target === selected && bridgeIds.has(source))
+                        || (bridgeIds.has(source) && hitIds.has(target)) || (bridgeIds.has(target) && hitIds.has(source))
+                    : (hitIds.has(source) && (target === selected || target === other))
+                        || (hitIds.has(target) && (source === selected || source === other)));
+                if (!connectsHit) edge.addClass("lvct-graph-muted");
+            });
+
+            if (pathEles && pathEles.length > 0) {
+                instance.animate({
+                    fit: { eles: pathEles, padding: 60 },
+                    duration: 350,
+                    easing: "ease-out-cubic",
+                });
+            }
+        });
+    });
+
+    /** cytoscape 无法用 CSS 变量，挂载时从主题运行时取值 */
+    function normalizeGraphColor(value: string, fallback: string): string {
+        const normalized = value.trim();
+        if (!normalized || normalized === "currentColor") return fallback;
+        const match = normalized.match(/^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)$/i);
+        if (!match) return normalized;
+        const channels = match.slice(1, 4).map((channel) => Math.round(Math.max(0, Math.min(1, Number(channel))) * 255));
+        const alpha = match[4] === undefined ? 1 : Math.max(0, Math.min(1, Number(match[4])));
+        return `rgba(${channels.join(", ")}, ${alpha})`;
+    }
+
+    function themeColors(): { text: string; edge: string; surface: string; focus: string } {
+        const probe = container ?? document.body;
+        const style = getComputedStyle(probe);
+        const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme-mode") === "dark" || document.body.classList.contains("body--dark"));
+        const defaultText = isDark ? "#e2e8f0" : "#1e293b";
+        const defaultEdge = isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.18)";
+        const defaultSurface = isDark ? "#1e293b" : "#ffffff";
+        const defaultFocus = "#ea580c";
+
+        const resolve = (name: string, fallback: string): string => {
+            const value = style.getPropertyValue(name).trim();
+            if (!value || (!value.includes("color-mix") && !value.includes("var("))) return normalizeGraphColor(value, fallback);
+            const swatch = document.createElement("span");
+            swatch.style.color = `var(${name})`;
+            probe.appendChild(swatch);
+            const resolved = getComputedStyle(swatch).color;
+            swatch.remove();
+            return normalizeGraphColor(resolved, fallback);
+        };
+        return {
+            text: resolve("--lvct-graph-text", defaultText),
+            edge: resolve("--lvct-graph-edge", defaultEdge),
+            surface: resolve("--lvct-graph-surface", defaultSurface),
+            focus: resolve("--lvct-accent", defaultFocus),
+        };
+    }
+
+    function groupColorValue(group: string): string {
+        const key: Record<string, string> = {
+            "家人": "--lvct-group-family",
+            "朋友": "--lvct-group-friend",
+            "同事": "--lvct-group-work",
+            "同学": "--lvct-group-school",
+            "组织": "--lvct-group-org",
+            "其他": "--lvct-group-other",
+        };
+        const probe = container ?? document.body;
+        const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme-mode") === "dark" || document.body.classList.contains("body--dark"));
+        const defaultColor = isDark ? "#94a3b8" : "#64748b";
+        const value = getComputedStyle(probe).getPropertyValue(key[group] ?? "--lvct-group-other").trim();
+        return normalizeGraphColor(value || getComputedStyle(probe).getPropertyValue("--lvct-accent"), defaultColor);
+    }
+
+    onMount(() => {
+        const updateTheme = () => {
+            const instance = graphInstance;
+            if (!instance || instance.destroyed()) return;
+            const palette = themeColors();
+            instance.batch(() => {
+                // 更新绘图数据让 stylesheet 重算，避免 element.style bypass 压过选中/搜索高亮。
+                instance.nodes().forEach((node) => {
+                    node.data({
+                        color: groupColorValue(node.data("group")),
+                        themeText: palette.text,
+                        themeSurface: palette.surface,
+                        themeFocus: palette.focus,
+                    });
+                });
+                instance.edges().data("themeEdge", palette.edge);
+            });
+        };
+        const observer = new MutationObserver(updateTheme);
+        for (const target of [document.documentElement, document.body]) {
+            observer.observe(target, { attributes: true, attributeFilter: ["class", "style", "data-theme-mode"] });
+        }
+        return () => observer.disconnect();
+    });
+
+    async function refresh(queueIfBusy = false): Promise<void> {
+        if (refreshInFlight) {
+            if (queueIfBusy) refreshQueued = true;
+            return;
+        }
+        refreshInFlight = true;
+        const version = ++refreshVersion;
+        loading = true;
+        errorText = "";
+        try {
+            const next = await loadGraphSources(settings, {
+                listOrganizations: facade?.listOrganizations ? () => facade.listOrganizations() : undefined,
+                loadSelfIdentity: facade?.loadSelfIdentity ? () => facade.loadSelfIdentity() : undefined,
+                loadInteractionEvents: facade?.loadInteractionEvents ? () => facade.loadInteractionEvents!() : undefined,
+                loadOrigins: facade?.loadAllPersonOrigins ? () => facade.loadAllPersonOrigins!() : undefined,
+            }, version);
+            if (!alive || version !== refreshVersion) return;
+            sources = next;
+            errorText = next.errors.roster ?? "";
+        } catch (error) {
+            if (alive && version === refreshVersion) errorText = requestErrorMessage(error);
+        } finally {
+            if (alive && version === refreshVersion) loading = false;
+            refreshInFlight = false;
+            const rerun = refreshQueued;
+            refreshQueued = false;
+            if (alive && rerun) void refresh(true);
+        }
+    }
+
+    // 设置页、其它窗口或数据事件刷新偏好后，图谱页需要同步其持久化选项。
+    // 不监听每次 props 重渲染，而是以 revision 判断确实出现了外部保存结果，
+    // 这样 nativeScope="org" 这种不持久化的会话态不会被旧值冲掉。
+    $effect(() => {
+        const revision = preferences.revision;
+        const nextMode = preferences.graphMode;
+        const nextScope = preferences.nativeScope as GraphScope;
+        const nextCenter = preferences.nativeCenterDocId;
+        if (revision === syncedPreferenceRevision) return;
+        syncedPreferenceRevision = revision;
+        if (pendingPreferencePatch && preferencePatchMatches(preferences, pendingPreferencePatch)) {
+            pendingPreferencePatch = null;
+            preferenceError = "";
+        }
+        if (graphMode !== nextMode) {
+            graphMode = nextMode;
+            if (nextMode === "relations") {
+                nativeVersion += 1;
+                nativeLoading = false;
+            }
+        }
+        // “以组织为中心”是图谱页当前会话的临时范围，不写入偏好；其它窗口
+        // 保存无关偏好时不能把它悄悄切回上次持久化的 self/global/person。
+        if (nativeScope !== "org" && nativeScope !== nextScope) nativeScope = nextScope;
+        if (nativeCenterDocId !== nextCenter) nativeCenterDocId = nextCenter;
+    });
+
+    async function persistGraphPreferencePatch(patch: GraphPreferencePatch): Promise<void> {
+        const operation = ++preferenceSaveVersion;
+        pendingPreferencePatch = patch;
+        preferenceError = "";
+        try {
+            await onPreferencesChange?.({ ...preferences, ...patch });
+            // 旧保存可能晚于新保存返回；只有当前操作仍对应同一草稿时才能清理状态。
+            if (alive && operation === preferenceSaveVersion && preferencePatchesEqual(pendingPreferencePatch, patch)) {
+                pendingPreferencePatch = null;
+                preferenceError = "";
+            }
+        } catch (error) {
+            if (alive && operation === preferenceSaveVersion && preferencePatchesEqual(pendingPreferencePatch, patch)) {
+                preferenceError = `图谱偏好保存失败：${requestErrorMessage(error)}`;
+            }
+            throw error;
+        }
+    }
+
+    async function retryGraphPreference(): Promise<void> {
+        const patch = pendingPreferencePatch;
+        if (!patch || preferenceRetrying) return;
+        preferenceRetrying = true;
+        try {
+            await persistGraphPreferencePatch(patch);
+        } catch {
+            // persistGraphPreference 已将可读错误反馈到界面。
+        } finally {
+            preferenceRetrying = false;
+        }
+    }
+
+    /** B14.5：切换数据源模式并持久化偏好；保存失败不阻断本次切换（下次重开回落上次成功保存值） */
+    async function switchGraphMode(mode: GraphViewMode) {
+        if (graphMode === mode) return;
+        selectedOrgId = "";
+        clearHover();
+        graphMode = mode;
+        if (mode === "relations") { nativeVersion += 1; nativeLoading = false; }
+        try {
+            await persistGraphPreferencePatch({ graphMode: mode });
+        } catch { /* 错误已显示，可由用户重试 */ }
+    }
+
+    /** B14 原生模式加载：范围由 nativeScope 决定（B14.8），登记集合过滤（B14.3）。失败显式降级 */
+    async function loadNativeGraph() {
+        const version = ++nativeVersion;
+        const currentSources = sources;
+        const currentQuery = query;
+        nativeLoading = true;
+        references = { status: "unknown", graph: { nodes: [], edges: [] } };
+        try {
+            const next = await loadGraphReferences(currentSources, currentQuery);
+            if (alive && version === nativeVersion && currentSources === sources && graphMode === "native") {
+                references = next;
+            }
+        } catch (error) {
+            if (alive && version === nativeVersion && currentSources === sources && graphMode === "native") {
+                references = { status: "unknown", graph: { nodes: [], edges: [] }, error: requestErrorMessage(error) };
+            }
+        } finally {
+            if (alive && version === nativeVersion && currentSources === sources && graphMode === "native") {
+                nativeLoading = false;
+            }
+        }
+    }
+
+    $effect(() => {
+        if (graphMode !== "native") return;
+        nativeScope;
+        nativeCenterDocId;
+        sources;
+        if (nativeScope === "org") orgNarrowId;
+        untrack(() => { if (!loading) void loadNativeGraph(); });
+    });
+
+    /** B14.8：切换引用图范围并持久化（B14.5 重开保留）；保存失败不阻断本次切换 */
+    async function switchNativeScope(next: string) {
+        const scope: GraphScope = next === "global" ? "global" : next === "person" ? "person" : next === "org" ? "org" : "self";
+        if (nativeScope === scope) return;
+        nativeScope = scope;
+        try {
+            if (scope !== "org") await persistGraphPreferencePatch({ nativeScope: scope, nativeCenterDocId });
+            else { pendingPreferencePatch = null; preferenceError = ""; }
+        } catch {
+            // persistGraphPreference 已将可读错误反馈到界面。
+        }
+    }
+
+    async function pickNativeCenter(docId: string) {
+        nativeCenterDocId = docId;
+        try {
+            await persistGraphPreferencePatch({ nativeScope: nativeScope === "org" ? "global" : nativeScope, nativeCenterDocId: docId });
+        } catch { /* 错误已显示，可由用户重试 */ }
+    }
+
+    const nativeCenterItems = $derived(snapshot.people.map((person) => ({
+        id: person.docId,
+        label: person.name,
+        docId: person.docId,
+        itemId: person.itemId,
+        hint: [person.group, person.phone || person.email, ...person.tags].filter(Boolean).join(" · ") || undefined,
+    })));
+
+    function zoomBy(factor: number) {
+        const instance = graphInstance;
+        if (!instance) return;
+        instance.zoom({ level: Math.max(instance.minZoom(), Math.min(instance.maxZoom(), instance.zoom() * factor)),
+            renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 } });
+    }
+
+    let expanding = false;
+    async function toggleGraphExpanded() {
+        if (expanding || !alive) return;
+        expanding = true;
+        try {
+            graphExpanded = !graphExpanded;
+            await tick();
+            if (alive) container?.scrollIntoView({ block: "nearest" });
+        } finally {
+            expanding = false;
+        }
+    }
+
+    function handleCanvasKeydown(event: KeyboardEvent): void {
+        if (!graphInstance) return;
+        const target = event.target as HTMLElement | null;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) return;
+
+        if (event.key === "+" || event.key === "=") {
+            event.preventDefault();
+            zoomBy(1.2);
+        } else if (event.key === "-" || event.key === "_") {
+            event.preventDefault();
+            zoomBy(1 / 1.2);
+        } else if (event.key === "0") {
+            event.preventDefault();
+            graphInstance.fit();
+        } else if (event.key === "f" || event.key === "F") {
+            event.preventDefault();
+            void toggleGraphExpanded();
+        } else if (event.key === "r" || event.key === "R") {
+            event.preventDefault();
+            relayout();
+        } else if (event.key === "1") {
+            if (relationScope === "person" || relationScope === "self") {
+                event.preventDefault();
+                relationDepth = "direct";
+            }
+        } else if (event.key === "2") {
+            if (relationScope === "person" || relationScope === "self") {
+                event.preventDefault();
+                relationDepth = "second";
+            }
+        } else if (event.key === "Escape") {
+            if (drawerPerson) {
+                event.preventDefault();
+                closeDrawer();
+            } else if (activeEvidence) {
+                event.preventDefault();
+                activeEvidence = null;
+            } else if (hoveredPerson) {
+                event.preventDefault();
+                clearHover();
+            }
+        }
+    }
+
+    type GraphLayoutType = "cose" | "concentric" | "breadthfirst" | "circle";
+    let activeLayout = $state<GraphLayoutType>("cose");
+    let layoutMenuOpen = $state(false);
+
+    const layoutLabels: Record<GraphLayoutType, string> = {
+        cose: "力导向聚类 (CoSE)",
+        concentric: "六度辐射圈 (六度人脉)",
+        breadthfirst: "层级展开 (族谱树)",
+        circle: "全局环形 (全景圈)",
+    };
+
+    function changeLayout(layoutName: GraphLayoutType) {
+        activeLayout = layoutName;
+        layoutMenuOpen = false;
+        const instance = graphInstance;
+        if (!instance) return;
+        if (layoutName === "concentric") {
+            instance.layout({
+                name: "concentric",
+                animate: false,
+                padding: 40,
+                concentric: (node: any) => node.degree(),
+                levelWidth: () => 2,
+            }).run();
+        } else if (layoutName === "breadthfirst") {
+            instance.layout({
+                name: "breadthfirst",
+                animate: false,
+                padding: 40,
+                directed: false,
+                circle: false,
+                spacingFactor: 1.3,
+            }).run();
+        } else if (layoutName === "circle") {
+            instance.layout({
+                name: "circle",
+                animate: false,
+                padding: 40,
+            }).run();
+        } else {
+            instance.layout({
+                name: "cose",
+                animate: false,
+                padding: 30,
+                nodeDimensionsIncludeLabels: true,
+            }).run();
+        }
+    }
+
+    function relayout() {
+        changeLayout(activeLayout);
+    }
+
+    function highlightNeighbors(node: any) {
+        if (!graphInstance || graphInstance.destroyed()) return;
+        const neighborhood = node.neighborhood().add(node);
+        graphInstance.elements().addClass("lvct-graph-dimmed");
+        neighborhood.removeClass("lvct-graph-dimmed").addClass("lvct-graph-neighbor-focus");
+    }
+
+    function clearNeighborHighlight() {
+        if (!graphInstance || graphInstance.destroyed()) return;
+        graphInstance.elements().removeClass("lvct-graph-dimmed lvct-graph-neighbor-focus");
+    }
+
+    function clearHover() {
+        if (hoverTimer) clearTimeout(hoverTimer);
+        if (clearHoverTimer) clearTimeout(clearHoverTimer);
+        hoverTimer = undefined;
+        clearHoverTimer = undefined;
+        hoveredPerson = null;
+        hoveredOrg = null;
+        hoverInsights = null;
+        hoverInsightsLoading = false;
+        hoverInsightsError = false;
+        hoverInsightsVersion += 1;
+        clearNeighborHighlight();
+    }
+
+    function scheduleClearHover() {
+        if (hoverTimer) clearTimeout(hoverTimer);
+        hoverTimer = undefined;
+        if (clearHoverTimer) clearTimeout(clearHoverTimer);
+        clearHoverTimer = setTimeout(() => {
+            hoveredPerson = null;
+            hoveredOrg = null;
+            clearHoverTimer = undefined;
+            clearNeighborHighlight();
+        }, 220);
+    }
+
+    $effect(() => {
+        const card = hoverCard;
+        const canvas = container;
+        const position = hoverPosition;
+        // 摘要异步回填后卡片可能变高；用实际尺寸限制浮层，按钮始终留在画布内。
+        hoverInsights; hoverInsightsLoading; hoverInsightsError;
+        if (!card || !canvas) return;
+        return untrack(() => {
+            let active = true;
+            void tick().then(() => {
+                if (!alive || !active || !card.isConnected) return;
+                const x = Math.max(12, Math.min(position.x, canvas.clientWidth - card.offsetWidth - 12));
+                const y = Math.max(12, Math.min(position.y, canvas.clientHeight - card.offsetHeight - 12));
+                if (x !== position.x || y !== position.y) hoverPosition = { x, y };
+            });
+            return () => { active = false; };
+        });
+    });
+
+    function scheduleHover(event: cytoscape.EventObject) {
+        highlightNeighbors(event.target);
+        const docId = event.target.id();
+        const person = allPeopleByDocId.get(docId);
+        if (!person) {
+            /* B14：组织节点 hover 卡（名称+成员连接数+跳转入口） */
+            const orgNode = nodeById.get(docId);
+            if (!orgNode || orgNode.kind !== "org") return;
+            if (hoverTimer) clearTimeout(hoverTimer);
+            if (clearHoverTimer) clearTimeout(clearHoverTimer);
+            const position = event.renderedPosition ?? event.target.renderedPosition();
+            hoverTimer = setTimeout(() => {
+                const width = container?.clientWidth ?? 420;
+                const height = container?.clientHeight ?? 360;
+                hoverPosition = {
+                    x: Math.min(Math.max(8, position.x + 16), Math.max(8, width - 228)),
+                    y: Math.min(Math.max(8, position.y + 16), Math.max(8, height - 150)),
+                };
+                hoveredPerson = null;
+                hoveredOrg = { id: orgNode.id, label: orgNode.label, degree: orgNode.degree };
+                hoverTimer = undefined;
+            }, 300);
+            return;
+        }
+        if (hoverTimer) clearTimeout(hoverTimer);
+        if (clearHoverTimer) clearTimeout(clearHoverTimer);
+        const position = event.renderedPosition ?? event.target.renderedPosition();
+        hoverTimer = setTimeout(() => {
+            const width = container?.clientWidth ?? 420;
+            const height = container?.clientHeight ?? 360;
+            hoverPosition = {
+                x: Math.min(Math.max(8, position.x + 16), Math.max(8, width - 228)),
+                y: Math.min(Math.max(8, position.y + 16), Math.max(8, height - 150)),
+            };
+            hoveredPerson = person;
+            if (facade) void loadHoverInsights(person);
+            hoverTimer = undefined;
+        }, 300);
+    }
+
+    async function loadHoverInsights(person: ContactSummary) {
+        const client = facade;
+        if (!client) return;
+        const version = ++hoverInsightsVersion;
+        hoverInsightsLoading = true;
+        hoverInsightsError = false;
+        try {
+            const result = await client.loadPersonInsights(person.docId);
+            if (version === hoverInsightsVersion && hoveredPerson?.docId === person.docId) hoverInsights = result;
+        } catch {
+            if (version === hoverInsightsVersion && hoveredPerson?.docId === person.docId) hoverInsightsError = true;
+        } finally {
+            if (version === hoverInsightsVersion && hoveredPerson?.docId === person.docId) hoverInsightsLoading = false;
+        }
+    }
+
+    $effect(() => {
+        if (!container || presentation !== "canvas" || loading || nativeLoading || !canvasCanRender) return;
+        /* B14：数据源按模式切换——关系图用名册投影，文档引用图用内核局部图（均走规模裁剪） */
+        let graph: import("../../domain/graph").PersonGraph | null = null;
+        try {
+            graph = JSON.parse(canvasData);
+        } catch {
+            return;
+        }
+        if (!graph || !Array.isArray(graph.nodes) || graph.nodes.length === 0) return;
+        const palette = themeColors();
+        const nodeCount = graph.nodes.length;
+
+        const instance = cytoscape({
+            container,
+            /* 画布撑满工作台后，小图的 fit 放大不设上限会糊脸（UX-02.13） */
+            maxZoom: 2.5,
+            minZoom: 0.12,
+            textureOnViewport: nodeCount > 50,
+            pixelRatio: "auto",
+            elements: [
+                ...graph.nodes.map((node) => ({
+                    data: {
+                        id: node.id,
+                        label: node.label,
+                        degree: node.degree,
+                        group: node.group,
+                        kind: node.kind ?? "person",
+                        color: groupColorValue(node.group),
+                        themeText: palette.text,
+                        themeSurface: palette.surface,
+                        themeFocus: palette.focus,
+                    },
+                    classes: searchNeedle ? "lvct-graph-hit" : "",
+                })),
+                ...graph.edges.map((edge) => ({
+                    data: { source: edge.source, target: edge.target, kind: edge.kind ?? "related", memberStatus: edge.memberStatus, coCount: edge.coCount, themeEdge: palette.edge },
+                })),
+            ],
+            // 同步完成布局，避免筛选/切页销毁画布后动画帧继续访问 renderer。
+            // 大规模节点（>150）下自适应适度收缩迭代步数与斥力半径，实现秒级收敛并杜绝卡顿。
+            layout: activeLayout === "concentric"
+                ? { name: "concentric", animate: false, padding: 40, concentric: (n: any) => n.degree(), levelWidth: () => 2 }
+                : activeLayout === "breadthfirst"
+                ? { name: "breadthfirst", animate: false, padding: 40, directed: false, circle: false, spacingFactor: 1.3 }
+                : activeLayout === "circle"
+                ? { name: "circle", animate: false, padding: 40 }
+                : {
+                    name: "cose",
+                    animate: false,
+                    padding: 30,
+                    nodeDimensionsIncludeLabels: true,
+                    numIter: nodeCount > 200 ? 500 : 1000,
+                    nodeRepulsion: nodeCount > 200 ? 2500 : 4096,
+                    idealEdgeLength: nodeCount > 200 ? 60 : 80,
+                },
+            style: [
+                {
+                    selector: "node",
+                    style: {
+                        label: "data(label)",
+                        "background-color": palette.surface,
+                        width: "mapData(degree, 0, 6, 24, 48)",
+                        height: "mapData(degree, 0, 6, 24, 48)",
+                        "font-size": 13,
+                        "font-weight": 500,
+                        color: palette.text,
+                        "min-zoomed-font-size": 7, // LOD：小视口缩放拉远时自动隐藏文字，大幅降低微小节点排版开销
+                        "text-wrap": "ellipsis",
+                        "text-max-width": "120px",
+                        "text-outline-width": 2,
+                        "text-outline-color": palette.surface,
+                        "text-valign": "bottom",
+                        "text-margin-y": 4,
+                        /* UX-02.4 表面色描边环 + 同色 underlay 光晕 */
+                        "border-width": 2,
+                        "border-color": palette.surface,
+                        "underlay-color": palette.focus,
+                        "underlay-opacity": 0.16,
+                        "underlay-padding": 6,
+                        "underlay-shape": "ellipse",
+                    },
+                },
+                {
+                    selector: "node[color]",
+                    style: {
+                        "background-color": "data(color)",
+                        "underlay-color": "data(color)",
+                    },
+                },
+                {
+                    selector: "node[themeText]",
+                    style: {
+                        color: "data(themeText)",
+                    },
+                },
+                {
+                    selector: "node[themeSurface]",
+                    style: {
+                        "text-outline-color": "data(themeSurface)",
+                        "border-color": "data(themeSurface)",
+                    },
+                },
+                {
+                    selector: ".lvct-graph-hit",
+                    style: {
+                        "border-color": palette.focus,
+                        "border-width": 3,
+                        "underlay-opacity": 0.3,
+                        "underlay-padding": 10,
+                    },
+                },
+                {
+                    selector: ".lvct-graph-hit[themeFocus]",
+                    style: {
+                        "border-color": "data(themeFocus)",
+                    },
+                },
+                {
+                    selector: "edge",
+                    style: {
+                        width: 2,
+                        "line-color": palette.edge,
+                        "curve-style": "bezier",
+                    },
+                },
+                {
+                    selector: "edge[themeEdge]",
+                    style: {
+                        "line-color": "data(themeEdge)",
+                    },
+                },
+                { selector: ".lvct-graph-muted", style: { opacity: 0.18 } },
+                { selector: ".lvct-graph-dimmed", style: { opacity: 0.15 } },
+                { selector: ".lvct-graph-focus", style: { "border-color": "data(themeFocus)", "border-width": 4 } },
+                { selector: "node.lvct-graph-neighbor-focus", style: { "border-width": 3, "border-color": palette.focus, "underlay-opacity": 0.28 } },
+                { selector: "edge.lvct-graph-neighbor-focus", style: { width: 3.5, "line-color": palette.focus, opacity: 1, "z-index": 5 } },
+                { selector: "node.lvct-graph-path-highlight", style: { "border-color": "#ea580c", "border-width": 4, "underlay-color": "#ea580c", "underlay-opacity": 0.35, "underlay-padding": 8, "z-index": 20 } },
+                { selector: "edge.lvct-graph-path-highlight", style: { "line-color": "#ea580c", width: 4.5, "target-arrow-color": "#ea580c", opacity: 1, "z-index": 20 } },
+                /* B14.6：组织节点方形、成员边虚线——与 related 边视觉分源 */
+                { selector: 'node[kind = "org"]', style: { shape: "round-rectangle" } },
+                { selector: 'edge[kind = "member"]', style: { "line-style": "dashed" } },
+                { selector: 'edge[kind = "member"][memberStatus = "former"]', style: { "line-style": "dotted" } },
+                { selector: 'edge[kind = "member"][memberStatus = "mixed"]', style: { "line-style": "dashed", width: 3 } },
+                // 引用是双向连接投影，不画方向箭头，以免把无向去重后的端点误作引用方向。
+                { selector: 'edge[kind = "ref"]', style: { "line-style": "dotted", width: 3 } },
+                // E-34：共同出席弱联系（推断关联），细虚线与半透明强调，仅展示，不参与关系查询
+                { selector: 'edge[kind = "co_occurrence"]', style: { "line-style": "dashed", "line-dash-pattern": [4, 4], width: 2, opacity: 0.7 } },
+                // Monica 标杆融合：初识引荐人有向虚线边，带箭头指向被引荐人
+                { selector: 'edge[kind = "introducer"]', style: { "line-style": "dashed", "line-dash-pattern": [6, 3], width: 2.2, "target-arrow-shape": "triangle", "target-arrow-color": palette.edge, "curve-style": "bezier" } },
+            ],
+        });
+        graphInstance = instance;
+        if (searchNeedle && instance.nodes().length > 0) {
+            instance.fit(instance.nodes(), 72);
+        }
+        // 宿主分栏、折叠控件和展开画布都可能改变容器尺寸；保留用户的缩放和图心。
+        let lastWidth = instance.width();
+        let lastHeight = instance.height();
+        let resizeFrame = 0;
+        const resizeObserver = new ResizeObserver(() => {
+            cancelAnimationFrame(resizeFrame);
+            resizeFrame = requestAnimationFrame(() => {
+                if (instance.destroyed()) return;
+                const pan = instance.pan();
+                instance.resize();
+                const width = instance.width();
+                const height = instance.height();
+                if (lastWidth > 0 && lastHeight > 0) {
+                    instance.pan({ x: pan.x + (width - lastWidth) / 2, y: pan.y + (height - lastHeight) / 2 });
+                } else instance.fit(undefined, 48);
+                lastWidth = width;
+                lastHeight = height;
+            });
+        });
+        resizeObserver.observe(container);
+
+        instance.on("tap", "node", (event: cytoscape.EventObject) => {
+            activeEvidence = null;
+            establishRelationError = "";
+            const docId = event.target.id();
+            const person = allPeopleByDocId.get(docId);
+            if (person) {
+                selectedOrgId = "";
+                clearHover();
+                drawerPerson = person;
+                return;
+            }
+            /* B14 组织入口：组织节点点击跳组织视图并聚焦 */
+            const orgNode = orgOverlay?.nodes.find((node) => node.id === docId);
+            if (orgNode) {
+                clearHover();
+                focusOrganization(docId);
+                // 触屏没有 hover；点组织后也保留可进入组织页面的明确操作。
+                selectedOrgId = orgNode.id;
+                hoverPosition = { x: 12, y: 12 };
+            }
+        });
+        instance.on("tap", "edge", (event: cytoscape.EventObject) => {
+            const edge = event.target;
+            const kind = (edge.data("kind") as EdgeEvidence["kind"]) || "related";
+            const sourceId = edge.data("source");
+            const targetId = edge.data("target");
+
+            clearHover();
+            selectedOrgId = "";
+            establishRelationError = "";
+
+            if (kind === "co_occurrence") {
+                const coCount = edge.data("coCount") ?? 1;
+                const personA = allPeopleByDocId.get(sourceId);
+                const personB = allPeopleByDocId.get(targetId);
+                if (personA && personB) {
+                    activeEvidence = {
+                        kind: "co_occurrence",
+                        sourceId,
+                        targetId,
+                        coCount,
+                        sourceName: personA.name,
+                        targetName: personB.name,
+                    };
+                }
+            } else if (kind === "introducer") {
+                const personA = allPeopleByDocId.get(sourceId);
+                const personB = allPeopleByDocId.get(targetId);
+                if (personA && personB) {
+                    activeEvidence = {
+                        kind: "introducer",
+                        sourceId,
+                        targetId,
+                        sourceName: personA.name,
+                        targetName: personB.name,
+                    };
+                }
+            } else if (kind === "related") {
+                const personA = allPeopleByDocId.get(sourceId);
+                const personB = allPeopleByDocId.get(targetId);
+                if (personA && personB) {
+                    activeEvidence = {
+                        kind: "related",
+                        sourceId,
+                        targetId,
+                        sourceName: personA.name,
+                        targetName: personB.name,
+                        commonOrgNames: findSharedOrgs(sourceId, targetId),
+                        coAttendanceCount: countSharedOccasions(sourceId, targetId),
+                    };
+                }
+            } else if (kind === "member") {
+                const org = sources.organizations.find((o) => o.docId === sourceId || o.docId === targetId);
+                const person = allPeopleByDocId.get(sourceId === org?.docId ? targetId : sourceId);
+                activeEvidence = {
+                    kind: "member",
+                    sourceId,
+                    targetId,
+                    sourceName: person?.name || "成员",
+                    targetName: org?.name || "组织",
+                    memberStatus: edge.data("memberStatus") || "active",
+                };
+            } else if (kind === "ref") {
+                const nodeA = nodeById.get(sourceId);
+                const nodeB = nodeById.get(targetId);
+                activeEvidence = {
+                    kind: "ref",
+                    sourceId,
+                    targetId,
+                    sourceName: nodeA?.label || sourceId,
+                    targetName: nodeB?.label || targetId,
+                };
+            }
+
+            const pos = event.renderedPosition ?? { x: 24, y: 24 };
+            hoverPosition = { x: Math.max(12, Math.round(pos.x)), y: Math.max(12, Math.round(pos.y)) };
+        });
+        instance.on("tap", (event: cytoscape.EventObject) => {
+            if (event.target === instance) {
+                selectedOrgId = "";
+                clearHover();
+                activeEvidence = null;
+                closeDrawer();
+            }
+        });
+        instance.on("mouseover", "node", scheduleHover);
+        instance.on("mouseout", "node", scheduleClearHover);
+
+        return () => {
+            resizeObserver.disconnect();
+            cancelAnimationFrame(resizeFrame);
+            clearHover();
+            instance.destroy();
+            if (graphInstance === instance) graphInstance = null;
+        };
+    });
+
+    $effect(() => {
+        revision;
+        // refresh 内部会读取并更新响应式在途锁；脱离 effect 追踪，避免
+        // 锁从 false 变为 true 时重新触发 effect，形成无穷刷新队列。
+        untrack(() => void refresh(true));
+    });
+
+    function openHoveredPerson() {
+        const person = hoveredPerson;
+        clearHover();
+        if (person) openSnapshotPerson(person);
+    }
+
+    function findSharedOrgs(docA: string, docB: string): string[] {
+        const names: string[] = [];
+        for (const org of sources.organizations) {
+            const hasA = org.memberships.some((m) => m.personDocId === docA);
+            const hasB = org.memberships.some((m) => m.personDocId === docB);
+            if (hasA && hasB) names.push(org.name);
+        }
+        return names;
+    }
+
+    function countSharedOccasions(docA: string, docB: string): number {
+        if (!sources.interactionEvents || sources.interactionEvents.length === 0) return 0;
+        const occsA = new Set<string>();
+        for (const e of sources.interactionEvents) {
+            if (e.personDocId === docA && e.externalRef) occsA.add(e.externalRef);
+        }
+        let count = 0;
+        const seenB = new Set<string>();
+        for (const e of sources.interactionEvents) {
+            if (e.personDocId === docB && e.externalRef && occsA.has(e.externalRef) && !seenB.has(e.externalRef)) {
+                seenB.add(e.externalRef);
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    async function establishCoRelation() {
+        if (!activeEvidence || activeEvidence.kind !== "co_occurrence" || establishingRelation) return;
+        const { sourceId, targetId } = activeEvidence;
+        const personA = allPeopleByDocId.get(sourceId);
+        const personB = allPeopleByDocId.get(targetId);
+        if (!personA || !personB) return;
+        establishingRelation = true;
+        establishRelationError = "";
+        try {
+            await addRelation(settings, personA, personB);
+            activeEvidence = null;
+            emitDataChanged({ topics: ["people"], docIds: [personA.docId, personB.docId] });
+            await refresh(true);
+        } catch (error) {
+            establishRelationError = requestErrorMessage(error);
+        } finally {
+            establishingRelation = false;
+        }
+    }
+
+    function focusOrganization(id: string) {
+        orgNarrowId = id;
+        if (graphMode === "relations") relationScope = "org";
+        else nativeScope = "org";
+        textLimit = 100;
+    }
+
+    function clearFilters() {
+        selectedOrgId = "";
+        searchInput = "";
+        debouncedSearchText = "";
+        if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
+        groupFilter = ""; isolatedOnly = false; orgNarrowId = "";
+        hiddenEdgeKinds = new Set();
+        if (relationScope === "org") relationScope = "global";
+        if (nativeScope === "org") nativeScope = "global";
+    }
+
+    function handleSearchInput(event: Event) {
+        const val = (event.currentTarget as HTMLInputElement).value;
+        searchInput = val;
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            debouncedSearchText = val;
+        }, 250);
+    }
+
+    /**
+     * 异常态的“切换全局范围”必须沿用范围选择器的持久化语义。
+     * 之前这里只改了当前组件的会话状态，刷新或重新打开图谱后会回到旧范围，
+     * 用户看到的“已切换全局”因此没有真正保存。
+     */
+    async function switchToGlobalScope() {
+        relationScope = "global";
+        orgNarrowId = "";
+        if (graphMode !== "native") return;
+        await switchNativeScope("global");
+    }
+
+    function nodeName(id: string): string { return nodeById.get(id)?.label ?? id; }
+
+    function openTextNode(node: GraphNode) {
+        if (node.kind === "org") focusOrganization(node.id);
+        else {
+            const person = peopleByDocId.get(node.id);
+            if (person) openSnapshotPerson(person);
+        }
+    }
+</script>
+
+<style>
+    .lvct-graph-view { overflow-y: auto; min-width: 0; }
+    .lvct-graph-view > :global(.lvct-empty) {
+        flex: 0 0 auto;
+        min-height: var(--lvct-graph-height);
+        box-sizing: border-box;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-lg);
+        background: var(--lvct-bg-surface);
+    }
+    .lvct-graph-view > .lvct-graph-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: var(--lvct-sp-2);
+    }
+    .lvct-graph-toolbar__primary,
+    .lvct-graph-toolbar__actions,
+    .lvct-graph-toolbar__filters {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        min-width: 0;
+        gap: 6px;
+    }
+    .lvct-graph-toolbar__primary > input {
+        flex: 1 1 220px;
+        min-width: 160px;
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+    .lvct-graph-toolbar__primary > .ft__smaller { flex: 0 1 auto; }
+    .lvct-graph-toolbar__actions { justify-content: flex-end; }
+    .lvct-graph-toolbar__actions > [role="group"] {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid var(--lvct-color-border-200);
+        border-radius: var(--lv-r-pill, 9999px);
+        background: var(--lvct-bg-app);
+    }
+    .lvct-graph-toolbar__actions > [role="group"] > .b3-button {
+        min-height: var(--lvct-touch-min);
+        border-radius: var(--lv-r-pill, 9999px);
+        transition:
+            background var(--lvct-dur-fast) var(--lvct-ease),
+            border-color var(--lvct-dur-fast) var(--lvct-ease),
+            color var(--lvct-dur-fast) var(--lvct-ease),
+            transform var(--lvct-dur-fast) var(--lvct-ease);
+    }
+    .lvct-graph-toolbar__actions > [role="group"] > .b3-button[aria-pressed="true"] {
+        border-color: var(--lv-brand);
+        background: var(--lv-brand);
+        color: var(--lvct-on-accent);
+        font-weight: var(--lvct-fw-medium);
+    }
+    .lvct-graph-toolbar__actions > [role="group"] > .b3-button:focus-visible {
+        outline: 2px solid var(--lvct-accent);
+        outline-offset: 1px;
+    }
+    .lvct-graph-timeline-toggle,
+    .lvct-graph-toolbar__actions > .b3-button {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+    .lvct-graph-toolbar__filters {
+        padding-top: 4px;
+        border-top: 1px solid var(--lvct-border-subtle);
+    }
+    .lvct-graph-advanced { min-width: 0; grid-column: 1 / -1; }
+    .lvct-graph-advanced > summary,
+    .lvct-graph-explore > summary {
+        display: flex;
+        align-items: center;
+        gap: var(--lvct-sp-2);
+        min-height: var(--lvct-touch-min);
+        padding-inline: var(--lvct-sp-3);
+        color: var(--lvct-text-2);
+        font-size: var(--lvct-fs-caption);
+        cursor: pointer;
+        list-style: none;
+        overflow-wrap: anywhere;
+    }
+    .lvct-graph-advanced > summary::-webkit-details-marker,
+    .lvct-graph-explore > summary::-webkit-details-marker { display: none; }
+    .lvct-graph-advanced > summary::after,
+    .lvct-graph-explore > summary::after {
+        width: 8px;
+        height: 8px;
+        margin-left: auto;
+        border-right: 1px solid currentColor;
+        border-bottom: 1px solid currentColor;
+        transform: rotate(45deg) translateY(-2px);
+        content: "";
+        flex-shrink: 0;
+    }
+    .lvct-graph-advanced[open] > summary::after,
+    .lvct-graph-explore[open] > summary::after { transform: rotate(225deg); }
+    .lvct-graph-advanced > summary:focus-visible,
+    .lvct-graph-explore > summary:focus-visible { outline: 2px solid var(--lvct-accent); outline-offset: 2px; }
+    .lvct-graph-explore,
+    .lvct-graph-evidence {
+        flex-shrink: 0;
+        min-width: 0;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md);
+        background: var(--lvct-bg-surface);
+        overflow-wrap: anywhere;
+    }
+    .lvct-graph-evidence { padding-inline: var(--lvct-sp-3); }
+    .lvct-graph-evidence p { font-size: var(--lvct-fs-caption); line-height: var(--lvct-lh-body); }
+    .lvct-graph-reading-note { display: flex; flex-wrap: wrap; gap: var(--lvct-sp-2) var(--lvct-sp-4); color: var(--lvct-text-2); font-size: var(--lvct-fs-caption); }
+    .lvct-graph-query__picker-field { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+    .lvct-graph-query__picker-label { color: var(--lvct-text-2); font-size: var(--lvct-fs-caption); }
+    .lvct-graph-export-status { margin: 0; color: var(--lvct-accent); font-size: var(--lvct-fs-caption); }
+    .lvct-graph-toolbar__filter-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 0;
+        padding: 4px 8px;
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-card, 12px);
+        background: var(--lvct-bg-elevated);
+
+        select {
+            border-radius: var(--lv-r-pill, 9999px);
+        }
+    }
+    .lvct-graph-toolbar__depth-tabs button {
+        border-radius: var(--lv-r-pill, 9999px);
+    }
+    .lvct-graph-toolbar__filter-group--scope { flex: 1 1 520px; }
+    .lvct-graph-toolbar__filter-group--refine { flex: 1 1 280px; }
+    .lvct-graph-toolbar__filter-group--legend {
+        flex: 1 1 100%;
+        padding-block: 3px;
+        background: transparent;
+        border-color: transparent;
+    }
+    .lvct-graph-toolbar__filter-group .ft__smaller { min-width: 0; overflow-wrap: anywhere; }
+    .lvct-graph-summary, .lvct-graph-text {
+        flex-shrink: 0;
+        min-width: 0;
+        padding: 12px;
+        color: var(--lvct-text-1);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
+        border-radius: var(--lvct-r-md);
+        box-shadow: var(--lvct-shadow-1);
+        overflow-wrap: anywhere;
+    }
+    .lvct-graph-summary { display: flex; align-items: center; flex-wrap: wrap; gap: var(--lvct-sp-2) var(--lvct-sp-4); padding: var(--lvct-sp-2) var(--lvct-sp-3); box-shadow: none; }
+    .lvct-graph-summary h2,
+    .lvct-graph-text h3 { margin: 0 0 8px; font-size: var(--lvct-fs-heading); }
+    .lvct-graph-summary p { margin: 0; font-size: var(--lvct-fs-caption); line-height: var(--lvct-lh-body); }
+    .lvct-graph-summary__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .lvct-graph-summary__head h2 { margin-bottom: 0; font-size: var(--lvct-fs-caption); }
+    .lvct-graph-summary__status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 2px 8px;
+        border-radius: var(--lvct-r-pill);
+        background: var(--lvct-accent-soft);
+        margin: 0;
+        margin-left: auto;
+        color: var(--lvct-accent);
+        font-size: var(--lvct-fs-caption);
+        font-weight: 600;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: right;
+    }
+    .lvct-graph-summary__status-counts {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+    }
+    .lvct-graph-summary__status--complete {
+        background: var(--lvct-success-soft);
+        color: var(--lvct-success);
+    }
+    .lvct-graph-summary__status--partial,
+    .lvct-graph-summary__status--loading {
+        background: var(--lvct-accent-soft);
+        color: var(--lvct-accent);
+    }
+    .lvct-graph-summary__status--unknown,
+    .lvct-graph-summary__status--center_missing {
+        background: var(--lvct-highlight-soft);
+        color: var(--lvct-highlight);
+    }
+    .lvct-graph-summary__stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--lvct-sp-3);
+        margin: 0;
+    }
+    .lvct-graph-summary__stats > div {
+        display: flex;
+        align-items: baseline;
+        gap: var(--lvct-sp-1);
+        min-width: 0;
+    }
+    .lvct-graph-summary__stats dt {
+        color: var(--lvct-text-3);
+        font-size: var(--lvct-fs-caption);
+    }
+    .lvct-graph-summary__stats dd {
+        margin: 0;
+        color: var(--lvct-text-1);
+        font-size: var(--lvct-fs-body);
+        font-variant-numeric: tabular-nums;
+        font-weight: 650;
+    }
+    .lvct-graph-summary__details {
+        margin: 0;
+    }
+    .lvct-graph-summary__details > summary {
+        display: flex;
+        align-items: center;
+        min-height: var(--lvct-touch-min);
+        color: var(--lvct-text-2);
+        font-size: var(--lvct-fs-caption);
+        cursor: pointer;
+        list-style: none;
+    }
+    .lvct-graph-summary__details > summary::-webkit-details-marker { display: none; }
+    .lvct-graph-summary__details > summary::after {
+        width: 7px;
+        height: 7px;
+        margin-left: auto;
+        border-right: 1px solid currentColor;
+        border-bottom: 1px solid currentColor;
+        transform: rotate(45deg) translateY(-2px);
+        content: "";
+    }
+    .lvct-graph-summary__details[open] > summary::after { transform: rotate(225deg) translate(-1px, -1px); }
+    .lvct-graph-summary__details > summary:focus-visible { outline: 2px solid var(--lvct-accent); outline-offset: 2px; }
+    .lvct-graph-summary__details > p:first-of-type { margin-top: 0; }
+    .lvct-graph-text { overflow-y: auto; }
+    .lvct-graph-text ul, .lvct-graph-text ol { padding-inline-start: 20px; }
+    .lvct-graph-text li { margin-block: 10px; }
+    .lvct-graph-text__nodes li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .lvct-graph-text__nodes span { flex: 1 1 180px; min-width: 0; }
+    .lvct-graph-text button { min-height: 40px; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    /* 文本结果按“节点/边”分出轻量行面，避免长列表退化成一串难扫读的正文。 */
+    .lvct-graph-text__nodes,
+    .lvct-graph-text > ul:not(.lvct-graph-text__nodes) {
+        margin: 0;
+        padding-inline-start: 0;
+        list-style: none;
+    }
+    .lvct-graph-text__nodes li,
+    .lvct-graph-text > ul:not(.lvct-graph-text__nodes) li {
+        margin-block: 0;
+        padding-block: 8px;
+        border-top: 1px solid var(--lvct-border-subtle);
+    }
+    .lvct-graph-text__nodes li:first-child,
+    .lvct-graph-text > ul:not(.lvct-graph-text__nodes) li:first-child {
+        padding-top: 2px;
+        border-top: 0;
+    }
+    .lvct-graph-text__nodes span {
+        color: var(--lvct-text-2);
+        font-size: var(--lvct-fs-caption);
+    }
+    .lvct-graph-text__nodes li > .b3-button--outline {
+        min-height: var(--lvct-touch-min);
+        padding-inline: 10px;
+        border-color: var(--lvct-border-subtle);
+        color: var(--lvct-text-2);
+    }
+    .lvct-graph-summary :focus-visible, .lvct-graph-text :focus-visible { outline: 2px solid var(--lvct-accent); outline-offset: 2px; }
+    .lvct-graph-diagnostics { max-height: 180px; overflow: auto; }
+    @media (max-width: 640px) {
+        .lvct-graph-view > .lvct-graph-toolbar { grid-template-columns: minmax(0, 1fr); padding: var(--lvct-sp-2); }
+        .lvct-graph-toolbar__primary,
+        .lvct-graph-toolbar__actions,
+        .lvct-graph-toolbar__filters { width: 100%; }
+        .lvct-graph-advanced { width: 100%; }
+        .lvct-graph-advanced > summary {
+            display: flex;
+            align-items: center;
+            min-height: var(--lvct-touch-min-mobile);
+            padding: 0 12px;
+            border: 1px solid var(--lvct-border-subtle);
+            border-radius: var(--lvct-r-md);
+            background: var(--lvct-bg-elevated);
+            color: var(--lvct-text-2);
+            font-size: var(--lvct-fs-caption);
+            cursor: pointer;
+            list-style: none;
+        }
+        .lvct-graph-advanced > summary::-webkit-details-marker { display: none; }
+        .lvct-graph-advanced > summary::after {
+            content: "";
+            width: 7px;
+            height: 7px;
+            margin-left: auto;
+            border-right: 1.5px solid var(--lvct-text-3);
+            border-bottom: 1.5px solid var(--lvct-text-3);
+            transform: rotate(45deg) translateY(-2px);
+            transition: transform var(--lvct-dur-fast) var(--lvct-ease);
+        }
+        .lvct-graph-advanced[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+        .lvct-graph-advanced > summary:focus-visible { outline: 2px solid var(--lvct-accent); outline-offset: 2px; }
+        .lvct-graph-advanced .lvct-graph-toolbar__filters { padding-top: 8px; border-top: 0; }
+        .lvct-graph-toolbar__primary > input { flex-basis: 100%; min-width: 0; }
+        .lvct-graph-toolbar__actions { justify-content: flex-start; }
+        .lvct-graph-toolbar__actions { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+        .lvct-graph-toolbar__actions > [role="group"] { min-width: 0; width: 100%; box-sizing: border-box; }
+        .lvct-graph-toolbar__actions > [role="group"] > .b3-button { flex: 1 1 0; min-width: 0; padding-inline: var(--lvct-sp-1); }
+        .lvct-graph-toolbar__actions > .b3-button { min-width: 0; padding-inline: var(--lvct-sp-2); }
+        .lvct-graph-toolbar__filters { padding-top: 8px; }
+        .lvct-graph-toolbar__filter-group { width: 100%; box-sizing: border-box; }
+        .lvct-graph-toolbar__filter-group--legend { padding-inline: 2px; }
+        /* 移动端把摘要卡收紧到一个信息分组，保留触控高度。 */
+        .lvct-graph-summary, .lvct-graph-text { padding: var(--lvct-sp-2) var(--lvct-sp-3); }
+        .lvct-graph-summary__stats { gap: var(--lvct-sp-3); margin: 0; }
+        .lvct-graph-summary__details > summary { min-height: var(--lvct-touch-min-mobile); }
+        .lvct-graph-toolbar__actions > [role="group"] > .b3-button,
+        .lvct-graph-text__nodes li > .b3-button--outline { min-height: var(--lvct-touch-min-mobile); }
+        .lvct-graph-text__nodes li { align-items: flex-start; }
+        .lvct-graph-text__nodes span { flex-basis: 100%; }
+    }
+</style>
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="lvct-graph-view" id="lvct-graph-results" onkeydown={handleCanvasKeydown}>
+    <div class="lvct-people__toolbar lvct-people__control-surface lvct-graph-toolbar">
+        <!-- B14.5 数据源模式：关系图（related 边）/ 文档引用图（内核原生图数据） -->
+        <div class="lvct-graph-toolbar__primary">
+            <div class="lvct-graph-mode" role="group" aria-label={text("graphModeLabel", "图谱数据源")}>
+                <button
+                    class="b3-button b3-button--small"
+                    class:b3-button--outline={graphMode === "relations"}
+                    class:b3-button--text={graphMode !== "relations"}
+                    aria-pressed={graphMode === "relations"}
+                    onclick={() => void switchGraphMode("relations")}
+                >{text("graphModeRelations", "关系图")}</button>
+                <button
+                    class="b3-button b3-button--small"
+                    class:b3-button--outline={graphMode === "native"}
+                    class:b3-button--text={graphMode !== "native"}
+                    aria-pressed={graphMode === "native"}
+                    onclick={() => void switchGraphMode("native")}
+                >{text("graphModeNative", "文档引用")}</button>
+            </div>
+            <input class="b3-text-field" type="search" placeholder={text("graphSearchPlaceholder", "搜索节点…")} aria-label={text("graphSearchNodes", "搜索关系图谱节点")} aria-controls="lvct-graph-results" aria-describedby="lvct-graph-status" value={searchInput} oninput={handleSearchInput} />
+            {#if searchNeedle}<span class="ft__smaller ft__on-surface">{text("graphSnapshotHits", "筛选后 {n} 个节点（含保留中心）", { n: snapshot.counts.filteredNodes })}</span>{/if}
+        </div>
+        <div class="lvct-graph-toolbar__actions">
+            <button
+                type="button"
+                class="b3-button b3-button--outline lvct-graph-timeline-toggle"
+                class:b3-button--text={!timelineEnabled}
+                onclick={() => {
+                    timelineEnabled = !timelineEnabled;
+                    if (!timelineEnabled) resetTimeline();
+                }}
+                title={text("graphTimelineToggleTitle", "按年份切片观察人脉关系网络随时间的生长演化")}
+            >
+                ⏳ {text("graphTimelineBtn", "时间演化")}
+            </button>
+            <div role="group" aria-label={text("graphPresentation", "图谱阅读方式")}>
+                <button class="b3-button b3-button--text" aria-pressed={presentation === "text"} onclick={() => (presentation = "text")}>{text("graphTextView", "文本视图")}</button>
+                <button class="b3-button b3-button--text" aria-pressed={presentation === "canvas"} onclick={() => (presentation = "canvas")}>{text("graphCanvasView", "画布视图")}</button>
+            </div>
+            <button class="b3-button b3-button--outline" onclick={exportResultMarkdown}
+                disabled={loading || nativeLoading}
+                title={loading || nativeLoading ? text("graphExportDisabled", "图谱仍在加载，核实完成后才能导出") : undefined}>{text("graphSnapshotExport", "导出 Markdown")}</button>
+            {#if presentation === "canvas"}
+                <button class="b3-button b3-button--outline" onclick={exportResultSvg}
+                    disabled={loading || nativeLoading || !graphInstance}
+                    title="导出当前关系图谱为矢量 SVG 图形文件">导出 SVG</button>
+                <button class="b3-button b3-button--outline" onclick={exportResultPng}
+                    disabled={loading || nativeLoading || !graphInstance}
+                    title="导出当前关系图谱为高分辨率 PNG 图片">导出 PNG</button>
+            {/if}
+        </div>
+        <details class="lvct-graph-advanced" bind:open={graphFiltersOpen}>
+            <summary>{text("graphFiltersSummary", "范围、分组与图例")}{#if activeFilterCount} · {activeFilterCount} 项条件{/if}</summary>
+            <div class="lvct-graph-toolbar__filters">
+            <div class="lvct-graph-toolbar__filter-group lvct-graph-toolbar__filter-group--scope">
+                {#if orgOverlay.nodes.length > 0 || orgNarrowId}
+                <!-- B14.8 按组织收窄：两模式共享（画布人物/登记白名单收窄到所选组织成员） -->
+                <select class="b3-select" bind:value={orgNarrowId} aria-label={text("graphOrgNarrowLabel", "按组织收窄")}>
+                    <option value="">{text("graphOrgNarrowAll", "全部组织")}</option>
+                    {#if orgNarrowId && !orgOverlay.nodes.some((org) => org.id === orgNarrowId)}<option value={orgNarrowId}>{text("graphOrgUnverified", "所选组织待核实")} · {orgNarrowId}</option>{/if}
+                    {#each orgOverlay.nodes as org (org.id)}
+                        <option value={org.id}>{org.label}</option>
+                    {/each}
+                </select>
+                {/if}
+                {#if graphMode === "native"}
+                    <select class="b3-select" value={nativeScope} aria-label={text("graphNativeScopeLabel", "引用图范围")} onchange={(event) => void switchNativeScope(event.currentTarget.value)}>
+                        <option value="self">{text("graphNativeScopeSelf", "以本人为中心（一度引用）")}</option>
+                        <option value="person">{text("graphNativeScopePerson", "以联系人为中心（一度引用）")}</option>
+                        <option value="global">{text("graphNativeScopeGlobal", "全部登记文档")}</option>
+                        <option value="org">{text("graphScopeOrg", "以组织为中心（一度引用）")}</option>
+                    </select>
+                    {#if nativeScope === "person"}
+                        <!-- B03 可搜索选人器：中心人物（B14.8 中心保留） -->
+                        <PersonPicker
+                            items={nativeCenterItems}
+                            value={nativeCenterDocId}
+                            placeholder={text("graphPickNone", "未选择")}
+                            emptyText={text("graphPickerEmpty", "当前图内没有匹配的人物")}
+                            ariaLabel={text("graphNativePickCenter", "中心人物")}
+                            onSelect={(id) => void pickNativeCenter(id)}
+                        />
+                    {/if}
+                    <span class="ft__smaller ft__on-surface">{text("graphNativeEdgeNote", "边=文档间块引用（双向一度，含回链），非 related 关系")}</span>
+                {:else}
+                    <select class="b3-select" bind:value={relationScope} aria-label={text("graphRelationsScope", "关系图范围")}>
+                        <option value="global">{text("graphScopeGlobal", "全部登记文档")}</option>
+                        <option value="self">{text("graphScopeSelf", "以本人为中心")}</option>
+                        <option value="person">{text("graphScopePerson", "以人物为中心")}</option>
+                        <option value="org">{text("graphScopeOrganization", "以组织为中心")}</option>
+                    </select>
+                    {#if relationScope === "person"}<PersonPicker items={graphPickerItems} value={relationCenterDocId} ariaLabel={text("graphScopeCenter", "范围中心人物")} onSelect={(id) => (relationCenterDocId = id)} />{/if}
+                    {#if relationScope === "person" || relationScope === "self"}
+                        <div class="lvct-graph-toolbar__depth-tabs" style="display: inline-flex; gap: 4px; margin-left: 6px;">
+                            <button
+                                type="button"
+                                class="b3-chip"
+                                class:b3-chip--primary={relationDepth === "direct"}
+                                onclick={() => (relationDepth = "direct")}
+                                title="仅展示直接相关的一度联系人"
+                            >{text("graphDepthDirect", "直接关系")}</button>
+                            <button
+                                type="button"
+                                class="b3-chip"
+                                class:b3-chip--primary={relationDepth === "second"}
+                                onclick={() => (relationDepth = "second")}
+                                title="拓展展示二度关联人脉（朋友的朋友）"
+                            >{text("graphDepthSecond", "二度关系")}</button>
+                        </div>
+                    {/if}
+                {/if}
+            </div>
+            {#if graphMode === "relations"}
+                <div class="lvct-graph-toolbar__filter-group lvct-graph-toolbar__filter-group--refine">
+                    <select class="b3-select" bind:value={groupFilter} aria-label={text("graphFilterByGroup", "按分组过滤")}>
+                        <option value="">{text("graphAllGroups", "全部分组")}</option>
+                        {#each groups as group (group)}
+                            <option value={group}>{group}</option>
+                        {/each}
+                    </select>
+                    {#if allTags.length > 0}
+                        <select class="b3-select" bind:value={tagFilter} aria-label={text("graphFilterByTag", "按标签过滤")}>
+                            <option value="">{text("graphAllTags", "全部标签")}</option>
+                            {#each allTags as tag (tag)}
+                                <option value={tag}>#{tag}</option>
+                            {/each}
+                        </select>
+                    {/if}
+                    <label class="lvct-graph-isolated"><input type="checkbox" bind:checked={isolatedOnly} />{text("graphIsolatedOnly", "仅无关系人物（{n}）", { n: snapshot.counts.isolatedPeople })}</label>
+                    <label class="lvct-graph-isolated"><input type="checkbox" bind:checked={showOrgs} />{text("graphShowOrgs", "显示组织（{n}）", { n: orgOverlay?.nodes.length ?? 0 })}</label>
+                </div>
+            {/if}
+            <div class="lvct-graph-toolbar__filter-group lvct-graph-toolbar__filter-group--legend">
+                <span class="ft__smaller ft__on-surface lvct-graph-legend">
+                    {#each groupLegend as group (group.label)}
+                        {@const isActive = group.className === "org" ? showOrgs : groupFilter === group.label}
+                        <button
+                            type="button"
+                            class={`lvct-graph-legend__item lvct-graph-legend__item--${group.className}`}
+                            class:lvct-graph-legend__item--active={isActive}
+                            class:lvct-graph-legend__item--dimmed={group.className === "org" ? !showOrgs : groupFilter && groupFilter !== group.label}
+                            /* 图例项是筛选切换钮：向读屏播报按下状态（org 组=显示组织节点，其余=按标签过滤） */
+                            aria-pressed={group.className === "org" ? showOrgs : groupFilter === group.label}
+                            onclick={() => {
+                                if (group.className === "org") {
+                                    showOrgs = !showOrgs;
+                                } else {
+                                    groupFilter = groupFilter === group.label ? "" : group.label;
+                                }
+                            }}
+                            title={group.className === "org" ? (showOrgs ? "点击隐藏组织节点" : "点击显示组织节点") : (groupFilter === group.label ? `点击清除 ${group.label} 分组筛选` : `点击只看 ${group.label} 分组`)}
+                        >
+                            <i></i>{group.label}
+                        </button>
+                    {/each}
+                    <span class="lvct-graph-legend__divider" aria-hidden="true">|</span>
+                    {#each edgeLegends as edgeItem (edgeItem.kind)}
+                        {@const isEdgeHidden = hiddenEdgeKinds.has(edgeItem.kind)}
+                        <button
+                            type="button"
+                            class={`lvct-graph-legend__item lvct-graph-legend__item--edge lvct-graph-legend__item--edge-${edgeItem.kind}`}
+                            class:lvct-graph-legend__item--active={!isEdgeHidden}
+                            class:lvct-graph-legend__item--dimmed={isEdgeHidden}
+                            onclick={() => toggleEdgeKind(edgeItem.kind)}
+                            title={isEdgeHidden ? `点击显示【${edgeItem.label}】边` : `点击隐藏【${edgeItem.label}】边`}
+                            aria-pressed={!isEdgeHidden}
+                        >
+                            <span class={`lvct-graph-legend__line lvct-graph-legend__line--${edgeItem.lineClass}`}></span>{edgeItem.label}
+                        </button>
+                    {/each}
+                </span>
+            </div>
+            </div>
+        </details>
+    </div>
+
+    {#if truncated}
+        <div class="ft__smaller ft__on-surface lvct-graph-note">
+            {text("graphSnapshotTruncated", "节点预算 {max}（含人物与组织），裁剪 {nodes} 节点 / {edges} 边；中心已保留，请搜索或按组织收窄。", { max: GRAPH_MAX_NODES, nodes: snapshot.counts.clippedNodes, edges: snapshot.counts.clippedEdges })}
+        </div>
+    {/if}
+
+    {#if snapshot.state === "partial" && !errorText}
+        <StatusNotice error message="图谱只显示已核实的数据，部分来源读取失败，结果可能不完整。" actionLabel="重新核实" onAction={() => void refresh()} actionDisabled={loading || refreshInFlight} />
+    {/if}
+    {#if errorText}
+        <ViewState error title={text("graphLoadFailTitle", "图谱加载失败")} description={errorText}>
+            <button class="b3-button b3-button--outline" disabled={loading || refreshInFlight} aria-busy={refreshInFlight} onclick={() => void refresh()}>{refreshInFlight ? "正在重新加载…" : text("graphReload", "重新加载")}</button>
+        </ViewState>
+    {:else if loading || nativeLoading}
+        <ViewState loading title={text("graphLoadingTitle", "正在加载关系图谱")} />
+    {:else if snapshot.state === "unknown" || snapshot.state === "center_missing"}
+        <ViewState error title={text("graphSnapshotUnknown", "图查询范围尚未核实")} description={snapshot.diagnostics.map((entry) => entry.message).join("；")}>
+            <button class="b3-button b3-button--outline" disabled={loading || refreshInFlight} aria-busy={refreshInFlight} onclick={() => void refresh()}>{refreshInFlight ? "正在重新核实…" : text("graphReverify", "重新核实来源")}</button>
+            <button class="b3-button b3-button--text" onclick={() => void switchToGlobalScope()}>{text("graphUseGlobal", "切换全局范围")}</button>
+            {#if graphMode === "native"}<button class="b3-button b3-button--text" onclick={() => void switchGraphMode("relations")}>{text("graphUseRelations", "切换关系图")}</button>{/if}
+        </ViewState>
+    {:else if snapshot.graph.nodes.length === 0}
+        <ViewState title={people.length === 0 ? text("graphEmptyNoPeopleTitle", "还没有联系人") : text("graphEmptyNoMatchTitle", "没有匹配的节点")}
+            description={emptyStateDescription}>
+            {#if people.length > 0}
+                <button class="b3-button b3-button--primary" onclick={clearFilters}>{text("graphClearFilters", "清除筛选")}</button>
+            {/if}
+            {#if people.length === 0 && onOpenCreatePerson}
+                <button class="b3-button b3-button--outline" onclick={onOpenCreatePerson}>{text("graphCreatePerson", "新建联系人")}</button>
+            {/if}
+            <button class="b3-button b3-button--text" onclick={() => onOpenPeople()}>{text("graphGoContacts", "前往联系人")}</button>
+        </ViewState>
+    {:else if presentation === "text"}
+        <section class="lvct-graph-text" aria-label={text("graphTextResults", "图谱文本结果")}>
+            <h3>{text("graphTextNodes", "节点")}（{snapshot.graph.nodes.length}）</h3>
+            <ul class="lvct-graph-text__nodes">
+                {#each snapshot.graph.nodes.slice(0, textLimit) as node (node.id)}
+                    <li>
+                        <button class="b3-button b3-button--text" data-graph-id={node.id} title={node.id} onclick={() => openTextNode(node)} aria-label={`${node.kind === "org" ? "聚焦组织" : "打开人物"} ${node.label} ${node.id}`}>{node.label}</button>
+                        <span>{node.kind === "org" ? "组织" : "人物"} · 图内连接 {node.degree}</span>
+                        <button class="b3-button b3-button--outline" onclick={() => void locateNode(node.id)}>{text("graphLocateCanvas", "定位画布")}</button>
+                        {#if node.kind === "org" && onOpenOrgs}<button class="b3-button b3-button--text" onclick={() => onOpenOrgs?.(node.id)}>{text("graphOrgHoverOpen", "打开组织视图")}</button>{/if}
+                        {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === node.id} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => void openSourceDocument(node.id)} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); void facade.openDocMenu?.(node.id, e); }}>{sourceOpeningDocId === node.id ? "正在打开…" : "打开来源文档"}</button>{/if}
+                    </li>
+                {/each}
+            </ul>
+            <h3>{text("graphTextEdges", "边及来源")}（{displayGraph.edges.length}）</h3>
+            <ul>{#each displayGraph.edges.slice(0, textLimit) as edge}<li title={`${edge.source} — ${edge.target}（无向展示）`}>{nodeName(edge.source)} — {nodeName(edge.target)} · {graphEdgeLabel(edge.kind, edge.memberStatus)}{edge.coCount ? `（同场 ${edge.coCount} 次）` : ""}</li>{/each}</ul>
+            {#if snapshot.result.pathIds.length}<h3>{text("graphTextPath", "related 路径链")}</h3><ol>{#each snapshot.result.pathIds as id}<li title={id}>{nodeName(id)}</li>{/each}</ol>{/if}
+            <p role="status">文本已列出 {Math.min(textLimit, snapshot.graph.nodes.length)} / {snapshot.graph.nodes.length} 节点，{Math.min(textLimit, displayGraph.edges.length)} / {displayGraph.edges.length} 边；导出包含完整展示快照。</p>
+            {#if textLimit < Math.max(snapshot.graph.nodes.length, snapshot.graph.edges.length)}<button class="b3-button b3-button--outline" onclick={() => (textLimit += 100)}>{text("graphTextMore", "继续列出节点与边")}</button>{/if}
+        </section>
+    {:else}
+        <div class="lvct-graph-view__canvas-wrap" class:lvct-graph-view__canvas-wrap--expanded={graphExpanded}>
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <div
+                class="lvct-graph-view__canvas"
+                bind:this={container}
+                tabindex="0"
+                role="img"
+                aria-label={`图谱画布，${snapshot.graph.nodes.length} 节点、${snapshot.graph.edges.length} 边。支持键盘快捷键：+ / - 缩放，0 适应居中，F 全屏，R 重新布局，1/2 切换一度/二度，Esc 退出抽屉浮层。${canvasFocusId ? `已定位 ${nodeName(canvasFocusId)}` : ""}`}
+            ></div>
+
+            <!-- 时间轴演化回放浮动条 -->
+            {#if timelineEnabled && timeSpan.years.length > 0}
+                <div class="lvct-graph-timeline-player" role="toolbar" aria-label="人脉时间演化回放">
+                    <button
+                        type="button"
+                        class="b3-button b3-button--small b3-button--text lvct-graph-timeline-play-btn"
+                        onclick={togglePlayTimeline}
+                        title={isPlayingTimeline ? text("graphTimelinePause", "暂停回放") : text("graphTimelinePlay", "播放网络生长动画")}
+                    >
+                        {#if isPlayingTimeline}
+                            <Pause size={14} strokeWidth={1.6} /> {text("graphTimelinePause", "暂停")}
+                        {:else}
+                            <Play size={14} strokeWidth={1.6} /> {text("graphTimelinePlay", "播放")}
+                        {/if}
+                    </button>
+
+                    <!-- 时间粒度切换：按年 / 按月 / 按天 -->
+                    <div class="lvct-seg" style="flex-shrink: 0;" role="group" aria-label="时间粒度">
+                        <button
+                            type="button"
+                            class="lvct-seg__item"
+                            class:lvct-seg__item--active={timelineGranularity === "year"}
+                            onclick={() => { pauseTimeline(); timelineGranularity = "year"; }}
+                        >年</button>
+                        <button
+                            type="button"
+                            class="lvct-seg__item"
+                            class:lvct-seg__item--active={timelineGranularity === "month"}
+                            onclick={() => { pauseTimeline(); timelineGranularity = "month"; }}
+                        >月</button>
+                        <button
+                            type="button"
+                            class="lvct-seg__item"
+                            class:lvct-seg__item--active={timelineGranularity === "day"}
+                            onclick={() => { pauseTimeline(); timelineGranularity = "day"; }}
+                        >天</button>
+                    </div>
+
+                    {#if timelineGranularity === "year"}
+                        <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                            <span class="ft__smaller ft__on-surface">{timeSpan.minYear}</span>
+                            <input
+                                type="range"
+                                class="b3-slider lvct-graph-timeline-slider"
+                                min={timeSpan.minYear}
+                                max={timeSpan.maxYear}
+                                step="1"
+                                value={activeYear}
+                                oninput={(e) => {
+                                    pauseTimeline();
+                                    selectedYear = Number((e.currentTarget as HTMLInputElement).value);
+                                }}
+                            />
+                            <span class="ft__smaller ft__on-surface">{timeSpan.maxYear}</span>
+                        </div>
+
+                        <div class="lvct-graph-timeline-info fn__flex">
+                            <span class="b3-chip b3-chip--primary font-size-11">
+                                <b>{activeYear} 年</b>
+                            </span>
+                            <span class="ft__smaller ft__on-surface">
+                                {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                            </span>
+                        </div>
+                    {:else if timelineGranularity === "month"}
+                        <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.months[0]}</span>
+                            <input
+                                type="range"
+                                class="b3-slider lvct-graph-timeline-slider"
+                                min="0"
+                                max={detailedTimeSpan.months.length - 1}
+                                step="1"
+                                value={selectedMonthIndex ?? (detailedTimeSpan.months.length - 1)}
+                                oninput={(e) => {
+                                    pauseTimeline();
+                                    selectedMonthIndex = Number((e.currentTarget as HTMLInputElement).value);
+                                }}
+                            />
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.months[detailedTimeSpan.months.length - 1]}</span>
+                        </div>
+
+                        <div class="lvct-graph-timeline-info fn__flex">
+                            <span class="b3-chip b3-chip--primary font-size-11">
+                                <b>{activeMonthKey}</b>
+                            </span>
+                            <span class="ft__smaller ft__on-surface">
+                                {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                            </span>
+                        </div>
+                    {:else}
+                        <div class="lvct-graph-timeline-slider-wrap fn__flex">
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.minDateKey}</span>
+                            <input
+                                type="range"
+                                class="b3-slider lvct-graph-timeline-slider"
+                                min="0"
+                                max={totalDays}
+                                step={dayStep}
+                                value={selectedDayIndex ?? totalDays}
+                                oninput={(e) => {
+                                    pauseTimeline();
+                                    selectedDayIndex = Number((e.currentTarget as HTMLInputElement).value);
+                                }}
+                            />
+                            <span class="ft__smaller ft__on-surface">{detailedTimeSpan.maxDateKey}</span>
+                        </div>
+
+                        <div class="lvct-graph-timeline-info fn__flex" style="gap: 6px;">
+                            <span class="b3-chip b3-chip--primary font-size-11">
+                                <b>{activeDayKey}</b>
+                            </span>
+                            <div style="display: inline-flex; gap: 2px;">
+                                <button type="button" class="b3-chip font-size-10" class:b3-chip--primary={dayStep === 1} onclick={() => (dayStep = 1)}>+1天</button>
+                                <button type="button" class="b3-chip font-size-10" class:b3-chip--primary={dayStep === 7} onclick={() => (dayStep = 7)}>+7天</button>
+                                <button type="button" class="b3-chip font-size-10" class:b3-chip--primary={dayStep === 30} onclick={() => (dayStep = 30)}>+30天</button>
+                            </div>
+                            <span class="ft__smaller ft__on-surface">
+                                {displayGraph.nodes.length} 节点 · {displayGraph.edges.length} 关系
+                            </span>
+                        </div>
+                    {/if}
+
+                    <button
+                        type="button"
+                        class="b3-button b3-button--small b3-button--text lvct-graph-timeline-reset"
+                        onclick={resetTimeline}
+                        title={text("graphTimelineReset", "查看全部时间完整图谱")}
+                    >
+                        <RotateCcw size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {text("graphTimelineAll", "全部")}
+                    </button>
+                </div>
+            {/if}
+            <!-- UX-02.13 视图操作收进画布右下角浮动簇（地图应用范式），工具栏只留筛选 -->
+            <div class="lvct-graph__fab" role="toolbar" aria-label={text("graphViewTools", "图谱视图操作")}>
+                <div style="position: relative; display: inline-flex;">
+                    <button
+                        class="lvct-graph__fab-btn"
+                        class:lvct-graph__fab-btn--active={layoutMenuOpen}
+                        title={`当前布局：${layoutLabels[activeLayout]}，点击切换`}
+                        aria-label="切换图谱布局"
+                        aria-haspopup="menu"
+                        aria-expanded={layoutMenuOpen}
+                        disabled={!graphInstance}
+                        onclick={() => (layoutMenuOpen = !layoutMenuOpen)}
+                    >
+                        {#if activeLayout === "cose"}<Network size={15} strokeWidth={1.6} />
+                        {:else if activeLayout === "concentric"}<Target size={15} strokeWidth={1.6} />
+                        {:else if activeLayout === "breadthfirst"}<GitFork size={15} strokeWidth={1.6} />
+                        {:else}<CircleDot size={15} strokeWidth={1.6} />{/if}
+                    </button>
+                    {#if layoutMenuOpen}
+                        <div class="lvct-graph__layout-menu" role="menu">
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "cose"} onclick={() => changeLayout("cose")}>
+                                <Network size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 力导向聚类 (CoSE)
+                            </button>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "concentric"} onclick={() => changeLayout("concentric")}>
+                                <Target size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 六度辐射圈 (六度人脉)
+                            </button>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "breadthfirst"} onclick={() => changeLayout("breadthfirst")}>
+                                <GitFork size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 层级展开 (族谱树)
+                            </button>
+                            <button type="button" class="b3-button b3-button--text lvct-graph__layout-item" class:active={activeLayout === "circle"} onclick={() => changeLayout("circle")}>
+                                <CircleDot size={14} strokeWidth={1.6} class="lvct-icon-inline" /> 全局环形 (全景圈)
+                            </button>
+                        </div>
+                    {/if}
+                </div>
+                <button
+                    class="lvct-graph__fab-btn lvct-graph__fab-btn--hubs"
+                    title={text("graphHubsBtnTitle", "人脉网络核心枢纽与跨界桥梁人分析")}
+                    aria-label={text("graphHubsBtn", "网络枢纽与桥梁分析")}
+                    disabled={!graphInstance}
+                    onclick={() => (hubsModalOpen = true)}
+                ><Share2 size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphFit", "适应")} (0)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphFit", "适应")} disabled={!graphInstance} onclick={() => graphInstance?.fit()}><Scan size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomIn", "放大")} (+)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomIn", "放大")} disabled={!graphInstance} onclick={() => zoomBy(1.2)}><ZoomIn size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphZoomOut", "缩小")} (-)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphZoomOut", "缩小")} disabled={!graphInstance} onclick={() => zoomBy(1 / 1.2)}><ZoomOut size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphInstance ? `${text("graphRelayout", "重新布局")} (R)` : text("graphToolUnavailable", "画布尚未准备好")} aria-label={text("graphRelayout", "重新布局")} disabled={!graphInstance} onclick={relayout}><Network size={15} strokeWidth={1.6} /></button>
+                <button class="lvct-graph__fab-btn" title={graphExpanded ? "收起大图 (F)" : "展开大图 (F)"} aria-label={graphExpanded ? "收起大图" : "展开大图"} aria-pressed={graphExpanded} onclick={() => void toggleGraphExpanded()}>{#if graphExpanded}<Minimize2 size={16} strokeWidth={1.6} />{:else}<Maximize2 size={16} strokeWidth={1.6} />{/if}</button>
+                <button class="lvct-graph__fab-btn" title={text("graphRefresh", "刷新")} aria-label={text("graphRefresh", "刷新")} disabled={loading || refreshInFlight} aria-busy={refreshInFlight} onclick={() => void refresh()}><RefreshCw size={15} strokeWidth={1.6} /></button>
+            </div>
+            {#if activeEvidence}
+                <div
+                    class="lvct-graph-view__hover-card"
+                    role="dialog"
+                    aria-modal="false"
+                    aria-label="图谱连接事实证据"
+                    tabindex="-1"
+                    style={`left:${hoverPosition.x}px;top:${hoverPosition.y}px`}
+                >
+                    <div class="lvct-graph-view__hover-name">
+                        <b>{activeEvidence.sourceName} ↔ {activeEvidence.targetName}</b>
+                        <span class="lvct-chip lvct-chip--group">
+                            {activeEvidence.kind === "related" ? "显式相关人" :
+                             activeEvidence.kind === "introducer" ? "初识引荐人" :
+                             activeEvidence.kind === "member" ? (activeEvidence.memberStatus === "former" ? "历史归属" : "当前归属") :
+                             activeEvidence.kind === "co_occurrence" ? `同场 ${activeEvidence.coCount} 次` : "文档引用"}
+                        </span>
+                    </div>
+
+                    {#if activeEvidence.kind === "related"}
+                        <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
+                            已在人脉数据库中登记为正式双向关系。
+                            {#if activeEvidence.commonOrgNames && activeEvidence.commonOrgNames.length > 0}
+                                <div style="display: flex; align-items: center; gap: 4px;"><Building2 size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 共同组织：{activeEvidence.commonOrgNames.join("、")}</div>
+                            {/if}
+                            {#if activeEvidence.coAttendanceCount && activeEvidence.coAttendanceCount > 0}
+                                <div style="display: flex; align-items: center; gap: 4px;"><Users size={13} strokeWidth={1.6} class="lvct-icon-inline" /> 同场活动：{activeEvidence.coAttendanceCount} 次</div>
+                            {/if}
+                        </div>
+                    {:else if activeEvidence.kind === "introducer"}
+                        <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
+                            {activeEvidence.sourceName} 是 {activeEvidence.targetName} 的初识引荐人（溯源自 Monica 人脉引荐链路）。
+                        </div>
+                    {:else if activeEvidence.kind === "member"}
+                        <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
+                            {activeEvidence.sourceName} 属于组织【{activeEvidence.targetName}】（状态：{activeEvidence.memberStatus === "former" ? "历史成员/校友" : "在职成员"}）。
+                        </div>
+                    {:else if activeEvidence.kind === "co_occurrence"}
+                        <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
+                            基于多参与者同场活动推断出的弱联系（共同出席 {activeEvidence.coCount} 次）。
+                        </div>
+                        {#if establishRelationError}
+                            <div class="b3-label b3-label--error ft__smaller" style="margin-bottom: 6px;">{establishRelationError}</div>
+                        {/if}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text ft__smaller"
+                            disabled={establishingRelation}
+                            onclick={establishCoRelation}
+                        >
+                            {establishingRelation ? "正在建立…" : "升级为正式相关人"}
+                        </button>
+                    {:else if activeEvidence.kind === "ref"}
+                        <div class="ft__smaller ft__on-surface" style="margin: 6px 0;">
+                            由思源笔记正文中的块链接或反链所构成的原生文档引用。
+                        </div>
+                    {/if}
+
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        {#if allPeopleByDocId.has(activeEvidence.sourceId)}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text ft__smaller"
+                                onclick={() => {
+                                    const p = allPeopleByDocId.get(activeEvidence!.sourceId);
+                                    if (p) openSnapshotPerson(p);
+                                }}
+                            >查看 {activeEvidence.sourceName}</button>
+                        {/if}
+                        {#if allPeopleByDocId.has(activeEvidence.targetId)}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text ft__smaller"
+                                onclick={() => {
+                                    const p = allPeopleByDocId.get(activeEvidence!.targetId);
+                                    if (p) openSnapshotPerson(p);
+                                }}
+                            >查看 {activeEvidence.targetName}</button>
+                        {/if}
+                        {#if allPeopleByDocId.has(activeEvidence.sourceId) && allPeopleByDocId.has(activeEvidence.targetId)}
+                            {@const p1 = allPeopleByDocId.get(activeEvidence.sourceId)}
+                            {@const p2 = allPeopleByDocId.get(activeEvidence.targetId)}
+                            {#if p1 && p2}
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text ft__smaller"
+                                    onclick={() => {
+                                        onOpenPeople({ itemIds: [p1.itemId, p2.itemId], label: `关联核对 · ${activeEvidence?.sourceName} 与 ${activeEvidence?.targetName}` });
+                                    }}
+                                >{text("graphCompareInPeople", "在名册中比对二人")}</button>
+                            {/if}
+                        {/if}
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text ft__smaller"
+                            onclick={() => { activeEvidence = null; }}
+                        >关闭</button>
+                    </div>
+                </div>
+            {:else if displayedOrg}
+                <div
+                    class="lvct-graph-view__hover-card"
+                    bind:this={hoverCard}
+                    role="dialog"
+                    aria-modal="false"
+                    aria-label={`组织 ${displayedOrg.label} 的图谱信息`}
+                    tabindex="-1"
+                    style={`left:${hoverPosition.x}px;top:${hoverPosition.y}px`}
+                    onmouseenter={() => clearHoverTimer && clearTimeout(clearHoverTimer)}
+                    onmouseleave={scheduleClearHover}
+                >
+                    <div class="lvct-graph-view__hover-name">
+                        <b>{displayedOrg.label}</b>
+                        <span class="lvct-chip lvct-chip--group">{text("graphOrgChip", "组织")}</span>
+                    </div>
+                    <div class="ft__smaller ft__on-surface">{graphMode === "native" ? text("graphOrgHoverConnections", "图内引用连接：{n}", { n: displayedOrg.degree }) : text("graphOrgHoverMembers", "图内成员连接：{n}", { n: displayedOrg.degree })}</div>
+                    <button class="b3-button b3-button--text" onclick={() => { const id = displayedOrg?.id; clearHover(); if (id) focusOrganization(id); }}>{text("graphOrgFocus", "聚焦该组织")}</button>
+                    <button class="b3-button b3-button--text" onclick={() => { selectedOrgId = ""; clearHover(); }}>关闭组织信息</button>
+                    {#if onOpenOrgs}<button class="b3-button b3-button--text" onclick={() => onOpenOrgs?.(displayedOrg?.id)}>{text("graphOrgHoverOpen", "打开组织视图")}</button>{/if}
+                    {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === displayedOrg.id} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => { if (displayedOrg) void openSourceDocument(displayedOrg.id); }} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); if (displayedOrg) void facade.openDocMenu?.(displayedOrg.id, e); }}>{sourceOpeningDocId === displayedOrg.id ? "正在打开…" : "打开来源文档"}</button>{/if}
+                </div>
+            {:else if hoveredPerson}
+                <div
+                    class="lvct-graph-view__hover-card"
+                    bind:this={hoverCard}
+                    role="dialog"
+                    aria-modal="false"
+                    aria-label={`人物 ${hoveredPerson.name} 的图谱信息`}
+                    tabindex="-1"
+                    style={`left:${hoverPosition.x}px;top:${hoverPosition.y}px`}
+                    onmouseenter={() => clearHoverTimer && clearTimeout(clearHoverTimer)}
+                    onmouseleave={scheduleClearHover}
+                >
+                    <div class="lvct-graph-view__hover-name">
+                        <b>{hoveredPerson.name}</b>
+                        {#if hoveredPerson.group}<span class="lvct-chip lvct-chip--group">{hoveredPerson.group}</span>{/if}
+                    </div>
+                    {#if hoveredNativeDegree >= 0}
+                        <div class="ft__smaller ft__on-surface">{text("graphNativeDegree", "图内连接：{n}", { n: hoveredNativeDegree })}</div>
+                    {:else}
+                        <div class="ft__smaller ft__on-surface">{text("graphDegreeLabel", "关系度数：{n}", { n: snapshot.relationGraph.nodes.find((node) => node.id === hoveredPerson?.docId)?.degree ?? 0 })}</div>
+                    {/if}
+                    {#if hoveredPerson.phone}<div class="ft__smaller ft__on-surface">{text("graphPhoneLabel", "电话：{n}", { n: hoveredPerson.phone })}</div>{/if}
+                    {#if hoveredPerson.tags && hoveredPerson.tags.length > 0}<div class="ft__smaller ft__on-surface">{text("graphTagsLabel", "标签：{n}", { n: hoveredPerson.tags.join(" · ") })}</div>{/if}
+                    {#if facade}
+                        <div class="lvct-graph-view__hover-insights">
+                            {#if hoverInsightsLoading}
+                                <span class="ft__smaller ft__on-surface">{text("graphHoverLoading", "正在读取互动…")}</span>
+                            {:else if hoverInsightsError}
+                                <span class="ft__smaller ft__on-surface">{text("graphHoverUnavailable", "互动摘要暂时不可用")}</span>
+                            {:else if hoverInsights}
+                                <span class="ft__smaller ft__on-surface">{text("graphHoverLast", "最近互动：{n}", { n: hoverInsights.timeline[0]?.localDate ?? text("graphHoverNone", "暂无记录") })}</span>
+                                <span class="ft__smaller ft__on-surface">{text("graphHoverCoAttend", "共同出席：{n}", { n: hoverInsights.coAttendance.slice(0, 3).map((item) => item.name).join("、") || text("graphHoverNone", "暂无记录") })}</span>
+                            {/if}
+                        </div>
+                    {/if}
+                    <button class="b3-button b3-button--text" onclick={openHoveredPerson}>{text("graphOpenDetail", "查看人物详情")}</button>
+                    <div style="display: flex; gap: 4px; margin: 2px 0;">
+                        <button type="button" class="b3-chip font-size-11" onclick={() => { const p = hoveredPerson; clearHover(); if (p) openSnapshotPerson(p, "activity"); }} title="直达交往互动时间流并记录">⚡ 记互动</button>
+                        <button type="button" class="b3-chip font-size-11" onclick={() => { const docId = hoveredPerson?.docId; clearHover(); if (docId) { focusId = docId; compareId = ""; } }} title="将该节点设为关系分析中心">🎯 设为中心</button>
+                    </div>
+                    <button class="b3-button b3-button--text" onclick={() => { if (hoveredPerson) onOpenPeople({ itemIds: [hoveredPerson.itemId], label: `图谱定位 · ${hoveredPerson.name}` }); }}>{text("graphFocusInPeople", "在名册中定位")}</button>
+                    {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === hoveredPerson.docId} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => { if (hoveredPerson) void openSourceDocument(hoveredPerson.docId); }} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); if (hoveredPerson) void facade.openDocMenu?.(hoveredPerson.docId, e); }}>{sourceOpeningDocId === hoveredPerson.docId ? "正在打开…" : "打开来源文档"}</button>{/if}
+                </div>
+            {/if}
+            {#if drawerPerson}
+                {@const workText = profileText(drawerPerson.profile, "work")}
+                <aside
+                    class="lvct-graph-drawer"
+                    aria-label="图谱节点速查抽屉"
+                    tabindex="-1"
+                >
+                    <div class="lvct-graph-drawer__header">
+                        <div class="lvct-graph-drawer__title-wrap">
+                            <div class="lvct-graph-drawer__avatar">
+                                {drawerPerson.name.slice(0, 1)}
+                            </div>
+                            <div class="lvct-graph-drawer__title-meta">
+                                <div class="lvct-graph-drawer__name">{drawerPerson.name}</div>
+                                <div class="lvct-graph-drawer__chips">
+                                    {#if drawerPerson.group}
+                                        <span class="lvct-chip lvct-chip--group">{drawerPerson.group}</span>
+                                    {/if}
+                                    {#if extractNormalizedRegion(drawerPerson).city !== "未知"}
+                                        <span class="lvct-chip lvct-chip--tag"><MapPin size={11} class="lvct-icon-inline" /> {extractNormalizedRegion(drawerPerson).city}</span>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--text lvct-graph-drawer__close"
+                            onclick={closeDrawer}
+                            aria-label="关闭速查抽屉"
+                            title="关闭速查抽屉"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+
+                    <div class="lvct-graph-drawer__body">
+                        <!-- 快捷通讯资料 -->
+                        <div class="lvct-graph-drawer__section">
+                            <div class="lvct-between" style="display: flex; align-items: center; justify-content: space-between;">
+                                <div class="lvct-graph-drawer__section-title">通讯资料</div>
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--text b3-button--small"
+                                    style="padding: 1px 4px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px;"
+                                    title={drawerPrivacyActive ? (drawerRevealSeconds > 0 ? `已临时显形 (${drawerRevealSeconds}s)` : "点击暂时显形 5 秒") : "开启离席隐私保护盾"}
+                                    onclick={toggleDrawerPrivacy}
+                                >
+                                    {#if drawerPrivacyActive && drawerRevealSeconds === 0}
+                                        <EyeOff size={12} style="color: var(--lv-brand, #ea580c);" />
+                                        <span style="color: var(--lv-brand, #ea580c);">遮罩中</span>
+                                    {:else if drawerPrivacyActive && drawerRevealSeconds > 0}
+                                        <Eye size={12} style="color: var(--lvct-success, #16a34a);" />
+                                        <span style="color: var(--lvct-success, #16a34a);">{drawerRevealSeconds}s</span>
+                                    {:else}
+                                        <Shield size={12} />
+                                        <span>隐私盾</span>
+                                    {/if}
+                                </button>
+                            </div>
+                            {#if drawerPerson.phone}
+                                {@const isMasked = drawerPrivacyActive && drawerRevealSeconds === 0}
+                                {@const displayPhone = isMasked ? maskPhone(drawerPerson.phone) : drawerPerson.phone}
+                                <div class="lvct-graph-drawer__field">
+                                    <Phone size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{displayPhone}</span>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-graph-drawer__field-action"
+                                        onclick={() => copyField(drawerPerson?.phone, "电话")}
+                                        title="复制电话"
+                                    >
+                                        {#if copyToast === "电话"}<Check size={13} />{:else}<Copy size={13} />{/if}
+                                    </button>
+                                </div>
+                            {/if}
+                            {#if drawerPerson.wechat}
+                                {@const isMasked = drawerPrivacyActive && drawerRevealSeconds === 0}
+                                {@const displayWechat = isMasked ? maskWechat(drawerPerson.wechat) : drawerPerson.wechat}
+                                <div class="lvct-graph-drawer__field">
+                                    <MessageSquare size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{displayWechat}</span>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-graph-drawer__field-action"
+                                        onclick={() => copyField(drawerPerson?.wechat, "微信")}
+                                        title="复制微信"
+                                    >
+                                        {#if copyToast === "微信"}<Check size={13} />{:else}<Copy size={13} />{/if}
+                                    </button>
+                                </div>
+                            {/if}
+                            {#if drawerPerson.email}
+                                {@const isMasked = drawerPrivacyActive && drawerRevealSeconds === 0}
+                                {@const displayEmail = isMasked ? maskEmail(drawerPerson.email) : drawerPerson.email}
+                                <div class="lvct-graph-drawer__field">
+                                    <Mail size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{displayEmail}</span>
+                                    <button
+                                        type="button"
+                                        class="b3-button b3-button--text lvct-graph-drawer__field-action"
+                                        onclick={() => copyField(drawerPerson?.email, "邮箱")}
+                                        title="复制邮箱"
+                                    >
+                                        {#if copyToast === "邮箱"}<Check size={13} />{:else}<Copy size={13} />{/if}
+                                    </button>
+                                </div>
+                            {/if}
+                            {#if !drawerPerson.phone && !drawerPerson.wechat && !drawerPerson.email}
+                                <div class="lvct-graph-drawer__field-empty">未登记通讯资料</div>
+                            {/if}
+                        </div>
+
+                        <!-- 组织归属 -->
+                        {#if workText && workText !== "未填写" && workText !== "尚未核实" && workText !== "—"}
+                            <div class="lvct-graph-drawer__section">
+                                <div class="lvct-graph-drawer__section-title">组织归属</div>
+                                <div class="lvct-graph-drawer__field">
+                                    <Briefcase size={13} class="lvct-graph-drawer__field-icon" />
+                                    <span class="lvct-graph-drawer__field-val">{workText}</span>
+                                </div>
+                            </div>
+                        {/if}
+
+                        <!-- 拓扑连接 -->
+                        <div class="lvct-graph-drawer__section">
+                            <div class="lvct-graph-drawer__section-title">拓扑连接</div>
+                            <div class="ft__smaller ft__on-surface">
+                                图内连接度数：<b>{snapshot.relationGraph.nodes.find((n) => n.id === drawerPerson?.docId)?.degree ?? 0}</b>
+                                {#if drawerPerson.tags && drawerPerson.tags.length > 0}
+                                    <br />标签：{drawerPerson.tags.join(" · ")}
+                                {/if}
+                            </div>
+                        </div>
+
+                        <!-- 谈资与事实 -->
+                        {#if drawerFacts.length > 0}
+                            <div class="lvct-graph-drawer__section">
+                                <div class="lvct-graph-drawer__section-title">谈资备忘</div>
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    {#each drawerFacts.slice(0, 5) as f (f.id)}
+                                        <div class="ft__smaller ft__on-surface lvct-drawer-fact-item" style="padding: 5px 8px; background: var(--lvct-bg-elevated); border-radius: var(--lvct-r-sm); border: 1px solid var(--lvct-border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                            <div style="flex: 1 1 0; min-width: 0; word-break: break-word;">
+                                                <b>{f.category === "quote" ? "💡" : f.category === "preference" ? "❤️" : f.category === "background" ? "💼" : "📌"}</b> {f.text}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                class="b3-button b3-button--text b3-button--small"
+                                                style="padding: 1px 4px; font-size: 11px; flex-shrink: 0;"
+                                                title={drawerFlashcardToastId === f.id ? "已复制常识闪卡 Q&A 文本" : "一键制成常识闪卡（复制问答至小驴闪卡复习）"}
+                                                onclick={() => makeDrawerFlashcard(f)}
+                                            >
+                                                {#if drawerFlashcardToastId === f.id}
+                                                    <Check size={12} style="color: var(--lvct-success);" />
+                                                {:else}
+                                                    <Sparkles size={12} />
+                                                {/if}
+                                            </button>
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+
+                    <div class="lvct-graph-drawer__footer">
+                        <button
+                            type="button"
+                            class="b3-button b3-button--primary lvct-graph-drawer__btn"
+                            onclick={() => openSnapshotPerson(drawerPerson!)}
+                            title="在完整弹窗中查看与编辑该联系人"
+                        >
+                            <ExternalLink size={13} class="lvct-icon-inline" /> 完整档案
+                        </button>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline lvct-graph-drawer__btn"
+                            onclick={() => openSnapshotPerson(drawerPerson!, "activity")}
+                            title="直达交往互动时间流并记录"
+                        >
+                            <MessageSquarePlus size={13} class="lvct-icon-inline" /> 记互动
+                        </button>
+                        <button
+                            type="button"
+                            class="b3-button b3-button--outline lvct-graph-drawer__btn"
+                            onclick={() => { focusId = drawerPerson!.docId; compareId = ""; closeDrawer(); }}
+                            title="将该人物设为关系分析中心"
+                        >
+                            🎯 设为中心
+                        </button>
+                        {#if facade?.openDoc}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--outline lvct-graph-drawer__btn"
+                                onclick={() => void openSourceDocument(drawerPerson!.docId)}
+                                oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); void facade.openDocMenu?.(drawerPerson!.docId, e); }}
+                                title="在思源主编辑器中打开该文档（右键呼出原生菜单）"
+                            >
+                                打开文档 ↗
+                            </button>
+                        {/if}
+                    </div>
+                </aside>
+            {/if}
+        </div>
+    {/if}
+    <section class="lvct-graph-summary" id="lvct-graph-status" aria-label={text("graphSnapshotSummary", "图查询范围与计数")} aria-busy={loading || nativeLoading}>
+        <div class="lvct-graph-summary__head">
+            <h2 tabindex="-1" bind:this={resultHeading}>{text("graphSnapshotTitle", "当前图查询")}</h2>
+            <p
+                class="lvct-graph-summary__status lvct-graph-summary__status--{loading || nativeLoading ? "loading" : snapshot.state === "ready" || snapshot.state === "empty" ? "complete" : snapshot.state}"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+            >{snapshotStatusText}<span class="lvct-graph-summary__status-counts"> · 展示 {snapshot.counts.displayedNodes} 节点 / {snapshot.counts.displayedEdges} 边</span></p>
+        </div>
+        <dl class="lvct-graph-summary__stats" aria-label={text("graphSnapshotStats", "图谱统计")}>
+            <div><dt>{text("graphDisplayedNodes", "展示节点")}</dt><dd>{snapshot.counts.displayedNodes}</dd></div>
+            <div><dt>{text("graphDisplayedEdges", "展示边")}</dt><dd>{snapshot.counts.displayedEdges}</dd></div>
+        </dl>
+        <p>{text("graphScopeLabel", "范围")}：{query.scope === "global" ? "全部登记文档" : query.scope === "self" ? "本人中心" : query.scope === "person" ? "人物中心" : "组织中心"} · {snapshot.center.status === "none" ? "中心：无中心" : `${snapshot.center.label} · ${snapshot.center.status === "verified" ? snapshot.center.id : "中心待核实"}`}</p>
+    </section>
+    <div class="lvct-graph-reading-note">
+        <span>{graphMode === "relations" ? "人物：实线 · 组织成员：虚线" : "思源双链引用：点线 · 只读文档引用索引"}</span>
+        <span>点人物查看详情，点组织聚焦；键盘阅读请切换文本视图。</span>
+    </div>
+    {#if graphMode === "native" && !loading && !nativeLoading && snapshot.state === "ready" && snapshot.graph.nodes.length > 0 && snapshot.graph.edges.length === 0}
+        <p class="lvct-graph-export-status">当前范围暂无文档引用。打开人物或组织的来源文档，在思源中插入另一登记文档的块引用，再刷新这里；普通跳转链接不会生成双链连线。</p>
+    {/if}
+    {#if resultExportMessage}<p class="lvct-graph-export-status" role="status">{resultExportMessage}</p>{/if}
+    {#if sourceOpeningDocId}<p class="lvct-graph-export-status" role="status">正在打开来源文档…</p>{/if}
+    {#if sourceOpenStatus}<p class="lvct-graph-export-status" role="status">{sourceOpenStatus}</p>{/if}
+    {#if sourceOpenError}<p class="lvct-form__error" role="alert">{sourceOpenError} 原入口可再次点击重试。</p>{/if}
+    {#if graphMode === "relations" && !loading && !errorText && snapshot.people.length > 0}
+        <details class="lvct-graph-explore" bind:open={graphExploreOpen}>
+            <summary>关系探索 · 直接关系、共同联系人与最短路径{#if focusId}（已选 {nodeName(focusId)}）{/if}</summary>
+        <div class="lvct-graph-query">
+            <div class="lvct-graph-query__fields">
+            <div class="lvct-graph-query__picker-field" role="group" aria-label={text("graphCenterLabel", "关系中心")}>
+                <span class="lvct-graph-query__picker-label" aria-hidden="true">{text("graphCenterLabel", "关系中心")}</span>
+                <!-- B03 可搜索选人器：输入即筛替换全量长列表 -->
+                <PersonPicker
+                    items={graphPickerItems}
+                    value={focusId}
+                    placeholder={text("graphPickNone", "未选择")}
+                    emptyText={text("graphPickerEmpty", "当前图内没有匹配的人物")}
+                    ariaLabel={text("graphCenterLabel", "关系中心")}
+                    onSelect={(id) => {
+                        /* 更换关系中心会使旧对比人物失去语义；清空它，避免
+                         * 选人器显示“未选择”却仍用旧 compareId 计算结果。 */
+                        focusId = id;
+                        compareId = "";
+                    }}
+                />
+            </div>
+            <div class="lvct-graph-query__picker-field" role="group" aria-label={text("graphCompareLabel", "对比人物")}>
+                <span class="lvct-graph-query__picker-label" aria-hidden="true">{text("graphCompareLabel", "对比人物")}</span>
+                <PersonPicker
+                    items={graphPickerItems.filter((item) => item.id !== focusId)}
+                    value={compareId}
+                    placeholder={text("graphPickNone", "未选择")}
+                    emptyText={text("graphPickerEmpty", "当前图内没有匹配的人物")}
+                    ariaLabel={text("graphCompareLabel", "对比人物")}
+                    disabled={!focusId}
+                    onSelect={(id) => (compareId = id)}
+                />
+            </div>
+            {#if focusId && !compareId}
+                <select class="b3-select" bind:value={relationDepth} aria-label={text("graphDepthLabel", "关系层级")}>
+                    <option value="direct">{text("graphDepthDirect", "直接关系")}</option>
+                    <option value="second">{text("graphDepthSecond", "二度关系")}</option>
+                </select>
+            {/if}
+            {#if compareId}
+                <select class="b3-select" bind:value={queryMode} aria-label={text("graphQueryModeLabel", "关系查询模式")}>
+                    <option value="common">{text("graphModeCommon", "共同联系人")}</option>
+                    <option value="path">{text("graphModePath", "最短路径")}</option>
+                </select>
+            {/if}
+            </div>
+            {#if focusId}
+                <div class="lvct-graph-query__result">
+                {#if snapshot.result.status === "unknown" || snapshot.result.status === "center_missing"}
+                    <span class="ft__smaller ft__on-surface">{text("graphQueryUnverified", "关系查询结果待核实")}</span>
+                {:else if pathMode}
+                    <span class="ft__smaller ft__on-surface">{pathIds.length > 0 ? text("graphPathCount", "最短路径：{n} 段关系（当前图内）", { n: pathIds.length - 1 }) : text("graphPathNone", "最短路径：无连接（当前图内）")}</span>
+                {:else}
+                    <span class="ft__smaller ft__on-surface">{compareId ? text("graphCommonCount", "共同联系人：{n} 人（当前图内）", { n: resultPeople.length }) : secondMode ? text("graphSecondCount", "二度关系：{n} 人（当前图内）", { n: resultPeople.length }) : text("graphDirectCount", "直接关系：{n} 人（当前图内）", { n: resultPeople.length })}</span>
+                {/if}
+                <button class="b3-button b3-button--text" onclick={() => { focusId = ""; compareId = ""; }}>{text("graphClearSelection", "清除选择")}</button>
+                <button class="b3-button b3-button--outline" title={text("graphExportTitle", "导出查询结果说明（Markdown）")} onclick={exportResultMarkdown}>{text("graphExportButton", "导出结果说明")}</button>
+                </div>
+            {/if}
+        </div>
+        {#if focusId}
+            <div class="lvct-graph-query__results">
+                {#if snapshot.result.status === "unknown" || snapshot.result.status === "center_missing"}
+                    <span class="ft__smaller ft__on-surface">{snapshot.result.reason}</span>
+                {:else if pathMode}
+                    {#each pathPeople as person, index (person.docId)}
+                        {#if index > 0}<span class="lvct-graph-path-arrow" aria-hidden="true">→</span>{/if}
+                        <button class="b3-button b3-button--text lvct-graph-path-btn" onclick={() => openSnapshotPerson(person)}>{person.name} · {person.docId}</button>
+                    {:else}
+                        <span class="ft__smaller ft__on-surface">{text("graphNoPath", "当前图内没有连接路径")}</span>
+                    {/each}
+                {:else}
+                    {#each resultPeople as person (person.docId)}
+                        <button class="b3-button b3-button--text lvct-graph-path-btn" onclick={() => openSnapshotPerson(person)}>{person.name} · {person.docId}</button>
+                    {:else}
+                        <span class="ft__smaller ft__on-surface">{compareId ? text("graphNoCommon", "当前图内没有共同联系人") : secondMode ? text("graphNoSecond", "当前图内没有二度关系") : text("graphNoDirect", "当前图内没有直接关系")}</span>
+                    {/each}
+                {/if}
+            </div>
+        {/if}
+        </details>
+    {/if}
+
+    <section class="lvct-graph-evidence" aria-label="图谱来源与诊断">
+        <details class="lvct-graph-summary__details" open={snapshot.state === "unknown" || snapshot.state === "center_missing"}>
+            <summary>{text("graphSummaryDetails", "来源与排除详情")}</summary>
+            <p>登记 {snapshot.counts.registered ?? "未知"} · 来源节点 {snapshot.counts.sourceNodes ?? "未知"} / 边 {snapshot.counts.sourceEdges ?? "未知"} · 范围内 {snapshot.counts.rangeNodes} · 筛选后 {snapshot.counts.filteredNodes} · 范围排除 {snapshot.counts.rangeExcluded ?? "未知"} · 筛选排除 {snapshot.counts.filterExcluded}</p>
+            <p>{graphMode === "relations" ? `${graphEdgeLabel("related")}；${graphEdgeLabel("co_occurrence")}（细虚线）；${graphEdgeLabel("member", "active")}（虚线）、${graphEdgeLabel("member", "former")}（点线）、${graphEdgeLabel("member", "mixed")}（加粗虚线）。只有 related 参与关系查询。` : `${graphEdgeLabel("ref")}（含回链）；只读思源双链索引，只展示登记文档之间的引用，不是整库图，不修改思源图谱设置。`}</p>
+            {#if graphMode === "native"}<p>使用思源自己的图谱或反链：打开节点的来源文档，再从思源文档菜单进入关系图或反链。此处采用同一份双链索引独立绘制，不代替思源原生面板。</p>{/if}
+            {#if graphMode === "native" && (groupFilter || isolatedOnly)}<p>已保留关系图分组/无关系筛选；这些条件不应用于文档引用图。</p>{/if}
+            {#if snapshot.retainedByRange.length}<p>{text("graphRangeRetained", "范围外中心优先保留：{names}（不属于当前范围或组织成员集合，不新增关系事实）", { names: snapshot.retainedByRange.map(nodeName).join("、") })}</p>{/if}
+            {#if snapshot.retainedByFilter.length}<p>中心优先保留：{snapshot.retainedByFilter.map(nodeName).join("、")}（未满足全部筛选）</p>{/if}
+        </details>
+        {#if snapshot.result.status !== "none"}<p role={snapshot.result.status === "unknown" || snapshot.result.status === "center_missing" ? "alert" : "status"}>{snapshot.result.reason}</p>{/if}
+        {#if snapshot.diagnostics.length}<details class="lvct-graph-diagnostics" open={snapshot.state === "unknown" || snapshot.state === "center_missing"}>
+            <summary>{text("graphDiagnostics", "待核实与诊断")}（{snapshot.diagnostics.length}）</summary>
+            <ul>{#each snapshot.diagnostics as diagnostic}<li>{diagnostic.message}</li>{/each}</ul>
+        </details>{/if}
+        {#if preferenceError}
+            <div class="lvct-form__error" role="alert">
+                <span>{preferenceError}</span>
+                {#if pendingPreferencePatch}
+                    <button type="button" class="b3-button b3-button--outline" disabled={preferenceRetrying} onclick={() => void retryGraphPreference()}>
+                        {preferenceRetrying ? "重试保存中…" : "重试保存"}
+                    </button>
+                {/if}
+            </div>
+        {/if}
+    </section>
+
+    {#if hubsModalOpen}
+        <LvctDialog title={text("graphHubsModalTitle", "🌐 人脉网络核心枢纽与跨界桥梁人分析")} wide onClose={() => (hubsModalOpen = false)}>
+            <NetworkHubsModal
+                {people}
+                graph={snapshot.graph}
+                onClose={() => (hubsModalOpen = false)}
+                onLocatePerson={(docId) => void locateNode(docId)}
+                onOpenPerson={(docId) => {
+                    hubsModalOpen = false;
+                    const p = people.find((x) => x.docId === docId);
+                    if (p) onOpenDetail?.(p);
+                }}
+                {i18n}
+            />
+        </LvctDialog>
+    {/if}
+</div>

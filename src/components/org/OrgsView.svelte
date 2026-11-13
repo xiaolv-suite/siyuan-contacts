@@ -1,0 +1,514 @@
+<script lang="ts">
+    /** B13.5a 组织视图：组织卡片列表（活跃/归档），管理动作经组织管理弹窗承载。
+     *  数据经 facade（listOrganizations），读取失败显式错误可重试（读故障显式化）。 */
+    import { Building2, Plus, Users, Network, ExternalLink } from "@lucide/svelte";
+    import ViewState from "../ViewState.svelte";
+    import { translateText } from "../../domain/translation";
+    import type { ContactsPluginFacade } from "../../types";
+    import type { OrganizationWithMembers } from "../../services/org";
+    import { filterOrganizations, type OrganizationStatusFilter } from "../../domain/organization-scan";
+    import { onDestroy, untrack, tick } from "svelte";
+    import { requestErrorMessage } from "../../shared/error-presenter";
+
+    let {
+        facade,
+        revision = 0,
+        i18n,
+        onOpenOrgManager,
+        onCreateOrganization,
+        onEditOrganization,
+        onOpenPeople,
+        onOpenGraphOrg,
+        onOpenPerson,
+    }: {
+        facade: ContactsPluginFacade;
+        revision?: number;
+        i18n?: Readonly<Record<string, string>>;
+        onOpenOrgManager: (docId?: string) => void;
+        onCreateOrganization?: () => void;
+        onEditOrganization?: (docId: string) => void;
+        onOpenPeople?: (focus?: { itemIds?: readonly string[]; label?: string; workQuery?: string; memberDocIds?: readonly string[] }) => void;
+        onOpenGraphOrg?: (orgDocId: string) => void;
+        onOpenPerson?: (docId: string) => void;
+    } = $props();
+    const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
+        translateText(i18n, key, fallback, values));
+
+    let orgs: OrganizationWithMembers[] = $state([]);
+    let loading = $state(true);
+    let errorText = $state("");
+    let organizationCursor = $state<string | null>(null);
+    let organizationHasMore = $state(false);
+    let organizationLoadingMore = $state(false);
+    let organizationLoadError = $state("");
+    let organizationQuery = $state("");
+    let organizationStatus = $state<OrganizationStatusFilter>("all");
+    let failedLogoUrls = $state<Record<string, string>>({});
+    let cockpitElement: HTMLElement | undefined = $state();
+
+    async function selectOrgCard(docId: string) {
+        activeOrgDocId = docId;
+        await tick();
+        cockpitElement?.scrollIntoView({ behavior: (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) ? "auto" : "smooth", block: "nearest" });
+    }
+    let refreshVersion = 0;
+    let organizationLoadGeneration = 0;
+    let alive = true;
+    onDestroy(() => { alive = false; refreshVersion += 1; organizationLoadGeneration += 1; });
+
+    async function refresh() {
+        const version = ++refreshVersion;
+        loading = true;
+        errorText = "";
+        organizationLoadError = "";
+        organizationLoadingMore = false;
+        organizationCursor = null;
+        organizationHasMore = false;
+        const generation = ++organizationLoadGeneration;
+        try {
+            if (facade.listOrganizationsPage) {
+                const page = await facade.listOrganizationsPage({ limit: 200 });
+                if (!alive || version !== refreshVersion || generation !== organizationLoadGeneration) return;
+                if (page.hasMore && !page.nextRootId) throw new Error("组织首屏分页缺少后续游标，已停止继续读取");
+                orgs = page.organizations;
+                organizationCursor = page.nextRootId;
+                organizationHasMore = page.hasMore;
+                loading = false;
+                void loadRemainingOrganizations(version, generation);
+                return;
+            }
+            const result = await facade.listOrganizations();
+            // 旧版全量入口没有分页代际可依赖；组件卸载后也必须丢弃迟到结果，
+            // 否则切页期间会向已销毁视图回填旧组织列表并触发响应式更新。
+            if (alive && version === refreshVersion && generation === organizationLoadGeneration) orgs = result;
+        } catch (error) {
+            if (alive && version === refreshVersion && generation === organizationLoadGeneration) {
+                /* 读取失败不能被渲染成空组织列表；保留“待核实”状态和
+                 * 可操作的统一提示，避免暴露内核路由或重复拼接异常细节。 */
+                errorText = `组织状态未核实：${requestErrorMessage(error)}`;
+            }
+        } finally {
+            if (alive && version === refreshVersion && generation === organizationLoadGeneration) loading = false;
+        }
+    }
+
+    async function loadRemainingOrganizations(version: number, generation: number) {
+        if (!facade.listOrganizationsPage || !organizationHasMore || !organizationCursor) return;
+        organizationLoadingMore = true;
+        organizationLoadError = "";
+        try {
+            while (organizationHasMore && organizationCursor && alive
+                && version === refreshVersion && generation === organizationLoadGeneration) {
+                const page = await facade.listOrganizationsPage({ afterRootId: organizationCursor, limit: 200 });
+                if (!alive || version !== refreshVersion || generation !== organizationLoadGeneration) return;
+                if (page.organizations.length === 0 && page.hasMore && !page.scannedRootCount) throw new Error("组织分页返回空页但仍有后续数据，已停止继续读取");
+                const known = new Set(orgs.map((org) => org.docId));
+                const duplicate = page.organizations.find((org) => known.has(org.docId));
+                if (duplicate) throw new Error(`组织分页出现重复文档「${duplicate.name}」，已停止继续读取`);
+                if (page.hasMore && !page.nextRootId) throw new Error("组织分页缺少后续游标，已停止继续读取");
+                orgs = [...orgs, ...page.organizations];
+                organizationCursor = page.nextRootId;
+                organizationHasMore = page.hasMore;
+            }
+        } catch (error) {
+            if (alive && version === refreshVersion && generation === organizationLoadGeneration) {
+                organizationLoadError = requestErrorMessage(error);
+            }
+        } finally {
+            if (generation === organizationLoadGeneration) organizationLoadingMore = false;
+        }
+    }
+
+    function retryRemainingOrganizations() {
+        if (organizationLoadingMore || !organizationHasMore || !organizationCursor) return;
+        void loadRemainingOrganizations(refreshVersion, organizationLoadGeneration);
+    }
+
+    $effect(() => {
+        revision;
+        void refresh();
+    });
+
+    /* 卡片排序：活跃在前（名称序），归档垫底 */
+    const sortedOrgs = $derived.by(() => {
+        const active = orgs.filter((org) => !org.archived).sort((first, second) => first.name.localeCompare(second.name, "zh-Hans-CN") || first.docId.localeCompare(second.docId));
+        const archived = orgs.filter((org) => org.archived).sort((first, second) => first.name.localeCompare(second.name, "zh-Hans-CN") || first.docId.localeCompare(second.docId));
+        return [...active, ...archived];
+    });
+    const duplicateNames = $derived.by(() => {
+        const names = new Set<string>();
+        const duplicates = new Set<string>();
+        for (const o of orgs) {
+            if (names.has(o.name)) duplicates.add(o.name);
+            names.add(o.name);
+        }
+        return duplicates;
+    });
+    const filteredOrgs = $derived.by(() => {
+        return filterOrganizations(sortedOrgs, { query: organizationQuery, status: organizationStatus });
+    });
+    const organizationFilterActive = $derived(organizationQuery.trim().length > 0 || organizationStatus !== "all");
+    const activeCountOf = (org: OrganizationWithMembers) => org.memberships.filter((membership) => membership.status === "active").length;
+    const formerCountOf = (org: OrganizationWithMembers) => org.memberships.filter((membership) => membership.status === "former").length;
+    const logoUrlOf = (org: OrganizationWithMembers) => org.profile?.logoDataUrl || org.profile?.logoUrl || "";
+
+    function markLogoFailed(docId: string, url: string) {
+        failedLogoUrls = { ...failedLogoUrls, [docId]: url };
+    }
+    const totalActiveMembers = $derived.by(() => {
+        let count = 0;
+        for (const org of orgs) {
+            count += activeCountOf(org);
+        }
+        return count;
+    });
+
+    const totalFormerMembers = $derived.by(() => {
+        let count = 0;
+        for (const org of orgs) {
+            count += formerCountOf(org);
+        }
+        return count;
+    });
+
+    let activeOrgDocId = $state<string>("");
+    let activeOrgMembers = $state<import("../../services/org").OrganizationMember[]>([]);
+    let activeOrgMembersLoading = $state(false);
+    let selectedDept = $state("");
+
+    $effect(() => {
+        activeOrgDocId;
+        untrack(() => { selectedDept = ""; });
+    });
+
+    const isLeaderRole = (title: string) => /(?:总|经理|主管|总监|主任|负责人|Leader|CEO|CTO|COO|CFO|合伙人|校长|院长|会长|部长)/i.test(title);
+
+    const displayedMembers = $derived.by(() => {
+        if (!selectedDept) return activeOrgMembers;
+        return activeOrgMembers.filter((m) => (m.department?.trim() || "未分部门") === selectedDept);
+    });
+
+    $effect(() => {
+        if (!activeOrgDocId && filteredOrgs.length > 0) {
+            activeOrgDocId = filteredOrgs[0].docId;
+        } else if (activeOrgDocId && !filteredOrgs.some((o) => o.docId === activeOrgDocId) && filteredOrgs.length > 0) {
+            activeOrgDocId = filteredOrgs[0].docId;
+        }
+    });
+
+    $effect(() => {
+        const docId = activeOrgDocId;
+        if (!docId || typeof facade?.listOrganizationMembers !== "function") {
+            activeOrgMembers = [];
+            return;
+        }
+        let cancelled = false;
+        activeOrgMembersLoading = true;
+        facade.listOrganizationMembers(docId).then((members) => {
+            if (!cancelled) {
+                activeOrgMembers = members;
+                activeOrgMembersLoading = false;
+            }
+        }).catch(() => {
+            if (!cancelled) activeOrgMembersLoading = false;
+        });
+        return () => { cancelled = true; };
+    });
+
+    const activeSelectedOrg = $derived(filteredOrgs.find((o) => o.docId === activeOrgDocId) ?? null);
+    const departmentStats = $derived.by(() => {
+        if (!activeOrgMembers.length) return [];
+        const counts = new Map<string, number>();
+        for (const m of activeOrgMembers) {
+            const dept = m.department?.trim() || "未分部门";
+            counts.set(dept, (counts.get(dept) ?? 0) + 1);
+        }
+        return Array.from(counts.entries()).map(([name, count]) => ({ name, count }));
+    });
+</script>
+
+<div class="lvct-orgs-view">
+    <!-- 顶部组织概览与人脉指标条 -->
+    {#if orgs.length > 0 && !errorText}
+        <div class="lvct-orgs-overview-bar fn__flex" role="region" aria-label="组织数据全貌">
+            <div class="lvct-orgs-overview-item">
+                <span class="lvct-orgs-overview-num">{orgs.filter(o => !o.archived).length}</span>
+                <span class="lvct-orgs-overview-label">活跃组织</span>
+            </div>
+            <div class="lvct-orgs-overview-divider"></div>
+            <div class="lvct-orgs-overview-item">
+                <span class="lvct-orgs-overview-num">{totalActiveMembers}</span>
+                <span class="lvct-orgs-overview-label">在职/在学人脉</span>
+            </div>
+            <div class="lvct-orgs-overview-divider"></div>
+            <div class="lvct-orgs-overview-item">
+                <span class="lvct-orgs-overview-num">{totalFormerMembers}</span>
+                <span class="lvct-orgs-overview-label">历史经历记录</span>
+            </div>
+            {#if orgs.some(o => o.archived)}
+                <div class="lvct-orgs-overview-divider"></div>
+                <div class="lvct-orgs-overview-item">
+                    <span class="lvct-orgs-overview-num">{orgs.filter(o => o.archived).length}</span>
+                    <span class="lvct-orgs-overview-label">已归档组织</span>
+                </div>
+            {/if}
+        </div>
+    {/if}
+    <div class="lvct-people__toolbar lvct-people__control-surface fn__flex">
+        <span class="ft__smaller ft__on-surface">
+            {#if loading || errorText}
+                <span role="status">{text("orgsCountUnknown", "组织数量待核实")}</span>
+            {:else if organizationLoadingMore}
+                <span role="status">已读取 {orgs.length} 个组织，正在继续读取…</span>
+            {:else if organizationLoadError}
+                <span role="alert">后续组织读取失败：{organizationLoadError}</span>
+            {:else if organizationHasMore}
+                <span role="status">已读取 {orgs.length} 个组织，仍有后续组织待读取。</span>
+            {:else}
+                {text("orgsViewSummary", "共 {total} 个组织，{archived} 个已归档。成员的加入与离开在组织管理中维护。", { total: orgs.length, archived: orgs.filter((org) => org.archived).length })}
+                {#if organizationFilterActive} · {text("orgsFilteredSummary", "当前显示 {shown} 个", { shown: filteredOrgs.length })}{/if}
+            {/if}
+        </span>
+        <span class="fn__flex-1"></span>
+        <input
+            class="b3-text-field lvct-orgs-view__filter"
+            style="border-radius: var(--lv-r-pill, 9999px);"
+            type="search"
+            aria-label={text("orgsSearchLabel", "搜索组织")}
+            placeholder={text("orgsSearchPlaceholder", "按组织名称搜索")}
+            bind:value={organizationQuery}
+            disabled={loading || !!errorText}
+            title={loading ? "组织列表正在读取，请稍候" : errorText ? "组织列表读取失败，请先重新加载" : undefined}
+        />
+        <select class="b3-select lvct-orgs-view__filter" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={text("orgsStatusLabel", "组织状态")} bind:value={organizationStatus} disabled={loading || !!errorText}
+            title={loading ? "组织列表正在读取，请稍候" : errorText ? "组织列表读取失败，请先重新加载" : undefined}>
+            <option value="all">{text("orgsStatusAll", "全部状态")}</option>
+            <option value="active">{text("orgsStatusActive", "仅活跃")}</option>
+            <option value="archived">{text("orgsStatusArchived", "仅已归档")}</option>
+        </select>
+        {#if organizationFilterActive}
+            <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => { organizationQuery = ""; organizationStatus = "all"; }}>
+                {text("orgsClearFilters", "清除筛选")}
+            </button>
+        {/if}
+        <!-- B13.8：手动对账入口（外部编辑无通知时，打开时对账 + 手动刷新兜底） -->
+        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => void refresh()} disabled={loading}
+            title={loading ? "组织列表正在读取，请稍候" : undefined}>
+            {text("graphReload", "重新加载")}</button>
+        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => onOpenOrgManager()}>
+            {text("orgsManage", "组织管理")}
+        </button>
+        {#if onCreateOrganization}<button type="button" class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={onCreateOrganization}><Plus size={15} />{text("orgsCreateFirst", "新建组织")}</button>{/if}
+        {#if organizationLoadError}
+            <button type="button" class="b3-button b3-button--text" onclick={retryRemainingOrganizations} disabled={organizationLoadingMore}
+                title={organizationLoadingMore ? "组织列表正在继续读取，请稍候" : undefined}>
+                {organizationLoadingMore ? "继续读取中…" : "继续读取"}
+            </button>
+        {/if}
+    </div>
+
+    {#if errorText}
+        <ViewState error title={text("orgsLoadFailTitle", "组织列表加载失败")} description={errorText}>
+            <button type="button" class="b3-button b3-button--outline" onclick={() => void refresh()}>{text("graphReload", "重新加载")}</button>
+        </ViewState>
+    {/if}
+    {#if loading && orgs.length === 0 && !errorText}
+        <ViewState loading title={text("orgsLoading", "正在加载组织…")} />
+    {:else if filteredOrgs.length === 0 && !errorText && !loading && organizationLoadError}
+        <ViewState error title="组织列表读取未完成" description={`已读取 ${orgs.length} 个组织，后续读取失败：${organizationLoadError}`}>
+            <button type="button" class="b3-button b3-button--outline" disabled={organizationLoadingMore}
+                title={organizationLoadingMore ? "组织列表正在继续读取，请稍候" : undefined} onclick={retryRemainingOrganizations}>
+                {organizationLoadingMore ? "正在继续读取…" : "继续读取"}
+            </button>
+        </ViewState>
+    {:else if filteredOrgs.length === 0 && !errorText && !loading && !organizationLoadError && organizationFilterActive}
+        <ViewState title={text("orgsNoMatchTitle", "没有匹配的组织")}
+            description={text("orgsNoMatchDesc", "试试其他名称或清除筛选条件。")}>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                {#if onCreateOrganization}
+                    <button type="button" class="b3-button b3-button--primary" onclick={onCreateOrganization}>
+                        <Plus size={14} class="lvct-icon-inline" /> {organizationQuery.trim() ? `新建组织（${organizationQuery.trim()}）` : "新建组织"}
+                    </button>
+                {/if}
+                <button type="button" class="b3-button b3-button--outline" onclick={() => { organizationQuery = ""; organizationStatus = "all"; }}>{text("orgsClearFilters", "清除筛选")}</button>
+            </div>
+        </ViewState>
+    {:else if filteredOrgs.length === 0 && !errorText && !loading && !organizationLoadError}
+        <ViewState title={text("orgsEmptyTitle", "还没有组织")}
+            description={text("orgsEmptyDesc", "在组织管理中新建组织（公司/学校等），再为联系人登记归属。")}>
+            <button type="button" class="b3-button b3-button--outline" onclick={() => onOpenOrgManager()}>{text("orgsManage", "打开组织管理")}</button>
+            {#if onCreateOrganization}<button type="button" class="b3-button b3-button--primary" onclick={onCreateOrganization}>{text("orgsCreateFirst", "新建组织")}</button>{/if}
+        </ViewState>
+    {:else if filteredOrgs.length > 0}
+        <div class="lvct-orgs-view__grid">
+            {#each filteredOrgs as org (org.docId)}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="lvct-orgs-view__card"
+                    class:lvct-orgs-view__card--selected={activeOrgDocId === org.docId}
+                    data-org-doc-id={org.docId}
+                    class:lvct-orgs-view__card--archived={org.archived}
+                    role="button"
+                    tabindex="0"
+                    aria-pressed={activeOrgDocId === org.docId}
+                    onclick={() => void selectOrgCard(org.docId)}
+                    onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); void selectOrgCard(org.docId); } }}
+                >
+                    <div class="lvct-orgs-view__card-head">
+                        {#if logoUrlOf(org) && failedLogoUrls[org.docId] !== logoUrlOf(org)}
+                            <img class="lvct-orgs-view__card-logo" src={logoUrlOf(org)} alt="" width="40" height="40" loading="lazy" decoding="async" onerror={() => markLogoFailed(org.docId, logoUrlOf(org))} />
+                        {:else}
+                            <span class="lvct-orgs-view__card-icon" aria-hidden="true">{org.name.slice(0, 1)}</span>
+                        {/if}
+                        <b class="lvct-orgs-view__card-name" title={org.docId}>{org.name}{#if duplicateNames.has(org.name)}<small class="ft__smaller ft__on-surface-light font-weight-normal font-size-11" style="margin-left: 4px;">…{org.docId.slice(-6)}</small>{/if}</b>
+                        {#if org.profile?.shortName}<span class="lvct-chip lvct-chip--group">{org.profile.shortName}</span>{/if}
+                        {#if org.archived}<span class="lvct-chip lvct-chip--group">{text("orgArchivedTag", "已归档")}</span>{/if}
+                    </div>
+                    {#if org.profile?.description}<p class="lvct-orgs-view__card-description">{org.profile.description}</p>{/if}
+                    <div class="ft__smaller ft__on-surface">
+                        {text("orgsCardMembers", "{n} 名在职/在读成员", { n: activeCountOf(org) })}
+                        {#if formerCountOf(org) > 0}<span class="lvct-orgs-view__card-history"> · {formerCountOf(org)} 条历史</span>{/if}
+                    </div>
+                    <div class="lvct-orgs-view__card-actions">
+                        <button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                            title={loading ? "组织列表正在读取，请稍候" : errorText ? "组织列表读取失败，请先重新加载" : undefined}
+                            onclick={() => onOpenOrgManager(org.docId)}>
+                            {text("orgsManageOrg", "管理")}</button>
+                        {#if onEditOrganization}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                            title={loading ? "组织列表正在读取，请稍候" : errorText ? "组织列表读取失败，请先重新加载" : undefined}
+                            onclick={() => onEditOrganization?.(org.docId)}>
+                            {text("orgsEditProfile", "编辑资料")}</button>{/if}
+                        {#if onOpenPeople}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                            title="在名册中筛选属于该组织的成员"
+                            onclick={() => {
+                                const memberDocIds = org.memberships.map((m) => m.personDocId);
+                                const label = duplicateNames.has(org.name)
+                                    ? text("orgFilterDisambigLabel", "组织 · {name}（…{id}）", { name: org.name, id: org.docId.slice(-6) })
+                                    : text("orgFilterLabel", "组织 · {name}", { name: org.name });
+                                onOpenPeople?.({ workQuery: org.name, memberDocIds, label });
+                            }}>
+                            <Users size={13} /> {text("orgsViewMembers", "成员")}</button>{/if}
+                        {#if onOpenGraphOrg}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                            title="在关系图谱中聚焦该组织的人脉网络"
+                            onclick={() => onOpenGraphOrg?.(org.docId)}>
+                            <Network size={13} /> {text("orgsViewGraph", "图谱")}</button>{/if}
+                        {#if facade?.openDoc}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                            title="在思源笔记中打开该组织的实体文档，撰写会议记录与组织随笔（右键呼出原生菜单）"
+                            onclick={() => facade.openDoc?.(org.docId)}
+                            oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(org.docId, e); }}>
+                            <ExternalLink size={13} /> {text("detailOpenDoc", "文档")}</button>{/if}
+                    </div>
+                </div>
+            {/each}
+        </div>
+
+        <!-- 下半区：选定组织架构与成员全貌工作台看板，彻底消除空白大框 -->
+        {#if activeSelectedOrg}
+            <div class="lvct-home__card lvct-orgs-cockpit" bind:this={cockpitElement} role="region" aria-label="选定组织架构全景">
+                <div class="lvct-orgs-cockpit__header">
+                    <div class="lvct-orgs-cockpit__title-wrap">
+                        <span class="lvct-orgs-cockpit__tag" style="display: inline-flex; align-items: center;"><Building2 size={13} class="lvct-icon-inline" /> 组织人脉全貌</span>
+                        <h4>{activeSelectedOrg.name}</h4>
+                        <span class="lvct-text-muted font-size-12">（共 {activeOrgMembers.length} 名成员）</span>
+                    </div>
+                    <div class="lvct-orgs-cockpit__actions">
+                        {#if facade?.openDoc}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text b3-button--small"
+                                onclick={() => facade.openDoc?.(activeSelectedOrg.docId)}
+                                oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(activeSelectedOrg.docId, e); }}
+                                title="在思源笔记中打开该组织的实体文档（右键呼出原生菜单）"
+                            >
+                                <ExternalLink size={13} class="lvct-icon-inline" /> 打开文档 &gt;
+                            </button>
+                        {/if}
+                        <button type="button" class="b3-button b3-button--text b3-button--small" onclick={() => onOpenOrgManager(activeSelectedOrg.docId)}>
+                            管理架构 &gt;
+                        </button>
+                        {#if onOpenPeople}
+                            <button
+                                type="button"
+                                class="b3-button b3-button--text b3-button--small"
+                                onclick={() => {
+                                    const memberDocIds = activeSelectedOrg.memberships.map((m) => m.personDocId);
+                                    onOpenPeople?.({ workQuery: activeSelectedOrg.name, memberDocIds, label: `组织 · ${activeSelectedOrg.name}` });
+                                }}
+                            >
+                                在名册中筛选 &gt;
+                            </button>
+                        {/if}
+                    </div>
+                </div>
+
+                <!-- 部门分布胶囊栏（点击按部门筛选） -->
+                {#if departmentStats.length > 0}
+                    <div class="lvct-orgs-cockpit__depts">
+                        <span class="lvct-text-muted font-size-11">部门导航：</span>
+                        <button
+                            type="button"
+                            class="b3-chip font-size-11"
+                            class:b3-chip--primary={selectedDept === ""}
+                            onclick={() => (selectedDept = "")}
+                        >
+                            全部 <b>{activeOrgMembers.length}</b>
+                        </button>
+                        {#each departmentStats as dept}
+                            <button
+                                type="button"
+                                class="b3-chip font-size-11"
+                                class:b3-chip--primary={selectedDept === dept.name}
+                                onclick={() => (selectedDept = selectedDept === dept.name ? "" : dept.name)}
+                            >
+                                {dept.name} <b style="margin-left: 2px;">{dept.count}</b>
+                            </button>
+                        {/each}
+                    </div>
+                {/if}
+
+                <!-- 成员小网格 -->
+                {#if activeOrgMembersLoading}
+                    <div class="ft__smaller ft__on-surface">正在加载组织成员架构…</div>
+                {:else if displayedMembers.length > 0}
+                    <div class="lvct-orgs-cockpit__members">
+                        {#each displayedMembers as member (member.id)}
+                            {@const leader = isLeaderRole(member.title)}
+                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                            <div
+                                class="lvct-orgs-cockpit__member-item"
+                                role="button"
+                                tabindex="0"
+                                onclick={() => onOpenPerson?.(member.personDocId)}
+                                onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") onOpenPerson?.(member.personDocId); }}
+                                style="cursor: pointer;"
+                                title={`点击查看 ${member.personName} 的人物详情`}
+                            >
+                                <span class="lvct-orgs-cockpit__avatar">
+                                    {member.personName.slice(0, 1)}
+                                </span>
+                                <div class="lvct-orgs-cockpit__member-info">
+                                    <div class="fn__flex" style="align-items: center; gap: 4px;">
+                                        <b>{member.personName}</b>
+                                        {#if leader}
+                                            <span class="lvct-chip font-size-10" style="padding: 0 4px; background: var(--lv-heat-cool-soft); color: var(--lv-heat-cool); font-weight: 600;">负责人</span>
+                                        {/if}
+                                    </div>
+                                    <span class="lvct-text-muted font-size-11">
+                                        {[member.department, member.title].filter(Boolean).join(" · ") || (member.status === "active" ? "在职" : "曾任")}
+                                    </span>
+                                </div>
+                                <span class="lvct-orgs-cockpit__status" class:lvct-orgs-cockpit__status--active={member.status === "active"}>
+                                    {member.status === "active" ? "在职" : "已离开"}
+                                </span>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <p class="ft__smaller ft__on-surface">该部门暂无成员，点击上方「全部」查看其他成员。</p>
+                {/if}
+            </div>
+        {/if}
+    {/if}
+</div>
