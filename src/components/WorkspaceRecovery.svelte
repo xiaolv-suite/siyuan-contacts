@@ -106,7 +106,8 @@
     }
 </script>
 
-<section class="lvct-recovery" aria-live="polite">
+<div class="lvct-recovery-scroll-wrapper">
+    <section class="lvct-recovery" aria-live="polite">
     <div class="lvct-recovery__icon">!</div>
     <h1>{labels[workspace.kind]}</h1>
     <p class="lvct-recovery__message">{workspace.message ?? "插件已暂停读取联系人数据库，原有文档和插件数据不会被删除。"}</p>
@@ -136,4 +137,5 @@
             <button class="b3-button b3-button--text" disabled={busy} onclick={confirmRebind}>确认重绑并恢复工作台</button>
         </div>
     {/if}
-</section>
+    </section>
+</div>

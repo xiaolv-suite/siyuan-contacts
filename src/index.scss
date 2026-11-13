@@ -448,7 +448,24 @@ html[data-theme-mode="dark"] .lvct-workbench__nav-item--active {
     margin-top: var(--lvct-sp-3);
 }
 
-/* ---------- 向导 ---------- */
+/* ---------- 向导与恢复滚动容器 ---------- */
+
+.lvct-wizard-scroll-wrapper,
+.lvct-recovery-scroll-wrapper {
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+}
 
 .lvct-wizard {
     width: min(560px, calc(100% - 32px));
@@ -465,6 +482,7 @@ html[data-theme-mode="dark"] .lvct-workbench__nav-item--active {
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
     border-radius: var(--lvct-r-xl);
     box-shadow: var(--lvct-shadow-3), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
 }
 
 html[data-theme-mode="dark"] .lvct-wizard {
@@ -734,10 +752,19 @@ html[data-theme-mode="dark"] .lvct-wizard {
     .lvct-wizard {
         width: calc(100% - 24px);
         max-width: none;
-        margin: max(16px, env(safe-area-inset-top)) auto max(16px, env(safe-area-inset-bottom));
-        padding: var(--lvct-sp-5) var(--lvct-sp-4) calc(24px + env(safe-area-inset-bottom));
+        margin: max(16px, env(safe-area-inset-top, 16px)) auto calc(54px + env(safe-area-inset-bottom, 24px)) !important;
+        padding: var(--lvct-sp-5) var(--lvct-sp-4) calc(36px + env(safe-area-inset-bottom, 24px));
         gap: var(--lvct-sp-4);
         border-radius: var(--lvct-r-lg);
+        flex-shrink: 0 !important;
+    }
+
+    .lvct-recovery {
+        width: calc(100% - 24px);
+        max-width: none;
+        margin: max(16px, env(safe-area-inset-top, 16px)) auto calc(54px + env(safe-area-inset-bottom, 24px)) !important;
+        padding: var(--lvct-sp-5) var(--lvct-sp-4) calc(36px + env(safe-area-inset-bottom, 24px));
+        flex-shrink: 0 !important;
     }
 
     .lvct-wizard__features ul {
@@ -13685,10 +13712,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 
     .b3-dialog:has(.lvct-workbench) .b3-dialog__body,
     .b3-dialog:has(.lvct-workbench) .b3-dialog__content,
-    .b3-dialog__container.lvct-mobile-dialog .b3-dialog__body,
-    .b3-dialog__container.lvct-mobile-dialog .b3-dialog__content,
-    .b3-dialog:has(.lvct-workbench) .lvct-dialog-root,
-    .b3-dialog__container.lvct-mobile-dialog .lvct-dialog-root {
+    .b3-dialog:has(.lvct-workbench) .lvct-dialog-root {
         padding: 0 !important;
         margin: 0 !important;
         width: 100% !important;
@@ -13700,6 +13724,41 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         display: flex !important;
         flex-direction: column !important;
         overflow: hidden !important;
+    }
+
+    .b3-dialog__container.lvct-mobile-dialog .b3-dialog__body,
+    .b3-dialog__container.lvct-mobile-dialog .b3-dialog__content,
+    .b3-dialog__container.lvct-mobile-dialog .lvct-dialog-root {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        flex: 1 1 0% !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .b3-dialog__container.lvct-mobile-dialog:has(.lvct-workbench) {
+        .b3-dialog__body,
+        .b3-dialog__content,
+        .lvct-dialog-root {
+            overflow: hidden !important;
+        }
+    }
+
+    .b3-dialog__container.lvct-mobile-dialog:not(:has(.lvct-workbench)),
+    .lvct-dialog-root:has(.lvct-wizard),
+    .lvct-dialog-root:has(.lvct-recovery),
+    .lvct-dialog-root:has(.lvct-wizard-scroll-wrapper),
+    .lvct-dialog-root:has(.lvct-recovery-scroll-wrapper) {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain !important;
+        touch-action: pan-y !important;
     }
 
     .b3-dialog:has(.lvct-workbench) .b3-dialog__header,

@@ -127,8 +127,9 @@
     }
 </script>
 
-<div class="lvct-wizard">
-    <header class="lvct-wizard__header">
+<div class="lvct-wizard-scroll-wrapper">
+    <div class="lvct-wizard">
+        <header class="lvct-wizard__header">
         <svg class="lvct-wizard__logo" viewBox="0 0 32 32" aria-hidden="true">
             <path d="M12 4c3.314 0 6 2.686 6 6s-2.686 6-6 6-6-2.686-6-6 2.686-6 6-6zM12 6.4A3.6 3.6 0 1 0 12 13.6 3.6 3.6 0 0 0 12 6.4z" />
             <path d="M22.4 8.8c2.651 0 4.8 2.149 4.8 4.8s-2.149 4.8-4.8 4.8-4.8-2.149-4.8-4.8 2.149-4.8 4.8-4.8zM22.4 11.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z" />
@@ -253,4 +254,5 @@
             {/each}
         </div>
     {/if}
+    </div>
 </div>
