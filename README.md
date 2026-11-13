@@ -8,7 +8,7 @@
 
 一人一文档 · 原生属性视图 · 圈层联络周期 · 会前30秒破冰备忘 · 关系引荐图谱
 
-**当前版本：v0.7.10** ｜ [English Documentation](README.en-US.md) ｜ [更新日志](CHANGELOG.md)
+**当前版本：v0.7.11** ｜ [English Documentation](README.en-US.md) ｜ [更新日志](CHANGELOG.md)
 
 [![CI](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml)
 [![最新版本](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-contacts?label=最新版本)](https://github.com/xiaolv-suite/siyuan-contacts/releases)

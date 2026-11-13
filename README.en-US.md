@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.10** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.10) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
+**Latest stable release: v0.7.11** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.11) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 

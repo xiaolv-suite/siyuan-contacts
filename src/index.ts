@@ -598,7 +598,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         lifecycleToken.onDispose(unregisterDateCross);
 
         // 罗盘全端统一入口挂载 (Protocol v1.7.5 Unified Entry)
-        const unregisterMobileEntry = lvLaunchpad.ensureUnifiedEntry();
+        const unregisterMobileEntry = lvLaunchpad.ensureUnifiedEntry(this);
+        lvLaunchpad.registerHostApi({ openTab, app: this.app });
         lifecycleToken.onDispose(unregisterMobileEntry);
 
         // Mobile Spec v1：跟进到期提醒注册为全生态自动化规则——任何生态插件触发
@@ -2138,6 +2139,11 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             digit: 7,
             badge: dueCount > 0 ? `${dueCount} 位需联络` : undefined,
             badgeType: "warn",
+            /* 罗盘每次打开实时拉取待联络数，归零自动隐藏徽章 */
+            badgeProvider: () => {
+                const n = this.getFollowupDueCount();
+                return n > 0 ? `${n} 位需联络` : undefined;
+            },
             // Mobile Spec v1：手机直办动作（速查 / 今日待联络 / 新增 / 会前速览）
             actions: ["速查联系人", "今日待联络", "新增联系人", "会前速览"],
             topBarElement: this.topBarElement,
