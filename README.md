@@ -25,6 +25,42 @@
 
 ---
 
+## 🚀 本次更新要点（v0.7.12）
+
+- **罗盘中枢顶栏常驻与防横跳**：消除思源 3.8.x 内置重排对顶栏中枢的推挤干扰，彻底根除启动期图标在左侧与右侧反复横跳拉锯；
+- **单插件罗盘中枢直达**：单插件环境下依然稳定常驻罗盘中枢，直接进入全功能弹射坞（含 LifeLog 随手记、人脉待跟进、OmniSearch 等）；
+- **全生态通知治理与长效免打扰**：新版本升级提示显式高可见微胶囊呈现，重复通知原位折叠（×N）；长效免打扰（未来3天/未来一周）跨会话跨重启严格静音；
+- **移动端与窄屏体验优化**：联系人卡片与交往记录弹窗在 390×844 视口下横向零溢出，触控手势响应更为平滑。
+
+<details>
+<summary>展开查看历史版本更新记录（v0.7.11 及更早版本 · 完整记录见 CHANGELOG.md）</summary>
+
+- **v0.7.11**：罗盘启动防抖与顶栏对齐、LifeLog 照片流与原子多块撤销、全生态联合灾备恢复、移动端全面去电脑化。
+- **v0.7.10**：思源 3.8.10+ 原生资源库头像选取（openNativeAssetPicker）、全域头像 URL 解析加固、图谱原生文档树菜单。
+- **v0.7.9**：移动端退场闭环、软键盘防误关守卫与仓库迁移至 xiaolv-suite 组织。
+</details>
+
+---
+
+## 🐴 小驴思源全家桶生态矩阵与交流
+
+本插件为「小驴思源生态」8 大官方集市插件之一。所有插件共享小驴罗盘（顶栏常驻中枢）、全域穿透搜索与统一备份恢复：
+
+| 插件名称 | 核心用途 | 官方集市 / 仓库 |
+| :--- | :--- | :--- |
+| **小驴打卡** | 本地优先习惯打卡、日程提醒与多维人生热力图工作台 | [`siyuan-checkin`](https://github.com/xiaolv-suite/siyuan-checkin) |
+| **小驴管家** | 家庭成员中心视角档案、证照保单到期预警与 LifeLog 流水协同 | [`siyuan-home`](https://github.com/xiaolv-suite/siyuan-home) |
+| **小驴人脉** | 一人一文档人际管理、圈层力导向关系网络与会前破冰速览 | [`siyuan-contacts`](https://github.com/xiaolv-suite/siyuan-contacts) |
+| **小驴拾遗** | 剪藏文章深度消化、视线同焦伴生导读与 4 大学术著录 | [`siyuan-glean`](https://github.com/xiaolv-suite/siyuan-glean) |
+| **小驴闪卡** | 原生 FSRS 算法调度、文档内质感序号流与全场景极速制卡 | [`siyuan-lv-cards`](https://github.com/xiaolv-suite/siyuan-lv-cards) |
+| **小驴考试** | 全真模拟考场环境、错题靶向归因复训与苏格拉底启发式 AI 导师 | [`siyuan-exam`](https://github.com/xiaolv-suite/siyuan-exam) |
+| **小驴常用** | 代码片段工作室、零卡死安全剪贴板历史与一键记事沙盒 | [`xiaolv-common`](https://github.com/xiaolv-suite/xiaolv-common) |
+| **小驴雷切** | 毫秒级多文档穿透切换、左右双文档实时分栏对照与切片代码画板 | [`siyuan-speed-switch`](https://github.com/xiaolv-suite/siyuan-speed-switch) |
+
+💬 **官方交流与需求反馈 QQ 群**：**871707735**（开发者实时在线，欢迎反馈问题、交流使用体验与提交新功能构想）。
+
+---
+
 ## 🎯 为什么需要小驴人脉？它解决什么问题？
 
 在日常工作与生活中，人脉资料往往散落在手机通讯录、微信备注与零散笔记里：**见过面却忘了上次聊过什么、谁引荐认识的、对方有什么饮食忌口，或者重要朋友在忙碌中不知不觉疏远冷却。**
@@ -129,60 +165,6 @@
   **答：** 不会。从 v0.7.9 开始，在手机端点击打开联系人文案后，全屏工作台会自动优雅退场收起，底层文档即刻呈现，告别“以为没打开”的困惑。
 - **Q4：导入外部通讯录 CSV 出现乱码怎么办？**  
   **答：** 插件已内置 UTF-8 与 GBK 智能编码探测器。如果从 Windows Outlook 导出的 CSV 文件含非标准编码，导入时选择「GBK / Windows 格式」即可正常解析。
-
----
-
-## 🐴 小驴系列插件家族
-
-小驴系列插件各自独立，可按需安装和组合使用：
-
-| 插件名称 | 一句话简介 | GitHub 仓库 |
-| :--- | :--- | :--- |
-| [小驴雷切](https://github.com/xiaolv-suite/siyuan-speed-switch) | 思源中的统一导航与工作上下文平台，连接页签、工作台、片段和快捷入口。 | [xiaolv-suite/siyuan-speed-switch](https://github.com/xiaolv-suite/siyuan-speed-switch) |
-| [小驴打卡](https://github.com/xiaolv-suite/siyuan-checkin) | 本地优先的习惯、目标打卡与复盘工作台。 | [xiaolv-suite/siyuan-checkin](https://github.com/xiaolv-suite/siyuan-checkin) |
-| [小驴人脉](https://github.com/xiaolv-suite/siyuan-contacts) | 在思源中管理联系人、人际关系、组织归属和重要日期。 | [xiaolv-suite/siyuan-contacts](https://github.com/xiaolv-suite/siyuan-contacts) |
-| [小驴拾遗](https://github.com/xiaolv-suite/siyuan-glean) | 整理思源剪藏和导入文章，支持状态分拣、阅读管理与日后回顾。 | [xiaolv-suite/siyuan-glean](https://github.com/xiaolv-suite/siyuan-glean) |
-| [小驴考试（内测版）](https://github.com/xiaolv-suite/siyuan-exam) | 本地题库备考工作台，支持多格式导入、刷题、模考、错题复盘与 AI 辅助。 | [xiaolv-suite/siyuan-exam](https://github.com/xiaolv-suite/siyuan-exam) |
-| [小驴管家（内测版）](https://github.com/xiaolv-suite/siyuan-home) | 管理家庭与生活资料、成员档案、台账、到期提醒和事务跟进。 | [xiaolv-suite/siyuan-home](https://github.com/xiaolv-suite/siyuan-home) |
-| [小驴闪卡（内测版）](https://github.com/xiaolv-suite/siyuan-lv-cards) | 思源中的知识捕获、制卡、练习与复习平台，使用内核原生 FSRS 排期。 | [xiaolv-suite/siyuan-lv-cards](https://github.com/xiaolv-suite/siyuan-lv-cards) |
-| [小驴常用（内测版）](https://github.com/xiaolv-suite/xiaolv-common) | 基于思源块保存、搜索并快速调用常用语、模板、代码和链接，支持变量填充。 | [xiaolv-suite/xiaolv-common](https://github.com/xiaolv-suite/xiaolv-common) |
-
-交流 QQ 群：**871707735**（可反馈 Bug、提交需求和交流使用体验）。
-
----
-
-## 📝 最近更新动态
-
-- **思源 3.8.10+ 原生特性适配**：联系人详情头像支持右键唤出原生文件选择器（`openNativeAssetPicker`）；全域头像 URL 解析加固（支持相对资产路径与 DataURL）；图谱抽屉与组织文档支持原生文档树菜单；半角斜杠标题防截断。
-- **输入法合成期全域守卫**：双端搜索框、人物速选器、别名、关系称谓、随手记、组织重命名、详情页七类输入等 16 处输入全面增加 IME 合成期守卫，Enter 选字不再误触发提交或弹出新建。
-- **无障碍键盘可达闭环**：侧栏互动时间线条目、关系雷达节点、头像上传、组织卡片 4 处补齐 Enter/Space 键盘激活；关系图谱图例补齐 `aria-pressed` 状态播报。
-- **移动端与视觉优化**：工作台底部留白对齐 64px 导航 + iOS 安全区（消除 20px 空白）；搜索框 16px 防缩放；名片 SVG 渐变 ID 增加主题后缀防碰撞。
-
-<details>
-<summary>展开查看历史版本更新（v0.7.9 及更早版本 · 完整记录见 <a href="./CHANGELOG.md">CHANGELOG.md</a>）</summary>
-
-### v0.7.9（2026-11-10 · GitHub 组织迁移与体验加固）
-
-- **仓库与提交身份迁移至 xiaolv-suite 组织**（plugin.json/文档/徽章全量对齐）；
-- **移动端退场闭环**：全屏工作台内打开联系人原生文档后自动收起工作台（`openMobileFileById` 分流），告别“底层被遮挡”；
-- **防误关多重守卫**：全屏手势下拉关闭加入输入框与软键盘豁免，打字中滑动光标不再意外关闭页面；
-- **微胶囊反馈**：剪贴板复制动作统一支持即时触感与微胶囊提示；
-- **顶栏罗盘升级**：启动收敛防抖、思源重启/同步后图标自愈守护与二级菜单长按防误触。
-
-<details>
-<summary>展开查看历史版本更新（v0.7.8 及更早版本 · 完整记录见 <a href="./CHANGELOG.md">CHANGELOG.md</a>）</summary>
-
-### v0.7.8（2026-11-04）
-
-- 全生态联合灾备总线（`lvBackup`）、全生态万物穿透搜索（`lvOmnisearch`）接入。
-
-### v0.7.7（2026-11-02）
-
-- 圈层联络周期档位（14/30/90/180天）、待问候筛选与 24 模块全要素数据迁移包。
-
-</details>
-
-</details>
 
 ---
 
