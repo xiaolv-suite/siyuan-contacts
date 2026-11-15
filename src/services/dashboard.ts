@@ -1,0 +1,295 @@
+/**
+ * 仪表盘服务：近期生日、久未联系、统计概览。
+ * plugin 显式传参（同 init.ts 惯例），组件侧经 facade 调用。
+ */
+import type { Plugin } from "siyuan";
+import { listContacts } from "./contacts";
+import { loadInteractionStoreStrict } from "../data/interactions";
+import { loadFollowUpStoreStrict } from "../data/followups";
+import { loadCadenceMapStrict } from "../data/cadences";
+import { projectOpenFollowUps } from "../domain/followups";
+import type { FollowUpBucket, FollowUpItem } from "../domain/followups";
+import { staleContacts } from "../domain/interactions";
+import { toLocalDateKey } from "../domain/interactions";
+import { loadReminderDismissalsStrict } from "../data/reminder-dismissals";
+import { isDismissed } from "../domain/reminder-dismissals";
+import { ensureRegistryEntriesSaved, loadRegistryStrict } from "../data/registry";
+import { loadSelfIdentity } from "../data/self-identity";
+import { excludeSelf } from "../domain/self-identity";
+import { isWithinGrace } from "../domain/registry";
+import { buildActionCards } from "../domain/action-list";
+import type { ActionCard, ActionPersonInput } from "../domain/action-list";
+import { loadAnniversaryStore } from "../data/anniversaries.ts";
+import { emptyAnniversaryStore, nextAnniversary } from "../domain/anniversaries.ts";
+import { upcomingBirthdays } from "../domain/occasions";
+import type { UpcomingBirthday } from "../domain/occasions";
+import type { StalenessInfo } from "../domain/interactions";
+import { emptyStore } from "../domain/interactions";
+import { emptyFollowUpStore } from "../domain/followups";
+import type { RegistryStore } from "../domain/registry";
+import type { ContactsSettings } from "../domain/model";
+import { computeRelationshipHealthDistribution } from "../domain/cadence.ts";
+import type { RelationshipHealthDistribution } from "../domain/cadence.ts";
+import { groupContactsByRegion } from "../domain/region.ts";
+import { computeMonthlyInteractionTrend } from "../domain/interactions.ts";
+import type { MonthlyInteractionTrend } from "../domain/interactions.ts";
+import { findGlobalOnThisDay } from "../domain/date-review.ts";
+import type { OnThisDayMemory } from "../domain/date-review.ts";
+import { computeActivityHeatmap } from "../domain/activity-heatmap.ts";
+import type { ActivityHeatmapData } from "../domain/activity-heatmap.ts";
+import { loadAllLifecycleStages } from "../data/lifecycle-stage.ts";
+import { computeLifecycleFunnel } from "../domain/lifecycle-funnel.ts";
+import type { LifecycleFunnelReport } from "../domain/lifecycle-funnel.ts";
+
+export interface DashboardOptions {
+    /** 多少天未互动算"久未联系" */
+    staleThresholdDays: number;
+    /** 生日提醒窗口（天） */
+    birthdayWindowDays: number;
+    /** C02 收编宽限期（天）：新收编者不计入「从未互动」提醒；0/缺省 = 关闭 */
+    reminderGraceDays?: number;
+}
+export const DEFAULT_DASHBOARD_OPTIONS: DashboardOptions = {
+    staleThresholdDays: 30,
+    birthdayWindowDays: 30,
+};
+
+export interface FollowUpCard {
+    item: FollowUpItem;
+    bucket: FollowUpBucket;
+    documentSync: "verified" | "pending" | "missing" | "not_created";
+    /** 人物已被解绑（从名册移除）时缺省，此时 reachable 为 false，不指向他人 */
+    person?: import("../domain/person").ContactSummary;
+    reachable: boolean;
+}
+
+export interface DashboardData {
+    people: number;
+    /** 无向关系条数（related 字段双向各记一次，除以 2） */
+    relations: number;
+    birthdays: UpcomingBirthday[];
+    birthdaysThisWeek: number;
+    /** 久未联系提醒行（已剔除提醒暂缓中的人物，B08）；统计真实数见 staleTotal */
+    stale: StalenessInfo[];
+    /** 久未联系真实总数（含提醒暂缓中的人，D-0020 统计口径不变） */
+    staleTotal: number;
+    neverContacted: number;
+    neverContactedItemIds: string[];
+    /** 待办跟进（F05）：逾期/今天/未来 7 天，open 状态 */
+    followUps: FollowUpCard[];
+    /** 今日/本周行动清单（F07）：生日+节奏+跟进三源按人聚合的只读投影 */
+    actions: ActionCard[];
+    /** C02：「从未互动」行动卡的收编日期映射（docId → YYYY-MM-DD），组内最近收编优先 */
+    neverOrder: Record<string, string>;
+    /** E-29：人脉全库关系温度与紧迫度分布 */
+    heatDistribution?: RelationshipHealthDistribution;
+    /** E-25：人脉核心城市分布与热度 */
+    topRegions?: { city: string; province?: string; count: number; people: import("../domain/person.ts").ContactSummary[] }[];
+    /** 近 6 个月互动频次与人脉活跃走势 */
+    monthlyTrend?: MonthlyInteractionTrend;
+    /** 历史上的今天时光记忆胶囊（往年今天有互动的联系人，按年数升序） */
+    onThisDayMemories?: readonly OnThisDayMemory[];
+    /** 年度 52 周社交互动活跃度热力图数据 */
+    activityHeatmap?: ActivityHeatmapData;
+    /** E-56：人脉交往生命周期阶段漏斗与转化统计 */
+    lifecycleFunnel?: LifecycleFunnelReport;
+    /** 名册快照（已排除本人），供仪表盘快速筛选与出差规划联动 */
+    allPeople?: import("../domain/person.ts").ContactSummary[];
+    /**
+     * FUNC-01.12：读取失败的插件存储模块（仅非空时携带）。
+     * 受影响模块以空数据参与投影并在 UI 显式提示，绝不把故障静默呈现为正常空态。
+     */
+    readFailures?: readonly string[];
+    ordinaryScopeUnknown?: boolean;
+    excludedSelfDocId?: string;
+}
+
+/** 供组件派生使用的取值函数：把可空数据收窄为行动卡列表 */
+export function pickActions(data: DashboardData | null): ActionCard[] {
+    return data?.actions ?? [];
+}
+
+/** FUNC-01.12：单模块严格读；失败记入 readFailures 并以空数据参与投影（显式降级，不冒充正常空态） */
+async function readModule<T>(failures: string[], key: string, read: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+        return await read();
+    } catch (error) {
+        failures.push(key);
+        console.warn(`[LvContacts] 仪表盘模块读取失败，已显式降级: ${key}`, error);
+        return fallback;
+    }
+}
+
+const EMPTY_REGISTRY: RegistryStore = { schemaVersion: 1, registeredAt: {} };
+
+export interface SummaryCounts {
+    total: number;
+    overdue: number;
+    birthdaysToday: number;
+    stale: number;
+}
+
+/** 供组件派生使用的取值函数：摘要计数与首页数据同源 */
+export function pickSummaryCounts(data: DashboardData | null, actions: readonly ActionCard[]): SummaryCounts {
+    return {
+        total: actions.length,
+        overdue: actions.filter((card) => card.bucket === "overdue").length,
+        birthdaysToday: (data?.birthdays ?? []).filter((item) => item.bucket === "today").length,
+        stale: data?.staleTotal ?? data?.stale.length ?? 0,
+    };
+}
+export async function loadDashboard(
+    plugin: Plugin,
+    settings: ContactsSettings,
+    options: DashboardOptions = DEFAULT_DASHBOARD_OPTIONS,
+): Promise<DashboardData> {
+    const readFailures: string[] = [];
+    const [peopleAll, store, followUpStore, cadences, dismissals, identity, anniversaryStore, lifecycleStages] = await Promise.all([
+        listContacts(settings),
+        readModule(readFailures, "interactions", () => loadInteractionStoreStrict(plugin), emptyStore()),
+        readModule(readFailures, "followUps", () => loadFollowUpStoreStrict(plugin), emptyFollowUpStore()),
+        readModule(readFailures, "cadences", () => loadCadenceMapStrict(plugin), {}),
+        readModule(readFailures, "dismissals", () => loadReminderDismissalsStrict(plugin), []),
+        readModule(readFailures, "self", () => loadSelfIdentity(plugin), null),
+        readModule(readFailures, "anniversaries", () => loadAnniversaryStore(plugin), emptyAnniversaryStore()),
+        readModule(readFailures, "lifecycle", () => loadAllLifecycleStages(plugin), {}),
+    ]);
+    /* B11.4：本人不是"待联系对象"——首页统计与行动清单排除本人（名册本身仍保留并标识）。
+       身份读取失败按模块降级（readFailures 指名 self，横幅提示），不静默按无本人处理 */
+    const selfMatches = identity ? peopleAll.filter((person) => person.docId === identity.selfDocId) : [];
+    if (identity && (selfMatches.length !== 1 || selfMatches[0].itemId !== identity.selfItemId)) readFailures.push("self");
+    const ordinaryScopeUnknown = readFailures.includes("self");
+    const people = ordinaryScopeUnknown ? [] : excludeSelf(peopleAll, identity);
+    /* 同一轮投影固定时间快照，避免跨午夜时生日/久未联系/提醒截止日出现一天错位。 */
+    const now = new Date();
+    const today = toLocalDateKey(now);
+    // C02：首次发现补记收编时间（幂等，失败按缺失降级）；宽限期内不计入「从未互动」提醒
+    await ensureRegistryEntriesSaved(plugin, people.map((person) => person.docId), today);
+    const registry = await readModule(readFailures, "registry", () => loadRegistryStrict(plugin), EMPTY_REGISTRY);
+    const graceDays = options.reminderGraceDays ?? 0;
+    // B08：提醒暂缓只屏蔽呈现——生日与久未联系提醒行过滤，统计与名单口径保持真实。
+    // C-32：`birthdaysThisWeek` 按原始事实计算（不经提醒窗口截断、不受暂缓影响）——
+    // 窗口小于 7 天时本周生日不得漏报，暂缓生日不得让本周统计下降（FUNC-01.2a 口径）
+    const birthdaysAll = upcomingBirthdays(people, now);
+    const birthdays = birthdaysAll
+        .filter((item) => item.projection.daysUntil <= options.birthdayWindowDays)
+        .filter((item) => !isDismissed(dismissals, item.person.docId, "birthday", today));
+    const staleAll = staleContacts(store, people, options.staleThresholdDays, now, cadences);
+    const staleRemindable = staleAll.filter((info) => {
+        if (isDismissed(dismissals, info.person.docId, "stale", today)) return false;
+        /* C02：宽限期只豁免「从未互动」（有互动的久未联系不受影响） */
+        if (info.lastDaysAgo === undefined && isWithinGrace(registry.registeredAt[info.person.docId], today, graceDays)) return false;
+        return true;
+    });
+    const neverContactedPeople = staleAll.filter((item) => item.lastDaysAgo === undefined);
+
+    const buckets = projectOpenFollowUps(followUpStore.items, today);
+    const peopleByDocId = new Map(people.map((person) => [person.docId, person]));
+    const withBucket = (item: FollowUpItem): FollowUpCard => {
+        const person = peopleByDocId.get(item.personDocId);
+        return {
+            item,
+            bucket: item.dueDate < today ? "overdue" : item.dueDate === today ? "today" : "upcoming",
+            documentSync: item.docSyncPending ? "pending" : item.docMissing ? "missing" : item.docBlockId ? "verified" : "not_created",
+            ...(person ? { person } : {}),
+            reachable: Boolean(person),
+        };
+    };
+    // FUNC-01.1：服务层返回全量，不静默截断；首屏只展示前 N 条由 UI 层「查看全部」就地处达
+    const followUps: FollowUpCard[] = [
+        ...buckets.overdue,
+        ...buckets.today,
+        ...buckets.upcoming,
+    ].filter((item) => !ordinaryScopeUnknown && item.personDocId !== identity?.selfDocId).map(withBucket);
+
+    // 行动清单（F07 / G-10）：生日 + 节奏 + 跟进三源预建 Map 索引，将 O(N²) 降为 O(N) 一次性联结
+    const followUpsByDoc = new Map<string, { id: string; title: string; dueDate: string }[]>();
+    for (const card of followUps) {
+        if (!card.reachable) continue;
+        const list = followUpsByDoc.get(card.item.personDocId) ?? [];
+        list.push({ id: card.item.id, title: card.item.title, dueDate: card.item.dueDate });
+        followUpsByDoc.set(card.item.personDocId, list);
+    }
+    const birthdaysByDocId = new Map(birthdays.map((item) => [item.person.docId, item]));
+    const staleByDocId = new Map(staleRemindable.map((info) => [info.person.docId, info]));
+    const annivsByDoc = new Map<string, { id: string; title: string; daysUntil: number; date: string; yearsCount?: number }[]>();
+    for (const [docId, list] of Object.entries(anniversaryStore.anniversaries ?? {})) {
+        if (!Array.isArray(list)) continue;
+        const validProjs: { id: string; title: string; daysUntil: number; date: string; yearsCount?: number }[] = [];
+        for (const item of list) {
+            const proj = nextAnniversary(item, now);
+            if (proj && proj.daysUntil >= 0 && proj.daysUntil <= (item.remindDaysBefore ?? 7)) {
+                validProjs.push({
+                    id: item.id,
+                    title: item.title,
+                    daysUntil: proj.daysUntil,
+                    date: toLocalDateKey(proj.nextDate),
+                    yearsCount: proj.yearsCount,
+                });
+            }
+        }
+        if (validProjs.length > 0) {
+            annivsByDoc.set(docId, validProjs);
+        }
+    }
+
+    const inputs: ActionPersonInput[] = people.map((person) => {
+        const birthday = birthdaysByDocId.get(person.docId);
+        /* 被提醒暂缓的人不产生久未联系行动卡（呈现屏蔽）；统计保持真实 */
+        const staleInfo = staleByDocId.get(person.docId);
+        return {
+            person,
+            ...(birthday ? { birthdayDaysUntil: birthday.projection.daysUntil, birthdayDate: toLocalDateKey(birthday.projection.date) } : {}),
+            ...(staleInfo ? { lastDaysAgo: staleInfo.lastDaysAgo, staleThreshold: cadences[person.docId]?.days ?? options.staleThresholdDays } : {}),
+            followUps: followUpsByDoc.get(person.docId) ?? [],
+            anniversaries: annivsByDoc.get(person.docId) ?? [],
+        };
+    });
+
+    const actions = buildActionCards(inputs, today);
+    const neverOrder: Record<string, string> = {};
+    for (const card of actions) {
+        if (card.bucket !== "stale" || !card.reasons.some((reason) => reason.neverContacted)) continue;
+        const registeredAt = registry.registeredAt[card.person.docId];
+        if (registeredAt) neverOrder[card.person.docId] = registeredAt;
+    }
+
+    const lastInteractionMap: Record<string, { occurredAt: number }> = {};
+    for (const event of store.events) {
+        const cur = lastInteractionMap[event.personDocId];
+        if (!cur || event.occurredAt > cur.occurredAt) {
+            lastInteractionMap[event.personDocId] = { occurredAt: event.occurredAt };
+        }
+    }
+    const heatDistribution = computeRelationshipHealthDistribution(people, lastInteractionMap, cadences, options.staleThresholdDays, now.getTime());
+    const regionGroups = groupContactsByRegion(people);
+    const topRegions = regionGroups.slice(0, 6);
+    const monthlyTrend = computeMonthlyInteractionTrend(store.events, 6, now);
+    const onThisDayMemories = findGlobalOnThisDay(store.events, people, today, 10, store.tombstones);
+    const activityHeatmap = computeActivityHeatmap(store.events, people, today, 52);
+    const lifecycleFunnel = computeLifecycleFunnel(people, lifecycleStages);
+
+    return {
+        people: people.length,
+        relations: Math.round(people.reduce((sum, person) => sum + person.relatedItemIds.length, 0) / 2),
+        birthdays,
+        birthdaysThisWeek: birthdaysAll.filter((item) => item.bucket === "today" || item.bucket === "week").length,
+        stale: staleRemindable,
+        staleTotal: staleAll.length,
+        neverContacted: neverContactedPeople.length,
+        neverContactedItemIds: neverContactedPeople.map((item) => item.person.itemId),
+        followUps,
+        actions,
+        neverOrder,
+        heatDistribution,
+        topRegions,
+        monthlyTrend,
+        onThisDayMemories,
+        activityHeatmap,
+        lifecycleFunnel,
+        allPeople: people,
+        ...(ordinaryScopeUnknown ? { ordinaryScopeUnknown: true } : {}),
+        ...(identity && !ordinaryScopeUnknown ? { excludedSelfDocId: identity.selfDocId } : {}),
+        ...(readFailures.length > 0 ? { readFailures } : {}),
+    };
+}

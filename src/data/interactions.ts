@@ -1,0 +1,153 @@
+/**
+ * 互动事件存储（插件自管 JSON）：Web Lock 临界区 + 写后回读 + 读时归一。
+ * 键：interaction-events.json（契约见 docs/DATA-CONTRACT.md §3）。
+ */
+import type { Plugin } from "siyuan";
+import { loadJson, loadJsonStrict, saveJsonVerified, withStoreLock } from "./storage.ts";
+import { amendEvent, appendEvent, emptyStore, normalizeInteractionStore, normalizeInteractionStoreForWrite, removeEvent, toLocalDateKey } from "../domain/interactions.ts";
+import type { InteractionAmendment, InteractionEvent, InteractionStore } from "../domain/interactions.ts";
+import { newNodeId } from "../domain/format.ts";
+
+function assertPersonDocId(value: unknown): asserts value is string {
+    if (typeof value !== "string" || !/^\d{14}-[0-9a-z]{7}$/.test(value)) throw new Error("人物文档 ID 无效，未记录互动");
+}
+
+export const INTERACTION_STORAGE_KEY = "interaction-events.json";
+
+export async function loadInteractionStore(plugin: Plugin): Promise<InteractionStore> {
+    return normalizeInteractionStore(await loadJson(plugin, INTERACTION_STORAGE_KEY));
+}
+
+/**
+ * FUNC-01.12 严格展示读：键不存在返回空库（正常空态）；
+ * 读取失败/损坏抛错，不得归一为空（首页统计、时间线、体检据此显式报错）。
+ */
+export async function loadInteractionStoreStrict(plugin: Plugin): Promise<InteractionStore> {
+    return normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+}
+
+export interface RecordInteractionInput {
+    personDocId: string;
+    note?: string;
+    type?: InteractionEvent["type"];
+    source?: InteractionEvent["source"];
+    externalRef?: string;
+    occurredAt?: number;
+}
+
+/** 追加一条互动事件；幂等（同人物+source+externalRef 或同 id 静默跳过）。 */
+export async function recordInteraction(plugin: Plugin, input: RecordInteractionInput): Promise<InteractionStore> {
+    return (await recordInteractionWithResult(plugin, input)).store;
+}
+
+/** 新增状态与写入在同一排他锁内确定，避免调用方先读后写导致计数竞态。 */
+export async function recordInteractionWithResult(
+    plugin: Plugin,
+    input: RecordInteractionInput,
+): Promise<{ store: InteractionStore; recorded: boolean; event?: InteractionEvent }> {
+    assertPersonDocId(input.personDocId);
+    if (input.occurredAt !== undefined && (!Number.isFinite(input.occurredAt) || Number.isNaN(new Date(input.occurredAt).getTime()))) {
+        throw new Error("互动发生时间无效，未记录互动");
+    }
+    return withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+        const store = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+        const occurredAt = input.occurredAt ?? Date.now();
+        const event: InteractionEvent = {
+            id: newNodeId(),
+            personDocId: input.personDocId,
+            occurredAt,
+            localDate: toLocalDateKey(new Date(occurredAt)),
+            source: input.source ?? "manual",
+            ...(input.type !== undefined ? { type: input.type } : {}),
+            ...(input.externalRef !== undefined ? { externalRef: input.externalRef } : {}),
+            ...(input.note !== undefined && input.note.length > 0 ? { note: input.note } : {}),
+        };
+        const next = appendEvent(store, event);
+        if (next !== store) {
+            await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, next);
+        }
+        return { store: next, recorded: next !== store, event: next !== store ? event : undefined };
+    });
+}
+
+/** 墓碑删除 */
+export async function deleteInteraction(plugin: Plugin, eventId: string, expectedPersonDocId?: string): Promise<InteractionStore> {
+    return withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+        const store = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+    const event = store.events.find((item) => item.id === eventId);
+    if (event && expectedPersonDocId !== undefined && event.personDocId !== expectedPersonDocId) {
+        throw new Error("互动记录不属于当前人物，操作已停止");
+    }
+    const next = removeEvent(store, eventId);
+        if (next !== store) {
+            await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, next);
+        }
+        return next;
+    });
+}
+
+/** 修改一条互动：锁内墓碑旧事件并追加修正后的新事件（契约见 DATA-CONTRACT §3），写后回读。 */
+export async function amendInteraction(
+    plugin: Plugin,
+    eventId: string,
+    expectedPersonDocId: string,
+    amendment: InteractionAmendment,
+): Promise<{ store: InteractionStore; event: InteractionEvent }> {
+    assertPersonDocId(expectedPersonDocId);
+    return withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+        const store = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+        const original = store.events.find((item) => item.id === eventId);
+        if (original && original.personDocId !== expectedPersonDocId) {
+            throw new Error("互动记录不属于当前人物，操作已停止");
+        }
+        const result = amendEvent(store, eventId, amendment, newNodeId());
+        await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, result.store);
+        return result;
+    });
+}
+
+/** 批量追加多条互动事件（例如群体活动投影），在单个存储锁内完成并写后回读 */
+export async function appendInteractionBatch(
+    plugin: Plugin,
+    events: readonly InteractionEvent[],
+): Promise<{ added: number; total: number }> {
+    if (events.length === 0) return { added: 0, total: 0 };
+    return withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+        let current = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+        let added = 0;
+        for (const event of events) {
+            const next = appendEvent(current, event);
+            if (next !== current) {
+                current = next;
+                added += 1;
+            }
+        }
+        if (added > 0) {
+            await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, current);
+        }
+        return { added, total: current.events.length };
+    });
+}
+
+/** 按 externalRef 移除互动事件（例如赠礼撤回或删除时清理），在单个存储锁内完成并写后回读 */
+export async function removeInteractionsByExternalRef(
+    plugin: Plugin,
+    personDocId: string,
+    externalRef: string,
+): Promise<InteractionStore> {
+    return withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+        const store = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+        const matching = store.events.filter(
+            (event) => event.personDocId === personDocId && event.externalRef === externalRef,
+        );
+        if (matching.length === 0) return store;
+        let current = store;
+        for (const item of matching) {
+            current = removeEvent(current, item.id);
+        }
+        await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, current);
+        return current;
+    });
+}
+
+export { emptyStore };

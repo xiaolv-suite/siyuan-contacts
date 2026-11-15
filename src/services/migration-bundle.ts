@@ -1,0 +1,717 @@
+import type { Plugin } from "siyuan";
+import { exportInteractionJson } from "./interaction-export";
+import { exportFollowUpsJson } from "./followups";
+import { loadCadenceMapStrict, mergeCadenceMap } from "../data/cadences";
+import { loadReminderDismissalsStrict, mergeReminderDismissals } from "../data/reminder-dismissals";
+import { loadRegistryStrict, mergeRegistryEntries } from "../data/registry";
+import { loadTemplatesStoreStrict, mergeTemplatesStore, TEMPLATES_STORAGE_KEY } from "../data/templates";
+import { normalizeTemplatesForWrite } from "../domain/interaction-templates";
+import { INTERACTION_STORAGE_KEY } from "../data/interactions";
+import { mergeInteractionBackup, parseInteractionBackup } from "../domain/interaction-backup";
+import { mergeFollowUpStore } from "../data/followups";
+import { syncFollowUpTasksToDoc } from "./followup-sync";
+import { EXCHANGE_STORAGE_KEY, loadExchangeStore, mergeExchangeStore } from "../data/exchanges";
+import { PERSON_ALIAS_STORAGE_KEY, loadPersonAliasStore, mergePersonAliasStore } from "../data/person-aliases";
+import { loadJsonStrict, saveJsonVerified, withStoreLock } from "../data/storage";
+import { parseExchangeStore } from "../domain/exchanges";
+import type { ExchangeStore } from "../domain/exchanges";
+import { parsePersonAliasStore } from "../domain/person-aliases";
+import type { PersonAliasStore } from "../domain/person-aliases";
+import { MigrationWriteUnknownError } from "../domain/migration-records";
+import type { MigrationRecordIssue, MigrationRecordSummary } from "../domain/migration-records";
+import { normalizeSettings, SETTINGS_STORAGE_KEY } from "../domain/model";
+import { normalizeInteractionStoreForWrite } from "../domain/interactions";
+import { normalizeFollowUpStoreForWrite } from "../domain/followups";
+import { isPersonDocId, normalizeCadenceMapForWrite } from "../domain/cadence";
+import { normalizeDismissalStoreForWrite } from "../domain/reminder-dismissals";
+import { normalizeRegistryStoreForWrite } from "../domain/registry";
+import { getRoster, invalidateRoster } from "./roster";
+import { loadSelfIdentity, mergeSelfIdentity, SELF_IDENTITY_STORAGE_KEY } from "../data/self-identity";
+import { parseSelfIdentity } from "../domain/self-identity.ts";
+import type { SelfIdentity } from "../domain/self-identity.ts";
+import { mapBoundDocIds } from "../api/av";
+import { documentExists } from "../api/blocks";
+import { loadOrgMembershipStore, mergeOrgMembershipStore, ORG_MEMBERSHIP_STORAGE_KEY } from "../data/org-membership";
+import { normalizeOrgMembershipStoreForWrite } from "../domain/org-membership";
+import type { OrgMembershipStore } from "../domain/org-membership";
+import { scanOrganizations } from "./org";
+import { loadRelationshipLabelStore, mergeRelationshipLabelStore, RELATIONSHIP_LABEL_STORAGE_KEY } from "../data/person-relationship-labels";
+import { parsePersonRelationshipLabelStore } from "../domain/person-relationship-labels";
+import type { PersonRelationshipLabelStore } from "../domain/person-relationship-labels";
+import { loadOrganizationProfiles, saveOrganizationProfile, ORGANIZATION_PROFILES_STORAGE_KEY } from "../data/organization-profiles";
+import { validateOrganizationProfile } from "../domain/organization-profile";
+import type { OrganizationProfileDraft } from "../domain/organization-profile";
+import { capturePeopleProfileLifetime, verifyRelationshipLabelReferences } from "./people-profiles";
+import { loadTopicsStoreStrict, mergeTopicsStore, TOPICS_STORAGE_KEY } from "../data/topics";
+import { loadGiftIdeaStoreStrict, mergeGiftIdeasStore, GIFT_IDEAS_STORAGE_KEY } from "../data/gift-ideas";
+import { normalizeGiftIdeaStoreForWrite, type GiftIdeaStore } from "../domain/gift-ideas";
+import { loadOccasionStoreStrict, mergeOccasionsStore, OCCASIONS_STORAGE_KEY } from "../data/occasions";
+import { normalizeOccasionStoreForWrite, type OccasionStore } from "../domain/occasion-cluster";
+import { loadAnniversaryStoreStrict, mergeAnniversariesStore, ANNIVERSARIES_STORAGE_KEY } from "../data/anniversaries";
+import { normalizeAnniversaryStoreForWrite, type AnniversaryStore } from "../domain/anniversaries";
+import { loadPromisesStoreStrict, mergePromisesStore, PERSON_PROMISES_STORAGE_KEY } from "../data/promises";
+import { normalizePromisesStoreForWrite, type PersonPromisesStore } from "../domain/promises";
+import { loadKinshipStoreStrict, mergeKinshipStore, PERSON_KINSHIP_STORAGE_KEY } from "../data/kinship";
+import { normalizeKinshipStoreForWrite, type PersonKinshipStore } from "../domain/kinship";
+import { loadPersonProjectsStoreStrict, mergePersonProjectsStore, PERSON_PROJECTS_STORAGE_KEY } from "../data/projects";
+import { normalizePersonProjectsStoreForWrite, type PersonProjectsStore } from "../domain/projects";
+import { loadItinerariesStoreStrict, mergeItinerariesStore, ITINERARIES_STORAGE_KEY } from "../data/itineraries";
+import { normalizeItineraryStoreForWrite, type PersonItineraryStore } from "../domain/itineraries";
+import { loadScratchpadStoreStrict, mergeScratchpadsStore, PERSON_SCRATCHPAD_STORAGE_KEY } from "../data/person-scratchpad";
+import { normalizeScratchpadStoreForWrite, type PersonScratchpadStore } from "../domain/person-scratchpad";
+import { loadSocialPreferencesStoreStrict, mergeSocialPreferencesStore, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY } from "../data/social-preferences";
+import { normalizeSocialPreferencesStoreForWrite, type PersonSocialPreferencesStore } from "../domain/social-preferences";
+import { loadLifecycleStoreStrict, mergeLifecycleStore, PERSON_LIFECYCLE_STORAGE_KEY } from "../data/lifecycle-stage";
+import { normalizeLifecycleStoreForWrite, type PersonLifecycleStore } from "../domain/lifecycle-stage";
+import { loadPersonOriginStoreStrict, mergePersonOriginStore, PERSON_ORIGIN_STORAGE_KEY } from "../data/person-origins";
+import { normalizePersonOriginStoreForWrite, type PersonOriginStore } from "../domain/person-origin";
+import { TRASH_STORAGE_KEY } from "../data/trash";
+import { parseTopicStore } from "../domain/topics";
+import type { PersonTopicStore } from "../domain/topics";
+
+const BUNDLE_SCHEMA_VERSION = 1;
+export const MIGRATION_BUNDLE_STORAGE_KEY = "lvct-migration-bundle";
+
+export interface MigrationModulePreview {
+    key: "interactions" | "followUps" | "cadences" | "reminderDismissals" | "registry" | "templates" | "exchanges" | "aliases" | "selfIdentity" | "orgMemberships" | "organizationProfiles" | "relationshipLabels" | "topics" | "giftIdeas" | "occasions"
+        | "anniversaries" | "promises" | "kinships" | "projects" | "itineraries" | "scratchpads" | "socialPreferences" | "lifecycleStage" | "personOrigins";
+    label: string;
+    count: number;
+    tombstones?: number;
+}
+
+export const MIGRATION_COVERAGE = [
+    { key: "interaction-events.json", status: "included", module: "interactions" },
+    { key: "follow-ups.json", status: "included", module: "followUps" },
+    { key: "person-cadences.json", status: "included", module: "cadences" },
+    { key: "reminder-dismissals.json", status: "included", module: "reminderDismissals" },
+    { key: "person-registry.json", status: "included", module: "registry" },
+    { key: "interaction-templates.json", status: "included", module: "templates" },
+    { key: EXCHANGE_STORAGE_KEY, status: "included", module: "exchanges" },
+    { key: PERSON_ALIAS_STORAGE_KEY, status: "included", module: "aliases" },
+    { key: SELF_IDENTITY_STORAGE_KEY, status: "included", module: "selfIdentity" },
+    { key: ORG_MEMBERSHIP_STORAGE_KEY, status: "included", module: "orgMemberships" },
+    { key: ORGANIZATION_PROFILES_STORAGE_KEY, status: "included", module: "organizationProfiles" },
+    { key: RELATIONSHIP_LABEL_STORAGE_KEY, status: "included", module: "relationshipLabels" },
+    { key: TOPICS_STORAGE_KEY, status: "included", module: "topics" },
+    { key: GIFT_IDEAS_STORAGE_KEY, status: "included", module: "giftIdeas" },
+    { key: OCCASIONS_STORAGE_KEY, status: "included", module: "occasions" },
+    { key: ANNIVERSARIES_STORAGE_KEY, status: "included", module: "anniversaries" },
+    { key: PERSON_PROMISES_STORAGE_KEY, status: "included", module: "promises" },
+    { key: PERSON_KINSHIP_STORAGE_KEY, status: "included", module: "kinships" },
+    { key: PERSON_PROJECTS_STORAGE_KEY, status: "included", module: "projects" },
+    { key: ITINERARIES_STORAGE_KEY, status: "included", module: "itineraries" },
+    { key: PERSON_SCRATCHPAD_STORAGE_KEY, status: "included", module: "scratchpads" },
+    { key: PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, status: "included", module: "socialPreferences" },
+    { key: PERSON_LIFECYCLE_STORAGE_KEY, status: "included", module: "lifecycleStage" },
+    { key: PERSON_ORIGIN_STORAGE_KEY, status: "included", module: "personOrigins" },
+    { key: "org-projection-checkpoints.json", status: "excluded", reason: "本工作区未完成文档投影请求，不跨库重放" },
+    { key: "organization-operations.json", status: "excluded", reason: "本工作区组织创建/改名操作断点，不跨库重放" },
+    { key: "bridge-requests.json", status: "excluded", reason: "本工作区外部桥请求断点，不跨库重放" },
+    { key: "view-preferences.json", status: "excluded", reason: "个人界面配置" },
+    { key: TRASH_STORAGE_KEY, status: "excluded", reason: "本工作区软删除缓冲，跨库重放会误恢复已在新库重建的联系人" },
+    { key: SETTINGS_STORAGE_KEY, status: "excluded", reason: "数据库锚点需显式重绑" },
+] as const;
+
+interface BundleModules {
+    interactions?: { events?: unknown[]; tombstones?: unknown[]; rawStore?: unknown };
+    followUps?: { items?: unknown[] };
+    cadences?: { cadences?: Record<string, unknown> };
+    reminderDismissals?: { dismissals?: unknown[] };
+    registry?: { registeredAt?: Record<string, unknown> };
+    templates?: { templates?: unknown[] };
+    exchanges?: ExchangeStore;
+    aliases?: PersonAliasStore;
+    selfIdentity?: { schemaVersion: 1; identity: SelfIdentity | null };
+    orgMemberships?: OrgMembershipStore;
+    organizationProfiles?: { schemaVersion: 1; profiles: Record<string, OrganizationProfileDraft> };
+    relationshipLabels?: PersonRelationshipLabelStore;
+    topics?: PersonTopicStore;
+    giftIdeas?: GiftIdeaStore;
+    occasions?: OccasionStore;
+    anniversaries?: AnniversaryStore;
+    promises?: PersonPromisesStore;
+    kinships?: PersonKinshipStore;
+    projects?: PersonProjectsStore;
+    itineraries?: PersonItineraryStore;
+    scratchpads?: PersonScratchpadStore;
+    socialPreferences?: PersonSocialPreferencesStore;
+    lifecycleStage?: PersonLifecycleStore;
+    personOrigins?: PersonOriginStore;
+}
+
+interface MigrationBundle {
+    schemaVersion: number;
+    exportedAt?: string;
+    storageKey?: string;
+    modules?: BundleModules;
+}
+
+const MIGRATION_MODULE_KEYS = new Set<MigrationModulePreview["key"]>([
+    "interactions", "followUps", "cadences", "reminderDismissals", "registry", "templates", "exchanges", "aliases", "selfIdentity", "orgMemberships", "organizationProfiles", "relationshipLabels", "topics", "giftIdeas", "occasions",
+    "anniversaries", "promises", "kinships", "projects", "itineraries", "scratchpads", "socialPreferences", "lifecycleStage", "personOrigins",
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireModuleEnvelope(value: unknown, label: string): Record<string, unknown> {
+    if (!isRecord(value) || value.schemaVersion !== 1) {
+        throw new Error(label + "模块格式或版本不兼容，拒绝导入");
+    }
+    return value;
+}
+
+function validateBundleModules(value: unknown): asserts value is BundleModules {
+    if (!isRecord(value)) throw new Error("迁移包 modules 结构损坏，拒绝导入");
+    for (const key of Object.keys(value)) {
+        if (!MIGRATION_MODULE_KEYS.has(key as MigrationModulePreview["key"])) {
+            throw new Error("迁移包包含未知模块「" + key + "」，拒绝导入");
+        }
+    }
+    if (value.interactions !== undefined) {
+        const module = requireModuleEnvelope(value.interactions, "互动");
+        parseInteractionBackup(JSON.stringify(module));
+    }
+    if (value.followUps !== undefined) {
+        const module = requireModuleEnvelope(value.followUps, "跟进");
+        if (!Array.isArray(module.items)) throw new Error("跟进模块字段损坏，拒绝导入");
+        const items = normalizeFollowUpStoreForWrite({ schemaVersion: 1, items: module.items }).items;
+        if (items.some((item) => !isPersonDocId(item.personDocId))) {
+            throw new Error("跟进模块包含非法人物文档 ID，拒绝导入");
+        }
+    }
+    if (value.cadences !== undefined) {
+        const module = requireModuleEnvelope(value.cadences, "联系节奏");
+        if (!isRecord(module.cadences)) throw new Error("联系节奏模块字段损坏，拒绝导入");
+        normalizeCadenceMapForWrite({ schemaVersion: 1, cadences: module.cadences });
+    }
+    if (value.reminderDismissals !== undefined) {
+        const module = requireModuleEnvelope(value.reminderDismissals, "提醒暂缓");
+        if (!Array.isArray(module.dismissals)) throw new Error("提醒暂缓模块字段损坏，拒绝导入");
+        normalizeDismissalStoreForWrite({ schemaVersion: 1, dismissals: module.dismissals });
+    }
+    if (value.registry !== undefined) {
+        const module = requireModuleEnvelope(value.registry, "收编时间索引");
+        if (!isRecord(module.registeredAt)) throw new Error("收编时间索引模块字段损坏，拒绝导入");
+        normalizeRegistryStoreForWrite({ schemaVersion: 1, registeredAt: module.registeredAt });
+    }
+    if (value.templates !== undefined) {
+        const module = requireModuleEnvelope(value.templates, "备注模板");
+        if (!Array.isArray(module.templates)) throw new Error("备注模板模块字段损坏，拒绝导入");
+        normalizeTemplatesForWrite(module.templates);
+    }
+    if (value.exchanges !== undefined) parseExchangeStore(requireModuleEnvelope(value.exchanges, "往来账本"));
+    if (value.aliases !== undefined) parsePersonAliasStore(requireModuleEnvelope(value.aliases, "人物别名"));
+    if (value.orgMemberships !== undefined) normalizeOrgMembershipStoreForWrite(requireModuleEnvelope(value.orgMemberships, "组织成员"));
+    if (value.organizationProfiles !== undefined) {
+        const module = requireModuleEnvelope(value.organizationProfiles, "组织资料");
+        if (!isRecord(module.profiles)) throw new Error("组织资料模块字段损坏，拒绝导入");
+        for (const [docId, profile] of Object.entries(module.profiles)) {
+            if (!/^\d{14}-[0-9a-z]{7}$/.test(docId)) throw new Error("组织资料包含非法文档 ID，拒绝导入");
+            const checked = validateOrganizationProfile(profile as OrganizationProfileDraft);
+            if (!checked.valid) throw new Error(`组织资料 ${docId} 校验失败：${checked.errors.join("、")}`);
+        }
+    }
+    if (value.relationshipLabels !== undefined) parsePersonRelationshipLabelStore(requireModuleEnvelope(value.relationshipLabels, "与我的关系"));
+    if (value.topics !== undefined) parseTopicStore(requireModuleEnvelope(value.topics, "谈资备忘"));
+    if (value.giftIdeas !== undefined) normalizeGiftIdeaStoreForWrite(requireModuleEnvelope(value.giftIdeas, "礼物点子与偏好"));
+    if (value.occasions !== undefined) normalizeOccasionStoreForWrite(requireModuleEnvelope(value.occasions, "群体活动与场合"));
+    if (value.anniversaries !== undefined) normalizeAnniversaryStoreForWrite(requireModuleEnvelope(value.anniversaries, "重要纪念日"));
+    if (value.promises !== undefined) normalizePromisesStoreForWrite(requireModuleEnvelope(value.promises, "双向承诺"));
+    if (value.kinships !== undefined) normalizeKinshipStoreForWrite(requireModuleEnvelope(value.kinships, "亲属谱系"));
+    if (value.projects !== undefined) normalizePersonProjectsStoreForWrite(requireModuleEnvelope(value.projects, "协作项目"));
+    if (value.itineraries !== undefined) normalizeItineraryStoreForWrite(requireModuleEnvelope(value.itineraries, "会客行程"));
+    if (value.scratchpads !== undefined) normalizeScratchpadStoreForWrite(requireModuleEnvelope(value.scratchpads, "闪念便签"));
+    if (value.socialPreferences !== undefined) normalizeSocialPreferencesStoreForWrite(requireModuleEnvelope(value.socialPreferences, "社交偏好与忌口"));
+    if (value.lifecycleStage !== undefined) normalizeLifecycleStoreForWrite(requireModuleEnvelope(value.lifecycleStage, "交往生命周期阶段"));
+    if (value.personOrigins !== undefined) normalizePersonOriginStoreForWrite(requireModuleEnvelope(value.personOrigins, "初识溯源与引荐"));
+    if (value.selfIdentity !== undefined) {
+        const module = requireModuleEnvelope(value.selfIdentity, "本人身份");
+        if (!("identity" in module)) throw new Error("本人身份模块缺少 identity，拒绝导入");
+        parseSelfIdentity(module.identity);
+    }
+}
+
+function parseBundle(text: string): MigrationBundle {
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(text);
+    } catch {
+        throw new Error("迁移包不是合法 JSON");
+    }
+    const bundle = parsed as MigrationBundle;
+    if (!isRecord(bundle) || bundle.schemaVersion !== BUNDLE_SCHEMA_VERSION
+        || bundle.storageKey !== MIGRATION_BUNDLE_STORAGE_KEY || typeof bundle.modules !== "object" || bundle.modules === null) {
+        throw new Error("迁移包格式或版本不兼容，拒绝导入");
+    }
+    if (bundle.exportedAt !== undefined && typeof bundle.exportedAt !== "string") {
+        throw new Error("迁移包导出时间字段损坏，拒绝导入");
+    }
+    validateBundleModules(bundle.modules);
+    return bundle;
+}
+
+export async function exportMigrationBundle(plugin: Plugin): Promise<string> {
+    const [interactions, followUps, cadences, reminderDismissals, registry, templatesStore, exchanges, aliases, identity, orgMemberships, organizationProfiles, relationshipLabels, topics, giftIdeas, occasions,
+        anniversaries, promises, kinships, projects, itineraries, scratchpads, socialPreferences, lifecycleStage, personOrigins] = await Promise.all([
+        JSON.parse(await exportInteractionJson(plugin)) as BundleModules["interactions"],
+        JSON.parse(await exportFollowUpsJson(plugin)) as BundleModules["followUps"],
+        loadCadenceMapStrict(plugin),
+        loadReminderDismissalsStrict(plugin),
+        loadRegistryStrict(plugin),
+        withStoreLock(TEMPLATES_STORAGE_KEY, () => loadTemplatesStoreStrict(plugin)),
+        withStoreLock(EXCHANGE_STORAGE_KEY, () => loadExchangeStore(plugin)),
+        withStoreLock(PERSON_ALIAS_STORAGE_KEY, () => loadPersonAliasStore(plugin)),
+        withStoreLock(SELF_IDENTITY_STORAGE_KEY, () => loadSelfIdentity(plugin)),
+        withStoreLock(ORG_MEMBERSHIP_STORAGE_KEY, () => loadOrgMembershipStore(plugin)),
+        withStoreLock(ORGANIZATION_PROFILES_STORAGE_KEY, () => loadOrganizationProfiles(plugin)),
+        withStoreLock(RELATIONSHIP_LABEL_STORAGE_KEY, () => loadRelationshipLabelStore(plugin)),
+        withStoreLock(TOPICS_STORAGE_KEY, () => loadTopicsStoreStrict(plugin)),
+        withStoreLock(GIFT_IDEAS_STORAGE_KEY, () => loadGiftIdeaStoreStrict(plugin)),
+        withStoreLock(OCCASIONS_STORAGE_KEY, () => loadOccasionStoreStrict(plugin)),
+        withStoreLock(ANNIVERSARIES_STORAGE_KEY, () => loadAnniversaryStoreStrict(plugin)),
+        withStoreLock(PERSON_PROMISES_STORAGE_KEY, () => loadPromisesStoreStrict(plugin)),
+        withStoreLock(PERSON_KINSHIP_STORAGE_KEY, () => loadKinshipStoreStrict(plugin)),
+        withStoreLock(PERSON_PROJECTS_STORAGE_KEY, () => loadPersonProjectsStoreStrict(plugin)),
+        withStoreLock(ITINERARIES_STORAGE_KEY, () => loadItinerariesStoreStrict(plugin)),
+        withStoreLock(PERSON_SCRATCHPAD_STORAGE_KEY, () => loadScratchpadStoreStrict(plugin)),
+        withStoreLock(PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, () => loadSocialPreferencesStoreStrict(plugin)),
+        withStoreLock(PERSON_LIFECYCLE_STORAGE_KEY, () => loadLifecycleStoreStrict(plugin)),
+        withStoreLock(PERSON_ORIGIN_STORAGE_KEY, () => loadPersonOriginStoreStrict(plugin)),
+    ]);
+    return JSON.stringify({
+        schemaVersion: BUNDLE_SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        storageKey: MIGRATION_BUNDLE_STORAGE_KEY,
+        coverage: MIGRATION_COVERAGE,
+        modules: {
+            interactions,
+            followUps,
+            cadences: { schemaVersion: 1, cadences },
+            reminderDismissals: { schemaVersion: 1, dismissals: reminderDismissals },
+            registry: { schemaVersion: 1, registeredAt: registry.registeredAt },
+            templates: { schemaVersion: 1, templates: templatesStore?.templates ?? [] },
+            exchanges,
+            aliases,
+            selfIdentity: { schemaVersion: 1, identity },
+            orgMemberships,
+            organizationProfiles: { schemaVersion: 1, profiles: organizationProfiles },
+            relationshipLabels,
+            topics,
+            giftIdeas,
+            occasions,
+            anniversaries,
+            promises,
+            kinships,
+            projects,
+            itineraries,
+            scratchpads,
+            socialPreferences,
+            lifecycleStage,
+            personOrigins,
+        },
+    }, null, 2);
+}
+
+/** 预览：解析包并给出各模块条目计数（零写入）；坏包/版本不兼容抛错 */
+export function previewMigrationImport(text: string): MigrationModulePreview[] {
+    const bundle = parseBundle(text);
+    const modules = bundle.modules as BundleModules;
+    const previews: MigrationModulePreview[] = [];
+    const push = (key: MigrationModulePreview["key"], label: string, count: number): void => {
+        if (count > 0) previews.push({ key, label, count });
+    };
+    if (modules.interactions) {
+        const store = parseInteractionBackup(JSON.stringify(modules.interactions));
+        if (store.events.length > 0 || store.tombstones.length > 0) {
+            previews.push({ key: "interactions", label: "互动事件", count: store.events.length, tombstones: store.tombstones.length });
+        }
+    }
+    push("followUps", "跟进事项", Array.isArray(modules.followUps?.items) ? modules.followUps!.items!.length : 0);
+    push("cadences", "联系节奏", Object.keys(modules.cadences?.cadences ?? {}).length);
+    push("reminderDismissals", "提醒暂缓", Array.isArray(modules.reminderDismissals?.dismissals) ? modules.reminderDismissals!.dismissals!.length : 0);
+    push("registry", "收编时间索引", Object.keys(modules.registry?.registeredAt ?? {}).length);
+    push("templates", "备注模板", Array.isArray(modules.templates?.templates) ? modules.templates!.templates!.length : 0);
+    push("exchanges", "往来账本", modules.exchanges?.records.length ?? 0);
+    if (modules.aliases) {
+        const store = parsePersonAliasStore(modules.aliases);
+        if (store.aliases.length > 0 || (store.tombstones?.length ?? 0) > 0) {
+            previews.push({ key: "aliases", label: "人物别名", count: store.aliases.length, tombstones: store.tombstones?.length ?? 0 });
+        }
+    }
+    if (modules.selfIdentity) push("selfIdentity", "本人身份", modules.selfIdentity.identity ? 1 : 0);
+    if (modules.relationshipLabels) push("relationshipLabels", "与我的关系", modules.relationshipLabels.labels.length);
+    if (modules.orgMemberships) {
+        const store = normalizeOrgMembershipStoreForWrite(modules.orgMemberships);
+        if (store.memberships.length > 0 || (store.tombstones?.length ?? 0) > 0) {
+            previews.push({ key: "orgMemberships", label: "组织成员", count: store.memberships.length, tombstones: store.tombstones?.length ?? 0 });
+        }
+    }
+    if (modules.organizationProfiles) push("organizationProfiles", "组织资料", Object.keys(modules.organizationProfiles.profiles ?? {}).length);
+    if (modules.topics) {
+        const totalCount = Object.values(modules.topics.topics ?? {}).reduce((acc, list) => acc + (Array.isArray(list) ? list.length : 0), 0);
+        push("topics", "谈资备忘", totalCount);
+    }
+    if (modules.giftIdeas) {
+        const totalCount = Object.values(modules.giftIdeas.ideas ?? {}).reduce((acc, list) => acc + (Array.isArray(list) ? list.length : 0), 0);
+        push("giftIdeas", "礼物点子与偏好", totalCount);
+    }
+    if (modules.occasions) {
+        const totalCount = Array.isArray(modules.occasions.occasions) ? modules.occasions.occasions.length : 0;
+        push("occasions", "群体活动与场合", totalCount);
+    }
+    if (modules.anniversaries) {
+        const totalCount = Object.values(modules.anniversaries.anniversaries ?? {}).reduce((acc: number, list) => acc + (Array.isArray(list) ? list.length : 0), 0);
+        push("anniversaries", "重要纪念日", totalCount);
+    }
+    if (modules.promises) {
+        const count = Object.values(modules.promises.promises ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("promises", "双向信诺约定", count);
+    }
+    if (modules.kinships) {
+        const count = Object.values(modules.kinships.kinships ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("kinships", "家庭亲属谱系", count);
+    }
+    if (modules.projects) {
+        const count = Object.values(modules.projects.projects ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("projects", "协作项目记录", count);
+    }
+    if (modules.itineraries) {
+        const count = Object.values(modules.itineraries.itineraries ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("itineraries", "会客行程备忘", count);
+    }
+    if (modules.scratchpads) {
+        const count = Object.values(modules.scratchpads.notes ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("scratchpads", "闪念速记便签", count);
+    }
+    if (modules.socialPreferences) {
+        const count = Object.values(modules.socialPreferences.preferences ?? {}).reduce((acc: number, l) => acc + (Array.isArray(l) ? l.length : 0), 0);
+        push("socialPreferences", "社交偏好与忌口", count);
+    }
+    if (modules.lifecycleStage) {
+        const count = Object.keys(modules.lifecycleStage.records ?? {}).length;
+        push("lifecycleStage", "交往生命周期阶段", count);
+    }
+    if (modules.personOrigins) {
+        const count = Object.keys(modules.personOrigins.origins ?? {}).length;
+        push("personOrigins", "初识溯源与引荐", count);
+    }
+    return previews;
+}
+
+export interface MigrationModuleFailure {
+    key: MigrationModulePreview["key"];
+    label: string;
+    message: string;
+    status?: "failed" | "unknown";
+}
+
+export interface MigrationImportResult {
+    modules: { key: MigrationModulePreview["key"]; label: string; merged: number; skipped?: number; removed?: number; tombstonesAdded?: number }[];
+    /** FUNC-01.6-b：合并失败模块（含原因）；失败不阻断其他模块，也不得报整包成功 */
+    failed: MigrationModuleFailure[];
+    /** 跟进合并/互动合并各自的跳过数（现状优先未计入 merged） */
+    skipped: { followUps: number; interactions: number };
+    issues: (MigrationRecordIssue & { key: MigrationModulePreview["key"]; label: string })[];
+    retryBundle?: string;
+}
+
+/** 确认导入：逐模块合并（互动/跟进复用既有合并纪律），失败模块记录原因不阻断其他模块 */
+export async function importMigrationBundle(plugin: Plugin, text: string): Promise<MigrationImportResult> {
+    previewMigrationImport(text); /* 合并前再校验一次包合法性 */
+    const modules = parseBundle(text).modules as BundleModules;
+    const result: MigrationImportResult = { modules: [], failed: [], skipped: { followUps: 0, interactions: 0 }, issues: [] };
+    const runModule = async (key: MigrationModulePreview["key"], label: string, run: () => Promise<void>): Promise<void> => {
+        try {
+            await run();
+        } catch (error) {
+            result.failed.push({ key, label, message: error instanceof Error ? error.message : String(error), status: error instanceof MigrationWriteUnknownError ? "unknown" : "failed" });
+        }
+    };
+
+    if (modules.interactions) {
+        await runModule("interactions", "互动事件", async () => {
+            const incoming = parseInteractionBackup(JSON.stringify(modules.interactions));
+            const summary = await withStoreLock(INTERACTION_STORAGE_KEY, async () => {
+                const current = normalizeInteractionStoreForWrite(await loadJsonStrict(plugin, INTERACTION_STORAGE_KEY));
+                const merged = mergeInteractionBackup(current, incoming);
+                if (JSON.stringify(merged.store) !== JSON.stringify(current)) {
+                    try {
+                        await saveJsonVerified(plugin, INTERACTION_STORAGE_KEY, merged.store);
+                    } catch (cause) { throw new MigrationWriteUnknownError(cause); }
+                }
+                return merged.summary;
+            });
+            result.modules.push({ key: "interactions", label: "互动事件", merged: summary.added, skipped: summary.skipped,
+                removed: summary.removed, tombstonesAdded: summary.tombstonesAdded });
+            result.skipped.interactions = summary.skipped;
+        });
+    }
+    if (Array.isArray(modules.followUps?.items)) {
+        await runModule("followUps", "跟进事项", async () => {
+            const incoming = normalizeFollowUpStoreForWrite({
+                schemaVersion: 1,
+                items: modules.followUps!.items,
+            });
+            const summary = await mergeFollowUpStore(plugin, incoming.items);
+            result.modules.push({ key: "followUps", label: "跟进事项", merged: summary.added, skipped: summary.skipped });
+            result.skipped.followUps = summary.skipped;
+            /* FUNC-01.6-b：恢复后对新增人物触发安全任务同步（settings 未初始化/文档不可达在 sync 内降级） */
+            for (const personDocId of summary.personDocIds) {
+                await syncFollowUpTasksToDoc(plugin, personDocId);
+            }
+        });
+    }
+    if (modules.cadences?.cadences && typeof modules.cadences.cadences === "object") {
+        await runModule("cadences", "联系节奏", async () => {
+            const merged = await mergeCadenceMap(plugin, modules.cadences!.cadences as Record<string, { days: number; paused: boolean }>);
+            result.modules.push({ key: "cadences", label: "联系节奏", merged });
+        });
+    }
+    if (Array.isArray(modules.reminderDismissals?.dismissals)) {
+        await runModule("reminderDismissals", "提醒暂缓", async () => {
+            const merged = await mergeReminderDismissals(plugin, modules.reminderDismissals!.dismissals as never[]);
+            result.modules.push({ key: "reminderDismissals", label: "提醒暂缓", merged });
+        });
+    }
+    if (modules.registry?.registeredAt && typeof modules.registry.registeredAt === "object") {
+        await runModule("registry", "收编时间索引", async () => {
+            const merged = await mergeRegistryEntries(plugin, modules.registry!.registeredAt as Record<string, string>);
+            result.modules.push({ key: "registry", label: "收编时间索引", merged });
+        });
+    }
+    if (Array.isArray(modules.templates?.templates)) {
+        await runModule("templates", "备注模板", async () => {
+            const incoming = normalizeTemplatesForWrite(modules.templates!.templates);
+            if (incoming.length > 0) {
+                /* FUNC-01.6-c：读取、合并、保存同一存储锁临界区（并发恢复不丢模板） */
+                const added = await mergeTemplatesStore(plugin, incoming);
+                result.modules.push({ key: "templates", label: "备注模板", merged: added });
+            }
+        });
+    }
+    let reachable: Promise<ReadonlySet<string>> | undefined;
+    const reachablePeople = (): Promise<ReadonlySet<string>> => {
+        reachable ??= (async () => {
+            const settings = normalizeSettings(await loadJsonStrict(plugin, SETTINGS_STORAGE_KEY));
+            if (!settings) throw new Error("无法核实人物归属：请先恢复思源原文档并重绑人脉数据库");
+            invalidateRoster();
+            const counts = new Map<string, number>();
+            for (const person of await getRoster(settings)) counts.set(person.docId, (counts.get(person.docId) ?? 0) + 1);
+            return new Set([...counts].filter(([, count]) => count === 1).map(([docId]) => docId));
+        })();
+        return reachable;
+    };
+    const addSummary = (key: MigrationModulePreview["key"], label: string, summary: MigrationRecordSummary): void => {
+        result.modules.push({ key, label, merged: summary.merged, skipped: summary.skipped, removed: summary.removed });
+        result.issues.push(...summary.issues.map((entry) => ({ ...entry, key, label })));
+    };
+    if (modules.exchanges) {
+        await runModule("exchanges", "往来账本", async () => {
+            const incoming = parseExchangeStore(modules.exchanges);
+            const people = incoming.records.length > 0 ? await reachablePeople() : new Set<string>();
+            addSummary("exchanges", "往来账本", await mergeExchangeStore(plugin, incoming, people));
+        });
+    }
+    if (modules.aliases) {
+        await runModule("aliases", "人物别名", async () => {
+            const incoming = parsePersonAliasStore(modules.aliases);
+            const people = incoming.aliases.length > 0 ? await reachablePeople() : new Set<string>();
+            addSummary("aliases", "人物别名", await mergePersonAliasStore(plugin, incoming, people));
+        });
+    }
+    if (modules.selfIdentity) {
+        await runModule("selfIdentity", "本人身份", async () => {
+            const incoming = parseSelfIdentity(modules.selfIdentity!.identity);
+            if (!incoming) {
+                addSummary("selfIdentity", "本人身份", { merged: 0, skipped: 0, removed: 0, issues: [] });
+                return;
+            }
+            const current = await loadSelfIdentity(plugin);
+            if (current && current.selfDocId !== incoming.selfDocId) {
+                addSummary("selfIdentity", "本人身份", await mergeSelfIdentity(plugin, incoming, null));
+                return;
+            }
+            const settings = normalizeSettings(await loadJsonStrict(plugin, SETTINGS_STORAGE_KEY));
+            if (!settings) throw new Error("请先恢复原文档并重绑数据库，再恢复本人身份");
+            invalidateRoster();
+            const people = (await getRoster(settings)).filter((person) => person.docId === incoming.selfDocId);
+            const itemMap = await mapBoundDocIds(settings.avId, [incoming.selfDocId]);
+            if (people.length > 1 || people.length === 1 && itemMap[incoming.selfDocId] !== people[0].itemId) {
+                throw new Error("本人文档与目标绑定映射不一致，身份未恢复；请核对数据库");
+            }
+            const targetItemId = people.length === 1 && await documentExists(incoming.selfDocId) ? people[0].itemId : null;
+            const summary = await mergeSelfIdentity(plugin, incoming, targetItemId);
+            if (summary.merged > 0) {
+                try {
+                    const verified = await mapBoundDocIds(settings.avId, [incoming.selfDocId]);
+                    if (verified[incoming.selfDocId] !== targetItemId || !await documentExists(incoming.selfDocId)) throw new Error("本人身份写后绑定未收敛");
+                } catch (cause) {
+                    throw new MigrationWriteUnknownError(cause);
+                } finally { invalidateRoster(); }
+            }
+            addSummary("selfIdentity", "本人身份", summary);
+        });
+    }
+    if (modules.orgMemberships) {
+        await runModule("orgMemberships", "组织成员", async () => {
+            const incoming = normalizeOrgMembershipStoreForWrite(modules.orgMemberships);
+            const organizations = incoming.memberships.length > 0 ? await scanOrganizations() : [];
+            const people = incoming.memberships.length > 0 ? await reachablePeople() : new Set<string>();
+            const organizationIds = new Set(organizations.map((organization) => organization.docId));
+            const personIds = new Set([...people].filter((docId) => !organizationIds.has(docId)));
+            addSummary("orgMemberships", "组织成员", await mergeOrgMembershipStore(plugin, incoming, personIds, organizationIds));
+        });
+    }
+    if (modules.organizationProfiles) {
+        await runModule("organizationProfiles", "组织资料", async () => {
+            if (Object.keys(modules.organizationProfiles!.profiles ?? {}).length === 0) {
+                result.modules.push({ key: "organizationProfiles", label: "组织资料", merged: 0 });
+                return;
+            }
+            const organizations = await scanOrganizations();
+            const reachable = new Set(organizations.map((organization) => organization.docId));
+            const current = await loadOrganizationProfiles(plugin);
+            let merged = 0;
+            let skipped = 0;
+            for (const [docId, profile] of Object.entries(modules.organizationProfiles!.profiles)) {
+                if (!reachable.has(docId) || current[docId]) { skipped += 1; continue; }
+                await saveOrganizationProfile(plugin, docId, profile);
+                merged += 1;
+            }
+            result.modules.push({ key: "organizationProfiles", label: "组织资料", merged, skipped });
+        });
+    }
+    if (modules.relationshipLabels) {
+        await runModule("relationshipLabels", "与我的关系", async () => {
+            const incoming = parsePersonRelationshipLabelStore(modules.relationshipLabels);
+            const assertActive = capturePeopleProfileLifetime(plugin);
+            await withStoreLock(SELF_IDENTITY_STORAGE_KEY, async () => {
+                assertActive();
+                if (incoming.labels.length === 0) {
+                    addSummary("relationshipLabels", "与我的关系", await mergeRelationshipLabelStore(plugin, incoming, null, new Set(), assertActive));
+                    return;
+                }
+                const settings = normalizeSettings(await loadJsonStrict(plugin, SETTINGS_STORAGE_KEY));
+                if (!settings) throw new Error("请先重绑数据库，再核实本人参照与关系称谓");
+                const references = await verifyRelationshipLabelReferences(plugin, settings, incoming.labels.map((record) => record.personDocId));
+                const selfDocId = references.identity?.selfDocId ?? null;
+                const reachable = references.reachable;
+                const eligible = incoming.labels.filter((record) => record.selfDocId === selfDocId && reachable.has(record.selfDocId) && reachable.has(record.personDocId));
+                const verifiedDocIds = new Set([selfDocId, ...eligible.map((record) => record.personDocId)]);
+                const writtenReferences = { ...references, itemIds: new Map([...references.itemIds].filter(([docId]) => verifiedDocIds.has(docId))) };
+                const summary = await mergeRelationshipLabelStore(plugin, { schemaVersion: 1, labels: eligible }, selfDocId, reachable, assertActive);
+                const excluded = incoming.labels.filter((record) => !eligible.includes(record));
+                summary.skipped += excluded.length;
+                summary.issues.push(...excluded.map((record): MigrationRecordIssue => ({
+                    id: record.id, selfDocId: record.selfDocId, personDocId: record.personDocId, reason: "unreachable",
+                    message: "原本人或人物文档不可达、绑定映射不一致，未恢复称谓；请核对稳定文档 ID",
+                })));
+                if (summary.merged > 0) {
+                    try {
+                        const currentSettings = normalizeSettings(await loadJsonStrict(plugin, SETTINGS_STORAGE_KEY));
+                        if (JSON.stringify(currentSettings) !== JSON.stringify(settings)) throw new Error("称谓写后数据库锚点已变化");
+                        await verifyRelationshipLabelReferences(plugin, settings, eligible.map((record) => record.personDocId), writtenReferences);
+                        assertActive();
+                    } catch (cause) { throw new MigrationWriteUnknownError(cause); }
+                }
+                addSummary("relationshipLabels", "与我的关系", summary);
+            });
+        });
+    }
+    if (modules.topics) {
+        await runModule("topics", "谈资备忘", async () => {
+            const incoming = parseTopicStore(modules.topics);
+            const summary = await mergeTopicsStore(plugin, incoming);
+            result.modules.push({ key: "topics", label: "谈资备忘", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.giftIdeas) {
+        await runModule("giftIdeas", "礼物点子与偏好", async () => {
+            const incoming = normalizeGiftIdeaStoreForWrite(modules.giftIdeas);
+            const summary = await mergeGiftIdeasStore(plugin, incoming);
+            result.modules.push({ key: "giftIdeas", label: "礼物点子与偏好", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.occasions) {
+        await runModule("occasions", "群体活动与场合", async () => {
+            const incoming = normalizeOccasionStoreForWrite(modules.occasions);
+            const summary = await mergeOccasionsStore(plugin, incoming);
+            result.modules.push({ key: "occasions", label: "群体活动与场合", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.anniversaries) {
+        await runModule("anniversaries", "重要纪念日", async () => {
+            const incoming = normalizeAnniversaryStoreForWrite(modules.anniversaries!);
+            const summary = await mergeAnniversariesStore(plugin, incoming);
+            result.modules.push({ key: "anniversaries", label: "重要纪念日", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.promises) {
+        await runModule("promises", "双向信诺约定", async () => {
+            const incoming = normalizePromisesStoreForWrite(modules.promises!);
+            const summary = await mergePromisesStore(plugin, incoming);
+            result.modules.push({ key: "promises", label: "双向信诺约定", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.kinships) {
+        await runModule("kinships", "家庭亲属谱系", async () => {
+            const incoming = normalizeKinshipStoreForWrite(modules.kinships!);
+            const summary = await mergeKinshipStore(plugin, incoming);
+            result.modules.push({ key: "kinships", label: "家庭亲属谱系", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.projects) {
+        await runModule("projects", "协作项目记录", async () => {
+            const incoming = normalizePersonProjectsStoreForWrite(modules.projects!);
+            const summary = await mergePersonProjectsStore(plugin, incoming);
+            result.modules.push({ key: "projects", label: "协作项目记录", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.itineraries) {
+        await runModule("itineraries", "会客行程备忘", async () => {
+            const incoming = normalizeItineraryStoreForWrite(modules.itineraries!);
+            const summary = await mergeItinerariesStore(plugin, incoming);
+            result.modules.push({ key: "itineraries", label: "会客行程备忘", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.scratchpads) {
+        await runModule("scratchpads", "闪念速记便签", async () => {
+            const incoming = normalizeScratchpadStoreForWrite(modules.scratchpads!);
+            const summary = await mergeScratchpadsStore(plugin, incoming);
+            result.modules.push({ key: "scratchpads", label: "闪念速记便签", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.socialPreferences) {
+        await runModule("socialPreferences", "社交偏好与忌口", async () => {
+            const incoming = normalizeSocialPreferencesStoreForWrite(modules.socialPreferences!);
+            const summary = await mergeSocialPreferencesStore(plugin, incoming);
+            result.modules.push({ key: "socialPreferences", label: "社交偏好与忌口", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.lifecycleStage) {
+        await runModule("lifecycleStage", "交往生命周期阶段", async () => {
+            const incoming = normalizeLifecycleStoreForWrite(modules.lifecycleStage!);
+            const summary = await mergeLifecycleStore(plugin, incoming);
+            result.modules.push({ key: "lifecycleStage", label: "交往生命周期阶段", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    if (modules.personOrigins) {
+        await runModule("personOrigins", "初识溯源与引荐", async () => {
+            const incoming = normalizePersonOriginStoreForWrite(modules.personOrigins!);
+            const summary = await mergePersonOriginStore(plugin, incoming);
+            result.modules.push({ key: "personOrigins", label: "初识溯源与引荐", merged: summary.merged, skipped: summary.skipped });
+        });
+    }
+    const pending = new Set([...result.failed.map((module) => module.key), ...result.issues.map((entry) => entry.key)]);
+    if (pending.size > 0) {
+        result.retryBundle = JSON.stringify({
+            schemaVersion: BUNDLE_SCHEMA_VERSION,
+            storageKey: MIGRATION_BUNDLE_STORAGE_KEY,
+            modules: Object.fromEntries(Object.entries(modules).filter(([key]) => pending.has(key as MigrationModulePreview["key"]))),
+        });
+    }
+    return result;
+}

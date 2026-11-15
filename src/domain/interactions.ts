@@ -1,0 +1,478 @@
+/**
+ * 互动事件投影（纯函数）：谁最近联系过、"久未联系"筛选。
+ * 数据契约见 docs/DATA-CONTRACT.md §3：事件只追加、删除写墓碑、
+ * personDocId+source+externalRef 构成幂等身份。
+ */
+import type { ContactSummary } from "./person";
+import { isValidDateKey, toLocalDateKey } from "./date-key.ts";
+export { toLocalDateKey };
+
+export type InteractionSource = "manual" | "diary" | "api";
+
+export type InteractionType = "meeting" | "call" | "message" | "meal" | "email" | "other";
+
+export const INTERACTION_TYPES: readonly InteractionType[] = [
+    "meeting",
+    "call",
+    "message",
+    "meal",
+    "email",
+    "other",
+] as const;
+
+export const INTERACTION_TYPE_LABELS: Record<InteractionType, { label: string; icon: string }> = {
+    meeting: { label: "见面", icon: "🤝" },
+    call: { label: "电话", icon: "📞" },
+    message: { label: "消息", icon: "💬" },
+    meal: { label: "聚餐", icon: "🍽️" },
+    email: { label: "邮件", icon: "✉️" },
+    other: { label: "其他", icon: "📝" },
+};
+
+export interface InteractionEvent {
+    id: string;
+    personDocId: string;
+    /** 事件发生时刻（毫秒） */
+    occurredAt: number;
+    /** 用户本地日 YYYY-MM-DD（全库日期契约，禁止用毫秒差取整推算） */
+    localDate: string;
+    source: InteractionSource;
+    /** 语义分类类型（见面、电话、消息、聚餐、邮件、其他；缺省通过 inferInteractionType 优雅推导） */
+    type?: InteractionType;
+    /** 场合标识（与人物 ID、source 配合构成幂等身份） */
+    externalRef?: string;
+    note?: string;
+}
+
+export interface InteractionStore {
+    schemaVersion: 1;
+    events: InteractionEvent[];
+    /** 已删除事件的 id 墓碑：同步重放不得复活 */
+    tombstones: string[];
+}
+
+export const INTERACTION_STORE_VERSION = 1;
+
+function isInteractionEvent(raw: unknown): raw is InteractionEvent {
+    if (raw === null || typeof raw !== "object") return false;
+    const event = raw as Partial<InteractionEvent>;
+    return typeof event.id === "string" && event.id.length > 0 &&
+        typeof event.personDocId === "string" && event.personDocId.length > 0 &&
+        typeof event.occurredAt === "number" && Number.isFinite(event.occurredAt) &&
+        isValidDateKey(event.localDate) &&
+        (event.source === "manual" || event.source === "diary" || event.source === "api") &&
+        (event.type === undefined || INTERACTION_TYPES.includes(event.type as InteractionType)) &&
+        (event.externalRef === undefined || typeof event.externalRef === "string") &&
+        (event.note === undefined || typeof event.note === "string");
+}
+
+/** 写前检查不丢弃损坏数据；正常重复项及墓碑仍按投影规则处理。 */
+export function normalizeInteractionStoreForWrite(raw: unknown): InteractionStore {
+    if (raw == null || raw === "") return emptyStore();
+    if (typeof raw !== "object" ||
+        (raw as Partial<InteractionStore>).schemaVersion !== INTERACTION_STORE_VERSION) {
+        throw new Error("互动存储格式或版本不兼容，操作已停止；请先备份并检查原文件");
+    }
+    const record = raw as Partial<InteractionStore>;
+    if (!Array.isArray(record.events) || !record.events.every(isInteractionEvent) ||
+        !Array.isArray(record.tombstones) || !record.tombstones.every((id) => typeof id === "string")) {
+        throw new Error("互动存储内容损坏，操作已停止；请先备份并检查原文件");
+    }
+    return normalizeInteractionStore(raw);
+}
+
+/** 读时归一：任何脏数据降级为空库，绝不抛错 */
+export function normalizeInteractionStore(raw: unknown): InteractionStore {
+    if (raw === null || typeof raw !== "object") return emptyStore();
+    const record = raw as Partial<InteractionStore>;
+    if (record.schemaVersion !== INTERACTION_STORE_VERSION) return emptyStore();
+    const tombstones = Array.isArray(record.tombstones) ? record.tombstones.filter((id) => typeof id === "string") : [];
+    const events = Array.isArray(record.events)
+        ? record.events.filter(isInteractionEvent)
+        : [];
+    const seenTombstones = new Set(tombstones);
+    const seenIds = new Set<string>();
+    const deduped = new Map<string, InteractionEvent>();
+    for (const event of events) {
+        if (seenTombstones.has(event.id)) continue;
+        if (seenIds.has(event.id)) continue;
+        const identity = event.externalRef !== undefined
+            ? JSON.stringify([event.personDocId, event.source, event.externalRef])
+            : JSON.stringify([event.id]);
+        if (deduped.has(identity)) continue;
+        seenIds.add(event.id);
+        deduped.set(identity, event);
+    }
+    return { schemaVersion: INTERACTION_STORE_VERSION, events: [...deduped.values()], tombstones };
+}
+
+export function emptyStore(): InteractionStore {
+    return { schemaVersion: INTERACTION_STORE_VERSION, events: [], tombstones: [] };
+}
+
+/** 幂等判定：同 id 或同人物+source+externalRef 视为同一条。 */
+export function isDuplicateEvent(store: InteractionStore, event: InteractionEvent): boolean {
+    if (store.tombstones.includes(event.id)) return true;
+    return store.events.some(
+        (existing) =>
+            existing.id === event.id ||
+            (event.externalRef !== undefined && existing.personDocId === event.personDocId &&
+                existing.source === event.source && existing.externalRef === event.externalRef),
+    );
+}
+
+/** 增量加入事件（纯函数返回新 store） */
+export function appendEvent(store: InteractionStore, event: InteractionEvent): InteractionStore {
+    if (isDuplicateEvent(store, event)) return store;
+    return { ...store, events: [...store.events, event] };
+}
+
+/** 墓碑删除（纯函数） */
+export function removeEvent(store: InteractionStore, eventId: string): InteractionStore {
+    if (!store.events.some((event) => event.id === eventId)) return store;
+    return {
+        ...store,
+        events: store.events.filter((event) => event.id !== eventId),
+        tombstones: store.tombstones.includes(eventId) ? store.tombstones : [...store.tombstones, eventId],
+    };
+}
+
+export interface InteractionAmendment {
+    note?: string;
+    type?: InteractionType;
+    /** 新的本地日 YYYY-MM-DD；与原日期相同则保留原时刻 */
+    localDate?: string;
+}
+
+/**
+ * 修改一条互动（纯函数）：不原地改写，墓碑旧 id 并追加修正后的新事件，
+ * 保留 personDocId、source 与 externalRef，因此同步重放、迁移合并都不会复活旧内容。
+ * 新日期沿用原事件当天的时分秒，避免同日排序跳动。
+ */
+export function amendEvent(
+    store: InteractionStore,
+    eventId: string,
+    amendment: InteractionAmendment,
+    newId: string,
+): { store: InteractionStore; event: InteractionEvent } {
+    const original = store.events.find((event) => event.id === eventId);
+    if (!original) throw new Error("这条互动已不存在，可能已被删除或在别处修改");
+    if (!newId || newId === eventId || store.tombstones.includes(newId) || store.events.some((event) => event.id === newId)) {
+        throw new Error("互动修改的新标识无效，操作已停止");
+    }
+    if (amendment.type !== undefined && !INTERACTION_TYPES.includes(amendment.type)) {
+        throw new Error("互动类型无效，未保存修改");
+    }
+    let occurredAt = original.occurredAt;
+    let localDate = original.localDate;
+    if (amendment.localDate !== undefined && amendment.localDate !== original.localDate) {
+        if (!isValidDateKey(amendment.localDate)) throw new Error("互动日期无效，未保存修改");
+        const [year, month, day] = amendment.localDate.split("-").map(Number);
+        const time = new Date(original.occurredAt);
+        const moved = new Date(year, month - 1, day, time.getHours(), time.getMinutes(), time.getSeconds(), time.getMilliseconds());
+        if (Number.isNaN(moved.getTime()) || toLocalDateKey(moved) !== amendment.localDate) {
+            throw new Error("互动日期无效，未保存修改");
+        }
+        occurredAt = moved.getTime();
+        localDate = amendment.localDate;
+    }
+    const note = amendment.note !== undefined ? amendment.note.trim() : original.note;
+    const type = amendment.type ?? original.type;
+    const event: InteractionEvent = {
+        id: newId,
+        personDocId: original.personDocId,
+        occurredAt,
+        localDate,
+        source: original.source,
+        ...(type !== undefined ? { type } : {}),
+        ...(original.externalRef !== undefined ? { externalRef: original.externalRef } : {}),
+        ...(note ? { note } : {}),
+    };
+    const removed = removeEvent(store, eventId);
+    return { store: { ...removed, events: [...removed.events, event] }, event };
+}
+
+export interface StalenessInfo {
+    person: ContactSummary;
+    /** 最近一次互动的本地日；从未互动为 undefined */
+    lastLocalDate?: string;
+    /** 距今天数；从未互动为 undefined */
+    lastDaysAgo?: number;
+}
+
+/** 每人最近互动投影 */
+export function lastInteractionByPerson(
+    store: InteractionStore,
+    people: readonly ContactSummary[],
+    now: Date = new Date(),
+): Map<string, StalenessInfo> {
+    const lastByDoc = new Map<string, InteractionEvent>();
+    for (const event of store.events) {
+        const current = lastByDoc.get(event.personDocId);
+        if (!current || event.occurredAt > current.occurredAt) {
+            lastByDoc.set(event.personDocId, event);
+        }
+    }
+    const today = startOfLocalDay(now);
+    const result = new Map<string, StalenessInfo>();
+    for (const person of people) {
+        const last = lastByDoc.get(person.docId);
+        if (!last) {
+            result.set(person.docId, { person });
+            continue;
+        }
+        const lastDate = parseLocalDay(last.localDate);
+        const daysAgo = lastDate ? daysBetweenLocal(lastDate, today) : undefined;
+        result.set(person.docId, { person, lastLocalDate: last.localDate, lastDaysAgo: daysAgo });
+    }
+    return result;
+}
+
+/** 久未联系筛选：超过 thresholdDays 未互动（含从未互动），按最久优先排序。
+ * cadences（F06）：按人覆盖阈值或暂停——paused 直接排除，自定义天数替换该人的阈值；
+ * 从未互动不受自定义天数影响（仍算久未联系），暂停则一并隐藏。 */
+export function staleContacts(
+    store: InteractionStore,
+    people: readonly ContactSummary[],
+    thresholdDays: number,
+    now: Date = new Date(),
+    cadences: Readonly<Record<string, { days: number; paused: boolean }>> = {},
+): StalenessInfo[] {
+    const infos = [...lastInteractionByPerson(store, people, now).values()];
+    return infos
+        .filter((info) => {
+            const cadence = cadences[info.person.docId];
+            if (cadence?.paused) return false;
+            const threshold = cadence?.days ?? thresholdDays;
+            return info.lastDaysAgo === undefined || info.lastDaysAgo >= threshold;
+        })
+        .sort((a, b) => (b.lastDaysAgo ?? Number.MAX_SAFE_INTEGER) - (a.lastDaysAgo ?? Number.MAX_SAFE_INTEGER));
+}
+
+function startOfLocalDay(now: Date): Date {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function parseLocalDay(value: string): Date | undefined {
+    const parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parts) return undefined;
+    return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+}
+
+function daysBetweenLocal(from: Date, to: Date): number {
+    return Math.round((to.getTime() - from.getTime()) / 86400000);
+}
+
+/** 对外桥 recordInteraction 的确定性默认幂等键（同批人员+同日 → 同键，与人员顺序无关） */
+export function defaultBridgeRef(personDocIds: readonly string[], date: string): string {
+    return `bridge:${date}:${[...personDocIds].sort().join(",")}`;
+}
+
+/* ---------- 人物洞察：互动时间线与共同出席（纯投影） ---------- */
+
+export interface TimelineItem {
+    eventId: string;
+    localDate: string;
+    note?: string;
+    source: InteractionSource;
+    type: InteractionType;
+    /** 同场人数（含本人）；同场事件才 >1 */
+    groupSize: number;
+    occurredAt?: number;
+    externalRef?: string;
+}
+
+/**
+ * 优雅推导互动事件的语义类型：
+ * 优先取显式指定的 type；若缺省，依据备注前缀或关键词（如 [会议]、[聚餐]、[电话]）推导；未匹配归为 other。
+ */
+export function inferInteractionType(event: Pick<InteractionEvent, "source" | "note" | "type">): InteractionType {
+    if (event.type && INTERACTION_TYPES.includes(event.type)) {
+        return event.type;
+    }
+    const note = event.note?.trim() ?? "";
+    if (/^\[(?:会议|研讨|沟通|会面|拜访)\]/i.test(note) || /面谈|拜访|碰面|闭门会/.test(note)) {
+        return "meeting";
+    }
+    if (/^\[(?:电话|通话|语音)\]/i.test(note) || /电话|致电|语音通话/.test(note)) {
+        return "call";
+    }
+    if (/^\[(?:消息|微信|短信|私信)\]/i.test(note) || /微信|短信|回复消息/.test(note)) {
+        return "message";
+    }
+    if (/^\[(?:聚餐|吃饭|午餐|晚餐|下午茶|宴请|婚礼)\]/i.test(note) || /聚餐|吃饭|小酌|宴请|婚礼/.test(note)) {
+        return "meal";
+    }
+    if (/^\[(?:邮件|email)\]/i.test(note) || /邮件|发送邮件/.test(note)) {
+        return "email";
+    }
+    return "other";
+}
+
+export function occasionKey(event: InteractionEvent): string | undefined {
+    return event.externalRef ? JSON.stringify([event.source, event.externalRef]) : undefined;
+}
+
+/** 某人的互动时间线（按日期降序；一次建立场合参与者索引） */
+export function buildTimeline(
+    events: readonly InteractionEvent[],
+    personDocId: string,
+): TimelineItem[] {
+    const mine = events.filter((event) => event.personDocId === personDocId);
+    const participants = new Map<string, Set<string>>();
+    for (const event of events) {
+        const key = occasionKey(event);
+        if (key === undefined) continue;
+        let people = participants.get(key);
+        if (!people) {
+            people = new Set<string>();
+            participants.set(key, people);
+        }
+        people.add(event.personDocId);
+    }
+    return mine
+        .map((event) => {
+            const key = occasionKey(event);
+            return {
+                eventId: event.id,
+                localDate: event.localDate,
+                ...(event.note ? { note: event.note } : {}),
+                source: event.source,
+                type: inferInteractionType(event),
+                groupSize: key === undefined ? 1 : participants.get(key)?.size ?? 1,
+                occurredAt: event.occurredAt,
+                ...(event.externalRef ? { externalRef: event.externalRef } : {}),
+            };
+        })
+        .sort((a, b) => (
+            b.localDate.localeCompare(a.localDate)
+            || (b.occurredAt ?? 0) - (a.occurredAt ?? 0)
+            || b.eventId.localeCompare(a.eventId)
+        ));
+}
+
+/** 按语义类型过滤时间线 */
+export function filterTimelineByType(
+    items: readonly TimelineItem[],
+    selectedType: InteractionType | "all" = "all",
+): TimelineItem[] {
+    if (!selectedType || selectedType === "all") return [...items];
+    return items.filter((item) => item.type === selectedType);
+}
+
+export interface CoAttendance {
+    otherDocId: string;
+    count: number;
+}
+
+/**
+ * 共同出席统计（D-0011 的可见化）：与 target 共享过同场身份（同 externalRef 且同来源）
+ * 的其他联系人，按次数降序。只基于事实数据实时计算，不写入关系字段。
+ */
+export function buildCoAttendance(
+    events: readonly InteractionEvent[],
+    targetDocId: string,
+): CoAttendance[] {
+    const targetRefs = new Set<string>();
+    for (const event of events) {
+        if (event.personDocId !== targetDocId) continue;
+        const key = occasionKey(event);
+        if (key !== undefined) targetRefs.add(key);
+    }
+    if (targetRefs.size === 0) return [];
+    const sharedOccasions = new Map<string, Set<string>>();
+    for (const event of events) {
+        if (event.personDocId === targetDocId) continue;
+        const key = occasionKey(event);
+        if (key === undefined || !targetRefs.has(key)) continue;
+        let occasions = sharedOccasions.get(event.personDocId);
+        if (!occasions) {
+            occasions = new Set<string>();
+            sharedOccasions.set(event.personDocId, occasions);
+        }
+        occasions.add(key);
+    }
+    return [...sharedOccasions.entries()]
+        .map(([otherDocId, occasions]) => ({ otherDocId, count: occasions.size }))
+        .sort((a, b) => b.count - a.count);
+}
+
+export interface MonthlyInteractionTrendItem {
+    /** 形如 "2026-10" */
+    monthKey: string;
+    /** 显示名，形如 "10月" */
+    label: string;
+    /** 该月互动事件数 */
+    count: number;
+    /** 该月互动的独立联系人 docId 列表 */
+    personDocIds: string[];
+}
+
+export interface MonthlyInteractionTrend {
+    months: MonthlyInteractionTrendItem[];
+    maxCount: number;
+    totalCount: number;
+}
+
+/**
+ * 计算最近 N 个月（默认 6 个月）的互动频次与人脉活跃走势
+ */
+export function computeMonthlyInteractionTrend(
+    events: readonly InteractionEvent[],
+    monthsCount = 6,
+    now: Date = new Date(),
+): MonthlyInteractionTrend {
+    const months: MonthlyInteractionTrendItem[] = [];
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    for (let i = monthsCount - 1; i >= 0; i--) {
+        const d = new Date(currentYear, currentMonth - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const monthKey = `${y}-${String(m).padStart(2, "0")}`;
+        const label = `${m}月`;
+        months.push({
+            monthKey,
+            label,
+            count: 0,
+            personDocIds: [],
+        });
+    }
+
+    const monthMap = new Map<string, { count: number; personDocIds: Set<string> }>();
+    for (const m of months) {
+        monthMap.set(m.monthKey, { count: 0, personDocIds: new Set() });
+    }
+
+    let totalCount = 0;
+    for (const event of events) {
+        const d = new Date(event.occurredAt);
+        if (Number.isNaN(d.getTime())) continue;
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const key = `${y}-${String(m).padStart(2, "0")}`;
+        const slot = monthMap.get(key);
+        if (slot) {
+            slot.count += 1;
+            slot.personDocIds.add(event.personDocId);
+            totalCount += 1;
+        }
+    }
+
+    let maxCount = 0;
+    for (const m of months) {
+        const slot = monthMap.get(m.monthKey);
+        if (slot) {
+            m.count = slot.count;
+            m.personDocIds = Array.from(slot.personDocIds);
+            if (m.count > maxCount) maxCount = m.count;
+        }
+    }
+
+    return {
+        months,
+        maxCount,
+        totalCount,
+    };
+}
