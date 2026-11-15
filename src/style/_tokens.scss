@@ -360,7 +360,7 @@ body[data-theme-mode="dark"] .lvct-sheet,
     --lvct-brand-to: #FB923C;
     --lvct-brand-gradient: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
     --lvct-highlight: #FB7185;
-    --lvct-highlight-soft: color-mix(in srgb, var(--lv-highlight) 16%, transparent);
+    --lvct-highlight-soft: color-mix(in srgb, var(--lvct-highlight) 16%, transparent);
 
     --lvct-bg-app: #12100E;
     --lvct-bg-base: #171412; /* 暗色暖底（H=22, L=9%） */

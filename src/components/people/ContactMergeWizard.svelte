@@ -357,5 +357,14 @@
         width: 100%;
         min-width: 0;
     }
+    .lvct-merge__footer button {
+        min-height: 44px;
+        padding: 8px 16px;
+        touch-action: manipulation;
+    }
+    .lvct-merge__radio {
+        min-height: 38px;
+        touch-action: manipulation;
+    }
 }
 </style>

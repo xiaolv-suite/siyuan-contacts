@@ -341,13 +341,18 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
     border: 0;
     background: transparent;
     color: var(--b3-theme-on-surface-light, #888);
-    padding: 2px;
+    padding: 0;
     cursor: pointer;
     border-radius: var(--lv-r-pill, 9999px);
-    opacity: 0.65;
+    opacity: 0.7;
+    touch-action: manipulation;
     transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 .lvct-occ-attendee-remove-btn:hover {

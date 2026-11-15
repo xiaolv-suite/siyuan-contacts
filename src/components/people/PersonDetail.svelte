@@ -3704,7 +3704,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <button
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
-                    style="font-size: 10px; padding: 0 4px; line-height: 1.2; color: var(--lvct-primary);"
+                    style="font-size: 11.5px; min-height: 28px; padding: 2px 8px; line-height: 1.2; color: var(--lvct-primary); touch-action: manipulation;"
                     title="从思源资源库直接选取图片作为头像"
                     disabled={avatarSaving}
                     onclick={handlePickAssetAvatar}
@@ -3713,7 +3713,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     <button
                         type="button"
                         class="b3-button b3-button--text b3-button--small"
-                        style="font-size: 10px; padding: 0 4px; line-height: 1.2; color: var(--lvct-text-3);"
+                        style="font-size: 11.5px; min-height: 28px; padding: 2px 8px; line-height: 1.2; color: var(--lvct-text-3); touch-action: manipulation;"
                         title="移除照片，恢复默认单字头像"
                         disabled={avatarSaving}
                         onclick={handleClearAvatar}
@@ -4613,8 +4613,8 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                             <Sparkles size={12} /> 从互动备注智能提炼出 {extractedFactsPreview.length} 项事实备忘：
                         </span>
                         <div style="display: flex; gap: 6px;">
-                            <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11px; padding: 0 4px; color: var(--lv-brand, #ea580c);" onclick={adoptAllExtractedFacts}>一键全部采纳</button>
-                            <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11px; padding: 0 4px;" onclick={() => (extractedFactsPreview = [])}>关闭</button>
+                            <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11.5px; min-height: 28px; padding: 2px 8px; color: var(--lv-brand, #ea580c); touch-action: manipulation;" onclick={adoptAllExtractedFacts}>一键全部采纳</button>
+                            <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11.5px; min-height: 28px; padding: 2px 8px; touch-action: manipulation;" onclick={() => (extractedFactsPreview = [])}>关闭</button>
                         </div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -4623,7 +4623,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                 <div>
                                     <b>{ef.category === "quote" ? "💡 [观点]" : ef.category === "preference" ? "❤️ [喜好]" : ef.category === "background" ? "💼 [背景]" : "📌 [事实]"}</b> {ef.text}
                                 </div>
-                                <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11px; padding: 1px 6px;" onclick={() => adoptExtractedFact(ef)}>+ 采纳</button>
+                                <button type="button" class="b3-button b3-button--text b3-button--small" style="font-size: 11.5px; min-height: 28px; padding: 2px 8px; touch-action: manipulation;" onclick={() => adoptExtractedFact(ef)}>+ 采纳</button>
                             </div>
                         {/each}
                     </div>

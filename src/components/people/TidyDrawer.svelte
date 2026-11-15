@@ -322,7 +322,11 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        min-width: 160px;
+        min-width: 140px;
+        @media (max-width: 640px) {
+            min-width: 0;
+            width: 100%;
+        }
     }
 
     .avatar-sm {
@@ -360,7 +364,11 @@
         flex-direction: column;
         gap: 4px;
         flex: 1;
-        min-width: 220px;
+        min-width: 180px;
+        @media (max-width: 640px) {
+            min-width: 0;
+            width: 100%;
+        }
     }
 
     .suggestion-row {

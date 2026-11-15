@@ -5,6 +5,7 @@
     import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw, Share2 } from "@lucide/svelte";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { copyPlainText } from "../../shared/clipboard";
+    import { lvNotify, pushDiagError } from "../../libs/lv-notice-kit";
     import { profileText } from "../../domain/people-profiles";
     import { extractNormalizedRegion } from "../../domain/region";
     import ViewState from "../ViewState.svelte";
@@ -254,6 +255,9 @@
             drawerFlashcardToastTimer = setTimeout(() => { drawerFlashcardToastId = ""; }, 1800);
         } catch (err) {
             console.warn("[LvContacts] 图谱抽屉制作闪卡失败", err);
+            /* A1 审计修复：写路径失败必须有可见反馈 + 诊断留痕，防用户误以为卡片已建 */
+            lvNotify.capsule({ source: "小驴人脉", message: "制卡失败，未写入闪卡（已记录诊断）", level: "error", duration: 2800, archive: false });
+            pushDiagError({ source: "小驴人脉", message: `图谱制卡失败：${err instanceof Error ? err.message : String(err)}` });
         }
     }
 
@@ -1678,8 +1682,8 @@
     .lvct-graph-summary__status {
         display: inline-flex;
         align-items: center;
-        min-height: 24px;
-        padding: 2px 8px;
+        min-height: 28px;
+        padding: 2px 10px;
         border-radius: var(--lvct-r-pill);
         background: var(--lvct-accent-soft);
         margin: 0;
@@ -1687,6 +1691,7 @@
         color: var(--lvct-accent);
         font-size: var(--lvct-fs-caption);
         font-weight: 600;
+        font-variant-numeric: tabular-nums;
         max-width: 100%;
         white-space: normal;
         overflow-wrap: anywhere;

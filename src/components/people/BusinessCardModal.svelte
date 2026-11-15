@@ -230,11 +230,19 @@
         border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         background: transparent;
         font-size: 11.5px;
+        min-height: 28px;
         padding: 4px 12px;
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
         color: var(--lvct-text-2, var(--b3-theme-on-surface));
+        touch-action: manipulation;
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+
+        @media (max-width: 640px) {
+            min-height: 40px;
+            padding: 6px 14px;
+            font-size: 13px;
+        }
     }
 
     .segment-pill.is-active {

@@ -65,7 +65,7 @@
         try {
             const list = await onListOccasions();
             if (alive) {
-                occasions = [...(list || [])].sort((a, b) => b.date.localeCompare(a.date));
+                occasions = [...(list || [])].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
             }
         } catch (e: unknown) {
             if (alive) errorText = e instanceof Error ? e.message : String(e);
@@ -105,12 +105,12 @@
     );
 
     const totalAttendees = $derived(
-        occasions.reduce((acc, o) => acc + o.attendees.length, 0)
+        occasions.reduce((acc, o) => acc + (o.attendees?.length ?? 0), 0)
     );
 
     const currentYear = new Date().getFullYear();
     const thisYearCount = $derived(
-        occasions.filter((o) => o.date.startsWith(String(currentYear))).length
+        occasions.filter((o) => String(o.date ?? "").startsWith(String(currentYear))).length
     );
 
     const linkedDocCount = $derived(
@@ -544,13 +544,18 @@
     }
 
     .btn-del-occ {
-        padding: 4px;
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        min-height: 28px;
+        padding: 0;
         color: var(--b3-theme-on-surface-light);
         opacity: 0;
         border-radius: 50% !important;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        touch-action: manipulation;
         transition: opacity var(--lvct-dur-fast) var(--lvct-ease), color var(--lvct-dur-fast) var(--lvct-ease);
 
         &:hover {
@@ -564,7 +569,9 @@
         }
 
         @media (hover: none), (max-width: 768px) {
-            opacity: 0.7;
+            opacity: 0.75;
+            min-width: 36px;
+            min-height: 36px;
         }
     }
 
@@ -623,26 +630,29 @@
     .attendee-chip {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+        min-height: 28px;
         background: var(--b3-theme-background);
         border: 1px solid var(--b3-border-color);
-        padding: 2px 8px;
+        padding: 2px 10px;
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        transition: border-color 0.15s ease;
+        touch-action: manipulation;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
     }
 
     .attendee-chip:hover {
         border-color: var(--b3-theme-primary);
+        background: var(--b3-theme-surface-lighter);
     }
 
     .attendee-avatar {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
         background: var(--b3-theme-surface-lighter);
         color: var(--b3-theme-on-surface);
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 600;
         display: flex;
         align-items: center;
@@ -650,15 +660,15 @@
     }
 
     .attendee-name {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--b3-theme-on-surface);
     }
 
     .role-badge {
-        font-size: 9px;
+        font-size: 11px;
         color: var(--lv-brand, #ea580c);
         background: var(--lv-brand-soft, rgba(234, 88, 12, 0.1));
-        padding: 1px 6px;
+        padding: 2px 7px;
         border-radius: var(--lv-r-pill, 9999px);
     }
 

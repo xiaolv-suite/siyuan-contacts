@@ -314,18 +314,22 @@
     }
 
     .color-dot-btn {
-        width: 18px;
-        height: 18px;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
         border-radius: 50%;
         border: 2px solid transparent;
         cursor: pointer;
         padding: 0;
-        transition: transform 0.1s ease;
+        touch-action: manipulation;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
     }
 
     .color-dot-btn.is-active {
         border-color: var(--lv-brand, #ea580c);
-        transform: scale(1.15);
+        box-shadow: 0 0 0 2px var(--lv-brand-soft, rgba(234, 88, 12, 0.2));
+        transform: scale(1.1);
     }
 
     .pin-checkbox-label {

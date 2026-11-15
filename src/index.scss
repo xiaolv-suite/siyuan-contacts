@@ -2007,7 +2007,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 18%, var(--lvct-bg-surface)), var(--lvct-accent-soft));
     border: 1px solid color-mix(in srgb, var(--lvct-accent) 24%, transparent);
     color: var(--lvct-accent-fill);
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--lvct-accent) 16%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--lvct-accent) 16%, transparent), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
     font-size: 24px;
 }
 
@@ -2061,7 +2061,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-danger) 18%, var(--lvct-bg-surface)), var(--lvct-danger-soft));
     border-color: color-mix(in srgb, var(--lvct-danger) 28%, transparent);
     color: var(--lvct-danger);
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--lvct-danger) 18%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--lvct-danger) 18%, transparent), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
 }
 
 .lvct-dash__welcome {
@@ -3003,14 +3003,24 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
         margin-left: auto;
 
         .lvct-person-card__open-doc {
-            width: 18px;
-            height: 18px;
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            min-height: 28px;
             padding: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 3px;
+            border-radius: 6px;
             color: var(--lvct-text-3);
+            touch-action: manipulation;
+
+            @media (max-width: 640px) {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                min-height: 38px;
+            }
 
             &:hover {
                 color: var(--lv-brand, #ea580c);
@@ -3271,7 +3281,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     border: 1px solid color-mix(in srgb, var(--lvct-accent) 26%, transparent);
     border-radius: var(--lv-r-pill, 9999px);
     background: color-mix(in srgb, var(--lvct-accent) 9%, var(--lvct-bg-surface));
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--lvct-accent) 12%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lvct-accent) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
     color: var(--lvct-text-1);
     font-size: var(--lvct-fs-caption);
     font-weight: 500;
@@ -3284,7 +3294,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
 .lvct-notice--error {
     border-color: color-mix(in srgb, var(--lvct-danger) 32%, transparent);
     background: color-mix(in srgb, var(--lvct-danger) 9%, var(--lvct-bg-surface));
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--lvct-danger) 14%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--lvct-danger) 14%, transparent), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
 
     > svg { color: var(--lvct-danger); }
 
@@ -4892,8 +4902,9 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
     &__item {
         display: inline-flex;
         align-items: center;
+        min-height: 32px;
         gap: 6px;
-        padding: 4px 10px 4px 5px;
+        padding: 5px 12px 5px 6px;
         background: var(--lvct-bg-elevated);
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-full, 9999px);
@@ -6024,8 +6035,10 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
 }
 
 .lvct-detail__copy-btn {
-    padding: 1px 4px;
-    font-size: 11px;
+    padding: 2px 6px;
+    font-size: 11.5px;
+    min-width: 28px;
+    min-height: 28px;
     opacity: 0.65;
     cursor: pointer;
     border-radius: var(--lvct-r-sm);
@@ -6033,6 +6046,13 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     align-items: center;
     justify-content: center;
     line-height: 1;
+    touch-action: manipulation;
+
+    @media (max-width: 640px) {
+        min-width: 38px;
+        min-height: 38px;
+    }
+
     &:hover {
         opacity: 1;
         background: var(--b3-theme-surface);
@@ -9045,11 +9065,11 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         border-radius: 10px;
         background: var(--lvct-bg-surface);
         object-fit: contain;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
     }
 
     &__card-name {
-        grid-column: 2;
+        grid-column: 2 / -1;
         grid-row: 1;
         min-width: 0;
         display: block;
@@ -10464,6 +10484,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
 .lvct-workbench__header-actions .b3-button {
     justify-content: center;
+    min-height: 32px;
+    touch-action: manipulation;
 }
 
 .lvct-people > .lvct-people__toolbar > .lvct-people__viewtoggle {
@@ -10515,6 +10537,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     .lvct-workbench__header-actions .b3-button {
         width: 100%;
         min-width: 0;
+        min-height: 40px !important;
+        touch-action: manipulation;
     }
 
     .lvct-people > .lvct-people__toolbar {
@@ -10559,8 +10583,11 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     .lvct-orgs-view__card-actions .b3-button {
-        flex: 1 1 112px;
+        flex: 1 1 auto;
         min-width: 0;
+        padding-inline: 8px;
+        font-size: 12px;
+        white-space: nowrap;
     }
 
     .lvct-graph-toolbar__primary {
@@ -12613,7 +12640,12 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
         opacity: 0;
         cursor: pointer;
-        padding: 2px;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+        touch-action: manipulation;
         border-radius: 50%;
         display: inline-flex;
         align-items: center;
@@ -13813,9 +13845,30 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     .lvct-workbench__body {
         flex: 1 1 0% !important;
         min-height: 0 !important;
-        padding: 8px 12px 16px !important;
+        padding: 8px 8px calc(76px + env(safe-area-inset-bottom)) !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain !important;
+        touch-action: pan-y !important;
+    }
+
+    /* 顶栏搜索防挤压：390px 视口下 header 一行放不下标题+搜索+按钮组，
+       搜索框此前被压到 ~60px 截断 placeholder（真机走查实证）——
+       强制换行整行占满，按钮组独立成行 */
+    .lvct-workbench__header {
+        flex-wrap: wrap !important;
+        row-gap: var(--lvct-sp-2);
+    }
+    .lvct-workbench__header-actions {
+        flex: 1 1 100% !important;
+        flex-wrap: wrap !important;
+        row-gap: var(--lvct-sp-2);
+    }
+    .lvct-workbench__header-actions input {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
     .lvct-dash {
@@ -13897,10 +13950,11 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 
         .lvct-dash__head-action {
             flex: 0 0 auto !important;
-            min-height: 30px !important;
-            height: 30px !important;
-            padding: 0 9px !important;
-            font-size: 11.5px !important;
+            min-height: 38px !important;
+            height: 38px !important;
+            padding: 0 12px !important;
+            font-size: 12.5px !important;
+            touch-action: manipulation !important;
         }
     }
 
@@ -13909,15 +13963,19 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     .lvct-week-glance__track {
-        display: grid !important;
-        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-        gap: 4px !important;
-        overflow-x: visible !important;
+        display: flex !important;
+        overflow-x: auto !important;
+        gap: 6px !important;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+        &::-webkit-scrollbar { display: none; }
     }
 
     .lvct-week-glance__pill {
-        min-width: 0 !important;
-        padding: 6px 2px !important;
+        flex: 1 0 44px !important;
+        min-width: 44px !important;
+        padding: 6px 4px !important;
+        touch-action: manipulation !important;
     }
 
     .lvct-workbench__drag-zone {
@@ -14143,9 +14201,9 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
             gap: var(--lvct-sp-1);
 
             .b3-button {
-                min-height: 24px !important;
-                height: 24px;
-                padding: 0 var(--lvct-sp-1);
+                min-height: 28px !important;
+                height: 28px;
+                padding: 0 var(--lvct-sp-2);
                 font-size: var(--lvct-fs-caption, 11px);
                 white-space: nowrap;
             }
@@ -14349,13 +14407,13 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     .lvct-detail__tabs {
-        min-height: 34px;
+        min-height: 44px;
         overflow-x: auto;
         scrollbar-width: none;
         &::-webkit-scrollbar { display: none; }
 
         button {
-            min-height: 34px;
+            min-height: 44px;
             padding: var(--lvct-sp-1) var(--lvct-sp-3);
             flex-shrink: 0;
             white-space: nowrap;
@@ -14597,6 +14655,8 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     .lvct-dialog-panel .lvct-qf > .lvct-form__actions,
     .lvct-dialog-panel .lvct-quick-record-dialog > .dialog-actions,
     .lvct-dialog-panel .lvct-occ-dialog > .lvct-occ-dialog__footer {
+        position: static !important;
+        box-shadow: none !important;
         bottom: calc(var(--lvct-sp-2) * -1);
         margin-bottom: calc(var(--lvct-sp-2) * -1);
         padding-block: var(--lvct-sp-1);
@@ -14728,8 +14788,11 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     border-style: dashed !important;
 }
 
-/* 手机端表单主操作按钮 ≥52px 触控目标（新建/编辑联系人与全部 lvct-form 弹窗统一） */
+/* 手机端表单主操作按钮 ≥44px 触控目标（新建/编辑联系人与全部 lvct-form 弹窗统一） */
 @media (max-width: 640px) {
+    .lvct-form__actions .b3-button {
+        min-height: 44px;
+    }
     .lvct-form__actions .b3-button--primary {
         min-height: 52px;
     }
@@ -15354,4 +15417,10 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     .tab-btn:hover {
         background: color-mix(in srgb, var(--lvct-accent) 8%, transparent);
     }
+}
+
+/* BUG-4 同类预防（2026-11-14 走查）：人脉所有 Dialog 容器挂 lvct-dialog，
+   根节点统一抬到宿主 chrome（z:50）之上，避免被 sticky 头部截获命中测试 */
+.b3-dialog:has(> .b3-dialog__container.lvct-dialog) {
+    z-index: 60 !important;
 }

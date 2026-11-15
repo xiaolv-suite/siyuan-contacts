@@ -347,10 +347,19 @@
 
         .b3-chip {
             border-radius: var(--lv-r-pill, 9999px);
+            min-height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            touch-action: manipulation;
         }
 
         .b3-button {
             border-radius: var(--lv-r-pill, 9999px);
+            min-height: 36px;
         }
     }
 </style>

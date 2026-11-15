@@ -122,7 +122,10 @@
 
     async function search(continueScan = false) {
         clearTimeout(searchTimer);
-        if (!alive || !notebookId) return;
+        if (!alive || !notebookId) {
+            loading = false;
+            return;
+        }
         const version = ++searchVersion;
         loading = true;
         if (!continueScan) { candidates = []; scan = null; }

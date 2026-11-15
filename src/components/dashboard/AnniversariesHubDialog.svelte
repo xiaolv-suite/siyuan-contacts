@@ -710,16 +710,17 @@
         padding: 4px 10px;
         border-radius: var(--lv-r-pill, 9999px);
         flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
     }
 
     .anniv-countdown-badge.is-today {
         background: var(--lv-heat-cool, #f59e0b);
-        color: var(--b3-theme-on-primary, #fff);
+        color: var(--lvct-color-ink-900, #1c1917);
         border-color: var(--lv-heat-cool, #f59e0b);
     }
 
     .anniv-countdown-badge.is-today .countdown-date {
-        color: rgba(255, 255, 255, 0.9);
+        color: color-mix(in srgb, var(--lvct-color-ink-900, #1c1917) 80%, transparent);
     }
 
     .countdown-text {

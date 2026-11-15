@@ -42,7 +42,7 @@ export async function appendInteractionToDailyNote(
                 const createdDocId = await createDailyNote(notebookId);
                 if (createdDocId) {
                     await flushBlockIndex();
-                    dailyDoc = await findDailyNoteDocument(notebookId, input.localDate);
+                    dailyDoc = (await findDailyNoteDocument(notebookId, input.localDate)) ?? { docId: createdDocId, hpath: "" };
                 }
             } catch {
                 // 部分旧版本或特定只读模式可能不支持 createDailyNote，静默容错
@@ -104,7 +104,7 @@ export async function appendOccasionToDailyNote(
                 const createdDocId = await createDailyNote(notebookId);
                 if (createdDocId) {
                     await flushBlockIndex();
-                    dailyDoc = await findDailyNoteDocument(notebookId, input.date);
+                    dailyDoc = (await findDailyNoteDocument(notebookId, input.date)) ?? { docId: createdDocId, hpath: "" };
                 }
             } catch {
                 // 忽略非阻塞错误
@@ -149,7 +149,7 @@ export async function appendFollowUpToDailyNote(
                 const createdDocId = await createDailyNote(notebookId);
                 if (createdDocId) {
                     await flushBlockIndex();
-                    dailyDoc = await findDailyNoteDocument(notebookId, input.dueDate);
+                    dailyDoc = (await findDailyNoteDocument(notebookId, input.dueDate)) ?? { docId: createdDocId, hpath: "" };
                 }
             } catch (error) {
                 console.warn("[LvContacts] 创建今日日记文档失败：", error);

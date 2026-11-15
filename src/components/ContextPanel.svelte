@@ -461,12 +461,19 @@
         display: flex;
         flex-direction: column;
         width: 330px;
-        flex: 0 0 330px;
+        max-width: 100%;
+        flex: 0 0 auto;
         height: 100%;
-        background: var(--lvct-bg-app, #F5F3F0);
-        border-left: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
+        background: var(--lvct-bg-app, var(--b3-theme-background));
+        border-left: 1px solid var(--lvct-border-subtle, var(--b3-border-color));
         overflow: hidden;
         box-sizing: border-box;
+
+        @media (max-width: 640px) {
+            width: 100%;
+            flex: 1 1 100%;
+            border-left: none;
+        }
     }
 
     .lvct-context-panel__header {

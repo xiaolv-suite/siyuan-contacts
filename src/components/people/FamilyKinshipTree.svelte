@@ -305,8 +305,8 @@
 
     <!-- 录入表单 -->
     {#if adding}
-        <div class="lvct-kinship-tree__form fn__flex">
-            <select class="b3-select" bind:value={newRole} disabled={saving}>
+        <div class="lvct-kinship-tree__form fn__flex" style="flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center;">
+            <select class="b3-select" bind:value={newRole} disabled={saving} style="flex: 1 1 110px; min-width: 100px;">
                 <option value="spouse">伴侣 / 配偶</option>
                 <option value="child">子女 / 晚辈</option>
                 <option value="parent">父母 / 长辈</option>
@@ -319,7 +319,7 @@
                 placeholder="具体称谓（如：妻子/儿子/岳母）"
                 bind:value={newLabel}
                 disabled={saving}
-                style="width: 140px;"
+                style="flex: 1 1 130px; min-width: 100px;"
             />
             <input
                 type="text"
@@ -327,7 +327,7 @@
                 placeholder="姓名 *"
                 bind:value={newName}
                 disabled={saving}
-                style="width: 110px;"
+                style="flex: 1 1 90px; min-width: 80px;"
             />
             <input
                 type="text"
@@ -335,7 +335,7 @@
                 placeholder="出生年/生日（可选）"
                 bind:value={newBirth}
                 disabled={saving}
-                style="width: 130px;"
+                style="flex: 1 1 120px; min-width: 100px;"
             />
             <input
                 type="text"
@@ -343,24 +343,26 @@
                 placeholder="备忘/忌口（可选）"
                 bind:value={newNote}
                 disabled={saving}
-                style="flex: 1; min-width: 120px;"
+                style="flex: 2 1 140px; min-width: 110px;"
             />
-            <button
-                type="button"
-                class="b3-button b3-button--outline"
-                disabled={saving}
-                onclick={handleAdd}
-            >
-                {saving ? "保存中…" : "保存"}
-            </button>
-            <button
-                type="button"
-                class="b3-button b3-button--cancel"
-                disabled={saving}
-                onclick={() => { adding = false; errorText = ""; }}
-            >
-                取消
-            </button>
+            <div style="display: flex; gap: 6px; margin-left: auto;">
+                <button
+                    type="button"
+                    class="b3-button b3-button--outline"
+                    disabled={saving}
+                    onclick={handleAdd}
+                >
+                    {saving ? "保存中…" : "保存"}
+                </button>
+                <button
+                    type="button"
+                    class="b3-button b3-button--cancel"
+                    disabled={saving}
+                    onclick={() => { adding = false; errorText = ""; }}
+                >
+                    取消
+                </button>
+            </div>
         </div>
     {/if}
 

@@ -568,7 +568,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                             {/if}
                             <span class="ft__smaller ft__on-surface">{person.group || text("captureUngrouped", "未分组")}</span>
                             {#if linkedDocIds.includes(person.docId)}<span class="lvct-capture__source-badge">{text("captureBadgeLink", "双链")}</span>{/if}
-                            {#if mentionedDocIds.includes(person.docId)}<span class="lvct-capture__source-badge lvct-capture__source-badge--ai" style="background: color-mix(in srgb, #f59e0b 16%, transparent); color: #d97706;">{text("captureBadgeMention", "正文提及")}</span>{/if}
+                            {#if mentionedDocIds.includes(person.docId)}<span class="lvct-capture__source-badge lvct-capture__source-badge--ai" style="background: var(--lv-data-amber-soft, color-mix(in srgb, #f59e0b 16%, transparent)); color: var(--lv-data-amber, #d97706);">{text("captureBadgeMention", "正文提及")}</span>{/if}
                             {#if aiMatchedIds.includes(person.docId) || (!linkedDocIds.includes(person.docId) && !mentionedDocIds.includes(person.docId))}<span class="lvct-capture__source-badge lvct-capture__source-badge--ai">{text("captureBadgeAi", "AI 提名")}</span>{/if}
                         </label>
                     {/each}

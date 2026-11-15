@@ -250,6 +250,15 @@ export async function syncRelatedSection(person: ContactSummary, related: readon
         let verified: Array<{ id: string; markdown: string }>;
         try {
             verified = await readMarkedBlocks(person.docId, RELATED_SECTION_ATTR);
+            const matchesExpected = () => !markdown
+                ? verified.length === 0
+                : (verified.length === 1 && contentWithoutIal(verified[0].markdown) === markdown);
+            if (!matchesExpected() && Boolean((globalThis as any).window?.siyuan?.ws)) {
+                for (let retry = 0; retry < 4 && !matchesExpected(); retry++) {
+                    await new Promise((r) => setTimeout(r, 250));
+                    verified = await readMarkedBlocks(person.docId, RELATED_SECTION_ATTR);
+                }
+            }
         } catch (cause) {
             throw new RelatedProjectionUnknownError("关系投影请求已发出，但回读失败，结果未知", { cause });
         }

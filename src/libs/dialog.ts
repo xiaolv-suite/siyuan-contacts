@@ -75,6 +75,7 @@ export const simpleDialog = (args: {
         }
     });
     dialog.element.querySelector(".dialog-content")?.appendChild(args.ele);
+    dialog.element.querySelector(".b3-dialog__container")?.classList.add("lvct-dialog");
 
     const outerClose = dialog.element.querySelector<HTMLElement | SVGElement>(".b3-dialog__container > .b3-dialog__close");
     if (outerClose && outerClose.style) {

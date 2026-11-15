@@ -131,6 +131,7 @@
             });
         } catch (err) {
             errorMessage = err instanceof Error ? err.message : String(err);
+        } finally {
             saving = false;
         }
     }

@@ -2137,12 +2137,12 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             color: "#f97316",
             desc: "关系图谱 · 联络提醒",
             digit: 7,
-            badge: dueCount > 0 ? `${dueCount} 位需联络` : undefined,
-            badgeType: "warn",
-            /* 罗盘每次打开实时拉取待联络数，归零自动隐藏徽章 */
+            badge: dueCount > 0 ? `${dueCount} 位需联络` : "已就绪",
+            badgeType: dueCount > 0 ? "warn" : "success",
+            /* 罗盘每次打开实时拉取待联络数，无到期时显示已就绪保持磁贴对齐 */
             badgeProvider: () => {
                 const n = this.getFollowupDueCount();
-                return n > 0 ? `${n} 位需联络` : undefined;
+                return n > 0 ? `${n} 位需联络` : "已就绪";
             },
             // Mobile Spec v1：手机直办动作（速查 / 今日待联络 / 新增 / 会前速览）
             actions: ["速查联系人", "今日待联络", "新增联系人", "会前速览"],
@@ -3087,6 +3087,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             },
         });
         const dialogContainer = this.workbenchDialog.element.querySelector<HTMLElement>(".b3-dialog__container");
+        dialogContainer?.classList.add("lvct-dialog");
         if (typeof window !== "undefined") {
             const vv = window.visualViewport;
             const mql = window.matchMedia?.("(max-width: 680px)");
