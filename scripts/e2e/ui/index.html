@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>小驴人脉 · 隔离 UI 回归</title>
+<style id="approx-host-style">
+    /* 模拟思源宿主主题，生产组件仍消费自己的语义令牌。 */
+    :root {
+        --b3-theme-background: #fff; --b3-theme-surface: #f5f5f5;
+        --b3-theme-on-background: #222; --b3-theme-on-surface: #444;
+        --b3-theme-on-surface-light: #666; --b3-theme-primary: #129e9a;
+        --b3-border-color: #ddd; --b3-list-hover: #eee; --b3-theme-error: #c00;
+    }
+    /* 结果区必须换行：pre 默认不换行，超长用例名/错误栈会把布局视口撑到内容宽度，
+       移动仿真下 Chrome overview 缩小使 innerWidth 变成内容宽（>640），B09-2 等按
+       innerWidth 判定视口的用例误入桌面分支（2026-09-29 根修，历史 1560 偶发同源） */
+    #results { white-space: pre-wrap; word-break: break-all; }
+</style>
+<script>
+    /* 宿主样式基线（C01）：?host=1 时注入真实思源 base.css + 官方主题变量
+       （需 harness 服务端提供 /__host/*.css，如 LVCT_UI_HOST=1），否则用近似样式。 */
+    (function () {
+        if (!new URLSearchParams(location.search).has("host")) return;
+        const link = (href) => {
+            const node = document.createElement("link");
+            node.rel = "stylesheet";
+            node.href = href;
+            document.head.appendChild(node);
+        };
+        link("/__host/theme-light.css");
+        link("/__host/base.css");
+        document.getElementById("approx-host-style")?.remove();
+    })();
+</script></head>
+<body>
+    <h1>隔离 UI 回归（仅内存测试数据）</h1>
+    <pre id="results">运行中…</pre>
+    <div id="fixture" class="lvct-tab-root" style="height:720px;width:min(1000px,100%)"></div>
+    <script type="module" src="/scripts/e2e/ui/smoke.js"></script>
+</body>
+</html>

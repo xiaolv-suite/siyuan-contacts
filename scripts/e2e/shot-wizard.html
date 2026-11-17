@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>初始化向导截图</title>
+<style id="approx-host-style">
+    :root {
+        --b3-theme-background: #fff; --b3-theme-surface: #f5f5f5;
+        --b3-theme-surface-lighter: #efefef;
+        --b3-theme-on-background: #222; --b3-theme-on-surface: #444;
+        --b3-theme-on-surface-light: #888; --b3-theme-primary: #129e9a;
+        --b3-theme-primary-lightest: #dff5f2; --b3-theme-on-primary: #fff;
+        --b3-border-color: #e2e2e2; --b3-list-hover: #eee;
+        --b3-list-icon-hover: #e6e6e6; --b3-theme-error: #d32f2f;
+        --b3-theme-success: #23b27c; --b3-theme-info: #3b82f6;
+        --b3-font-family: inherit;
+    }
+    body { margin: 0; background: var(--b3-theme-background); color: var(--b3-theme-on-background); }
+    #shot { width: 100%; min-height: 100vh; }
+    button, input, select { font: inherit; }
+    .b3-button { border: 0; padding: 7px 12px; background: var(--b3-theme-primary); color: var(--b3-theme-on-primary); cursor: pointer; }
+    .b3-button--text { background: var(--b3-theme-primary); }
+    .b3-button--cancel { background: var(--b3-theme-surface); color: var(--b3-theme-on-background); }
+    .b3-text-field { background: var(--b3-theme-background); color: var(--b3-theme-on-background); border: 1px solid var(--b3-border-color); padding: 6px; box-sizing: border-box; width: 100%; }
+    .ft__smaller { font-size: 12px; }
+    .ft__on-surface { color: var(--b3-theme-on-surface-light); }
+    html[data-theme="dark"] { --b3-theme-background: #202124; --b3-theme-surface: #303136; --b3-theme-surface-lighter: #393a40; --b3-theme-on-background: #f2f2f3; --b3-theme-on-surface: #d4d5d8; --b3-theme-on-surface-light: #aaaeb5; --b3-theme-primary: #57d1c6; --b3-theme-primary-lightest: #153c43; --b3-theme-on-primary: #071f21; --b3-border-color: #484a50; --b3-list-hover: #383a42; --b3-list-icon-hover: #454751; }
+</style><script id="host-baseline-boot">
+    /* 宿主样式基线（C01）：?host=1 时注入真实思源 base.css + 官方主题变量，
+       并撤下手写近似样式；暗色属性对齐宿主的 data-theme-mode。 */
+    (function () {
+        const params = new URLSearchParams(location.search);
+        const theme = params.get("theme") === "dark" ? "dark" : "light";
+        document.documentElement.dataset.themeMode = theme;
+        if (!params.has("host")) return;
+        const link = (href) => {
+            const node = document.createElement("link");
+            node.rel = "stylesheet";
+            node.href = href;
+            document.head.appendChild(node);
+        };
+        link("/__host/theme-" + theme + ".css");
+        link("/__host/base.css");
+        document.getElementById("approx-host-style")?.remove();
+    })();
+</script></head>
+<body>
+<!-- V-26：InitWizard 的 logo 用 <use xlink:href="#iconLvContacts">，宿主由 addIcons 注入；
+     夹具不注入时渲染为青色空方块。与 src/index.ts onload 的 symbol 保持一致。 -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<symbol id="iconLvContacts" viewBox="0 0 32 32">
+<path d="M12 4c3.314 0 6 2.686 6 6s-2.686 6-6 6-6-2.686-6-6 2.686-6 6-6zM12 6.4A3.6 3.6 0 1 0 12 13.6 3.6 3.6 0 0 0 12 6.4z"/>
+<path d="M22.4 8.8c2.651 0 4.8 2.149 4.8 4.8s-2.149 4.8-4.8 4.8-4.8-2.149-4.8-4.8 2.149-4.8 4.8-4.8zM22.4 11.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/>
+<path d="M12 18c4.26 0 8.4 1.772 8.4 4.8V26H3.6v-3.2C3.6 19.772 7.74 18 12 18zm0 2.4c-3.42 0-6 1.276-6 2.4V23.6h12v-0.8c0-1.124-2.58-2.4-6-2.4z"/>
+<path d="M23.2 20.4c2.94 0 6 1.176 6 3.2V26h-6.133v-2.4h3.733v-0.16c-.46-.44-1.76-.8-3.4-.86a9.79 9.79 0 0 0-1.6-2.18h1.4z"/>
+</symbol>
+</svg>
+<div id="shot" class="lvct-tab-root"></div>
+<script type="module">
+    import { mount } from "svelte";
+    import "../../src/index.scss";
+    import InitWizard from "../../src/components/InitWizard.svelte";
+
+    const params = new URLSearchParams(location.search);
+    const state = params.get("state") || "reuse";
+    if (params.get("theme") === "dark") document.documentElement.dataset.theme = "dark";
+
+    const snapshot = {
+        notebooks: [{ id: "20260928000000-book001", name: "人脉" }],
+        notebook: { id: "20260928000000-book001", name: "人脉" },
+        hostDocId: "20260928000000-host001",
+        dbBlockId: "20260928000000-block01",
+        avId: "20260928000000-av00001",
+        existingFields: ["生日", "农历生日", "电话", "相关人"],
+    };
+    let attempts = 0;
+    const facade = {
+        settings: null, viewPreferences: {}, isMobile: false,
+        previewInitialize: async () => snapshot,
+        initialize: async (_name, onProgress) => {
+            attempts += 1;
+            onProgress({ key: "wizardStepNotebookReuse", values: { name: "人脉", count: 1 } });
+            onProgress({ key: "wizardStepDocReuse", values: { name: "联系人总表" } });
+            onProgress({ key: "wizardStepDbReuse" });
+            onProgress({ key: "wizardStepFieldsKept", values: { count: 4 } });
+            onProgress({ key: "wizardStepFieldCreate", values: { name: "邮箱" } });
+            if (attempts === 1) throw new Error("创建字段「邮箱」失败：kernel code=-1");
+            return { schemaVersion: 1, notebookName: "人脉", initializedAt: new Date().toISOString(), fieldMap: {} };
+        },
+    };
+
+    mount(InitWizard, {
+        target: document.getElementById("shot"),
+        props: { facade, i18n: state === "en" ? undefined : undefined, onInitialized() {} },
+    });
+
+    const waitFor = async (predicate, timeout = 4000) => {
+        const until = Date.now() + timeout;
+        while (Date.now() < until) {
+            if (predicate()) return true;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        return false;
+    };
+
+    setTimeout(async () => {
+        if (state === "failed" || state === "failed-en") {
+            const button = [...document.querySelectorAll("button")].find((node) => node.textContent.trim() === "开始初始化");
+            button?.click();
+            await waitFor(() => document.body.textContent.includes("初始化失败"));
+        } else {
+            await waitFor(() => document.body.textContent.includes("将复用"));
+        }
+        document.title = "READY";
+    }, 400);
+    window.__ready = true;
+</script>
+</body>
+</html>

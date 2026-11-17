@@ -1,0 +1,531 @@
+/**
+ * 关系图谱数据投影：联系人摘要 → 图节点/边。
+ * 边的语义（D-0009）：relatedItemIds 是行 itemID，节点用 docId；
+ * 换算在本层完成，指向未知目标的边丢弃（对端联系人已删等场景）。
+ */
+import type { ContactSummary } from "./person.ts";
+import type { OrgMembershipStatus } from "./org-membership.ts";
+import { occasionKey, type InteractionEvent, toLocalDateKey } from "./interactions.ts";
+import type { PersonOrigin } from "./person-origin.ts";
+
+export interface GraphNode {
+    /** 文档 ID（cytoscape 节点 id，点击即开文档） */
+    id: string;
+    label: string;
+    group: string;
+    /** 关系边数（用于节点大小） */
+    degree: number;
+    /** B14.6 节点类型：person=联系人（默认）；org=组织文档（成员边挂接） */
+    kind?: "person" | "org";
+}
+
+export interface GraphEdge {
+    source: string;
+    target: string;
+    /** B14.6 边来源：related=显式关系（查询唯一依据）；member=组织成员；ref=反链引用；co_occurrence=共同出席弱联系；introducer=引荐人链路（Monica 标杆融合） */
+    kind?: "related" | "member" | "ref" | "co_occurrence" | "introducer";
+    /** Member lifecycle on the derived organisation edge. Related/ref edges omit this field. */
+    memberStatus?: "active" | "former" | "mixed";
+    /** 共同出席/共现次数（仅 kind="co_occurrence" 时使用） */
+    coCount?: number;
+}
+
+export interface PersonGraph {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
+}
+
+/** 只计算当前图内的显式无向关系，忽略悬空边、自环与重复边。 */
+export function queryGraphRelations(graph: PersonGraph, firstId: string, secondId = ""): {
+    neighborIds: string[]; commonIds: string[];
+} {
+    const ids = new Set(graph.nodes.map((node) => node.id));
+    const first = new Set<string>();
+    const second = new Set<string>();
+    if (!ids.has(firstId)) return { neighborIds: [], commonIds: [] };
+    for (const edge of graph.edges) {
+        if (edge.kind && edge.kind !== "related") continue;
+        if (edge.source === edge.target || !ids.has(edge.source) || !ids.has(edge.target)) continue;
+        if (edge.source === firstId) first.add(edge.target);
+        if (edge.target === firstId) first.add(edge.source);
+        if (edge.source === secondId) second.add(edge.target);
+        if (edge.target === secondId) second.add(edge.source);
+    }
+    return {
+        neighborIds: graph.nodes.filter((node) => first.has(node.id)).map((node) => node.id),
+        commonIds: firstId === secondId || !ids.has(secondId) ? [] : graph.nodes
+            .filter((node) => first.has(node.id) && second.has(node.id)).map((node) => node.id),
+    };
+}
+
+export function buildGraph(
+    people: readonly ContactSummary[],
+    origins?: Readonly<Record<string, PersonOrigin>>,
+): PersonGraph {
+    const itemToDoc = new Map<string, string>();
+    for (const person of people) {
+        itemToDoc.set(person.itemId, person.docId);
+    }
+
+    const nodes: GraphNode[] = people.map((person) => ({
+        id: person.docId,
+        label: person.name,
+        group: person.group,
+        degree: 0,
+        kind: "person" as const,
+    }));
+    const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
+    const seen = new Set<string>();
+    const edges: GraphEdge[] = [];
+    for (const person of people) {
+        for (const relatedItemId of person.relatedItemIds) {
+            const targetDocId = itemToDoc.get(relatedItemId);
+            if (!targetDocId || targetDocId === person.docId) continue;
+            const edgeKey = [person.docId, targetDocId].sort().join("~");
+            if (seen.has(edgeKey)) continue;
+            seen.add(edgeKey);
+            edges.push({ source: person.docId, target: targetDocId, kind: "related" as const });
+            const source = nodeById.get(person.docId);
+            const target = nodeById.get(targetDocId);
+            if (source) source.degree += 1;
+            if (target) target.degree += 1;
+        }
+
+        // 引荐人链路边（Monica 标杆融合）：若档案存在引荐人且引荐人在图谱中，生成引荐边
+        const origin = origins?.[person.docId];
+        if (origin?.introducedByDocId && origin.introducedByDocId !== person.docId && nodeById.has(origin.introducedByDocId)) {
+            const introducerKey = `intro:${origin.introducedByDocId}->${person.docId}`;
+            if (!seen.has(introducerKey)) {
+                seen.add(introducerKey);
+                edges.push({
+                    source: origin.introducedByDocId,
+                    target: person.docId,
+                    kind: "introducer" as const,
+                });
+                const introducerNode = nodeById.get(origin.introducedByDocId);
+                const targetNode = nodeById.get(person.docId);
+                if (introducerNode) introducerNode.degree += 1;
+                if (targetNode) targetNode.degree += 1;
+            }
+        }
+    }
+    return { nodes, edges };
+}
+
+/** 图谱渲染规模上限（cytoscape 在千级节点交互明显劣化；见 DATA-CONTRACT §4） */
+export const GRAPH_MAX_NODES = 800;
+
+/**
+ * 规模上限：按度数降序保留前 maxNodes 个节点，丢弃两端都被裁掉的边。
+ * 返回裁剪说明，由 UI 提示"图太大，只展示关系最多的 N 人"。
+ */
+export function capGraph(graph: PersonGraph, maxNodes: number = GRAPH_MAX_NODES, retainedIds: readonly string[] = []): { graph: PersonGraph; truncated: boolean } {
+    if (!Number.isSafeInteger(maxNodes) || maxNodes < 1) throw new Error("图节点预算必须为正整数");
+    const ordered = orderGraph(graph);
+    const existing = new Set(ordered.nodes.map((node) => node.id));
+    const retained = new Set(retainedIds.filter((id) => existing.has(id)));
+    if (retained.size > maxNodes) throw new Error("节点预算不足以保留查询中心，请扩大预算或清除对比人物");
+    const keep = new Set(retained);
+    for (const node of ordered.nodes) {
+        if (keep.size >= maxNodes) break;
+        keep.add(node.id);
+    }
+    return { graph: orderGraph({
+        nodes: ordered.nodes.filter((node) => keep.has(node.id)),
+        edges: ordered.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target)),
+    }), truncated: ordered.nodes.length > keep.size };
+}
+
+export function orderGraph(graph: PersonGraph): PersonGraph {
+    const nodes = graph.nodes.map((node) => ({ ...node, degree: 0 }));
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    const seen = new Set<string>();
+    const edges: GraphEdge[] = [];
+    for (const edge of graph.edges) {
+        if (edge.source === edge.target || !byId.has(edge.source) || !byId.has(edge.target)) continue;
+        const kind = edge.kind ?? "related";
+        const [source, target] = kind === "introducer" ? [edge.source, edge.target] : [edge.source, edge.target].sort();
+        const memberStatus = kind === "member" ? edge.memberStatus ?? "" : "";
+        const key = `${kind}:${memberStatus}:${source}:${target}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        edges.push({ ...edge, source, target, kind });
+        byId.get(source)!.degree += 1;
+        byId.get(target)!.degree += 1;
+    }
+    nodes.sort((left, right) => right.degree - left.degree || compareGraphIds(left.id, right.id));
+    edges.sort((left, right) => compareGraphIds(left.kind ?? "related", right.kind ?? "related")
+        || compareGraphIds(left.memberStatus ?? "", right.memberStatus ?? "")
+        || compareGraphIds(left.source, right.source) || compareGraphIds(left.target, right.target));
+    return { nodes, edges };
+}
+
+export function compareGraphIds(left: string, right: string): number {
+    return left < right ? -1 : left > right ? 1 : 0;
+}
+
+/** 分组→固定色相（数据编码用固定色板；UI 底色仍走 b3 变量，见 D-0002 约定注释） */
+export const GROUP_COLORS: Readonly<Record<string, string>> = {
+    "家人": "#e05a5a",
+    "朋友": "#4caf7d",
+    "同事": "#4a8fe0",
+    "同学": "#d95f78",
+    "其他": "#9e9e9e",
+};
+
+export function groupColor(group: string): string {
+    return GROUP_COLORS[group] ?? "#8f8f8f";
+}
+
+/**
+ * E-34 基于多参与者互动事实的共同出席弱联系（推断关联）：
+ * 扫描全部事件中共同出席同场活动（同 externalRef/同日期）的联系人对；
+ * 仅连接图内已存在的联系人节点；已存在显式 related 关系的联系人对不再生成虚线边；
+ * 按共同出席次数降序排序，可设置最低门槛 minCount（默认 1 次）。
+ */
+export function buildCoOccurrenceEdges(
+    events: readonly InteractionEvent[],
+    people: readonly ContactSummary[],
+    minCount: number = 1,
+): GraphEdge[] {
+    const docIds = new Set(people.map((p) => p.docId));
+    const itemToDoc = new Map(people.map((p) => [p.itemId, p.docId]));
+    const existingRelated = new Set<string>();
+    for (const p of people) {
+        for (const relItemId of p.relatedItemIds) {
+            const otherDocId = itemToDoc.get(relItemId);
+            if (otherDocId && otherDocId !== p.docId) {
+                const key = [p.docId, otherDocId].sort().join("::");
+                existingRelated.add(key);
+            }
+        }
+    }
+
+    const occasionParticipants = new Map<string, Set<string>>();
+    for (const event of events) {
+        if (!docIds.has(event.personDocId)) continue;
+        const key = occasionKey(event);
+        if (!key) continue;
+        let set = occasionParticipants.get(key);
+        if (!set) {
+            set = new Set();
+            occasionParticipants.set(key, set);
+        }
+        set.add(event.personDocId);
+    }
+
+    const pairCounts = new Map<string, number>();
+    for (const participants of occasionParticipants.values()) {
+        if (participants.size < 2) continue;
+        const list = [...participants];
+        for (let i = 0; i < list.length; i++) {
+            for (let j = i + 1; j < list.length; j++) {
+                const pairKey = [list[i], list[j]].sort().join("::");
+                if (existingRelated.has(pairKey)) continue;
+                pairCounts.set(pairKey, (pairCounts.get(pairKey) ?? 0) + 1);
+            }
+        }
+    }
+
+    const edges: GraphEdge[] = [];
+    for (const [pairKey, count] of pairCounts.entries()) {
+        if (count < minCount) continue;
+        const [source, target] = pairKey.split("::");
+        edges.push({
+            source,
+            target,
+            kind: "co_occurrence",
+            coCount: count,
+        });
+    }
+
+    return edges.sort((a, b) => (b.coCount ?? 0) - (a.coCount ?? 0));
+}
+
+/* ---------- B14.6：组织节点与成员边增强（只进渲染层，不参与关系查询） ---------- */
+
+/** 组织增强输入：组织文档 + 参与成员边的人物文档 ID（active 与 former 均可） */
+export interface OrgAugmentationInput {
+    docId: string;
+    name: string;
+    /** All verified membership records; repeated person IDs are merged into one edge. */
+    memberships: readonly Pick<import("./org-membership").OrgMembership, "personDocId" | "status">[];
+}
+
+export interface GraphOrgAugmentation {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
+}
+
+/** 组织节点固定色（数据编码固定色板，D-0002；与五个人群色相区分） */
+export const ORG_NODE_COLOR = "#2f8fa3";
+
+/**
+ * 组织节点 + 成员边构建。与 related 边分源：产物只叠加到画布渲染，
+ * 关系查询（一度/二度/共同/路径）仍只吃 buildGraph 的 related 图——
+ * 「人物→组织→人物」不会被算成二度关系（B14.6 验收口径）。
+ * 成员边只连名册内人物（已解绑/悬空记录丢弃，不造悬空端点）；
+ * 同人同组织多段成员记录合并为一条边；组织节点度数=有效成员边数。
+ */
+export function buildOrgAugmentation(
+    orgs: readonly OrgAugmentationInput[],
+    rosterDocIds: ReadonlySet<string>,
+): GraphOrgAugmentation {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    for (const org of orgs ?? []) {
+        if (!org || typeof org.docId !== "string" || org.docId === "") continue;
+        if (typeof org.name !== "string" || org.name === "") continue;
+        const connected = new Map<string, Set<OrgMembershipStatus>>();
+        for (const membership of org.memberships ?? []) {
+            const personDocId = membership?.personDocId;
+            const status = membership?.status;
+            if (typeof personDocId !== "string" || personDocId === "" || personDocId === org.docId) continue;
+            if (status !== "active" && status !== "former") continue;
+            if (!rosterDocIds.has(personDocId)) continue;
+            const statuses = connected.get(personDocId) ?? new Set<OrgMembershipStatus>();
+            statuses.add(status);
+            connected.set(personDocId, statuses);
+        }
+        for (const [personDocId, statuses] of connected) {
+            const memberStatus = statuses.has("active") && statuses.has("former") ? "mixed"
+                : statuses.has("active") ? "active" : "former";
+            edges.push({ source: org.docId, target: personDocId, kind: "member" as const, memberStatus });
+        }
+        nodes.push({ id: org.docId, label: org.name, group: "组织", kind: "org" as const, degree: connected.size });
+    }
+    return { nodes, edges };
+}
+
+export type GraphEdgeKind = "related" | "member" | "ref" | "co_occurrence" | "introducer";
+
+/**
+ * 交互式图例：按边类型过滤图谱边。
+ * 纯函数，零外部依赖。
+ */
+export function filterGraphEdges(
+    graph: PersonGraph,
+    hiddenKinds?: ReadonlySet<string> | readonly string[],
+): PersonGraph {
+    if (!hiddenKinds) return graph;
+    const hidden = hiddenKinds instanceof Set ? hiddenKinds : new Set(hiddenKinds);
+    if (hidden.size === 0) return graph;
+
+    const edges = graph.edges.filter((edge) => {
+        const kind = edge.kind ?? "related";
+        return !hidden.has(kind);
+    });
+
+    return {
+        nodes: graph.nodes,
+        edges,
+    };
+}
+
+export interface GraphTimeSpan {
+    minYear: number;
+    maxYear: number;
+    years: number[];
+}
+
+export function parseYearFromId(id: string): number {
+    if (!id || typeof id !== "string") return new Date().getFullYear();
+    const prefix = id.slice(0, 4);
+    const parsed = parseInt(prefix, 10);
+    if (!Number.isNaN(parsed) && parsed >= 1990 && parsed <= 2100) {
+        return parsed;
+    }
+    return new Date().getFullYear();
+}
+
+export function parseDateKeyFromId(id: string): string {
+    if (!id || typeof id !== "string") return toLocalDateKey(new Date());
+    const match = id.match(/^(\d{4})(\d{2})(\d{2})/);
+    if (match) {
+        return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+    return toLocalDateKey(new Date());
+}
+
+export function parseMonthKeyFromId(id: string): string {
+    return parseDateKeyFromId(id).slice(0, 7);
+}
+
+export interface DetailedGraphTimeSpan extends GraphTimeSpan {
+    minDateKey: string;
+    maxDateKey: string;
+    months: string[]; // YYYY-MM
+    days: string[]; // YYYY-MM-DD
+}
+
+/**
+ * 提取图谱节点涵盖的精细时间跨度（年、月、日序列）
+ */
+export function extractDetailedGraphTimeSpan(
+    graph: PersonGraph,
+): DetailedGraphTimeSpan {
+    const base = extractGraphTimeSpan(graph);
+    const today = toLocalDateKey(new Date());
+    if (graph.nodes.length === 0) {
+        return {
+            ...base,
+            minDateKey: today,
+            maxDateKey: today,
+            months: [today.slice(0, 7)],
+            days: [today],
+        };
+    }
+
+    let minDate = "9999-99-99";
+    let maxDate = "0000-00-00";
+
+    for (const node of graph.nodes) {
+        const d = parseDateKeyFromId(node.id);
+        if (d < minDate) minDate = d;
+        if (d > maxDate) maxDate = d;
+    }
+
+    if (minDate > maxDate) {
+        minDate = `${base.minYear}-01-01`;
+        maxDate = `${base.maxYear}-12-31`;
+    }
+
+    const months: string[] = [];
+    const [startYear, startMonth] = minDate.split("-").map(Number);
+    const [endYear, endMonth] = maxDate.split("-").map(Number);
+    for (let y = startYear; y <= endYear; y++) {
+        const mStart = y === startYear ? startMonth : 1;
+        const mEnd = y === endYear ? endMonth : 12;
+        for (let m = mStart; m <= mEnd; m++) {
+            months.push(`${y}-${String(m).padStart(2, "0")}`);
+        }
+    }
+
+    return {
+        ...base,
+        minDateKey: minDate,
+        maxDateKey: maxDate,
+        months: months.length > 0 ? months : [`${base.minYear}-01`],
+        days: [minDate, maxDate],
+    };
+}
+
+/**
+ * 提取图谱节点涵盖的年份区间。
+ * 纯函数：零外部依赖。
+ */
+export function extractGraphTimeSpan(
+    graph: PersonGraph,
+    nodeYearsOverride?: ReadonlyMap<string, number>,
+): GraphTimeSpan {
+    const currentYear = new Date().getFullYear();
+    if (graph.nodes.length === 0) {
+        return { minYear: currentYear, maxYear: currentYear, years: [currentYear] };
+    }
+
+    let min = currentYear;
+    let max = currentYear;
+
+    for (const node of graph.nodes) {
+        const y = nodeYearsOverride?.get(node.id) ?? parseYearFromId(node.id);
+        if (y < min) min = y;
+        if (y > max) max = y;
+    }
+
+    const years: number[] = [];
+    for (let y = min; y <= max; y++) {
+        years.push(y);
+    }
+
+    return {
+        minYear: min,
+        maxYear: max,
+        years,
+    };
+}
+
+/**
+ * 核心时间切片演化过滤：只保留指定年份及之前的节点与关系边。
+ * 纯函数：零外部依赖。
+ */
+export function filterGraphByMaxYear(
+    graph: PersonGraph,
+    maxYear: number,
+    nodeYearsOverride?: ReadonlyMap<string, number>,
+): PersonGraph {
+    if (graph.nodes.length === 0) return graph;
+
+    // 1. 过滤节点
+    const validNodes = graph.nodes.filter((node) => {
+        const y = nodeYearsOverride?.get(node.id) ?? parseYearFromId(node.id);
+        return y <= maxYear;
+    });
+
+    const validNodeIdSet = new Set(validNodes.map((n) => n.id));
+
+    // 2. 过滤边（两端节点必须都在 validNodeIdSet 中，且边的产生年份也 <= maxYear）
+    const validEdges = graph.edges.filter((edge) => {
+        if (!validNodeIdSet.has(edge.source) || !validNodeIdSet.has(edge.target)) return false;
+        const sourceYear = nodeYearsOverride?.get(edge.source) ?? parseYearFromId(edge.source);
+        const targetYear = nodeYearsOverride?.get(edge.target) ?? parseYearFromId(edge.target);
+        const edgeYear = Math.max(sourceYear, targetYear);
+        return edgeYear <= maxYear;
+    });
+
+    // 3. 重新计算留在图内的节点度数
+    const degreeMap = new Map<string, number>();
+    for (const edge of validEdges) {
+        degreeMap.set(edge.source, (degreeMap.get(edge.source) ?? 0) + 1);
+        degreeMap.set(edge.target, (degreeMap.get(edge.target) ?? 0) + 1);
+    }
+
+    const recalculatedNodes = validNodes.map((node) => ({
+        ...node,
+        degree: degreeMap.get(node.id) ?? 0,
+    }));
+
+    return {
+        nodes: recalculatedNodes,
+        edges: validEdges,
+    };
+}
+
+/**
+ * 按精细日期/月份键（如 YYYY-MM 或 YYYY-MM-DD）过滤图谱生长
+ */
+export function filterGraphByMaxDateKey(
+    graph: PersonGraph,
+    maxDateKey: string,
+): PersonGraph {
+    if (graph.nodes.length === 0 || !maxDateKey) return graph;
+    const maxPrefix = maxDateKey.replace(/-/g, "");
+
+    const validNodes = graph.nodes.filter((node) => {
+        const prefix = node.id.replace(/-/g, "").slice(0, maxPrefix.length);
+        if (/^\d+$/.test(prefix)) {
+            return prefix <= maxPrefix;
+        }
+        return true;
+    });
+
+    const validNodeIdSet = new Set(validNodes.map((n) => n.id));
+    const validEdges = graph.edges.filter((edge) => {
+        if (!validNodeIdSet.has(edge.source) || !validNodeIdSet.has(edge.target)) return false;
+        const srcPrefix = edge.source.replace(/-/g, "").slice(0, maxPrefix.length);
+        const tgtPrefix = edge.target.replace(/-/g, "").slice(0, maxPrefix.length);
+        return (/^\d+$/.test(srcPrefix) ? srcPrefix <= maxPrefix : true)
+            && (/^\d+$/.test(tgtPrefix) ? tgtPrefix <= maxPrefix : true);
+    });
+
+    const degreeMap = new Map<string, number>();
+    for (const edge of validEdges) {
+        degreeMap.set(edge.source, (degreeMap.get(edge.source) ?? 0) + 1);
+        degreeMap.set(edge.target, (degreeMap.get(edge.target) ?? 0) + 1);
+    }
+
+    return {
+        nodes: validNodes.map((n) => ({ ...n, degree: degreeMap.get(n.id) ?? 0 })),
+        edges: validEdges,
+    };
+}

@@ -1,0 +1,64 @@
+/* 发布门禁：版本一致性 + dist 产物完整性 + package.zip 存在。任何一项不过即退出码 1。 */
+import { createHash } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
+const root = path.resolve(import.meta.dirname, "..");
+const failures = [];
+const check = (name, ok, detail = "") => {
+    console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
+    if (!ok) failures.push(name);
+};
+
+const plugin = JSON.parse(fs.readFileSync(path.join(root, "plugin.json"), "utf8"));
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const modelTs = fs.readFileSync(path.join(root, "src/domain/model.ts"), "utf8");
+const readmeMd = fs.readFileSync(path.join(root, "README.md"), "utf8");
+const modelVersionMatch = modelTs.match(/export\s+const\s+PLUGIN_VERSION\s*=\s*"([^"]+)"/);
+const modelVersion = modelVersionMatch ? modelVersionMatch[1] : "";
+const readmeHasVersion = readmeMd.includes(`v${pkg.version}`);
+
+check("版本一致（plugin.json = package.json）", plugin.version === pkg.version, `${plugin.version} / ${pkg.version}`);
+check("版本一致（代码常量 PLUGIN_VERSION = package.json）", modelVersion === pkg.version, `${modelVersion} / ${pkg.version}`);
+check("版本一致（README.md 最新版本 = package.json）", readmeHasVersion, `v${pkg.version}`);
+check("插件名 = 仓库名约定", plugin.name === pkg.name, plugin.name);
+
+const dist = path.join(root, "dist");
+for (const file of ["index.js", "index.css", "plugin.json", "icon.png", "preview.png", "README.md", "README.en-US.md", "i18n/zh-CN.json", "i18n/en.json"]) {
+    const p = path.join(dist, file);
+    check(`dist/${file}`, fs.existsSync(p) && fs.statSync(p).size > 0);
+}
+
+const distManifest = JSON.parse(fs.readFileSync(path.join(dist, "plugin.json"), "utf8"));
+check("dist/plugin.json 与源一致", JSON.stringify(distManifest) === JSON.stringify(plugin));
+
+const zip = path.join(root, "package.zip");
+check("package.zip 存在且非空", fs.existsSync(zip) && fs.statSync(zip).size > 1024, fs.existsSync(zip) ? `${fs.statSync(zip).size}B` : "缺失");
+const checksumPath = path.join(root, "package.zip.sha256");
+if (fs.existsSync(zip) && fs.statSync(zip).size > 0 && fs.existsSync(checksumPath)) {
+    const expected = fs.readFileSync(checksumPath, "utf8").trim().split(/\s+/)[0].toLowerCase();
+    const actual = createHash("sha256").update(fs.readFileSync(zip)).digest("hex");
+    check("package.zip SHA-256 校验和", /^[0-9a-f]{64}$/.test(expected) && expected === actual, `${expected || "缺失"} / ${actual}`);
+} else {
+    check("package.zip SHA-256 校验和", false, "package.zip 或 package.zip.sha256 缺失");
+}
+check("icon.png ≤ 64KiB（集市限制）", fs.statSync(path.join(root, "icon.png")).size <= 64 * 1024, `${fs.statSync(path.join(root, "icon.png")).size}B`);
+check("preview.png ≤ 512KiB（集市限制）", fs.statSync(path.join(root, "preview.png")).size <= 512 * 1024, `${fs.statSync(path.join(root, "preview.png")).size}B`);
+
+/* v0.4.0 事故防线：源码动态 import 会让 Rollup 拆出独立 chunk，index.js 顶层出现
+   require("./xxx.cjs")——宿主插件 loader 的 require 只认 "siyuan"，加载即抛错
+   （表现为顶栏无入口按钮，v0.4.0 实证）。此处强制：dist 只允许单 js 文件，
+   且 index.js 的 require 仅限 "siyuan"。 */
+const distFiles = fs.readdirSync(dist, { recursive: false });
+const extraJs = distFiles.filter((name) => /\.cjs$|\.mjs$/.test(name) || (/\.js$/.test(name) && name !== "index.js"));
+check("dist 无独立 js chunk（宿主 require shim 不解析相对路径）", extraJs.length === 0, extraJs.join(",") || "仅 index.js");
+const indexJs = fs.readFileSync(path.join(dist, "index.js"), "utf8");
+const requiredIds = [...indexJs.matchAll(/\brequire\(\s*(["'])([^"']+)\1\s*\)/g)].map((match) => match[2]);
+const foreignRequires = [...new Set(requiredIds.filter((id) => id !== "siyuan"))];
+check("index.js require 仅限 siyuan", foreignRequires.length === 0, foreignRequires.join(",") || `共 ${requiredIds.length} 处均为 siyuan`);
+
+if (failures.length > 0) {
+    console.error(`\n发布门禁未通过：${failures.length} 项`);
+    process.exit(1);
+}
+console.log("\n发布门禁全部通过 ✔");
