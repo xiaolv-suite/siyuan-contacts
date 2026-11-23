@@ -862,12 +862,12 @@
 
     .countdown-badge {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         font-variant-numeric: tabular-nums;
     }
 
     .countdown-badge.is-overdue {
-        color: var(--b3-theme-error);
+        color: var(--lvct-danger);
         font-weight: 600;
     }
 
@@ -877,7 +877,7 @@
         flex-wrap: wrap;
         gap: 12px;
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         font-variant-numeric: tabular-nums;
     }
 
@@ -907,11 +907,11 @@
         gap: 4px;
         padding: 2px 10px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--b3-theme-surface-lighter);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-border-subtle);
         font-size: 11px;
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
@@ -928,8 +928,8 @@
         display: flex;
         align-items: center;
         gap: 4px;
-        color: var(--b3-theme-on-surface-light);
-        background: var(--b3-theme-surface-lighter);
+        color: var(--lvct-text-3);
+        background: var(--lvct-border-subtle);
         padding: 4px 8px;
         border-radius: var(--lvct-r-card, 10px);
     }
@@ -940,7 +940,7 @@
         justify-content: flex-end;
         gap: 6px;
         margin-top: 4px;
-        border-top: 1px dashed var(--b3-border-color);
+        border-top: 1px dashed var(--lvct-border-subtle);
         padding-top: 6px;
     }
 
@@ -953,6 +953,6 @@
     .empty-state {
         text-align: center;
         padding: 24px 12px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 </style>

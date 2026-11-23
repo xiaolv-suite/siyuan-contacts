@@ -601,7 +601,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                     {aiRunning ? text("captureAiRunning", "AI 分析中…") : aiDone ? text("captureAiDone", "AI 已分析（可再次分析）") : text("captureAiButton", "AI 分析本页（识别未链接的人名/日期/地点）")}
                 </button>
                 {#if aiRunning}
-                    <div class="lv-ai-thinking" role="status" aria-live="polite" style="margin-top: 8px; padding: 14px 10px; background: color-mix(in srgb, var(--b3-theme-surface) 95%, transparent); border: 1px solid var(--b3-border-color); border-radius: 10px;">
+                    <div class="lv-ai-thinking" role="status" aria-live="polite" style="margin-top: 8px; padding: 14px 10px; background: color-mix(in srgb, var(--lvct-bg-surface) 95%, transparent); border: 1px solid var(--lvct-border-subtle); border-radius: 10px;">
                         <div class="lv-ai-thinking__glow" style="width: 40px; height: 40px;">
                             <span class="lv-ai-thinking__icon" style="font-size: 20px;">👥</span>
                         </div>

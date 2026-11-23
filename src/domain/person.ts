@@ -104,6 +104,8 @@ export interface ContactSummary {
     profile?: PersonProfile;
     aliasProfile?: { state: "known"; values: string[] } | { state: "unknown"; message: string };
     avatar?: string;
+    channels?: import("./person-channels.ts").ContactChannel[];
+    address?: string;
 }
 
 /** 渲染响应的一行 → 联系人摘要。纯函数，逐单元格容错（缺值/未知字段跳过） */

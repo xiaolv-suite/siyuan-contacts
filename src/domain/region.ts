@@ -1,9 +1,12 @@
+import type { ContactChannel } from "./person-channels.ts";
+
 export interface Person {
     id?: string;
     docId?: string;
     itemId?: string;
     name: string;
     address?: string;
+    location?: string;
     organization?: string;
     role?: string;
     phone?: string;
@@ -18,6 +21,8 @@ export interface Person {
     company?: string;
     title?: string;
     profile?: any;
+    channels?: ContactChannel[];
+    contactChannels?: ContactChannel[];
     [key: string]: any;
 }
 
@@ -279,8 +284,8 @@ export function groupPeopleByRegion(people: Person[], inactiveThresholdDays = 60
     const unresolvedPeople: Person[] = [];
 
     for (const person of people) {
-        const resolved = extractCityFromAddress(person.address);
-        if (!resolved) {
+        const resolved = extractNormalizedRegion(person);
+        if (!resolved || resolved.city === "未知" || resolved.city === "未填写") {
             unresolvedPeople.push(person);
             continue;
         }
@@ -377,20 +382,107 @@ export function generateTripPlanMarkdown(options: TripPlanMarkdownOptions): stri
 }
 
 /**
- * 综合联系人的地址、标签、组织单位等线索，提炼出规范化的地域信息
+ * 从联系人对象中尝试提取结构化通讯条目（支持 channels 数组、contactChannels、profile.channels 及序列化 IAL/属性字符串）
+ */
+export function extractChannelsFromPerson(person: Person): ContactChannel[] {
+    if (!person) return [];
+    if (Array.isArray(person.channels) && person.channels.length > 0) {
+        return person.channels;
+    }
+    if (Array.isArray(person.contactChannels) && person.contactChannels.length > 0) {
+        return person.contactChannels;
+    }
+    if (person.profile && Array.isArray(person.profile.channels) && person.profile.channels.length > 0) {
+        return person.profile.channels;
+    }
+    const rawChannels = person["custom-lvct-channels"] || person.customLvctChannels;
+    if (typeof rawChannels === "string" && rawChannels.trim()) {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(rawChannels));
+            if (Array.isArray(parsed)) return parsed;
+        } catch {
+            try {
+                const parsed = JSON.parse(rawChannels);
+                if (Array.isArray(parsed)) return parsed;
+            } catch {}
+        }
+    }
+    if (typeof person.ial === "string") {
+        const m = person.ial.match(/custom-lvct-channels="([^"]*)"/);
+        if (m && m[1]) {
+            try {
+                const parsed = JSON.parse(decodeURIComponent(m[1]));
+                if (Array.isArray(parsed)) return parsed;
+            } catch {
+                try {
+                    const parsed = JSON.parse(m[1]);
+                    if (Array.isArray(parsed)) return parsed;
+                } catch {}
+            }
+        }
+    }
+    return [];
+}
+
+/**
+ * 从多维通讯条目中筛选出地址条目，并按权威权重排序：
+ * 权重优先级：
+ * 1. 显式主条目 (isPrimary === true) 且为地址
+ * 2. 常驻类地址（label 包含“常驻”、“常住”、“主要”）
+ * 3. 居住/家庭类地址（label 包含“家”、“住址”、“居住”、“户籍”）
+ * 4. 工作/公司类地址（label 包含“公司”、“工作”、“办公”、“单位”）
+ * 5. 普通/其他地址条目（type === "address"）
+ */
+export function extractAddressCandidatesFromChannels(channels: ContactChannel[]): string[] {
+    if (!channels || channels.length === 0) return [];
+
+    const addressEntries = channels.filter(
+        (c) => c && (c.type === "address" || /地址|住址|常驻|居住/i.test(c.label || "")) && typeof c.value === "string" && c.value.trim()
+    );
+    if (addressEntries.length === 0) return [];
+
+    const scored = addressEntries.map((c) => {
+        let score = 0;
+        if (c.isPrimary) score += 100;
+        const lbl = (c.label || "").trim();
+        if (/常驻|常住|主要/i.test(lbl)) score += 50;
+        else if (/家|住址|居住|户籍/i.test(lbl)) score += 30;
+        else if (/公司|工作|办公|单位/i.test(lbl)) score += 20;
+        else score += 10;
+        return { value: c.value.trim(), score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map((s) => s.value).filter(Boolean);
+}
+
+/**
+ * 综合联系人的通讯多维资料地址条目、显式单值地址、标签、组织单位等线索，提炼出规范化的地域信息。
+ * 算法重构：基于通讯多维资料地址条目（家庭/公司/常驻地址）精准提取取代单一组织推断。
  */
 export function extractNormalizedRegion(person: Person): { city: string; province?: string; region?: string } {
     if (!person) return { city: "未知" };
 
-    // 1. 优先从地址字段解析
-    if (person.address) {
-        const fromAddr = extractCityFromAddress(person.address);
+    // 1. 第一优先级：从通讯多维资料地址条目（家庭/公司/常驻地址等）中精准提取
+    const channels = extractChannelsFromPerson(person);
+    const channelAddresses = extractAddressCandidatesFromChannels(channels);
+    for (const addr of channelAddresses) {
+        const fromAddr = extractCityFromAddress(addr);
         if (fromAddr) {
             return { city: fromAddr.city, province: fromAddr.province };
         }
     }
 
-    // 2. 从标签中提取城市
+    // 2. 第二优先级：显式单值地址字段（person.address 或 person.location）
+    const explicitAddr = person.address || person.location;
+    if (explicitAddr) {
+        const fromAddr = extractCityFromAddress(explicitAddr);
+        if (fromAddr) {
+            return { city: fromAddr.city, province: fromAddr.province };
+        }
+    }
+
+    // 3. 第三优先级：从标签中提取明确标注的城市
     if (Array.isArray(person.tags)) {
         for (const tag of person.tags) {
             const trimmed = tag.trim();
@@ -404,7 +496,7 @@ export function extractNormalizedRegion(person: Person): { city: string; provinc
         }
     }
 
-    // 3. 从公司或组织背景中提取城市
+    // 4. 最后兜底：仅在无任何明确人身地址时，才从所属公司或组织背景中做弱推断
     const orgSources = [
         person.company,
         person.organization,
@@ -496,6 +588,12 @@ export function filterContactsByRegion<T extends Person>(contacts: readonly T[],
         if (norm.city.toLowerCase() === target) return true;
         if (norm.province && norm.province.toLowerCase() === target) return true;
         if (p.address && p.address.toLowerCase().includes(target)) return true;
+        const channels = extractChannelsFromPerson(p);
+        for (const ch of channels) {
+            if ((ch.type === "address" || /地址|住址|常驻/i.test(ch.label || "")) && typeof ch.value === "string" && ch.value.toLowerCase().includes(target)) {
+                return true;
+            }
+        }
         return false;
     });
 }
@@ -516,6 +614,12 @@ export function filterPeopleByRegion<T extends Person>(people: readonly T[], reg
         if (norm.city.toLowerCase().includes(q)) return true;
         if (norm.province && norm.province.toLowerCase().includes(q)) return true;
         if (p.address && p.address.toLowerCase().includes(q)) return true;
+        const channels = extractChannelsFromPerson(p);
+        for (const ch of channels) {
+            if ((ch.type === "address" || /地址|住址|常驻/i.test(ch.label || "")) && typeof ch.value === "string" && ch.value.toLowerCase().includes(q)) {
+                return true;
+            }
+        }
         if (Array.isArray(p.tags) && p.tags.some((t) => t.toLowerCase().includes(q))) return true;
         if (p.company && p.company.toLowerCase().includes(q)) return true;
         if (p.organization && p.organization.toLowerCase().includes(q)) return true;

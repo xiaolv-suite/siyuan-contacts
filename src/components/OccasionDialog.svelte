@@ -296,7 +296,7 @@
 .lvct-occ-dialog__label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
 }
 .lvct-occ-dialog__grid {
     display: grid;
@@ -308,7 +308,7 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px 14px;
-    background: var(--b3-theme-background-light, rgba(0, 0, 0, 0.02));
+    background: var(--lvct-bg-app, rgba(0, 0, 0, 0.02));
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-card, 12px);
     box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
@@ -324,10 +324,10 @@
     gap: 5px;
     padding: 2px 8px;
     border-radius: var(--lv-r-pill, 9999px);
-    background: var(--b3-theme-surface, #ffffff);
+    background: var(--lvct-bg-surface, #ffffff);
     border: 1px solid var(--lvct-border-subtle);
     font-size: 11.5px;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
     box-shadow: 0 1px 2px rgba(28, 24, 21, 0.03);
 }
 .lvct-occ-attendee-dot {
@@ -347,7 +347,7 @@
     min-height: 22px;
     border: 0;
     background: transparent;
-    color: var(--b3-theme-on-surface-light, #888);
+    color: var(--lvct-text-3, #888);
     padding: 0;
     cursor: pointer;
     border-radius: var(--lv-r-pill, 9999px);
@@ -357,7 +357,7 @@
 }
 .lvct-occ-attendee-remove-btn:hover {
     opacity: 1;
-    color: var(--b3-theme-error, #ef4444);
+    color: var(--lvct-danger, #ef4444);
     background: rgba(239, 68, 68, 0.08);
 }
 .lvct-occ-dialog__picker {
@@ -369,7 +369,7 @@
     left: 0;
     right: 0;
     z-index: 10;
-    background: var(--b3-theme-surface);
+    background: var(--lvct-bg-surface);
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-card, 12px);
     box-shadow: 0 8px 24px rgba(28, 24, 21, 0.12);

@@ -8,6 +8,9 @@
     import { GROUP_CLEAR_OPTION, GROUP_KEEP_OPTION } from "../../domain/contact-group";
     import { profileText } from "../../domain/people-profiles";
     import { onDestroy, tick } from "svelte";
+    // DL2 阶段3：空态吉祥物（mascot 偏好门控，关闭回退线性图标）
+    import { lvMascot } from "../../libs/ui/mascots";
+    import { resolveEffectiveMotion } from "../../libs/lv-ui-prefs";
     import { exportVcfText } from "../../services/vcard";
     import { formatBirthdayDisplay, nextBirthday } from "../../domain/occasions";
     import GroupField from "./GroupField.svelte";
@@ -2668,7 +2671,7 @@
                 <button
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
-                    style="color: var(--b3-theme-primary); text-decoration: underline; padding: 0 4px;"
+                    style="color: var(--lvct-accent); text-decoration: underline; padding: 0 4px;"
                     onclick={() => {
                         onOpenPersonDoc?.(batchFlashcardsDocInfo!.docId);
                     }}
@@ -2759,7 +2762,13 @@
         </div>
     {:else if filtered.length === 0}
         <div class="lvct-empty">
-            <div class="lvct-empty__icon" aria-hidden="true"><ContactRound size={24} strokeWidth={1.8}/></div>
+            <div class="lvct-empty__icon" aria-hidden="true">
+                {#if people.length === 0 && rosterTotal === 0 && rosterComplete && resolveEffectiveMotion().mascot}
+                    {@html lvMascot("wave", { class: "lvct-empty__mascot" })}
+                {:else}
+                    <ContactRound size={24} strokeWidth={1.8}/>
+                {/if}
+            </div>
             <b>{people.length === 0 && rosterTotal === 0 && rosterComplete ? "还没有联系人" : rosterHasMore ? "联系人读取未完成" : queryProjectionIncomplete ? "搜索资料尚未核实" : !rosterComplete ? "正在核实联系人" : "当前筛选下没有联系人"}</b>
             <p>{people.length === 0 && rosterTotal === 0 && rosterComplete ? "从新建第一个联系人开始，也可以收编笔记或导入 vCard。" : rosterHasMore ? `已读取 ${people.length} / ${rosterTotal} 人，已读范围没有命中，读取完成后再判断。` : queryProjectionIncomplete ? "别名、组织或称谓资料读取未完成，请重新读取核实；当前没有已知命中，不表示没有匹配的联系人。" : !rosterComplete ? "请等待本轮名册核实完成，当前结果尚不能作为完整筛选范围。" : "换个关键词、分组或标签试试。"}</p>
             {#if people.length === 0 && rosterTotal === 0}

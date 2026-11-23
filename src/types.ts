@@ -70,6 +70,7 @@ export interface ContactsPluginFacade {
     savePersonBusinessCard?(personDocId: string, cardDataUrl: string): Promise<void>;
     loadPersonBusinessCard?(personDocId: string): Promise<string>;
     syncPersonDocument?(person: ContactSummary): Promise<void>;
+    backfillDataSovereignty?(options?: { onProgress?: (current: number, total: number, docId: string) => void }): Promise<{ total: number; success: number; failed: number }>;
     inspectLegacyPersonNote(personDocId: string): Promise<import("./domain/person-note").LegacyPersonNoteSnapshot>;
     detachLegacyPersonNote(personDocId: string, expected: import("./domain/person-note").LegacyPersonNoteSnapshot): Promise<void>;
     /** 原生人物文档中的可重复资料条目与两层分组；不投影主联系方式。 */

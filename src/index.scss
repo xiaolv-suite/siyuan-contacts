@@ -246,7 +246,7 @@
     width: 36px;
     height: 4px;
     border-radius: 999px;
-    background: var(--b3-theme-surface-lighter, rgba(125, 125, 125, 0.3));
+    background: var(--lvct-border-subtle, rgba(125, 125, 125, 0.3));
     margin: 0 auto var(--lvct-sp-1);
     flex-shrink: 0;
 }
@@ -883,8 +883,21 @@ html[data-theme-mode="dark"] .lvct-wizard {
     transition: border-color var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 
     &:focus {
-        border-color: var(--b3-theme-primary);
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--b3-theme-primary) 20%, transparent);
+        border-color: var(--lvct-accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--lvct-accent) 20%, transparent);
+    }
+}
+
+/* 2026-11-21 走查修复：触控设备（手机/平板）下拉与搜索主入口提升至 44px 触控基线；桌面维持 38px 密度 */
+@media (pointer: coarse) {
+    .lvct-people__toolbar select.b3-select,
+    .lvct-people__desktop-search {
+        height: 44px;
+        min-height: 44px;
+        max-height: 44px;
+    }
+    .lvct-people__toolbar select.b3-select {
+        line-height: 42px;
     }
 }
 
@@ -1594,14 +1607,14 @@ html[data-theme-mode="dark"] .lvct-people__viewsmenu {
             font-size: 11px;
             padding: 2px 6px;
             border-radius: var(--lvct-radius-sm);
-            background: var(--b3-theme-surface-lighter);
+            background: var(--lvct-border-subtle);
             border: 1px dashed var(--lvct-border-subtle);
-            color: var(--b3-theme-on-surface);
+            color: var(--lvct-text-2);
             cursor: pointer;
             transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
             &:hover {
-                background: color-mix(in srgb, var(--lvct-accent) 15%, var(--b3-theme-surface));
+                background: color-mix(in srgb, var(--lvct-accent) 15%, var(--lvct-bg-surface));
                 border-color: var(--lvct-accent);
                 color: var(--lvct-accent);
             }
@@ -1880,7 +1893,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     border-radius: var(--lvct-r-md);
     background: color-mix(in srgb, var(--lvct-accent) 8%, var(--lvct-bg-surface));
     border: 1px solid color-mix(in srgb, var(--lvct-accent) 24%, var(--lvct-border-subtle));
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
     font-size: var(--lvct-fs-caption);
     box-sizing: border-box;
 
@@ -2011,6 +2024,16 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     color: var(--lvct-accent-fill);
     box-shadow: 0 4px 14px color-mix(in srgb, var(--lvct-accent) 16%, transparent), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
     font-size: 24px;
+}
+
+/* DL2 阶段3：空态吉祥物（受 mascot 偏好门控，关闭回退线性图标） */
+.lvct-empty__mascot {
+    color: var(--lvct-accent);
+}
+
+.lvct-empty__mascot svg {
+    width: 84px;
+    height: 74px;
 }
 
 .lvct-empty__actions {
@@ -2990,7 +3013,7 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
         display: inline-flex;
         align-items: center;
         gap: 2px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -3279,18 +3302,19 @@ html[data-theme-mode="dark"] .lvct-people__batchbar {
     gap: 8px;
     width: fit-content;
     max-width: 100%;
-    padding: 6px 14px;
-    border: 1px solid color-mix(in srgb, var(--lvct-accent) 26%, transparent);
-    border-radius: var(--lv-r-pill, 9999px);
-    background: color-mix(in srgb, var(--lvct-accent) 9%, var(--lvct-bg-surface));
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--lvct-accent) 12%, transparent), inset 0 1px 0 color-mix(in srgb, var(--lvct-text-1) 12%, transparent);
-    color: var(--lvct-text-1);
+    padding: 7px 14px;
+    border: 1px solid var(--lvct-border-subtle);
+    border-left: 3px solid var(--lv-brand);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--lv-brand) 5%, var(--lvct-bg-surface));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    color: var(--lvct-text-2);
     font-size: var(--lvct-fs-caption);
     font-weight: 500;
     box-sizing: border-box;
 
     > span { min-width: 0; overflow-wrap: anywhere; line-height: 1.45; }
-    > svg { flex: 0 0 auto; color: var(--lvct-accent); }
+    > svg { flex: 0 0 auto; color: var(--lv-brand); }
 }
 
 .lvct-notice--error {
@@ -3420,7 +3444,7 @@ html[data-theme-mode="dark"] .lvct-notice {
     }
 
     &:focus-visible {
-        outline: var(--lvct-focus-ring-width, 2px) solid var(--lvct-focus-ring-color, var(--b3-theme-primary));
+        outline: var(--lvct-focus-ring-width, 2px) solid var(--lvct-focus-ring-color, var(--lvct-accent));
         outline-offset: var(--lvct-focus-ring-offset, 1px);
     }
 }
@@ -3433,34 +3457,45 @@ html[data-theme-mode="dark"] .lvct-notice {
     display: grid;
     place-items: center;
     font-size: 16px;
-    font-weight: 700;
-    color: var(--lvct-color-white, #ffffff);
+    font-weight: 600;
+    color: var(--lv-brand);
     flex-shrink: 0;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 80%, var(--lvct-color-white, #ffffff) 20%), var(--lvct-accent));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-accent) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    background: color-mix(in srgb, var(--lv-brand) 12%, var(--lvct-bg-surface));
+    border: 1px solid color-mix(in srgb, var(--lv-brand) 22%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease);
 }
 
-/* UX-01.4：分组头像背景色（家人红/朋友绿/工作蓝/同学珊瑚/其他灰），Squircle 微渐变配方 */
+/* UX-01.4：分组头像背景色，高奢柔和低饱和淡雅调配方 */
 .lvct-person-card__avatar[data-group="家人"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-family));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-family) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: var(--lvct-group-family);
+    background: color-mix(in srgb, var(--lvct-group-family) 12%, var(--lvct-bg-surface));
+    border-color: color-mix(in srgb, var(--lvct-group-family) 24%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .lvct-person-card__avatar[data-group="朋友"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-friend));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-friend) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: var(--lvct-group-friend);
+    background: color-mix(in srgb, var(--lvct-group-friend) 12%, var(--lvct-bg-surface));
+    border-color: color-mix(in srgb, var(--lvct-group-friend) 24%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .lvct-person-card__avatar[data-group="同事"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-work));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-work) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: var(--lvct-group-work);
+    background: color-mix(in srgb, var(--lvct-group-work) 12%, var(--lvct-bg-surface));
+    border-color: color-mix(in srgb, var(--lvct-group-work) 24%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .lvct-person-card__avatar[data-group="同学"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-school));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-school) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: var(--lvct-group-school);
+    background: color-mix(in srgb, var(--lvct-group-school) 12%, var(--lvct-bg-surface));
+    border-color: color-mix(in srgb, var(--lvct-group-school) 24%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .lvct-person-card__avatar[data-group="其他"] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, var(--lvct-color-white, #ffffff)), var(--lvct-group-other));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-other) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: var(--lvct-group-other);
+    background: color-mix(in srgb, var(--lvct-group-other) 12%, var(--lvct-bg-surface));
+    border-color: color-mix(in srgb, var(--lvct-group-other) 24%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .lvct-person-card__main {
@@ -3619,23 +3654,23 @@ html[data-theme-mode="dark"] .lvct-notice {
     line-height: 1.4;
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 75%, transparent);
     background: var(--lvct-bg-surface);
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
     cursor: pointer;
     box-sizing: border-box;
     transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
     &:hover:not(.b3-chip--primary) {
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-background);
-        border-color: color-mix(in srgb, var(--b3-theme-primary) 35%, var(--lvct-border-subtle));
+        background: var(--lvct-border-subtle);
+        color: var(--lvct-text-1);
+        border-color: color-mix(in srgb, var(--lvct-accent) 35%, var(--lvct-border-subtle));
     }
 
     &--primary {
-        background: color-mix(in srgb, var(--b3-theme-primary) 14%, var(--lvct-bg-surface)) !important;
-        color: var(--b3-theme-primary) !important;
-        border-color: var(--b3-theme-primary) !important;
+        background: color-mix(in srgb, var(--lvct-accent) 14%, var(--lvct-bg-surface)) !important;
+        color: var(--lvct-accent) !important;
+        border-color: var(--lvct-accent) !important;
         font-weight: 600;
-        box-shadow: 0 1px 3px color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
+        box-shadow: 0 1px 3px color-mix(in srgb, var(--lvct-accent) 15%, transparent);
     }
 
     &--dashed {
@@ -4618,7 +4653,7 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         border: none;
         border-radius: var(--lvct-r-sm);
         background: transparent;
-        color: var(--b3-theme-on-background);
+        color: var(--lvct-text-1);
         font-size: 12px;
         font-weight: 500;
         cursor: pointer;
@@ -4627,13 +4662,13 @@ html[data-theme-mode="dark"] .lvct-graph__fab {
         transition: transform var(--lvct-dur-fast) ease, background var(--lvct-dur-fast) ease, border-color var(--lvct-dur-fast) ease, box-shadow var(--lvct-dur-fast) ease, color var(--lvct-dur-fast) ease, opacity var(--lvct-dur-fast) ease;
 
         &:hover {
-            background: var(--b3-theme-surface-lighter);
-            color: var(--b3-theme-primary);
+            background: var(--lvct-border-subtle);
+            color: var(--lvct-accent);
         }
 
         &.active {
-            background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
-            color: var(--b3-theme-primary);
+            background: color-mix(in srgb, var(--lvct-accent) 12%, transparent);
+            color: var(--lvct-accent);
             font-weight: 600;
         }
     }
@@ -5503,13 +5538,13 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     transition: background-color var(--lvct-dur-fast) ease, border-color var(--lvct-dur-fast) ease, color var(--lvct-dur-fast) ease;
 
     &:hover {
-        background: var(--lvct-bg-hover, var(--b3-theme-surface-lighter));
+        background: var(--lvct-bg-hover, var(--lvct-border-subtle));
         border-color: var(--lvct-primary);
         color: var(--lvct-primary);
     }
 
     &:focus-visible {
-        outline: var(--lvct-focus-ring-width, 2px) solid var(--lvct-focus-ring-color, var(--b3-theme-primary));
+        outline: var(--lvct-focus-ring-width, 2px) solid var(--lvct-focus-ring-color, var(--lvct-accent));
         outline-offset: var(--lvct-focus-ring-offset, 1px);
     }
 
@@ -5522,8 +5557,8 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
 
     &.lvct-strip__chip--error {
         background: var(--b3-theme-error-soft, rgba(235, 87, 87, 0.1));
-        border-color: var(--b3-theme-error, #eb5757);
-        color: var(--b3-theme-error, #eb5757);
+        border-color: var(--lvct-danger, #eb5757);
+        color: var(--lvct-danger, #eb5757);
     }
 }
 
@@ -5870,9 +5905,9 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
         font-size: 11px;
         padding: 2px 7px;
         border-radius: var(--lvct-r-sm);
-        background: var(--b3-theme-surface-lighter);
+        background: var(--lvct-border-subtle);
         border: 1px solid var(--lvct-border-subtle);
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         line-height: 1.3;
         max-width: 220px;
         white-space: nowrap;
@@ -5880,9 +5915,9 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
         text-overflow: ellipsis;
 
         &.is-taboo {
-            background: color-mix(in srgb, var(--b3-theme-error) 12%, var(--b3-theme-surface));
-            border-color: color-mix(in srgb, var(--b3-theme-error) 40%, transparent);
-            color: var(--b3-theme-error);
+            background: color-mix(in srgb, var(--lvct-danger) 12%, var(--lvct-bg-surface));
+            border-color: color-mix(in srgb, var(--lvct-danger) 40%, transparent);
+            color: var(--lvct-danger);
             font-weight: 600;
         }
 
@@ -6057,7 +6092,7 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
 
     &:hover {
         opacity: 1;
-        background: var(--b3-theme-surface);
+        background: var(--lvct-bg-surface);
     }
 }
 
@@ -6095,7 +6130,7 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 
         &:hover {
-            border-color: color-mix(in srgb, var(--b3-theme-primary) 35%, var(--lvct-border-subtle));
+            border-color: color-mix(in srgb, var(--lvct-accent) 35%, var(--lvct-border-subtle));
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
         }
     }
@@ -6127,8 +6162,8 @@ html[data-theme-mode="dark"] .lvct-doc-strip {
     flex-wrap: wrap;
     gap: 8px;
     padding: 10px 14px;
-    background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--lvct-bg-surface));
-    border: 1px dashed color-mix(in srgb, var(--b3-theme-primary) 30%, transparent);
+    background: color-mix(in srgb, var(--lvct-accent) 6%, var(--lvct-bg-surface));
+    border: 1px dashed color-mix(in srgb, var(--lvct-accent) 30%, transparent);
     border-radius: var(--lvct-r-lg);
     margin: var(--lvct-sp-2) 0;
 }
@@ -6880,19 +6915,17 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
-    background: var(--lvct-bg-surface);
-    border: 1px solid var(--lvct-color-border-200);
-    border-radius: var(--lvct-r-card, 16px);
-    box-shadow: 0 4px 18px -2px rgba(28, 24, 21, 0.04);
-    padding: 12px 10px;
-    gap: 4px 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    gap: 12px;
     box-sizing: border-box;
 }
 
 .lvct-dash__stat-top {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
     align-items: center;
     justify-content: space-between;
     width: 100%;
@@ -6900,36 +6933,41 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-dash__stat-tag {
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 600;
     padding: 2px 8px;
     border-radius: var(--lv-r-pill, 9999px);
-    background: color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
-    color: var(--b3-theme-on-surface);
+    background: color-mix(in srgb, var(--lv-brand) 8%, transparent);
+    color: var(--lv-brand);
     line-height: 1.4;
 
     &--hl {
-        background: var(--lv-data-amber-soft, rgba(217, 119, 6, 0.12));
-        color: var(--lv-data-amber, #d97706);
+        background: color-mix(in srgb, #f43f5e 10%, transparent);
+        color: #e11d48;
     }
 
     &--warn {
-        background: var(--lvct-danger-soft);
-        color: var(--lvct-danger);
+        background: color-mix(in srgb, #f59e0b 10%, transparent);
+        color: #d97706;
     }
 }
 
-/* 统计优先：指标之间用竖分隔而不是卡片包裹 */
+.lvct-dash__stat--relations .lvct-dash__stat-tag {
+    background: color-mix(in srgb, #0ea5e9 10%, transparent);
+    color: #0284c7;
+}
+
+/* 现代化 Bento 指标磁贴卡片架构 */
 .lvct-dash__stat {
-    flex: 1 1 132px;
+    flex: 1 1 140px;
     min-width: 0;
     position: relative;
     overflow: clip;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 8px 14px;
+    background: var(--lvct-bg-surface) !important;
+    border: 1px solid var(--lvct-border-subtle) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -6937,21 +6975,17 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     cursor: pointer;
     text-align: left;
     box-sizing: border-box;
-    transition: background var(--lvct-dur-fast) var(--lvct-ease);
+    transition: transform var(--lvct-dur-fast) var(--lvct-ease), box-shadow var(--lvct-dur-fast) var(--lvct-ease), border-color var(--lvct-dur-fast) var(--lvct-ease);
 
     &:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--lv-brand, #ea580c) 4%, transparent) !important;
-        border-radius: 10px !important;
+        background: var(--lvct-bg-surface) !important;
+        border-color: color-mix(in srgb, var(--lv-brand) 30%, var(--lvct-border-subtle)) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.06) !important;
     }
 
     &:not(:last-child)::after {
-        content: "";
-        position: absolute;
-        right: 0;
-        top: 14%;
-        bottom: 14%;
-        width: 1px;
-        background: var(--lvct-border-subtle);
+        display: none;
     }
 
     b {
@@ -7072,7 +7106,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-dash__chart-title {
     font-weight: 600;
     font-size: 13px;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
 }
 
 .lvct-heat-bar {
@@ -7080,7 +7114,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     height: 10px;
     border-radius: var(--lvct-r-full, 9999px);
     overflow: hidden;
-    background: var(--b3-theme-surface-lighter);
+    background: var(--lvct-border-subtle);
     gap: 2px;
 }
 
@@ -7160,7 +7194,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: 6px;
 
     &:hover .lvct-trend-bar__fill {
-        background: var(--b3-theme-primary);
+        background: var(--lvct-accent);
         filter: brightness(1.15);
     }
 }
@@ -7172,13 +7206,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     display: flex;
     align-items: flex-end;
     border-radius: var(--lvct-r-sm, 4px);
-    background: var(--b3-theme-surface-lighter);
+    background: var(--lvct-border-subtle);
     overflow: hidden;
 }
 
 .lvct-trend-bar__fill {
     width: 100%;
-    background: color-mix(in srgb, var(--b3-theme-primary) 70%, transparent);
+    background: color-mix(in srgb, var(--lvct-accent) 70%, transparent);
     border-radius: var(--lvct-r-sm, 4px) var(--lvct-r-sm, 4px) 0 0;
     display: flex;
     align-items: flex-start;
@@ -7190,13 +7224,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-trend-bar__val {
     font-size: 10px;
     font-weight: 600;
-    color: var(--b3-theme-on-primary, #ffffff);
+    color: var(--lvct-on-accent, #ffffff);
     line-height: 1;
 }
 
 .lvct-trend-bar__label {
     font-size: 11px;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
 }
 
 .lvct-dash__stat {
@@ -7204,21 +7238,21 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         border-radius: 8px;
-        background: var(--lvct-accent-soft);
-        color: var(--lvct-accent);
+        background: color-mix(in srgb, var(--lv-brand) 10%, transparent);
+        color: var(--lv-brand);
         margin-bottom: 2px;
 
         &--hl {
-            background: var(--lvct-highlight-soft);
-            color: var(--lvct-highlight);
+            background: color-mix(in srgb, #f43f5e 12%, transparent);
+            color: #e11d48;
         }
 
         &--warn {
-            background: var(--lvct-danger-soft);
-            color: var(--lvct-danger);
+            background: color-mix(in srgb, #f59e0b 12%, transparent);
+            color: #d97706;
         }
     }
 
@@ -7256,6 +7290,11 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
         &::before { opacity: 0; }
     }
+}
+
+.lvct-dash__stat--relations .lvct-dash__stat-ic {
+    background: color-mix(in srgb, #0ea5e9 12%, transparent);
+    color: #0284c7;
 }
 
 .lvct-dash__skeleton {
@@ -7481,32 +7520,43 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     overflow: hidden;
     display: grid;
     place-items: center;
-    font-size: 13.5px;
-    font-weight: 700;
-    color: var(--lvct-on-accent);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lv-brand);
     flex-shrink: 0;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 80%, var(--lvct-color-white) 20%), var(--lvct-accent));
-    box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-accent) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    background: color-mix(in srgb, var(--lv-brand) 12%, var(--lvct-bg-surface));
+    border: 1px solid color-mix(in srgb, var(--lv-brand) 22%, transparent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 
     &[data-group="家人"] {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-family) 78%, var(--lvct-color-white)), var(--lvct-group-family));
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-family) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        color: var(--lvct-group-family);
+        background: color-mix(in srgb, var(--lvct-group-family) 12%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lvct-group-family) 24%, transparent);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     &[data-group="朋友"] {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-friend) 78%, var(--lvct-color-white)), var(--lvct-group-friend));
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-friend) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        color: var(--lvct-group-friend);
+        background: color-mix(in srgb, var(--lvct-group-friend) 12%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lvct-group-friend) 24%, transparent);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     &[data-group="同事"] {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-work) 78%, var(--lvct-color-white)), var(--lvct-group-work));
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-work) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        color: var(--lvct-group-work);
+        background: color-mix(in srgb, var(--lvct-group-work) 12%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lvct-group-work) 24%, transparent);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     &[data-group="同学"] {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-school) 78%, var(--lvct-color-white)), var(--lvct-group-school));
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-school) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        color: var(--lvct-group-school);
+        background: color-mix(in srgb, var(--lvct-group-school) 12%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lvct-group-school) 24%, transparent);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     &[data-group="其他"] {
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-group-other) 78%, var(--lvct-color-white)), var(--lvct-group-other));
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-group-other) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        color: var(--lvct-group-other);
+        background: color-mix(in srgb, var(--lvct-group-other) 12%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lvct-group-other) 24%, transparent);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 }
 
@@ -8656,7 +8706,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     place-items: center;
     border-radius: 6px;
     flex-shrink: 0;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--b3-theme-primary) 70%, var(--lvct-color-white) 30%), var(--b3-theme-primary));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 70%, var(--lvct-color-white) 30%), var(--lvct-accent));
 }
 
 .lvct-org-manager__member-toolbar {
@@ -8692,7 +8742,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: 6px;
     cursor: pointer;
     user-select: none;
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
 }
 
 .lvct-org-manager__batch-bar {
@@ -8700,15 +8750,15 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     flex-wrap: wrap;
     gap: var(--lvct-sp-2);
     padding: 8px 12px;
-    background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--lvct-bg-surface));
-    border: 1px solid var(--b3-theme-primary);
+    background: color-mix(in srgb, var(--lvct-accent) 10%, var(--lvct-bg-surface));
+    border: 1px solid var(--lvct-accent);
     border-radius: var(--lvct-r-md);
     margin: 6px 0;
 }
 
 .lvct-org-manager__batch-count {
     font-size: 12px;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
 }
 
 .lvct-org-manager__member-list--grid {
@@ -8736,8 +8786,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         }
 
         &--selected {
-            border-color: var(--b3-theme-primary) !important;
-            background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--lvct-bg-surface)) !important;
+            border-color: var(--lvct-accent) !important;
+            background: color-mix(in srgb, var(--lvct-accent) 6%, var(--lvct-bg-surface)) !important;
         }
 
         .lvct-org-manager__member-card-body {
@@ -8756,7 +8806,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
             justify-content: flex-end;
             padding-top: 6px;
             margin-top: auto;
-            border-top: 1px dashed var(--b3-theme-surface-lighter);
+            border-top: 1px dashed var(--lvct-border-subtle);
             gap: 4px;
         }
     }
@@ -9287,7 +9337,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         display: grid;
         place-items: center;
         border-radius: 5px;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--b3-theme-primary) 70%, var(--lvct-color-white) 30%), var(--b3-theme-primary));
+        background: linear-gradient(135deg, color-mix(in srgb, var(--lvct-accent) 70%, var(--lvct-color-white) 30%), var(--lvct-accent));
         flex-shrink: 0;
     }
 
@@ -9302,7 +9352,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         b {
             font-size: 11.5px !important;
             font-weight: 600;
-            color: var(--b3-theme-on-background);
+            color: var(--lvct-text-1);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -9366,7 +9416,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: 8px 12px;
     padding: 10px 14px;
     border-radius: var(--lvct-r-card, 12px);
-    background: var(--lvct-bg-surface, var(--b3-theme-surface));
+    background: var(--lvct-bg-surface, var(--lvct-bg-surface));
     border: 1px solid var(--lvct-border-subtle);
     transition: border-color 150ms ease, box-shadow 150ms ease;
 
@@ -9387,7 +9437,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-detail__org-name {
     font-size: 13.5px;
     font-weight: 600;
-    color: var(--b3-theme-on-background);
+    color: var(--lvct-text-1);
 }
 
 .lvct-detail__org-badges {
@@ -9415,13 +9465,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     margin-top: 10px;
     border-radius: var(--lvct-r-card, 12px);
     border: 1px dashed var(--lvct-border-strong, var(--lvct-border-subtle));
-    background: color-mix(in srgb, var(--lvct-bg-surface, var(--b3-theme-surface)) 65%, transparent);
+    background: color-mix(in srgb, var(--lvct-bg-surface, var(--lvct-bg-surface)) 65%, transparent);
     overflow: hidden;
 
     &[open] {
         border-style: solid;
         border-color: var(--lvct-border-subtle);
-        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+        background: var(--lvct-bg-surface, var(--lvct-bg-surface));
     }
 }
 
@@ -9443,7 +9493,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     &__title {
         font-size: 12.5px;
         font-weight: 600;
-        color: var(--lvct-accent, var(--b3-theme-primary));
+        color: var(--lvct-accent, var(--lvct-accent));
     }
 }
 
@@ -9461,7 +9511,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: 10px;
     padding: 12px 14px;
     border-radius: var(--lvct-r-card, 12px);
-    background: var(--lvct-bg-surface, var(--b3-theme-surface));
+    background: var(--lvct-bg-surface, var(--lvct-bg-surface));
     border: 1px solid var(--lvct-border-subtle);
 
     &__head {
@@ -9483,7 +9533,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         b {
             font-size: 13.5px;
             font-weight: 600;
-            color: var(--b3-theme-on-background);
+            color: var(--lvct-text-1);
         }
     }
 
@@ -9496,7 +9546,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         font-size: 11px;
         font-weight: 700;
         background: var(--lvct-accent-soft, rgba(59, 130, 246, 0.12));
-        color: var(--lvct-accent, var(--b3-theme-primary));
+        color: var(--lvct-accent, var(--lvct-accent));
         flex-shrink: 0;
     }
 
@@ -9512,7 +9562,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         gap: 10px;
         padding: 8px 10px;
         border-radius: 10px;
-        background: var(--b3-theme-background);
+        background: var(--lvct-bg-canvas);
         border: 1px solid var(--lvct-border-subtle);
         transition: border-color 140ms ease, transform 140ms ease;
 
@@ -9531,7 +9581,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         font-size: 12px;
         font-weight: 600;
         background: var(--lvct-accent-soft, rgba(59, 130, 246, 0.12));
-        color: var(--lvct-accent, var(--b3-theme-primary));
+        color: var(--lvct-accent, var(--lvct-accent));
         flex-shrink: 0;
     }
 
@@ -9553,7 +9603,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     &__peer-name {
         font-size: 13px;
         font-weight: 600;
-        color: var(--b3-theme-on-background);
+        color: var(--lvct-text-1);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -9586,7 +9636,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         margin-top: 8px;
         border: 1px solid var(--lvct-border-subtle);
         border-radius: 10px;
-        background: var(--b3-theme-background);
+        background: var(--lvct-bg-canvas);
     }
 
     &__field {
@@ -9595,7 +9645,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         gap: 4px;
         min-width: 0;
         font-size: 11.5px;
-        color: var(--lvct-text-2, var(--b3-theme-on-surface));
+        color: var(--lvct-text-2, var(--lvct-text-2));
 
         &--wide {
             grid-column: 1 / -1;
@@ -10038,13 +10088,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-week-glance__digest-btn {
     font-size: 11px;
     padding: 2px 6px;
-    color: var(--b3-theme-primary);
+    color: var(--lvct-accent);
     display: inline-flex;
     align-items: center;
     border-radius: var(--lvct-r-sm);
 
     &:hover {
-        background: color-mix(in srgb, var(--b3-theme-primary) 12%, transparent);
+        background: color-mix(in srgb, var(--lvct-accent) 12%, transparent);
     }
 }
 
@@ -11682,8 +11732,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
         &:focus {
-            border-color: var(--b3-theme-primary);
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--b3-theme-primary) 18%, transparent);
+            border-color: var(--lvct-accent);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--lvct-accent) 18%, transparent);
         }
     }
 
@@ -11723,7 +11773,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         align-items: center;
         gap: 6px;
         font-size: 13px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
 
         b {
             font-weight: 600;
@@ -11747,12 +11797,12 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         gap: 12px;
         padding: 8px 12px;
         border-radius: 6px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle, rgba(140, 140, 140, 0.15));
         transition: border-color 0.15s ease, background-color 0.15s ease;
 
         &:hover {
-            border-color: var(--b3-theme-primary, #4285f4);
+            border-color: var(--lvct-accent, #4285f4);
         }
     }
 
@@ -11764,8 +11814,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         min-width: 58px;
         padding: 4px 6px;
         border-radius: 4px;
-        background: var(--b3-theme-primary-light, rgba(66, 133, 244, 0.1));
-        color: var(--b3-theme-primary, #4285f4);
+        background: var(--lvct-accent-soft, rgba(66, 133, 244, 0.1));
+        color: var(--lvct-accent, #4285f4);
         flex-shrink: 0;
 
         .lvct-dash__memory-years {
@@ -11798,11 +11848,11 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         padding: 0;
         font-weight: 600;
         font-size: 13px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         cursor: pointer;
 
         &:hover {
-            color: var(--b3-theme-primary, #4285f4);
+            color: var(--lvct-accent, #4285f4);
             text-decoration: underline;
         }
     }
@@ -11810,7 +11860,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     .lvct-dash__memory-note {
         margin: 0;
         font-size: 12px;
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        color: var(--lvct-text-3, var(--lvct-text-2));
         opacity: 0.88;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -11832,7 +11882,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     .lvct-dash__memory-icebreak-btn {
         font-size: 11px;
         padding: 2px 8px;
-        color: var(--b3-theme-primary, #4285f4);
+        color: var(--lvct-accent, #4285f4);
     }
 }
 
@@ -11997,8 +12047,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     &__tooltip {
-        background: var(--b3-theme-surface, #ffffff);
-        color: var(--b3-theme-on-surface, #333333);
+        background: var(--lvct-bg-surface, #ffffff);
+        color: var(--lvct-text-2, #333333);
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-sm, 8px);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
@@ -12058,7 +12108,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 .lvct-detail__recommended-ties {
     margin: 12px 0;
     padding: 10px 12px;
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 4%, var(--b3-theme-surface));
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 4%, var(--lvct-bg-surface));
     border: 1px dashed color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
     border-radius: 8px;
 
@@ -12076,7 +12126,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         align-items: center;
         gap: 4px;
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     &-grid {
@@ -12090,8 +12140,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         align-items: center;
         justify-content: space-between;
         padding: 6px 10px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle, rgba(140, 140, 140, 0.15));
         border-radius: 6px;
         gap: 8px;
         transition: border-color 0.15s ease;
@@ -12113,7 +12163,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         padding: 0;
         font-weight: 600;
         font-size: 12.5px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
 
         &:hover {
             color: var(--lv-brand, #ea580c);
@@ -12144,7 +12194,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-detail__flashcard-btn {
-    color: var(--b3-theme-primary);
+    color: var(--lvct-accent);
 }
 
 .lvct-detail__flashcards-notice {
@@ -12222,7 +12272,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 }
 
 .lvct-people__batch-flashcards-btn {
-    color: var(--b3-theme-primary);
+    color: var(--lvct-accent);
 }
 
 /* 人情礼尚往来大账本全局中枢 */
@@ -12373,7 +12423,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         padding: 0;
         font-weight: 600;
         font-size: 13px;
-        color: var(--b3-theme-primary, #4285f4);
+        color: var(--lvct-accent, #4285f4);
         cursor: pointer;
 
         &:hover {
@@ -12383,13 +12433,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     &__desc {
         font-size: 12.5px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     &__note {
         margin: 0;
         font-size: 11.5px;
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        color: var(--lvct-text-3, var(--lvct-text-2));
         opacity: 0.8;
     }
 
@@ -12402,7 +12452,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         justify-content: space-between;
         margin-top: 8px;
         padding-top: 8px;
-        border-top: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
+        border-top: 1px solid var(--lvct-border-subtle, rgba(140, 140, 140, 0.15));
         flex-wrap: wrap;
         gap: 8px;
 
@@ -12418,8 +12468,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     gap: 16px;
     margin-top: 14px;
     padding: 10px 14px;
-    background: var(--b3-theme-surface);
-    border: 1px solid var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15));
+    background: var(--lvct-bg-surface);
+    border: 1px solid var(--lvct-border-subtle, rgba(140, 140, 140, 0.15));
     border-radius: 8px;
     flex-wrap: wrap;
 
@@ -12437,19 +12487,19 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     &__grid-ring {
         fill: none;
-        stroke: var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+        stroke: var(--lvct-border-subtle, rgba(140, 140, 140, 0.2));
         stroke-width: 0.8;
         stroke-dasharray: 2, 2;
 
         &--outer {
             stroke-dasharray: none;
             stroke-width: 1;
-            stroke: var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.4));
+            stroke: var(--lvct-border-subtle, rgba(140, 140, 140, 0.4));
         }
     }
 
     &__axis-line {
-        stroke: var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.2));
+        stroke: var(--lvct-border-subtle, rgba(140, 140, 140, 0.2));
         stroke-width: 0.8;
     }
 
@@ -12462,7 +12512,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
     &__vertex {
         fill: var(--lv-brand, #ea580c);
-        stroke: var(--b3-theme-surface);
+        stroke: var(--lvct-bg-surface);
         stroke-width: 1;
         cursor: pointer;
         transition: transform 0.15s ease;
@@ -12489,7 +12539,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     &__score {
         font-size: 13px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     &__metrics-grid {
@@ -12505,17 +12555,17 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         font-size: 11px;
         padding: 2px 4px;
         border-radius: 4px;
-        background: color-mix(in srgb, var(--b3-theme-surface-lighter, rgba(140, 140, 140, 0.15)) 50%, transparent);
+        background: color-mix(in srgb, var(--lvct-border-subtle, rgba(140, 140, 140, 0.15)) 50%, transparent);
     }
 
     &__metric-name {
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        color: var(--lvct-text-3, var(--lvct-text-2));
         opacity: 0.8;
     }
 
     &__metric-val {
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         font-variant-numeric: tabular-nums;
     }
 
@@ -12622,13 +12672,13 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     }
 
     &__name {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         font-size: 12px;
     }
 
     &__note {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        color: var(--lvct-text-3, var(--lvct-text-2));
         opacity: 0.8;
         max-width: 140px;
         overflow: hidden;
@@ -12639,7 +12689,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     &__remove {
         border: none;
         background: none;
-        color: var(--b3-theme-on-surface-light, var(--b3-theme-on-surface));
+        color: var(--lvct-text-3, var(--lvct-text-2));
         opacity: 0;
         cursor: pointer;
         padding: 0;
@@ -12872,7 +12922,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     font-size: 12px;
     padding: 2px 8px;
     border-radius: var(--lv-r-pill, 9999px) !important;
-    color: var(--b3-theme-primary);
+    color: var(--lvct-accent);
 }
 
 .lvct-origin-edit-box {
@@ -13266,8 +13316,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
         align-items: center;
         font-size: 11.5px;
         line-height: 1.5;
-        color: var(--b3-theme-on-surface-light, #6b7280);
-        background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--b3-theme-surface, #f9fafb));
+        color: var(--lvct-text-3, #6b7280);
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-surface, #f9fafb));
         border: 1px dashed color-mix(in srgb, var(--lv-brand, #ea580c) 30%, transparent);
         border-radius: 6px;
         padding: 3px 10px;
@@ -13286,12 +13336,12 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
 
 .lvct-channel-empty {
     font-size: 12px;
-    color: var(--b3-theme-on-surface-light, #9ca3af);
+    color: var(--lvct-text-3, #9ca3af);
     text-align: center;
     padding: 16px 0;
     border: 1px dashed color-mix(in srgb, var(--lvct-border-subtle) 80%, transparent);
     border-radius: 8px;
-    background: color-mix(in srgb, var(--b3-theme-surface) 50%, transparent);
+    background: color-mix(in srgb, var(--lvct-bg-surface) 50%, transparent);
 }
 
 .lvct-channel-item {
@@ -13347,7 +13397,7 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     font-size: 11.5px;
     font-weight: 500;
     line-height: 1.3;
-    background: var(--b3-theme-surface-lighter);
+    background: var(--lvct-border-subtle);
     color: var(--lvct-text-2);
 
     &--phone {
@@ -13449,8 +13499,8 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     margin-bottom: 10px;
 
     &--edit {
-        background: color-mix(in srgb, var(--b3-theme-primary) 6%, var(--lvct-bg-surface));
-        border-color: color-mix(in srgb, var(--b3-theme-primary) 30%, transparent);
+        background: color-mix(in srgb, var(--lvct-accent) 6%, var(--lvct-bg-surface));
+        border-color: color-mix(in srgb, var(--lvct-accent) 30%, transparent);
     }
 }
 
@@ -13506,14 +13556,14 @@ html[data-theme-mode="dark"] .lvct-bubble-row {
     border: 1.5px dashed color-mix(in srgb, var(--lv-brand, #ea580c) 30%, var(--lvct-border-subtle));
     border-radius: 8px;
     padding: 8px 12px;
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 2%, var(--b3-theme-surface));
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 2%, var(--lvct-bg-surface));
     text-align: center;
     cursor: pointer;
     transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 
     &:hover {
         border-color: var(--lv-brand, #ea580c);
-        background: color-mix(in srgb, var(--lv-brand, #ea580c) 6%, var(--b3-theme-surface));
+        background: color-mix(in srgb, var(--lv-brand, #ea580c) 6%, var(--lvct-bg-surface));
     }
 }
 
@@ -14760,7 +14810,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     padding: 0 6px;
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 90%, transparent);
-    background: var(--lvct-bg-elevated, var(--b3-theme-surface));
+    background: var(--lvct-bg-elevated, var(--lvct-bg-surface));
     color: var(--lvct-text-2);
     font-size: 11px;
     line-height: 1;
@@ -14777,7 +14827,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 }
 
 .lvct-person-card__quick-call {
-    color: var(--lvct-accent-fill, var(--b3-theme-primary));
+    color: var(--lvct-accent-fill, var(--lvct-accent));
 }
 
 .lvct-person-card__quick-sms {
@@ -14785,14 +14835,14 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 }
 
 .lvct-person-card__quick-copy--done {
-    color: var(--lvct-success, var(--b3-theme-success));
+    color: var(--lvct-success, var(--lvct-success));
 }
 
 .lvct-person-card__quick-btn--disabled {
     opacity: 0.38 !important;
     cursor: not-allowed !important;
     pointer-events: none !important;
-    color: var(--lvct-text-muted, var(--b3-theme-on-surface-light)) !important;
+    color: var(--lvct-text-muted, var(--lvct-text-3)) !important;
     border-style: dashed !important;
 }
 
@@ -14834,7 +14884,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 
 .lvct-premeeting-brief__dot--active {
     width: 16px;
-    background: var(--lvct-accent-fill, var(--b3-theme-primary));
+    background: var(--lvct-accent-fill, var(--lvct-accent));
 }
 
 /* Mobile Spec v1 专项 4：手机端首页置顶横幅（生日/纪念日 ≤7天） */
@@ -14846,7 +14896,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     padding: 10px 14px;
     margin: 0 0 var(--lvct-sp-3) 0;
     border-radius: var(--lvct-r-card, 14px);
-    background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, var(--lvct-bg-elevated, var(--b3-theme-surface)));
+    background: color-mix(in srgb, var(--lv-brand, #ea580c) 10%, var(--lvct-bg-elevated, var(--lvct-bg-surface)));
     border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 25%, transparent);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
@@ -14872,12 +14922,12 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 
     b {
         font-size: 13px;
-        color: var(--lvct-text-1, var(--b3-theme-on-background));
+        color: var(--lvct-text-1, var(--lvct-text-1));
     }
 
     span {
         font-size: 11px;
-        color: var(--lvct-text-2, var(--b3-theme-on-surface));
+        color: var(--lvct-text-2, var(--lvct-text-2));
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -14907,7 +14957,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 }
 
 .lvct-selection-modal {
-    background: var(--lvct-bg-elevated, var(--b3-theme-surface));
+    background: var(--lvct-bg-elevated, var(--lvct-bg-surface));
     border: 1px solid var(--lvct-border-subtle);
     border-radius: var(--lvct-r-card, 16px);
     box-shadow: 0 10px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -14942,7 +14992,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: var(--lvct-text-1, var(--b3-theme-on-background));
+    color: var(--lvct-text-1, var(--lvct-text-1));
 }
 
 .lvct-selection-modal__close-btn {
@@ -14954,12 +15004,12 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     border: none;
     border-radius: 999px;
     background: transparent;
-    color: var(--lvct-text-muted, var(--b3-theme-on-surface-light));
+    color: var(--lvct-text-muted, var(--lvct-text-3));
     cursor: pointer;
     touch-action: manipulation;
 
     &:hover {
-        background: var(--lvct-bg-hover, var(--b3-theme-surface-lighter));
+        background: var(--lvct-bg-hover, var(--lvct-border-subtle));
         color: var(--lvct-text-1);
     }
 }
@@ -15048,7 +15098,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     transition: background 0.12s ease;
 
     &:hover {
-        background: var(--lvct-bg-hover, var(--b3-theme-surface-lighter));
+        background: var(--lvct-bg-hover, var(--lvct-border-subtle));
     }
 }
 
@@ -15056,7 +15106,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     width: 20px;
     height: 20px;
     border-radius: 999px;
-    background: var(--b3-theme-primary);
+    background: var(--lvct-accent);
     color: var(--lvct-on-accent);
     display: grid;
     place-items: center;
@@ -15141,8 +15191,8 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         max-width: calc(100vw - 20px) !important;
         box-sizing: border-box !important;
         border-radius: var(--lvct-radius-dialog, 16px) !important;
-        background: var(--b3-theme-surface, var(--lvct-bg-surface)) !important;
-        border: 1px solid var(--b3-border-color, var(--lvct-border-subtle)) !important;
+        background: var(--lvct-bg-surface, var(--lvct-bg-surface)) !important;
+        border: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle)) !important;
         box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.22), 0 4px 16px -2px rgba(0, 0, 0, 0.08) !important;
         animation: lvct-dialog-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         will-change: transform, opacity;
@@ -15154,7 +15204,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         align-items: center;
         justify-content: space-between;
         background: transparent !important;
-        border-bottom: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
 
         .b3-dialog__close {
             position: static !important;
@@ -15165,15 +15215,15 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
             height: 28px;
             padding: 6px;
             border-radius: 6px;
-            color: var(--b3-theme-on-surface);
+            color: var(--lvct-text-2);
             opacity: 0.7;
             transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1);
             box-sizing: border-box;
 
             &:hover {
                 opacity: 1;
-                background: var(--b3-theme-surface-light, rgba(128, 128, 128, 0.12));
-                color: var(--b3-theme-on-surface);
+                background: var(--lvct-bg-canvas, rgba(128, 128, 128, 0.12));
+                color: var(--lvct-text-2);
                 transform: scale(1.05);
             }
 
@@ -15191,7 +15241,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 
     .b3-dialog__action {
         background: transparent !important;
-        border-top: 1px solid var(--b3-border-color, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
+        border-top: 1px solid var(--lvct-border-subtle, var(--lv-safe-border, rgba(0, 0, 0, 0.08))) !important;
     }
 
     .b3-dialog__scrim {
@@ -15299,12 +15349,12 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
 /* ══════════ 输入框专项精修：光标 / 占位符 / 自旋钮 / 搜索清除钮 / 禁用态 ══════════ */
 :is(.lvct-tab-root, .lvct-dialog-root, .lvct-sheet) {
     :is(input[type="text"], input[type="search"], input[type="number"], input[type="time"], input[type="date"], input:not([type]), textarea, .b3-text-field) {
-        caret-color: var(--lvct-accent, var(--b3-theme-primary));
+        caret-color: var(--lvct-accent, var(--lvct-accent));
         min-width: 0;
     }
 
     :is(input, textarea, .b3-text-field)::placeholder {
-        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+        color: var(--lvct-text-3, var(--lvct-text-3));
         opacity: 1;
     }
 
@@ -15330,7 +15380,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     ::selection {
-        background: color-mix(in srgb, var(--lvct-accent, var(--b3-theme-primary)) 26%, transparent);
+        background: color-mix(in srgb, var(--lvct-accent, var(--lvct-accent)) 26%, transparent);
     }
 }
 
@@ -15367,8 +15417,8 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
     }
 
     :is(select, .b3-select) :is(option, optgroup) {
-        background-color: var(--lvct-bg-surface, var(--b3-theme-background));
-        color: var(--lvct-text-1, var(--b3-theme-on-background));
+        background-color: var(--lvct-bg-surface, var(--lvct-bg-canvas));
+        color: var(--lvct-text-1, var(--lvct-text-1));
     }
 }
 
@@ -15407,7 +15457,7 @@ body:has(.lvct-dialog-mask, .lvct-sheet) .lvct-workbench__sidebar {
         }
 
         .lvct-settings__row:active {
-            background: color-mix(in srgb, var(--lvct-accent, var(--b3-theme-primary)) 8%, transparent);
+            background: color-mix(in srgb, var(--lvct-accent, var(--lvct-accent)) 8%, transparent);
         }
     }
 }

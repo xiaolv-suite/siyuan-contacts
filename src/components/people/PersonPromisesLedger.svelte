@@ -534,7 +534,7 @@
     .metric-sub {
         font-size: 11px;
         font-weight: normal;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .lvct-promises-ledger__filters {
@@ -586,7 +586,7 @@
     .form-label {
         width: 70px;
         font-size: 12px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
     }
 
@@ -611,7 +611,7 @@
     }
 
     .sub-label {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
     }
 
@@ -669,7 +669,7 @@
 
     .promise-item-card.broken {
         opacity: 0.6;
-        border-left: 3px solid var(--b3-theme-on-surface-light);
+        border-left: 3px solid var(--lvct-text-3);
     }
 
     .item-head {
@@ -707,7 +707,7 @@
     .title-text {
         font-size: 13px;
         font-weight: 500;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -777,7 +777,7 @@
         align-items: center;
         gap: 8px;
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .date-chunk {

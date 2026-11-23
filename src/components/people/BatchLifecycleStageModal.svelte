@@ -123,20 +123,20 @@
         align-items: flex-start;
         gap: 8px;
         padding: 8px 12px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-card, 12px);
         cursor: pointer;
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     .stage-option-row:hover {
-        background: var(--b3-theme-surface-lighter);
+        background: var(--lvct-border-subtle);
     }
 
     .stage-option-row.is-selected {
-        border-color: var(--b3-theme-primary);
-        background: color-mix(in srgb, var(--b3-theme-primary) 8%, var(--b3-theme-surface));
+        border-color: var(--lvct-accent);
+        background: color-mix(in srgb, var(--lvct-accent) 8%, var(--lvct-bg-surface));
     }
 
     .stage-icon {
@@ -177,7 +177,7 @@
         justify-content: flex-end;
         gap: 8px;
         margin-top: 8px;
-        border-top: 1px solid var(--b3-border-color);
+        border-top: 1px solid var(--lvct-border-subtle);
         padding-top: 10px;
 
         button {

@@ -343,7 +343,7 @@
         left: 8px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         pointer-events: none;
     }
 
@@ -415,7 +415,7 @@
         align-items: center;
         justify-content: space-between;
         padding-bottom: 6px;
-        border-bottom: 1px solid var(--b3-border-color);
+        border-bottom: 1px solid var(--lvct-border-subtle);
     }
 
     .person-info {
@@ -428,12 +428,12 @@
     .person-name {
         font-size: 14px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .person-company {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -457,7 +457,7 @@
         font-weight: 600;
         display: flex;
         align-items: center;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .chips-flow {
@@ -480,9 +480,9 @@
         font-size: 11px;
         padding: 2px 9px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
-        color: var(--b3-theme-on-surface);
+        background: var(--lvct-bg-canvas);
+        border: 1px solid var(--lvct-border-subtle);
+        color: var(--lvct-text-2);
     }
 
     .promises-list, .topics-list {
@@ -496,7 +496,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .promise-tag {
@@ -519,11 +519,11 @@
 
     .promise-due {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .topic-row {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         line-height: 1.4;
     }
 </style>

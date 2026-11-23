@@ -174,9 +174,9 @@
             <div class="lvct-context-panel__title-text">
                 <div class="fn__flex" style="align-items: center; gap: 6px;">
                     <h3 class="lvct-context-panel__title">{person ? person.name : text("contextPanelOverview", "人脉速览与动态")}</h3>
-                    <span class="lvct-context-panel__badge">{person ? "伴随速览" : "人脉脉搏"}</span>
+                    <span class="lvct-context-panel__badge">{person ? text("ctx.badgeWithPerson", "伴随速览") : text("ctx.badgePulse", "人脉脉搏")}</span>
                 </div>
-                <span class="lvct-context-panel__sub">{person ? (person.group || "未分组") : "即点即看的侧边副驾驶"}</span>
+                <span class="lvct-context-panel__sub">{person ? (person.group || text("ctx.ungrouped", "未分组")) : text("ctx.panelSub", "即点即看的侧边副驾驶")}</span>
             </div>
         </div>
         <div class="lvct-context-panel__header-actions">
@@ -210,9 +210,9 @@
                 <input
                     class="b3-text-field fn__block lvct-context-panel__search-input"
                     type="search"
-                    placeholder="快速切人…"
+                    placeholder={text("ctx.quickSwitchPlaceholder", "快速切人…")}
                     bind:value={searchQuery}
-                    aria-label="快速切换速览联系人"
+                    aria-label={text("ctx.quickSwitchAria", "快速切换速览联系人")}
                 />
             </div>
             <div class="lvct-context-panel__switcher" role="group" aria-label={text("contextQuickSwitchAria", "切换速览联系人")}>
@@ -222,7 +222,7 @@
                         class="lvct-context-panel__switch-chip"
                         class:is-active={person?.docId === item.docId}
                         onclick={() => onSelectPerson(item)}
-                        title={`在右侧速览 ${item.name}`}
+                        title={text("ctx.previewItemTitle", "在右侧速览 {name}").replace("{name}", item.name)}
                     >
                         {item.name}
                     </button>
@@ -234,7 +234,7 @@
             <!-- 联系人卡片画像 -->
             <div class="lvct-context-panel__section lvct-context-card">
                 <div class="lvct-context-card__row">
-                    <div class="lvct-context-card__avatar" data-group={person.group || "未分组"}>
+                    <div class="lvct-context-card__avatar" data-group={person.group || text("ctx.ungrouped", "未分组")}>
                         {person.name.slice(0, 1)}
                     </div>
                     <div class="lvct-context-card__info">
@@ -253,10 +253,10 @@
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small lvct-context-card__copy-btn"
                                     onclick={() => handleCopy(person.phone, "phone")}
-                                    title="复制电话号码"
+                                    title={text("ctx.copyPhone", "复制电话号码")}
                                 >
                                     {#if copiedPhone}
-                                        <Check size={11} color="var(--b3-theme-success, #10b981)" />
+                                        <Check size={11} color="var(--lvct-success, #10b981)" />
                                     {:else}
                                         <Copy size={11} />
                                     {/if}
@@ -272,10 +272,10 @@
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small lvct-context-card__copy-btn"
                                     onclick={() => handleCopy(person.wechat, "wechat")}
-                                    title="复制微信号"
+                                    title={text("ctx.copyWechat", "复制微信号")}
                                 >
                                     {#if copiedWechat}
-                                        <Check size={11} color="var(--b3-theme-success, #10b981)" />
+                                        <Check size={11} color="var(--lvct-success, #10b981)" />
                                     {:else}
                                         <Copy size={11} />
                                     {/if}
@@ -288,7 +288,7 @@
                 <!-- 关系温度胶囊 -->
                 <div class="lvct-context-card__heat-line">
                     <span class={`lvct-heat ${heatLevelColorClass(health.level)}`} style="font-size: 11px; padding: 2px 8px; border-radius: 9999px;">
-                        {health.level === "hot" ? "🔥 温热" : health.level === "warm" ? "🍃 常温" : health.level === "cool" ? "🌬️ 微凉" : health.level === "cold" ? "❄️ 渐冻" : health.level === "paused" ? "⏸️ 暂缓" : "❄️ 未联系"}
+                        {health.level === "hot" ? text("ctx.tempHot", "🔥 温热") : health.level === "warm" ? text("ctx.tempWarm", "🍃 常温") : health.level === "cool" ? text("ctx.tempCool", "🌬️ 微凉") : health.level === "cold" ? text("ctx.tempCold", "❄️ 渐冻") : health.level === "paused" ? text("ctx.tempPaused", "⏸️ 暂缓") : text("ctx.tempNever", "❄️ 未联系")}
                     </span>
                     {#if person.birthday}
                         <span class="lvct-context-card__bday"><Cake size={12} strokeWidth={1.6} class="lvct-icon-inline" /> {person.birthday}</span>
@@ -314,28 +314,28 @@
                             class="lvct-context-quick__type-chip"
                             class:is-active={selectedType === "meeting"}
                             onclick={() => (selectedType = "meeting")}
-                            title="会面"
+                            title={text("ctx.typeMeeting", "会面")}
                         >🤝</button>
                         <button
                             type="button"
                             class="lvct-context-quick__type-chip"
                             class:is-active={selectedType === "call"}
                             onclick={() => (selectedType = "call")}
-                            title="电话"
+                            title={text("ctx.typeCall", "电话")}
                         >📞</button>
                         <button
                             type="button"
                             class="lvct-context-quick__type-chip"
                             class:is-active={selectedType === "message"}
                             onclick={() => (selectedType = "message")}
-                            title="微信/消息"
+                            title={text("ctx.typeMessage", "微信/消息")}
                         >💬</button>
                         <button
                             type="button"
                             class="lvct-context-quick__type-chip"
                             class:is-active={selectedType === "meal"}
                             onclick={() => (selectedType = "meal")}
-                            title="聚餐"
+                            title={text("ctx.typeMeal", "聚餐")}
                         >🍽️</button>
                     </div>
                 </div>
@@ -343,7 +343,7 @@
                     <input
                         class="b3-text-field fn__block"
                         type="text"
-                        placeholder="记录交流内容、随想或下一步…"
+                        placeholder={text("ctx.quickRecordPlaceholder", "记录交流内容、随想或下一步…")}
                         aria-label={text("quickRecordTitle", "随手记一笔互动")}
                         bind:value={quickNote}
                         disabled={quickBusy}
@@ -464,8 +464,8 @@
         max-width: 100%;
         flex: 0 0 auto;
         height: 100%;
-        background: var(--lvct-bg-app, var(--b3-theme-background));
-        border-left: 1px solid var(--lvct-border-subtle, var(--b3-border-color));
+        background: var(--lvct-bg-app, var(--lvct-bg-canvas));
+        border-left: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         overflow: hidden;
         box-sizing: border-box;
 

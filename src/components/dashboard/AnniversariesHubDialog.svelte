@@ -468,7 +468,7 @@
     .anniv-metrics-bar {
         display: flex;
         align-items: stretch;
-        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+        background: var(--lvct-bg-surface, var(--lvct-bg-surface));
         border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         border-radius: var(--lvct-r-card, 16px);
         box-shadow: 0 2px 10px rgba(28, 24, 21, 0.04);
@@ -521,7 +521,7 @@
 
     .metric-title {
         font-size: 11px;
-        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+        color: var(--lvct-text-3, var(--lvct-text-3));
         font-weight: 500;
     }
 
@@ -571,7 +571,7 @@
     .filter-pills {
         display: flex;
         gap: 4px;
-        background: var(--lvct-bg-app, var(--b3-theme-surface));
+        background: var(--lvct-bg-app, var(--lvct-bg-surface));
         padding: 3px;
         border-radius: var(--lv-r-pill, 9999px);
         border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
@@ -583,7 +583,7 @@
         padding: 4px 12px;
         font-size: 11.5px;
         border-radius: var(--lv-r-pill, 9999px);
-        color: var(--lvct-text-2, var(--b3-theme-on-surface));
+        color: var(--lvct-text-2, var(--lvct-text-2));
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -705,8 +705,8 @@
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-canvas);
+        border: 1px solid var(--lvct-border-subtle);
         padding: 4px 10px;
         border-radius: var(--lv-r-pill, 9999px);
         flex-shrink: 0;
@@ -785,7 +785,7 @@
         justify-content: space-between;
         align-items: center;
         padding-top: 8px;
-        border-top: 1px solid var(--b3-border-color);
+        border-top: 1px solid var(--lvct-border-subtle);
         margin-top: 4px;
 
         .b3-button {

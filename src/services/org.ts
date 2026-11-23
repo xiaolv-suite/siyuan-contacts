@@ -27,7 +27,7 @@ import type { OrgMembership, OrgMembershipPatch, OrgMembershipStatusFilter } fro
 import { buildCommonOrgBackground, orgMembershipStatusLabel, pageOrgMemberships, sortOrgMemberships, buildOrgLinksSection } from "../domain/org-membership";
 import type { CommonOrgBackground } from "../domain/org-membership";
 import type { ContactsSettings } from "../domain/model";
-import { getRoster } from "./roster";
+import { getRoster, registerRelatedDocId, unregisterRelatedDocId } from "./roster";
 import { listOrganizationMarkerPage, readOrganizationDocuments } from "../api/organization";
 import { loadOrganizationProfile, loadOrganizationProfiles, saveOrganizationProfile } from "../data/organization-profiles";
 import { organizationTemplateDraft } from "../domain/organization-profile";
@@ -63,7 +63,7 @@ export async function scanOrganizations(): Promise<OrganizationSummary[]> {
     if (pendingOrganizationScan) return pendingOrganizationScan;
     const request = (async () => {
         const roots = await querySql<unknown>(
-            `SELECT root_id, ial, COUNT(*) AS markerCount FROM blocks WHERE ial LIKE '%${ORG_SECTION_ATTR}="%' GROUP BY root_id, ial ORDER BY root_id, ial`,
+            `SELECT root_id, ial, COUNT(*) AS markerCount FROM blocks WHERE ial LIKE '%${ORG_SECTION_ATTR}="%' GROUP BY root_id, ial ORDER BY root_id, ial LIMIT 2000`,
             { dedupe: false },
         );
         const states = organizationMarkerStates(roots);
@@ -72,10 +72,20 @@ export async function scanOrganizations(): Promise<OrganizationSummary[]> {
         ids.forEach((id) => assertSafeBlockId(id, "组织文档 ID"));
         const idList = ids.map((id) => `'${id}'`).join(",");
         const docs = await querySql<unknown>(
-            `SELECT id, content, hpath, box FROM blocks WHERE type='d' AND id IN (${idList})`,
+            `SELECT id, content, hpath, box FROM blocks WHERE type='d' AND id IN (${idList}) LIMIT 2000`,
             { dedupe: false },
         );
-        return organizationsFromDocs(states, docs);
+        const orgs = organizationsFromDocs(states, docs);
+        for (const org of orgs) {
+            if (org.docId) {
+                if (!org.removed && !org.archived) {
+                    registerRelatedDocId(org.docId);
+                } else {
+                    unregisterRelatedDocId(org.docId);
+                }
+            }
+        }
+        return orgs;
     })();
     pendingOrganizationScan = request;
     try {
@@ -88,7 +98,7 @@ export async function scanOrganizations(): Promise<OrganizationSummary[]> {
 /** B13.9：组织标记冲突体检数据源。 */
 export async function countOrgMarkers(): Promise<Map<string, number>> {
     const rows = await querySql<{ root_id: string; markers: number }>(
-        `SELECT root_id, COUNT(id) AS markers FROM blocks WHERE ial LIKE '%${ORG_SECTION_ATTR}="%' GROUP BY root_id`,
+        `SELECT root_id, COUNT(id) AS markers FROM blocks WHERE ial LIKE '%${ORG_SECTION_ATTR}="%' GROUP BY root_id LIMIT 2000`,
     );
     return new Map(rows.map((row) => [row.root_id, Number(row.markers)]));
 }
@@ -96,7 +106,7 @@ export async function countOrgMarkers(): Promise<Map<string, number>> {
 /** B13.9：人物文档组织链接区块反查与逐块清理。 */
 export async function findOrgLinkBlocks(): Promise<Map<string, string>> {
     const rows = await querySql<{ root_id: string; id: string }>(
-        `SELECT root_id, id FROM blocks WHERE ial LIKE '%${ORG_LINKS_SECTION_ATTR}="%'`,
+        `SELECT root_id, id FROM blocks WHERE ial LIKE '%${ORG_LINKS_SECTION_ATTR}="%' LIMIT 2000`,
     );
     return new Map(rows
         .filter((row) => typeof row.root_id === "string" && typeof row.id === "string")
@@ -478,10 +488,13 @@ export async function updateOrganizationProfile(
 
 /** 家庭是一次性新工作空间种子。普通启动只登记迁移，不补种被用户改名或移除的组织。 */
 export async function ensureDefaultFamilyOrganization(
-    plugin: Plugin, settings: ContactsSettings, options: { allowCreate?: boolean } = {},
+    plugin: Plugin, settings: ContactsSettings, options: { allowCreate?: boolean; shouldAbort?: () => boolean } = {},
 ): Promise<{ docId: string; created: boolean }> {
+    if (options.shouldAbort?.()) return { docId: "", created: false };
     return withStoreLock(ORGANIZATION_DEFAULT_SEEDS_STORAGE_KEY, async () => {
+        if (options.shouldAbort?.()) return { docId: "", created: false };
         const store = await loadDefaultOrganizationSeeds(plugin);
+        if (options.shouldAbort?.()) return { docId: "", created: false };
         const previous = store.seeds[settings.notebookId];
         if (previous) {
             /* unknown/failed 只读核对原请求；恢复入口完成后将领取记录收口为 created，绝不重发创建。 */
@@ -497,17 +510,21 @@ export async function ensureDefaultFamilyOrganization(
             return { docId: previous.docId, created: false };
         }
         const organizations = await scanOrganizations();
+        if (options.shouldAbort?.()) return { docId: "", created: false };
         const families = organizations.filter((org) => org.name.trim() === "家庭");
         const existing = families.length === 1 ? families[0] : undefined;
         if (existing || !options.allowCreate || organizations.length > 0) {
+            if (options.shouldAbort?.()) return { docId: "", created: false };
             store.seeds[settings.notebookId] = { state: existing ? "created" : "skipped", docId: existing?.docId ?? "", requestId: "", updatedAt: Date.now() };
             await saveDefaultOrganizationSeeds(plugin, store);
             return { docId: existing?.docId ?? "", created: false };
         }
         /* 先持久化领取。即使创建响应/后续记录丢失，也不在下一次启动另发请求。 */
+        if (options.shouldAbort?.()) return { docId: "", created: false };
         store.seeds[settings.notebookId] = { state: "claimed", docId: "", requestId: "", updatedAt: Date.now() };
         await saveDefaultOrganizationSeeds(plugin, store);
         try {
+            if (options.shouldAbort?.()) return { docId: "", created: false };
             const result = await startOrganizationCreate(plugin, settings, "家庭");
             store.seeds[settings.notebookId] = { state: result.status === "complete" ? "created" : result.status === "failed" ? "failed" : "unknown",
                 docId: result.docId, requestId: result.operation.requestId, updatedAt: Date.now() };
@@ -537,9 +554,10 @@ export async function restoreOrganization(orgDocId: string): Promise<void> {
 /** 从插件移除，保留原生文档、组织资料及所有成员记录。 */
 export async function removeOrganization(orgDocId: string): Promise<void> {
     await setOrganizationArchived(orgDocId, true, true);
+    unregisterRelatedDocId(orgDocId);
 }
 
-async function setOrganizationArchived(orgDocId: string, archived: boolean, removed = false): Promise<void> {
+export async function setOrganizationArchived(orgDocId: string, archived: boolean, removed = false): Promise<void> {
     if (!/^\d{14}-[0-9a-z]{7}$/.test(orgDocId)) throw new Error("orgDocId 不是合法的思源 ID");
     await withStoreLock(`organization-state-${orgDocId}`, async () => {
         await flushBlockIndex();
@@ -569,6 +587,11 @@ async function setOrganizationArchived(orgDocId: string, archived: boolean, remo
             await flushBlockIndex();
             const verified = (await scanOrganizations()).find((item) => item.docId === orgDocId);
             if (!verified || verified.archived !== archived || Boolean(verified.removed) !== removed) throw new Error("目标组织状态尚未匹配");
+            if (archived || removed) {
+                unregisterRelatedDocId(orgDocId);
+            } else {
+                registerRelatedDocId(orgDocId);
+            }
         } catch (cause) {
             throw new Error(`组织 ${orgDocId} ${removed ? "移除" : archived ? "归档" : "恢复"}请求已发出但结果未核实；请重新读取核对，未自动重放`, { cause: writeError ?? cause });
         }

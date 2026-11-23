@@ -166,7 +166,7 @@
     .lvct-org-recovery {
         box-sizing: border-box;
         padding: 16px 18px;
-        background: var(--b3-theme-background-light, rgba(0, 0, 0, 0.02));
+        background: var(--lvct-bg-app, rgba(0, 0, 0, 0.02));
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-card, 12px);
         box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
@@ -188,7 +188,7 @@
     .lvct-org-recovery__title {
         font-size: 14px;
         font-weight: 600;
-        color: var(--b3-theme-on-background);
+        color: var(--lvct-text-1);
     }
     .lvct-org-recovery__desc {
         font-size: 12px;
@@ -228,7 +228,7 @@
         font-size: 11px;
         padding: 1px 4px;
         border-radius: 4px;
-        background: var(--b3-theme-background-light, rgba(0, 0, 0, 0.04));
+        background: var(--lvct-bg-app, rgba(0, 0, 0, 0.04));
     }
     .lvct-org-recovery__steps {
         display: flex;
@@ -254,7 +254,7 @@
         border-radius: var(--lv-r-pill, 9999px);
         font-size: 11px;
         font-weight: 500;
-        background: var(--b3-theme-background, rgba(0, 0, 0, 0.04));
+        background: var(--lvct-bg-canvas, rgba(0, 0, 0, 0.04));
     }
     .lvct-org-step-tag::before {
         content: "";
@@ -266,7 +266,7 @@
         forced-color-adjust: none;
     }
     .lvct-org-step--verified {
-        color: var(--b3-theme-primary);
+        color: var(--lvct-accent);
     }
     .lvct-org-step--pending {
         color: var(--lv-data-amber);
@@ -283,8 +283,8 @@
         margin: 6px 0 10px;
         padding: 6px 10px;
         border-radius: 8px;
-        background: var(--b3-theme-background-light, rgba(0, 0, 0, 0.03));
-        color: var(--b3-theme-on-surface);
+        background: var(--lvct-bg-app, rgba(0, 0, 0, 0.03));
+        color: var(--lvct-text-2);
     }
     .lvct-org-recovery__entry-actions {
         display: flex;

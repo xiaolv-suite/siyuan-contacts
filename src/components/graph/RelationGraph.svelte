@@ -832,15 +832,15 @@
         references = { status: "unknown", graph: { nodes: [], edges: [] } };
         try {
             const next = await loadGraphReferences(currentSources, currentQuery);
-            if (alive && version === nativeVersion && currentSources === sources && graphMode === "native") {
+            if (alive && version === nativeVersion && graphMode === "native") {
                 references = next;
             }
         } catch (error) {
-            if (alive && version === nativeVersion && currentSources === sources && graphMode === "native") {
+            if (alive && version === nativeVersion && graphMode === "native") {
                 references = { status: "unknown", graph: { nodes: [], edges: [] }, error: requestErrorMessage(error) };
             }
         } finally {
-            if (alive && version === nativeVersion && currentSources === sources && graphMode === "native") {
+            if (alive && version === nativeVersion && graphMode === "native") {
                 nativeLoading = false;
             }
         }

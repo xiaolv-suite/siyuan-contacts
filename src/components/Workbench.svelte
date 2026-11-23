@@ -1001,7 +1001,7 @@
 </div>
 
 {#if organizationOpen}
-    <LvctDialog title={text("orgManagerTitle", "组织管理")} wide closeOnBackdrop={false} onClose={() => void closeOrganization()}>
+    <LvctDialog title={text("orgManagerTitle", "组织管理")} closeLabel={text("dialog.close", "关闭")} wide closeOnBackdrop={false} onClose={() => void closeOrganization()}>
         <OrgManagerDialog {facade} i18n={facade.i18n} initialOrgDocId={organizationDocId}
             onOpenPerson={(docId, orgDocId) => void openPersonByDocId(docId, personReturnContext(current, { orgDocId }))}
             onCreateOrganization={() => void openCreateOrganization()}

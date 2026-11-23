@@ -128,8 +128,12 @@ function parseLocalDate(value: string): Date | undefined {
     const parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!parts) return undefined;
     const [year, month, day] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
-    const date = new Date(year, month - 1, day);
-    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+    // 年份为 0000 时表示未知具体年份，基准年取 2000 年（合法闰年）校验月日有效性，
+    // 规避 JS Date 把 0 年当作 1900 年导致 0000-MM-DD 恒返回 undefined 的恶性缺陷
+    const checkYear = year === 0 ? 2000 : year;
+    const date = new Date(checkYear, month - 1, day);
+    if (date.getFullYear() !== checkYear || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined;
     return date;
 }
 
@@ -153,7 +157,7 @@ function lunarOccurrenceIn(lunarYear: number, month: number, day: number): Date 
 
 /**
  * 计算下一次纪念日发生日。
- * 支持公历平闰年（2/29 顺延 3/1）与农历月日循环换算。
+ * 支持公历未知年份（0000-MM-DD）、公历平闰年（2/29 顺延至 3/1）与农历月日循环换算。
  */
 export function nextAnniversary(item: AnniversaryItem, now: Date = new Date()): AnniversaryProjection | undefined {
     const parts = item.date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -165,6 +169,7 @@ export function nextAnniversary(item: AnniversaryItem, now: Date = new Date()): 
         const parsed = parseLocalDate(item.date);
         if (!parsed) return undefined;
         let target = new Date(today.getFullYear(), rawMonth - 1, rawDay);
+        // 2/29 在平年自动通过 Date 进位成为 3/1（保持顺延语义）
         if (daysBetween(today, target) < 0) {
             target = new Date(today.getFullYear() + 1, rawMonth - 1, rawDay);
         }

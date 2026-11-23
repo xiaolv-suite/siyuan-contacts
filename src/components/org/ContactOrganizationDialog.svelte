@@ -85,7 +85,7 @@
         max-height: 82vh;
         overflow-y: auto;
         padding: 18px 20px;
-        background: var(--b3-theme-surface, #ffffff);
+        background: var(--lvct-bg-surface, #ffffff);
         border-radius: var(--lvct-r-dialog, 16px);
         box-shadow: 0 4px 24px rgba(28, 24, 21, 0.05);
     }

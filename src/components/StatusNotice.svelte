@@ -1,15 +1,21 @@
 <script lang="ts">
     import { onDestroy } from "svelte";
     import { CheckCircle2, CircleAlert, X } from "@lucide/svelte";
+    import { translateText } from "../domain/translation";
 
-    let { message, error = false, onDismiss, actionLabel, onAction, actionDisabled = false }: {
+    let { message, error = false, onDismiss, actionLabel, onAction, actionDisabled = false, i18n }: {
         message: string;
         error?: boolean;
         onDismiss?: () => void;
         actionLabel?: string;
         onAction?: () => void;
         actionDisabled?: boolean;
+        i18n?: Readonly<Record<string, string>>;
     } = $props();
+
+    // 2026-11-21 i18n 债务收敛：关闭按钮 aria/title 走词条（原硬编码中文）
+    const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
+        translateText(i18n, key, fallback, values));
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     let isHovered = $state(false);
@@ -47,8 +53,8 @@
             <button
                 type="button"
                 class="lvct-notice__dismiss-btn"
-                aria-label="关闭提示"
-                title="关闭提示"
+                aria-label={text("status.dismissAria", "关闭提示")}
+                title={text("status.dismissAria", "关闭提示")}
                 onclick={onDismiss}
             >
                 <X size={13} strokeWidth={1.6} />

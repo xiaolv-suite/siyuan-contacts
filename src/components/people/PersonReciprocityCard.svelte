@@ -18,7 +18,7 @@
 <div class="lvct-reciprocity-card" role="region" aria-label={text("reciprocityCardTitle", "交往互惠与双向平衡")}>
     <div class="card-header">
         <div class="header-left">
-            <Scale size={14} strokeWidth={1.6} class="lvct-icon-inline header-icon" style="color: var(--lvct-accent, var(--b3-theme-primary));" />
+            <Scale size={14} strokeWidth={1.6} class="lvct-icon-inline header-icon" style="color: var(--lvct-accent, var(--lvct-accent));" />
             <span class="header-title">{text("reciprocityCardTitle", "交往互惠与双向平衡")}</span>
             <span class="status-badge status-{audit.balanceStatus}">{audit.statusLabel}</span>
         </div>
@@ -265,7 +265,7 @@
     .metric-box-title {
         font-size: 11px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         display: flex;
         align-items: center;
         gap: 3px;
@@ -290,7 +290,7 @@
     }
 
     .advice-content {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         line-height: 1.4;
     }
 </style>

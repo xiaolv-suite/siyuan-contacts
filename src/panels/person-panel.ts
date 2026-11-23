@@ -4,7 +4,14 @@
  * 判定走名册缓存（rootID 是否为联系人文档），非联系人文档不注入、零 DOM 干扰。
  * 本模块是 protyle DOM 与组件层之间的 glue，位于 panels/（视图层之上）。
  */
-import { getRoster, invalidateRoster } from "../services/roster";
+import {
+    getRoster,
+    invalidateRoster,
+    isRosterReady,
+    isKnownContactOrRelatedDoc,
+    registerRelatedDocId,
+    unregisterRelatedDocId,
+} from "../services/roster";
 import { loadInteractionStoreStrict } from "../data/interactions";
 import type { InteractionEvent } from "../domain/interactions";
 import { loadFollowUpStoreStrict } from "../data/followups";
@@ -15,6 +22,7 @@ import { getOrgDisplayForDoc, scanOrganizations } from "../services/org";
 import type { OrganizationSummary } from "../domain/organization-scan";
 import { formatBirthdayDisplay, nextBirthday } from "../domain/occasions";
 import { copyPlainText } from "../shared/clipboard";
+import { safePerfMark, safePerfMeasure } from "../shared/perf";
 import { svelteDialog } from "../libs/dialog";
 import { emitDataChanged, requestPersonNavigation, requestWorkbenchNavigation, subscribeDataChanged } from "../libs/data-events";
 import PersonEditDialog from "../components/people/PersonEditDialog.svelte";
@@ -104,7 +112,7 @@ function ensureDataSubscription(): void {
     });
 }
 
-async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: string): Promise<void> {
+export async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: string): Promise<void> {
     if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
     const request = (stripRequests.get(protyle.element) ?? 0) + 1;
     stripRequests.set(protyle.element, request);
@@ -116,7 +124,16 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
         activeStrips.delete(protyle.element);
         return;
     }
+
+    // 轨道 A 快路径过滤：名册已就绪且普通笔记不在集合内时 O(1) 短路退出，0 次 SQL 探测
+    if (isRosterReady() && !isKnownContactOrRelatedDoc(rootId)) {
+        safePerfMark("lvct-strip-fast-exit");
+        activeStrips.delete(protyle.element);
+        return;
+    }
+
     activeStrips.set(protyle.element, { context, protyle, rootId });
+    safePerfMark("lvct-strip-check-start");
     try {
         const roster = await getRoster(context.settings);
         if (!isCurrent()) return;
@@ -124,8 +141,18 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
         if (!person) {
             const orgs = await scanOrganizations().catch(() => []);
             if (!isCurrent()) return;
-            const org = orgs.find((item) => item.docId === rootId && !item.removed);
+            for (const org of orgs) {
+                if (org.docId) {
+                    if (!org.removed && !org.archived) {
+                        registerRelatedDocId(org.docId);
+                    } else {
+                        unregisterRelatedDocId(org.docId);
+                    }
+                }
+            }
+            const org = orgs.find((item) => item.docId === rootId && !item.removed && !item.archived);
             if (org) {
+                registerRelatedDocId(org.docId);
                 const strip = buildOrgStrip(context, protyle, org);
                 const title = protyle.element.querySelector(".protyle-title");
                 if (title) {
@@ -133,6 +160,8 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
                 } else {
                     protyle.element.prepend(strip);
                 }
+                safePerfMark("lvct-strip-check-end");
+                safePerfMeasure("lvct-strip-check", "lvct-strip-check-start", "lvct-strip-check-end");
                 return;
             }
 
@@ -143,6 +172,7 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
             ).catch(() => []);
             if (!isCurrent()) return;
             if (cityRows.length > 0) {
+                registerRelatedDocId(rootId);
                 const row = cityRows[0] as { ial?: unknown; content?: string };
                 const ialStr = typeof row.ial === "string" ? row.ial : (row.ial && typeof row.ial === "object" ? JSON.stringify(row.ial) : "");
                 const match = ialStr.match(new RegExp(`${CITY_TOPIC_ATTR}="([^"]+)"`));
@@ -156,10 +186,14 @@ async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: 
                 } else {
                     protyle.element.prepend(strip);
                 }
+                safePerfMark("lvct-strip-check-end");
+                safePerfMeasure("lvct-strip-check", "lvct-strip-check-start", "lvct-strip-check-end");
                 return;
             }
 
             activeStrips.delete(protyle.element);
+            safePerfMark("lvct-strip-check-end");
+            safePerfMeasure("lvct-strip-check", "lvct-strip-check-start", "lvct-strip-check-end");
             return;
         }
         const [interactionStore, followUpStore] = await Promise.all([

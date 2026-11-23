@@ -18,17 +18,17 @@
     function getStageColor(key: string): string {
         switch (key) {
             case "acquaintance":
-                return "var(--b3-theme-on-surface-light)";
+                return "var(--lvct-text-3)";
             case "connection":
-                return "var(--b3-theme-primary)";
+                return "var(--lvct-accent)";
             case "collaboration":
-                return "var(--lvct-group-work, var(--b3-theme-primary))";
+                return "var(--lvct-group-work, var(--lvct-accent))";
             case "close_ally":
-                return "var(--lv-heat-cool, var(--b3-theme-primary))";
+                return "var(--lv-heat-cool, var(--lvct-accent))";
             case "dormant":
-                return "var(--b3-theme-surface-lighter)";
+                return "var(--lvct-border-subtle)";
             default:
-                return "var(--b3-theme-primary)";
+                return "var(--lvct-accent)";
         }
     }
 </script>
@@ -177,7 +177,7 @@
         align-items: flex-start;
         gap: 6px;
         padding: 6px 10px;
-        background: color-mix(in srgb, var(--b3-theme-surface-lighter) 60%, transparent);
+        background: color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
         border: 1px solid var(--lvct-color-border-200);
         border-radius: var(--lvct-r-card, 12px);
         line-height: 1.45;

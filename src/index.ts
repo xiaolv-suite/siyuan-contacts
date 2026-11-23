@@ -56,7 +56,8 @@ import type { AiExtractionConfirmation } from "./services/ai-extract";
 import { AiExtractionError } from "./domain/ai-preflight";
 import type { AiPreflightOptions } from "./domain/ai-preflight";
 import { loadPersonInsights } from "./services/insights";
-import { syncInteractionDocSection, syncFullPersonDocument, loadPersonFactsFromDoc, savePersonFactsToDoc } from "./services/doc-section";
+import { mapBoundDocIds } from "./api/av";
+import { syncInteractionDocSection, syncFullPersonDocument, loadPersonFactsFromDoc, savePersonFactsToDoc, syncChannelsDocSection, loadChannelsFromDoc, syncSocialPreferencesDocSection, syncPromisesDocSection, loadSocialPreferencesFromDoc, loadPromisesFromDoc } from "./services/doc-section";
 import { detachLegacyPersonNote, inspectLegacyPersonNote, loadPersonNote, savePersonNote } from "./services/person-note";
 import type { LegacyPersonNoteSnapshot } from "./domain/person-note";
 import { loadPersonFields, savePersonFields } from "./services/person-fields";
@@ -161,6 +162,8 @@ import { svelteDialog } from "./libs/dialog";
 import { openSiYuanDocument, openDocumentContextMenu } from "./libs/open-document";
 import { emitDataChanged, emitWorkspaceState, requestWorkbenchNavigation, subscribeDataChanged } from "./libs/data-events";
 import { schedulePersonDocMirror, disposeDocMirrorScheduler } from "./services/doc-mirror";
+import { scheduleIdleDataSovereigntyAutoHeal, cancelIdleDataSovereigntyAutoHeal, backfillAllPersonDocuments } from "./services/data-sovereignty-backfill";
+import { safePerfMark, safePerfMeasure } from "./shared/perf";
 import { syncOrganizationDocSection } from "./services/org-dossier";
 import type { ContactsSettings } from "./domain/model";
 import { setBlockAttrs, flushBlockIndex } from "./api/blocks";
@@ -231,6 +234,9 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private lastRosterForCitySync: readonly ContactSummary[] = [];
     private startupTimer = 0;
     private viewRequestTimer = 0;
+    private familyInitTimer = 0;
+    private familyInitGeneration = 0;
+    private inFlightFamilyInit: Promise<unknown> | null = null;
     private lifecycleToken: LifecycleToken = createLifecycleToken();
     private workbenchDialogToken: LifecycleToken | null = null;
     private readonly tabDisposers = new Set<() => void>();
@@ -271,6 +277,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     async onload() {
+        safePerfMark("lvct-onload-start");
         this.disposeLifecycle();
         this.lifecycleToken = createLifecycleToken();
         const lifecycleToken = this.lifecycleToken;
@@ -344,10 +351,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         configureCloseGuardI18n(this.i18n);
 
         // 关键设置严格读取并先核验原生锚点；失效时挂载恢复界面，禁止旧工作台继续访问 AV。
+        safePerfMark("lvct-settings-read-start");
         const settingsRead = await readSettingsState(this);
+        safePerfMark("lvct-settings-read-end");
+        safePerfMeasure("lvct-settings-read", "lvct-settings-read-start", "lvct-settings-read-end");
+
         let settings: ContactsSettings | null = settingsRead.settings;
         if (settingsRead.status === "valid" && settings) {
+            safePerfMark("lvct-anchor-probe-start");
             const anchor = await probeSettingsAnchor(settings);
+            safePerfMark("lvct-anchor-probe-end");
+            safePerfMeasure("lvct-anchor-probe", "lvct-anchor-probe-start", "lvct-anchor-probe-end");
             if (anchor.status === "verified") {
                 this.workspaceState = { kind: "ready" };
                 this.onWorkspaceReadyRefreshed();
@@ -370,19 +384,25 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         this.settings = settings;
         emitWorkspaceState(this.workspaceState);
         if (settings && this.workspaceState.kind === "ready") {
-            void ensureDefaultFamilyOrganization(this, settings).then((result) => {
-                if (result.created && this.isLifecycleActive(lifecycleToken)) emitDataChanged({ topics: ["organizations"] }, lifecycleToken);
-            }).catch((error) => {
-                console.warn("[LvContacts] 默认组织“家庭”初始化待续做", error);
-            });
+            // 轨道 A：后台自愈推迟 3 分钟（180s），带单飞守卫与生命周期 onunload 清理
+            const cancelAutoHeal = scheduleIdleDataSovereigntyAutoHeal(this, settings, 180_000);
+            lifecycleToken.onDispose(cancelAutoHeal);
+
+            // 轨道 A：默认组织“家庭”初始化延后至空闲执行，带单飞守卫与生命周期 onunload 清理
+            this.scheduleDefaultFamilyInit(settings, lifecycleToken);
         }
+        safePerfMark("lvct-view-prefs-start");
         try {
             await this.loadViewPreferences();
         } catch (error) {
             if (this.isLifecycleActive(lifecycleToken) && this.preferencesActive && preferencesEpoch === this.preferencesEpoch) {
-                notify(`偏好读取失败，当前值尚未核实：${error instanceof Error ? error.message : String(error)}`, 6000, "error");
+                // 2026-11-21 i18n 债务收敛：原硬编码中文 toast，EN 用户全程中文（本批 8 键 12 处）
+                const errMsg = error instanceof Error ? error.message : String(error);
+                notify((this.i18n?.["toast.prefReadFailed"] ?? "偏好读取失败，当前值尚未核实：${err}").replace("${err}", errMsg), 6000, "error");
             }
         }
+        safePerfMark("lvct-view-prefs-end");
+        safePerfMeasure("lvct-view-prefs", "lvct-view-prefs-start", "lvct-view-prefs-end");
         if (!this.isLifecycleActive(lifecycleToken) || !this.preferencesActive || preferencesEpoch !== this.preferencesEpoch) return;
 
         const plugin = this;
@@ -615,6 +635,58 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         if (this.settings && this.workspaceState.kind === "ready") {
             void this.refreshFollowupDueCount();
         }
+        safePerfMark("lvct-onload-end");
+        safePerfMeasure("lvct-onload-total", "lvct-onload-start", "lvct-onload-end");
+    }
+
+    private scheduleDefaultFamilyInit(settings: ContactsSettings, lifecycleToken: LifecycleToken): void {
+        this.cancelScheduledFamilyInit();
+        const scheduledGen = this.familyInitGeneration;
+        this.familyInitTimer = window.setTimeout(() => {
+            this.familyInitTimer = 0;
+            if (!this.isLifecycleActive(lifecycleToken) || this.workspaceState.kind !== "ready" || this.familyInitGeneration !== scheduledGen) return;
+            void this.runDefaultFamilyInit(settings, lifecycleToken);
+        }, 3000);
+        lifecycleToken.onDispose(() => {
+            this.cancelScheduledFamilyInit();
+        });
+    }
+
+    private cancelScheduledFamilyInit(): void {
+        this.familyInitGeneration += 1;
+        if (this.familyInitTimer) {
+            window.clearTimeout(this.familyInitTimer);
+            this.familyInitTimer = 0;
+        }
+        this.inFlightFamilyInit = null;
+    }
+
+    private async runDefaultFamilyInit(settings: ContactsSettings, lifecycleToken: LifecycleToken): Promise<void> {
+        if (this.inFlightFamilyInit) return this.inFlightFamilyInit as Promise<void>;
+        const currentGen = this.familyInitGeneration;
+        const cleanup = () => {
+            if (this.familyInitGeneration === currentGen) {
+                this.inFlightFamilyInit = null;
+            }
+        };
+        const task = (async () => {
+            try {
+                if (!this.isLifecycleActive(lifecycleToken) || this.familyInitGeneration !== currentGen) return;
+                const result = await ensureDefaultFamilyOrganization(this, settings, {
+                    shouldAbort: () => !this.isLifecycleActive(lifecycleToken) || this.familyInitGeneration !== currentGen,
+                });
+                if (!this.isLifecycleActive(lifecycleToken) || this.familyInitGeneration !== currentGen) return;
+                if (result.created && this.isLifecycleActive(lifecycleToken)) {
+                    emitDataChanged({ topics: ["organizations"] }, lifecycleToken);
+                }
+            } catch (error) {
+                console.warn("[LvContacts] 默认组织“家庭”初始化待续做", error);
+            } finally {
+                cleanup();
+            }
+        })();
+        this.inFlightFamilyInit = task;
+        await task;
     }
 
     async onunload() {
@@ -622,6 +694,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     }
 
     private disposeLifecycle(): void {
+        this.cancelScheduledFamilyInit();
+        cancelIdleDataSovereigntyAutoHeal();
         this.omnisearchCleaner?.();
         this.omnisearchCleaner = undefined;
         this.launchpadCleaner?.();
@@ -714,7 +788,15 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             iconHTML: "",
             label: "小驴人脉：识别资料（整篇文档）",
             click: () => {
-                if (this.isLifecycleActive(lifecycleToken)) void this.openRecognizeDialog(protyleElement?.innerText ?? "", rootId);
+                if (this.isLifecycleActive(lifecycleToken)) {
+                    let text = "";
+                    if (protyleElement) {
+                        const clone = protyleElement.cloneNode(true) as HTMLElement;
+                        clone.querySelectorAll(".protyle-attr, .protyle-action, .protyle-gutters, .lv-card-badge-pill").forEach(n => n.remove());
+                        text = (clone.innerText ?? clone.textContent ?? "").trim();
+                    }
+                    void this.openRecognizeDialog(text, rootId);
+                }
             },
         });
     };
@@ -725,7 +807,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const editor = getActiveEditor(true);
         const rootId = editor?.protyle?.block?.rootID || visibleEditorRootId();
         if (!rootId) {
-            notify("请先打开一篇笔记再捕获人员", 3000);
+            notify(this.i18n?.["toast.openNoteFirst"] ?? "请先打开一篇笔记再捕获人员", 3000);
             return;
         }
         this.openCaptureDialog(rootId);
@@ -734,7 +816,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     private openCaptureDialog(docId: string): void {
         if (!this.isLifecycleActive()) return;
         if (!this.settings) {
-            notify("请先完成人脉工作空间初始化", 3000);
+            notify(this.i18n?.["toast.workspaceNotReady"] ?? "请先完成人脉工作空间初始化", 3000);
             return;
         }
         this.openOwnedDialog({
@@ -750,17 +832,17 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const lifecycleToken = this.lifecycleToken;
         if (!this.isLifecycleActive(lifecycleToken)) return;
         if (!this.settings) {
-            notify("请先完成人脉工作空间初始化", 3000);
+            notify(this.i18n?.["toast.workspaceNotReady"] ?? "请先完成人脉工作空间初始化", 3000);
             return;
         }
         const text = rawText.trim();
         if (!text) {
-            notify("没有可识别的内容", 3000);
+            notify(this.i18n?.["toast.noRecognizableContent"] ?? "没有可识别的内容", 3000);
             return;
         }
         const result = parseContactText(text);
         if (result.items.length === 0) {
-            notify("未识别到可填充的资料字段（原文已保留，未做任何写入）", 3000);
+            notify(this.i18n?.["toast.noFillableFields"] ?? "未识别到可填充的资料字段（原文已保留，未做任何写入）", 3000);
             return;
         }
         /* FAST-01.3a：识别目标裁决——名册读取失败（自动重试一次仍失败）时整单取消：零写入、
@@ -768,7 +850,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const resolution = await resolveRecognizeTarget(this.settings, rootDocId);
         if (!this.isLifecycleActive(lifecycleToken)) return;
         if (resolution.status === "failed") {
-            notify("人脉名册读取失败，本次识别已取消（未做任何写入）；请稍后重新触发「识别资料」", 6000);
+            notify(this.i18n?.["toast.rosterReadFailed"] ?? "人脉名册读取失败，本次识别已取消（未做任何写入）；请稍后重新触发「识别资料」", 6000);
             return;
         }
         const person = resolution.status === "bound" ? resolution.person : null;
@@ -818,13 +900,13 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         const lifecycleToken = this.lifecycleToken;
         if (!this.isLifecycleActive(lifecycleToken)) return;
         if (!this.settings) {
-            notify("请先完成人脉工作空间初始化", 3000);
+            notify(this.i18n?.["toast.workspaceNotReady"] ?? "请先完成人脉工作空间初始化", 3000);
             return;
         }
 
         const text = args.rawText.trim();
         if (!text) {
-            notify("没有选中的互动内容", 3000);
+            notify(this.i18n?.["toast.noSelectedInteraction"] ?? "没有选中的互动内容", 3000);
             return;
         }
 
@@ -1517,7 +1599,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async loadPersonAvatar(personDocId: string): Promise<string> {
         await flushBlockIndex();
-        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${personDocId}' AND type = 'd' LIMIT 1`);
+        const safeDocId = personDocId.replace(/'/g, "''");
+        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${safeDocId}' AND type = 'd' LIMIT 1`);
         if (!rows.length) return "";
         const row = assertKernelRecord("/api/query/sql", rows[0]);
         const attrs = organizationIalAttributes(typeof row.ial === "string" ? row.ial : "");
@@ -1529,34 +1612,98 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         await setBlockAttrs(personDocId, {
             "custom-lvct-channels": encoded,
         });
+
+        // 1. 通讯条目与核心资料正文落盘（## 📞 通讯与联系方式）
+        try {
+            await syncChannelsDocSection(personDocId, channels);
+        } catch (docErr) {
+            console.warn("[LvContacts] 通讯条目落盘至正文未完成:", docErr);
+        }
+
+        // 2. 核心通讯主条目（主手机/主微信/主邮箱）同步回写思源 AttributeView 数据库列
+        try {
+            if (this.settings?.avId) {
+                const primaryPhone = channels.find((c) => c.type === "phone" && c.isPrimary)?.value
+                    || channels.find((c) => c.type === "phone")?.value;
+                const primaryWechat = channels.find((c) => c.type === "wechat" && c.isPrimary)?.value
+                    || channels.find((c) => c.type === "wechat")?.value;
+                const primaryEmail = channels.find((c) => c.type === "email" && c.isPrimary)?.value
+                    || channels.find((c) => c.type === "email")?.value;
+
+                const mapping: Record<string, string> = await mapBoundDocIds(this.settings.avId, [personDocId]).catch(() => ({}));
+                const itemId = mapping[personDocId];
+                if (itemId) {
+                    const fieldsToWrite: import("./domain/contact-write").WritableContactField[] = [];
+                    const partialDraft: any = { name: "" };
+                    if (primaryPhone !== undefined) {
+                        partialDraft.phone = primaryPhone;
+                        fieldsToWrite.push("phone");
+                    }
+                    if (primaryWechat !== undefined) {
+                        partialDraft.wechat = primaryWechat;
+                        fieldsToWrite.push("wechat");
+                    }
+                    if (primaryEmail !== undefined) {
+                        partialDraft.email = primaryEmail;
+                        fieldsToWrite.push("email");
+                    }
+                    if (fieldsToWrite.length > 0) {
+                        await updateContactFields(this.settings, itemId, partialDraft, { onlyFields: fieldsToWrite });
+                    }
+                }
+            }
+        } catch (avErr) {
+            console.warn("[LvContacts] 核心通讯同步回写 AttributeView 数据库未完成:", avErr);
+        }
+
         await flushBlockIndex();
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
     }
 
     async loadPersonChannels(personDocId: string): Promise<ContactChannel[]> {
         await flushBlockIndex();
-        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${personDocId}' AND type = 'd' LIMIT 1`);
-        if (!rows.length) return [];
-        const row = assertKernelRecord("/api/query/sql", rows[0]);
-        let attrs: Record<string, string> = {};
-        try {
-            attrs = organizationIalAttributes(typeof row.ial === "string" ? row.ial : "");
-        } catch {
-            const ialStr = typeof row.ial === "string" ? row.ial : "";
-            const m = ialStr.match(/custom-lvct-channels="([^"]*)"/);
-            if (m) attrs["custom-lvct-channels"] = m[1];
-        }
-        const raw = attrs["custom-lvct-channels"];
-        if (!raw) return [];
-        try {
-            return normalizeChannels(JSON.parse(decodeURIComponent(raw)));
-        } catch {
+        const safeDocId = personDocId.replace(/'/g, "''");
+        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${safeDocId}' AND type = 'd' LIMIT 1`);
+        let fromAttrs: ContactChannel[] = [];
+        if (rows.length) {
+            const row = assertKernelRecord("/api/query/sql", rows[0]);
+            let attrs: Record<string, string> = {};
             try {
-                return normalizeChannels(JSON.parse(raw));
+                attrs = organizationIalAttributes(typeof row.ial === "string" ? row.ial : "");
             } catch {
-                return [];
+                const ialStr = typeof row.ial === "string" ? row.ial : "";
+                const m = ialStr.match(/custom-lvct-channels="([^"]*)"/);
+                if (m) attrs["custom-lvct-channels"] = m[1];
+            }
+            const raw = attrs["custom-lvct-channels"];
+            if (raw) {
+                try {
+                    fromAttrs = normalizeChannels(JSON.parse(decodeURIComponent(raw)));
+                } catch {
+                    try {
+                        fromAttrs = normalizeChannels(JSON.parse(raw));
+                    } catch {}
+                }
             }
         }
+        if (fromAttrs.length > 0) return fromAttrs;
+
+        // 自愈回退：若属性为空或丢失，自动从文档正文受控区块回读通讯条目并回填属性
+        try {
+            const fromDoc = await loadChannelsFromDoc(personDocId);
+            if (fromDoc.length > 0) {
+                const encoded = encodeURIComponent(JSON.stringify(fromDoc));
+                void setBlockAttrs(personDocId, { "custom-lvct-channels": encoded }).catch(() => {});
+                return fromDoc;
+            }
+        } catch {}
+
+        return [];
+    }
+
+    async backfillDataSovereignty(options?: { onProgress?: (current: number, total: number, docId: string) => void }): Promise<{ total: number; success: number; failed: number }> {
+        if (!this.settings) return { total: 0, success: 0, failed: 0 };
+        return backfillAllPersonDocuments(this, this.settings, options);
     }
 
     async savePersonBusinessCard(personDocId: string, cardDataUrl: string): Promise<void> {
@@ -1569,7 +1716,8 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     async loadPersonBusinessCard(personDocId: string): Promise<string> {
         await flushBlockIndex();
-        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${personDocId}' AND type = 'd' LIMIT 1`);
+        const safeDocId = personDocId.replace(/'/g, "''");
+        const rows = await querySql<unknown>(`SELECT ial FROM blocks WHERE id = '${safeDocId}' AND type = 'd' LIMIT 1`);
         if (!rows.length) return "";
         const row = assertKernelRecord("/api/query/sql", rows[0]);
         let attrs: Record<string, string> = {};
@@ -1817,7 +1965,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             return;
         }
         if (!this.settings) {
-            showMessage("请先完成人脉工作空间初始化", 3000);
+            showMessage(this.i18n?.["toast.workspaceNotReady"] ?? "请先完成人脉工作空间初始化", 3000);
             onDone?.();
             return;
         }
@@ -2590,12 +2738,25 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     /** E-39：双向承诺与信诺履约追踪（Mutual Promises & Commitments） */
     async loadPersonPromises(personDocId: string) {
-        return loadPersonPromises(this, personDocId);
+        const list = await loadPersonPromises(this, personDocId);
+        if (list && list.length > 0) return list;
+        // 自愈回退：若 petal 存储为空，尝试从文档正文受控区块回读并自动同步回填
+        try {
+            const fromDoc = await loadPromisesFromDoc(personDocId);
+            if (fromDoc.length > 0) {
+                for (const item of fromDoc) {
+                    await addPersonPromise(this, item).catch(() => {});
+                }
+                return fromDoc;
+            }
+        } catch {}
+        return [];
     }
 
     async addPersonPromise(item: import("./domain/promises").PersonPromiseItem) {
         const token = this.lifecycleToken;
         const res = await addPersonPromise(this, item);
+        void syncPromisesDocSection(this, item.personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
         return res;
     }
@@ -2603,6 +2764,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async updatePersonPromise(personDocId: string, promiseId: string, patch: Partial<import("./domain/promises").PersonPromiseItem>) {
         const token = this.lifecycleToken;
         const res = await updatePersonPromise(this, personDocId, promiseId, patch);
+        void syncPromisesDocSection(this, personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }
@@ -2610,6 +2772,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async removePersonPromise(personDocId: string, promiseId: string) {
         const token = this.lifecycleToken;
         const res = await removePersonPromise(this, personDocId, promiseId);
+        void syncPromisesDocSection(this, personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }
@@ -2674,12 +2837,25 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     /** E-49：联系人自管社交偏好与交往忌口档案 */
     async loadPersonSocialPreferences(personDocId: string) {
-        return loadPersonSocialPreferences(this, personDocId);
+        const list = await loadPersonSocialPreferences(this, personDocId);
+        if (list && list.length > 0) return list;
+        // 自愈回退：若 petal 存储为空，尝试从文档正文受控区块回读并自动同步回填
+        try {
+            const fromDoc = await loadSocialPreferencesFromDoc(personDocId);
+            if (fromDoc.length > 0) {
+                for (const item of fromDoc) {
+                    await addPersonSocialPreference(this, item).catch(() => {});
+                }
+                return fromDoc;
+            }
+        } catch {}
+        return [];
     }
 
     async addPersonSocialPreference(item: import("./domain/social-preferences").PersonSocialPreferenceItem) {
         const token = this.lifecycleToken;
         const res = await addPersonSocialPreference(this, item);
+        void syncSocialPreferencesDocSection(this, item.personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [item.personDocId] }, token);
         return res;
     }
@@ -2687,6 +2863,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async updatePersonSocialPreference(personDocId: string, prefId: string, patch: Partial<import("./domain/social-preferences").PersonSocialPreferenceItem>) {
         const token = this.lifecycleToken;
         const res = await updatePersonSocialPreference(this, personDocId, prefId, patch);
+        void syncSocialPreferencesDocSection(this, personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }
@@ -2694,6 +2871,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
     async removePersonSocialPreference(personDocId: string, prefId: string) {
         const token = this.lifecycleToken;
         const res = await removePersonSocialPreference(this, personDocId, prefId);
+        void syncSocialPreferencesDocSection(this, personDocId).catch(() => {});
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, token);
         return res;
     }
@@ -3015,7 +3193,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
         // 按钮旧入口可能没有 await：旁路处理避免未处理拒绝，原 Promise 仍供图谱等调用方捕获。
         void opening.catch((error: unknown) => {
             if (!this.isLifecycleActive()) return;
-            notify(`打开文档失败，请重试：${error instanceof Error ? error.message : String(error)}`, 6000, "error");
+            notify((this.i18n?.["toast.openDocFailed"] ?? "打开文档失败，请重试：${err}").replace("${err}", error instanceof Error ? error.message : String(error)), 6000, "error");
         });
         return opening;
     }
@@ -3035,7 +3213,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
 
     openSettings() {
         if (!this.settings) {
-            notify("请先完成人脉工作空间初始化", 3000);
+            notify(this.i18n?.["toast.workspaceNotReady"] ?? "请先完成人脉工作空间初始化", 3000);
             return;
         }
         this.openWorkbench("settings");
@@ -3127,7 +3305,7 @@ export default class LvContactsPlugin extends Plugin implements ContactsPluginFa
             closeBtn.className = "b3-dialog__close lvct-mobile-dialog-close";
             closeBtn.setAttribute("aria-label", "关闭工作台");
             closeBtn.innerHTML = "✕";
-            closeBtn.style.cssText = "display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font-size:18px;border:none;background:transparent;color:var(--b3-theme-on-surface,#5f6368);cursor:pointer;touch-action:manipulation;";
+            closeBtn.style.cssText = "display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;font-size:18px;border:none;background:transparent;color:var(--lvct-text-2,#5f6368);cursor:pointer;touch-action:manipulation;";
             closeBtn.onclick = () => this.workbenchDialog?.destroy();
             header.appendChild(closeBtn);
         }

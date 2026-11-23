@@ -6,6 +6,7 @@
  */
 import { StoreIntegrityError } from "./store-integrity.ts";
 import { toLocalDateKey, type InteractionEvent } from "./interactions.ts";
+import { isValidDateKey } from "./date-key.ts";
 
 export const ITINERARY_STORE_VERSION = 1;
 export const MAX_ITINERARIES_PER_PERSON = 20;
@@ -60,12 +61,12 @@ export function validateItineraryItem(item: Partial<PersonItineraryItem>): strin
         errors.push("行程主题不能超过 100 字符");
     }
 
-    if (!item.targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(item.targetDate.trim())) {
-        errors.push("行程日期必须为 YYYY-MM-DD 格式");
+    if (!item.targetDate || !isValidDateKey(item.targetDate.trim())) {
+        errors.push("行程日期必须为 YYYY-MM-DD 格式且为有效公历日期");
     }
 
-    if (item.targetTime && !/^\d{2}:\d{2}$/.test(item.targetTime.trim())) {
-        errors.push("行程时间格式必须为 HH:mm");
+    if (item.targetTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(item.targetTime.trim())) {
+        errors.push("行程时间格式必须为 HH:mm (有效范围 00:00-23:59)");
     }
 
     if (item.location && item.location.trim().length > 120) {
@@ -105,7 +106,7 @@ function parseItineraryItem(raw: unknown): PersonItineraryItem | null {
     if (typeof r.id !== "string" || !r.id.trim()) return null;
     if (typeof r.personDocId !== "string" || !DOC_ID_RE.test(r.personDocId)) return null;
     if (typeof r.title !== "string" || !r.title.trim()) return null;
-    if (typeof r.targetDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(r.targetDate.trim())) return null;
+    if (typeof r.targetDate !== "string" || !isValidDateKey(r.targetDate.trim())) return null;
 
     const checklists: ItineraryChecklistItem[] = [];
     if (Array.isArray(r.checklists)) {
@@ -207,7 +208,7 @@ export function normalizeItineraryStoreForWrite(raw: unknown): PersonItinerarySt
 export function deriveInteractionFromItinerary(
     item: PersonItineraryItem,
     personName: string,
-    occurredAt: number = Date.now(),
+    occurredAt?: number,
 ): InteractionEvent {
     const loc = item.location ? `在 ${item.location} ` : "";
     let note = `【会面拜访】${loc}与 ${personName} 会见交流。\n• 主题：${item.title}`;
@@ -222,11 +223,31 @@ export function deriveInteractionFromItinerary(
         note += `\n• 事项备忘：${item.note}`;
     }
 
+    const localDate = item.targetDate || toLocalDateKey(new Date(occurredAt ?? Date.now()));
+    let effectiveOccurredAt = occurredAt;
+    if (effectiveOccurredAt === undefined) {
+        if (item.targetDate && isValidDateKey(item.targetDate)) {
+            const [y, m, d] = item.targetDate.split("-").map(Number);
+            let h = 12;
+            let min = 0;
+            if (item.targetTime && /^([01]\d|2[0-3]):[0-5]\d$/.test(item.targetTime)) {
+                const [th, tmin] = item.targetTime.split(":").map(Number);
+                h = th;
+                min = tmin;
+            }
+            const dt = new Date(y, m - 1, d, h, min, 0, 0);
+            effectiveOccurredAt = !Number.isNaN(dt.getTime()) ? dt.getTime() : Date.now();
+        } else {
+            effectiveOccurredAt = Date.now();
+        }
+    }
+
     return {
-        id: `itn-${item.id}-${occurredAt}`,
+        id: `itn-${item.id}-${effectiveOccurredAt}`,
         personDocId: item.personDocId,
-        occurredAt,
-        localDate: item.targetDate || toLocalDateKey(new Date(occurredAt)),
+        occurredAt: effectiveOccurredAt,
+        localDate,
+        type: "meeting",
         source: "manual",
         externalRef: item.id,
         note,

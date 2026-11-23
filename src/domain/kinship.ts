@@ -57,7 +57,8 @@ function sanitizeMember(raw: unknown, expectedPersonDocId?: string): KinshipMemb
     if (!name) return null;
 
     const relationLabel = typeof r.relationLabel === "string" && r.relationLabel.trim() ? r.relationLabel.trim() : undefined;
-    const linkedDocId = typeof r.linkedDocId === "string" && r.linkedDocId.trim() ? r.linkedDocId.trim() : undefined;
+    const rawLinkedDocId = typeof r.linkedDocId === "string" && r.linkedDocId.trim() ? r.linkedDocId.trim() : undefined;
+    const linkedDocId = rawLinkedDocId && rawLinkedDocId !== personDocId ? rawLinkedDocId : undefined;
     const birthYearOrDate = typeof r.birthYearOrDate === "string" && r.birthYearOrDate.trim() ? r.birthYearOrDate.trim() : undefined;
     const note = typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined;
     const createdAt = typeof r.createdAt === "number" && r.createdAt > 0 ? r.createdAt : Date.now();

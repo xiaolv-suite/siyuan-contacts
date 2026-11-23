@@ -1638,7 +1638,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
             return;
         }
         const aff = current.profile?.affiliations?.state === "known" ? current.profile.affiliations.value.work?.[0] : undefined;
-        const region = extractNormalizedRegion(current);
+        const region = extractNormalizedRegion({ ...current, channels });
         const cityStr = region.city !== "未知" ? region.city : (region.province && region.province !== "未知" ? region.province : "");
         noteText = renderTemplate(template.content, {
             name: current.name,
@@ -3525,7 +3525,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         }
     }
 
-    const personRegion = $derived(extractNormalizedRegion(current));
+    const personRegion = $derived(extractNormalizedRegion({ ...current, channels }));
     const isStarred = $derived(preferences ? isPersonStarred(preferences, current.docId) : false);
     const detailSuggestedTags = $derived(inferPersonaTags({
         name: current.name,
@@ -3966,13 +3966,13 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
     </div>
 
     {#if flashcardsDocInfo}
-        <div class="lvct-detail__flashcards-notice fn__flex" role="status" style="align-items: center; justify-content: space-between; margin: 4px 0 10px; padding: 6px 12px; background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)); border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent); border-radius: 6px; font-size: 12px;">
+        <div class="lvct-detail__flashcards-notice fn__flex" role="status" style="align-items: center; justify-content: space-between; margin: 4px 0 10px; padding: 6px 12px; background: color-mix(in srgb, var(--lvct-accent) 10%, var(--lvct-bg-surface)); border: 1px solid color-mix(in srgb, var(--lvct-accent) 30%, transparent); border-radius: 6px; font-size: 12px;">
             <span>{text("detailFlashcardsNotice", "🎴 已生成 {count} 张人脉记忆闪卡至 {hpath}", { count: flashcardsDocInfo.count, hpath: flashcardsDocInfo.hpath })}</span>
             <div class="fn__flex" style="gap: 6px;">
                 <button
                     type="button"
                     class="b3-button b3-button--text b3-button--small"
-                    style="padding: 0 4px; font-size: 11.5px; color: var(--b3-theme-primary);"
+                    style="padding: 0 4px; font-size: 11.5px; color: var(--lvct-accent);"
                     onclick={() => void handleOpenPersonDoc(flashcardsDocInfo!.docId)}
                 >
                     {text("detailOpenInMainEditor", "在主编辑器打开 ↗")}
@@ -4465,7 +4465,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         </div>
 
         <!-- 标签与生日等其余基础信息保持并存 -->
-        <dl class="lvct-detail__fields" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--b3-theme-surface-lighter);">
+        <dl class="lvct-detail__fields" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--lvct-border-subtle);">
             <div>
                 <dt>标签</dt>
                 <dd>
@@ -4540,7 +4540,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 <button
                     type="button"
                     class="b3-button b3-button--text"
-                    style="padding: 3px 10px; font-size: 11px; border-radius: var(--lv-r-pill, 9999px); {recordType === itype ? 'background: var(--b3-theme-primary); color: var(--lvct-on-accent); font-weight: 600;' : 'opacity: 0.8;'}"
+                    style="padding: 3px 10px; font-size: 11px; border-radius: var(--lv-r-pill, 9999px); {recordType === itype ? 'background: var(--lvct-accent); color: var(--lvct-on-accent); font-weight: 600;' : 'opacity: 0.8;'}"
                     aria-checked={recordType === itype}
                     role="radio"
                     onclick={() => { recordType = itype; }}
@@ -4728,7 +4728,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                 title="点击选择名片照片上传"
             >
                 <div class="lvct-card-upload-inner">
-                    <CreditCard size={14} style="color: var(--b3-theme-on-surface-light);" />
+                    <CreditCard size={14} style="color: var(--lvct-text-3);" />
                     <span class="lvct-card-upload-title" style="margin: 0; font-size: 12px;">上传纸质名片照片</span>
                     <span class="lvct-card-upload-desc" style="font-size: 11px;">（支持 PNG/JPG/WebP 高清压缩查阅）</span>
                 </div>
@@ -5538,7 +5538,10 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     });
                     if (!ok) return;
                 }
+                recordType = "meeting";
                 noteText = draft;
+                recorded = false;
+                recordInputEl?.focus();
             }}
             {i18n}
         />
@@ -6252,7 +6255,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
         <!-- Issue #87：笔记与日志反向链接（Backlinks / 提及）视窗 -->
         {#if insights && insights.backlinks && insights.backlinks.length > 0}
             {@const unconvertedCount = insights.backlinks.filter((item) => !allConvertedBlockIds.has(item.blockId)).length}
-            <div class="lvct-detail__section" style="margin-top: 14px; border-top: 1px dashed var(--b3-theme-surface-lighter); padding-top: 12px;">
+            <div class="lvct-detail__section" style="margin-top: 14px; border-top: 1px dashed var(--lvct-border-subtle); padding-top: 12px;">
                 <div class="lvct-detail__section-head" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div
                         role="button"
@@ -6339,7 +6342,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                     </div>
                     <div class="lvct-detail__timeline">
                         {#if filteredBacklinks.length === 0}
-                            <div class="lvct-detail__empty-notice" style="padding: 24px 16px; text-align: center; color: var(--b3-theme-on-surface); font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+                            <div class="lvct-detail__empty-notice" style="padding: 24px 16px; text-align: center; color: var(--lvct-text-2); font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
                                 <FileText size={28} style="opacity: 0.35;" />
                                 <span>没有匹配的反链记录。</span>
                                 {#if backlinkQuery || backlinkFilterKind !== "all"}
@@ -6368,7 +6371,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                             {:else}
                                                 <span class="lvct-chip--mention-pill"><Lightbulb size={11} class="lvct-icon-inline" /> 💡 提及</span>
                                             {/if}
-                                            <span class="lvct-chip font-size-10" style="background: var(--b3-theme-surface-lighter); color: var(--b3-theme-on-surface);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
+                                            <span class="lvct-chip font-size-10" style="background: var(--lvct-border-subtle); color: var(--lvct-text-2);" title={`智能识别互动类型为 ${INTERACTION_TYPE_LABELS[inferredType]?.label ?? "其他"}`}>
                                                 {INTERACTION_TYPE_LABELS[inferredType]?.icon ?? "📝"} {INTERACTION_TYPE_LABELS[inferredType]?.label ?? "互动"}
                                             </span>
                                         </div>
@@ -6417,7 +6420,7 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
                                         {bItem.content}
                                     </div>
                                     {#if editingBacklink && editingBacklink.blockId === bItem.blockId}
-                                        <div class="lvct-detail__quick-form lvct-detail__backlink-edit-box" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; padding: 8px; background: var(--b3-theme-surface); border-radius: 6px; border: 1px solid var(--b3-theme-surface-lighter);">
+                                        <div class="lvct-detail__quick-form lvct-detail__backlink-edit-box" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; padding: 8px; background: var(--lvct-bg-surface); border-radius: 6px; border: 1px solid var(--lvct-border-subtle);">
                                             <input
                                                 class="b3-text-field"
                                                 type="date"
@@ -6611,17 +6614,17 @@ import { discoverPersonTies, type PersonTieRecommendation } from "../../domain/c
 {#if deleteModalOpen}
     <LvctDialog title={text("detailRemoveConfirmTitle", "移除联系人 · {name}", { name: current.name })} onClose={() => (deleteModalOpen = false)}>
         <div class="lvct-form" style="padding: 12px 4px; display: flex; flex-direction: column; gap: 16px;">
-            <div style="line-height: 1.6; color: var(--b3-theme-on-surface); font-size: 13.5px;">
+            <div style="line-height: 1.6; color: var(--lvct-text-2); font-size: 13.5px;">
                 {text("detailRemoveConfirmPrompt", "确定从人脉名册中移除「{name}」吗？", { name: current.name })}
-                <p style="margin: 8px 0 0; font-size: 12px; color: var(--b3-theme-on-surface-light);">
+                <p style="margin: 8px 0 0; font-size: 12px; color: var(--lvct-text-3);">
                     {text("detailRemoveConfirmHint", "该联系人将从人脉视图中撤下，元数据快照将移入联系人回收站（30 天内可恢复）。")}
                 </p>
             </div>
-            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 10px 12px; background: var(--b3-theme-surface-lighter, rgba(0,0,0,0.03)); border-radius: 8px; border: 1px solid var(--b3-border-color);">
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 10px 12px; background: var(--lvct-border-subtle, rgba(0,0,0,0.03)); border-radius: 8px; border: 1px solid var(--lvct-border-subtle);">
                 <input type="checkbox" bind:checked={deleteDocToo} style="margin-top: 3px; cursor: pointer;" />
-                <span style="font-size: 13px; line-height: 1.5; color: var(--b3-theme-on-surface);">
+                <span style="font-size: 13px; line-height: 1.5; color: var(--lvct-text-2);">
                     <strong>{text("detailRemoveDeleteDocLabel", "同时删除人物笔记文档")}</strong>
-                    <span style="display: block; font-size: 12px; color: var(--b3-theme-on-surface-light); margin-top: 2px;">
+                    <span style="display: block; font-size: 12px; color: var(--lvct-text-3); margin-top: 2px;">
                         {text("detailRemoveDeleteDocDesc", "勾选后将一并移入思源文档回收站，彻底避免在文档树中残留无主孤儿文档。")}
                     </span>
                 </span>

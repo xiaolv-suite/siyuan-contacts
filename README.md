@@ -8,7 +8,7 @@
 
 一人一文档 · 原生属性视图 · 圈层联络周期 · 会前30秒破冰备忘 · 关系引荐图谱
 
-**当前版本：v0.7.13** ｜ [English Documentation](README.en-US.md) ｜ [更新日志](CHANGELOG.md)
+**当前版本：v0.7.14** ｜ [English Documentation](README.en-US.md) ｜ [更新日志](CHANGELOG.md)
 
 [![CI](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaolv-suite/siyuan-contacts/actions/workflows/ci.yml)
 [![最新版本](https://img.shields.io/github/v/release/xiaolv-suite/siyuan-contacts?label=最新版本)](https://github.com/xiaolv-suite/siyuan-contacts/releases)
@@ -25,7 +25,7 @@
 
 ---
 
-## 🚀 本次更新要点（v0.7.13 · 累积迭代汇总）
+## 🚀 本次更新要点（v0.7.14 · 累积迭代汇总）
 
 - **初识溯源与引荐人脉网络**：建立「由谁引荐/初识场景」有向关联链路，并在 Cytoscape 关系图谱中智能呈现引荐人向外辐射脉络，支持一度破冰引荐人发掘；
 - **会前 30 秒破冰速览卡 (Pre-Meeting Brief)**：拜访交流前一键生成高管破冰摘要，聚合共同组织、最近互动、社交雷达与待办信诺，支持复制为标准 Callout 导读卡；

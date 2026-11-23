@@ -11,8 +11,8 @@ export interface BirthdayProjection {
     date: Date;
     /** 距今天数（今天=0） */
     daysUntil: number;
-    /** 届时满的周岁 */
-    age: number;
+    /** 届时满的周岁（未知出生年份为 undefined） */
+    age?: number;
     /** 展示用日期文本（农历生日显示农历月日） */
     label: string;
 }
@@ -46,13 +46,15 @@ export function formatBirthdayDisplay(birthday: string, isLunar: boolean): strin
     return `${label}（农历，出生年 ${year}）`;
 }
 
-/** YYYY-MM-DD → 本地零点 Date；非法返回 undefined */
+/** YYYY-MM-DD → 本地零点 Date；年份为 0000 时以 2000 润年校验月日；非法返回 undefined */
 function parseLocalDate(value: string): Date | undefined {
     const parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!parts) return undefined;
     const [year, month, day] = [Number(parts[1]), Number(parts[2]), Number(parts[3])];
-    const date = new Date(year, month - 1, day);
-    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+    const checkYear = year === 0 ? 2000 : year;
+    const date = new Date(checkYear, month - 1, day);
+    if (date.getFullYear() !== checkYear || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined;
     return date;
 }
 
@@ -77,7 +79,7 @@ function lunarOccurrenceIn(lunarYear: number, month: number, day: number): Date 
 
 /**
  * 下一次生日。birthday 为 "YYYY-MM-DD"；isLunar=true 时该日期按农历解读。
- * 公历 2月29日生日在平年顺延到 3月1日（保守可预期）。
+ * 支持 0000-MM-DD 未知年份生日；公历 2月29日生日在平年顺延到 3月1日（保守可预期）。
  */
 export function nextBirthday(birthday: string, isLunar: boolean, now: Date = new Date()): BirthdayProjection | undefined {
     const parts = birthday.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -86,18 +88,27 @@ export function nextBirthday(birthday: string, isLunar: boolean, now: Date = new
     const today = startOfToday(now);
 
     if (!isLunar) {
-        const parsed = parseLocalDate(birthday);
-        if (!parsed) return undefined;
-        let target = new Date(today.getFullYear(), parsed.getMonth(), parsed.getDate());
+        const isFeb29 = rawMonth === 2 && rawDay === 29;
+        let parsed = parseLocalDate(birthday);
+        if (!parsed) {
+            if (isFeb29 && rawMonth >= 1 && rawMonth <= 12 && rawDay >= 1 && rawDay <= 31) {
+                parsed = new Date(rawYear || 2000, 1, 29);
+            } else {
+                return undefined;
+            }
+        }
+        const bMonth = rawMonth - 1;
+        const bDay = rawDay;
+        let target = new Date(today.getFullYear(), bMonth, bDay);
         // 2/29 → 平年自动变成 3/1（Date 规范化），保持顺延语义即可
         if (daysBetween(today, target) < 0) {
-            target = new Date(today.getFullYear() + 1, parsed.getMonth(), parsed.getDate());
+            target = new Date(today.getFullYear() + 1, bMonth, bDay);
         }
         return {
             date: target,
             daysUntil: daysBetween(today, target),
-            age: target.getFullYear() - parsed.getFullYear(),
-            label: `${parsed.getMonth() + 1}月${parsed.getDate()}日`,
+            age: rawYear > 0 ? target.getFullYear() - rawYear : undefined,
+            label: isFeb29 ? "2月29日" : `${rawMonth}月${rawDay}日`,
         };
     }
 

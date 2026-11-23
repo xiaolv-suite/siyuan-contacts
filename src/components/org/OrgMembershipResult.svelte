@@ -79,7 +79,7 @@
         box-sizing: border-box;
         padding: 12px 14px;
         margin: 10px 0;
-        background: var(--b3-theme-background-light, rgba(0, 0, 0, 0.02));
+        background: var(--lvct-bg-app, rgba(0, 0, 0, 0.02));
         border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lvct-r-card, 12px);
         box-shadow: 0 1px 3px rgba(28, 24, 21, 0.02);
@@ -87,7 +87,7 @@
         line-height: 1.5;
     }
     .lvct-org-membership-result--success {
-        border-color: color-mix(in srgb, var(--b3-theme-primary, #4285f4) 25%, var(--lvct-border-subtle));
+        border-color: color-mix(in srgb, var(--lvct-accent, #4285f4) 25%, var(--lvct-border-subtle));
     }
     .lvct-org-membership-result--pending {
         border-color: color-mix(in srgb, #f59e0b 30%, var(--lvct-border-subtle));
@@ -105,10 +105,10 @@
     }
     .lvct-org-membership-result__fact {
         font-weight: 600;
-        color: var(--b3-theme-on-background);
+        color: var(--lvct-text-1);
     }
     .lvct-org-membership-result__links-status {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
     .lvct-org-membership-result__details {
         margin-top: 8px;
@@ -121,7 +121,7 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        color: var(--b3-theme-primary, #4285f4);
+        color: var(--lvct-accent, #4285f4);
         font-weight: 500;
     }
     .lvct-org-membership-result__pending-list {
@@ -133,7 +133,7 @@
     .lvct-org-membership-result__pending-item {
         padding: 6px 8px;
         border-radius: 8px;
-        background: var(--b3-theme-surface, #ffffff);
+        background: var(--lvct-bg-surface, #ffffff);
         border: 1px solid var(--lvct-border-subtle);
     }
     .lvct-org-membership-result__item-row {
@@ -165,7 +165,7 @@
         forced-color-adjust: none;
     }
     .lvct-org-membership-result__status-tag--failed {
-        color: var(--b3-theme-error, #ef4444);
+        color: var(--lvct-danger, #ef4444);
         background: rgba(239, 68, 68, 0.08);
     }
     .lvct-org-membership-result__status-tag--unknown {
@@ -174,7 +174,7 @@
     }
     .lvct-org-membership-result__item-msg {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light, #888);
+        color: var(--lvct-text-3, #888);
         margin: 2px 0 0;
     }
 </style>

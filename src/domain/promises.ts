@@ -5,6 +5,7 @@
  */
 
 import { toLocalDateKey } from "./interactions.ts";
+import { isValidDateKey } from "./date-key.ts";
 
 export type PromiseDirection = "i_promised" | "they_promised";
 export type PromiseStatus = "pending" | "fulfilled" | "broken";
@@ -67,12 +68,12 @@ function sanitizePromise(raw: unknown, expectedPersonDocId?: string): PersonProm
     if (!title) return null;
 
     const detail = typeof r.detail === "string" && r.detail.trim() ? r.detail.trim() : undefined;
-    const promisedOn = typeof r.promisedOn === "string" && r.promisedOn.trim()
+    const promisedOn = typeof r.promisedOn === "string" && isValidDateKey(r.promisedOn.trim())
         ? r.promisedOn.trim()
         : toLocalDateKey(new Date());
-    const dueOn = typeof r.dueOn === "string" && r.dueOn.trim() ? r.dueOn.trim() : undefined;
+    const dueOn = typeof r.dueOn === "string" && isValidDateKey(r.dueOn.trim()) ? r.dueOn.trim() : undefined;
     const status: PromiseStatus = isValidPromiseStatus(r.status) ? r.status : "pending";
-    const fulfilledOn = typeof r.fulfilledOn === "string" && r.fulfilledOn.trim() ? r.fulfilledOn.trim() : undefined;
+    const fulfilledOn = typeof r.fulfilledOn === "string" && isValidDateKey(r.fulfilledOn.trim()) ? r.fulfilledOn.trim() : undefined;
     const createdAt = typeof r.createdAt === "number" && r.createdAt > 0 ? r.createdAt : Date.now();
     const updatedAt = typeof r.updatedAt === "number" && r.updatedAt > 0 ? r.updatedAt : Date.now();
 

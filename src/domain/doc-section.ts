@@ -9,6 +9,9 @@ import type { FollowUpItem } from "./followups.ts";
 import type { ExchangeRecord } from "./exchanges.ts";
 import type { AnniversaryItem } from "./anniversaries.ts";
 import { escapeLinkLabel } from "./format.ts";
+import { CHANNEL_TYPE_MAP, type ChannelType, type ContactChannel } from "./person-channels.ts";
+import { getCategoryMeta, newSocialPreferenceId, type PersonSocialPreferenceItem, type SocialPreferenceCategory } from "./social-preferences.ts";
+import { newPromiseId, type PersonPromiseItem, type PromiseDirection } from "./promises.ts";
 
 export const RELATED_SECTION_ATTR = "custom-lvct-related";
 export const INTERACTIONS_SECTION_ATTR = "custom-lvct-interactions";
@@ -17,6 +20,9 @@ export const FOLLOWUPS_SECTION_ATTR = "custom-lvct-followups";
 export const EXCHANGES_SECTION_ATTR = "custom-lvct-exchanges";
 export const ANNIVERSARIES_SECTION_ATTR = "custom-lvct-anniversaries";
 export const FACTS_SECTION_ATTR = "custom-lvct-facts";
+export const CHANNELS_SECTION_ATTR = "custom-lvct-channels-section";
+export const SOCIAL_PREFERENCES_SECTION_ATTR = "custom-lvct-social-preferences";
+export const PROMISES_SECTION_ATTR = "custom-lvct-promises";
 
 export type FactCategory = "quote" | "preference" | "background" | "fact";
 
@@ -252,6 +258,317 @@ export function parseFactsSectionMarkdown(markdown: string): PersonFactItem[] {
                 ...(isTaboo ? { isTaboo: true } : {}),
             });
         }
+    }
+    return items;
+}
+
+const CHANNEL_ICON_FALLBACK: Record<ChannelType, string> = {
+    phone: "📱",
+    wechat: "💬",
+    email: "✉️",
+    landline: "☎️",
+    im: "🗨️",
+    social: "🌐",
+    address: "📍",
+    custom: "🏷️",
+};
+
+/**
+ * 将多维通讯条目渲染为思源原生 Markdown 受控区块。
+ * 标题使用 ## 📞 通讯与联系方式，条目包含图标、类型标签、值与主条目标记，
+ * 末尾附带 HTML 注释 <!-- id:... --> 用于无损反向解析。
+ */
+export function channelsSectionMarkdown(channels: readonly ContactChannel[]): string {
+    if (!channels || channels.length === 0) return "";
+    const lines = ["## 📞 通讯与联系方式", ""];
+    for (const ch of channels) {
+        if (!ch || !ch.value?.trim()) continue;
+        const icon = (CHANNEL_TYPE_MAP[ch.type]?.icon) || CHANNEL_ICON_FALLBACK[ch.type] || "🏷️";
+        const typeLabel = CHANNEL_TYPE_MAP[ch.type]?.label || "联系方式";
+        const isDefaultLabel = !ch.label
+            || ch.label.trim() === typeLabel
+            || (ch.type === "phone" && (ch.label === "手机" || ch.label === "手机号"))
+            || (ch.type === "wechat" && (ch.label === "微信" || ch.label === "微信号"))
+            || (ch.type === "email" && (ch.label === "邮箱" || ch.label === "电子邮箱"))
+            || (ch.type === "address" && ch.label === "地址");
+        const tag = !isDefaultLabel ? ` [${ch.label.trim()}]` : "";
+        const primaryTag = ch.isPrimary ? " *(主)*" : "";
+        const idComment = ch.id ? ` <!-- id:${ch.id} -->` : "";
+        lines.push(`- ${icon} **${typeLabel}**${tag}：${ch.value.trim()}${primaryTag}${idComment}`);
+    }
+    if (lines.length <= 2) return "";
+    return lines.join("\n");
+}
+
+/**
+ * 反向解析：从文档正文的通讯与联系方式受控区块还原为 ContactChannel 列表。
+ * 具备高度容错性，即使用户手动在思源中增删改条目也能安全识别。
+ */
+export function parseChannelsSectionMarkdown(markdown: string): ContactChannel[] {
+    if (!markdown) return [];
+    const channels: ContactChannel[] = [];
+    const lines = markdown.split(/\r?\n/);
+
+    const iconToType: Record<string, ChannelType> = {
+        "📱": "phone",
+        "💬": "wechat",
+        "✉️": "email",
+        "☎️": "landline",
+        "🗨️": "im",
+        "🌐": "social",
+        "📍": "address",
+        "🏷️": "custom",
+    };
+
+    const labelToType: Record<string, ChannelType> = {
+        手机号: "phone",
+        手机: "phone",
+        微信号: "wechat",
+        微信: "wechat",
+        电子邮箱: "email",
+        邮箱: "email",
+        "电话/座机": "landline",
+        座机: "landline",
+        电话: "landline",
+        即时通讯: "im",
+        社交主页: "social",
+        社交: "social",
+        地址: "address",
+        常驻地: "address",
+        自定义: "custom",
+    };
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("- ")) continue;
+
+        const idMatch = trimmed.match(/<!--\s*id:([a-zA-Z0-9_-]+)\s*-->/);
+        const id = idMatch ? idMatch[1] : `chan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+        const cleanLine = trimmed.replace(/<!--\s*id:[a-zA-Z0-9_-]+\s*-->/, "").trim();
+
+        const match = cleanLine.match(/^- (?:([^\*]+?)\s+)?\*\*(.*?)\*\*(?:\s*\[(.*?)\])?[：:]\s*(.*?)$/);
+        if (match) {
+            const icon = match[1]?.trim();
+            const rawTypeStr = match[2]?.trim() || "";
+            const customLabel = match[3]?.trim();
+            let valueWithPrimary = match[4]?.trim() || "";
+
+            const isPrimary = /\*\(主\)\*|\(主\)|\[主\]/i.test(valueWithPrimary);
+            const value = valueWithPrimary.replace(/\s*(\*\(主\)\*|\(主\)|\[主\])\s*$/i, "").trim();
+
+            if (!value) continue;
+
+            let type: ChannelType = "custom";
+            if (icon && iconToType[icon]) {
+                type = iconToType[icon];
+            } else if (labelToType[rawTypeStr]) {
+                type = labelToType[rawTypeStr];
+            } else if (/phone|tel/i.test(rawTypeStr)) {
+                type = "phone";
+            } else if (/wechat|wx/i.test(rawTypeStr)) {
+                type = "wechat";
+            } else if (/mail/i.test(rawTypeStr)) {
+                type = "email";
+            } else if (/address|addr/i.test(rawTypeStr)) {
+                type = "address";
+            }
+
+            const label = customLabel || rawTypeStr || CHANNEL_TYPE_MAP[type]?.label || "联系方式";
+
+            channels.push({
+                id,
+                type,
+                label,
+                value,
+                ...(isPrimary ? { isPrimary: true } : {}),
+            });
+        }
+    }
+
+    return channels;
+}
+
+/**
+ * 将联系人自管社交偏好与交往忌口档案渲染为思源原生 Markdown 受控区块。
+ * 包含饮食、饮品、会面习惯与敏感雷区等红线标注，末尾附带 <!-- id:... --> 注释。
+ */
+export function socialPreferencesSectionMarkdown(items: readonly PersonSocialPreferenceItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 🌟 个人偏好与交往禁忌", ""];
+    for (const item of items) {
+        if (!item || !item.content?.trim()) continue;
+        const meta = getCategoryMeta(item.category);
+        const isTaboo = item.isTaboo || item.category === "taboos";
+        const icon = isTaboo ? "🚫" : meta.icon;
+        const tabooTag = isTaboo ? " *(忌口/雷区)*" : "";
+        const idComment = item.id ? ` <!-- id:${item.id} -->` : "";
+        lines.push(`- ${icon} **${meta.label}**：${item.content.trim()}${tabooTag}${idComment}`);
+    }
+    if (lines.length <= 2) return "";
+    return lines.join("\n");
+}
+
+/**
+ * 将双向承诺与信诺履约追踪记录渲染为思源原生 Markdown 受控区块。
+ * 区分“我承诺对方”与“对方承诺我”，以及待履行 - [ ] 与已兑现 - [x] 任务语法。
+ */
+export function promisesSectionMarkdown(items: readonly PersonPromiseItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 🤝 彼此承诺与信诺约定", ""];
+    for (const item of items) {
+        if (!item || !item.title?.trim()) continue;
+        const checked = item.status === "fulfilled" ? "[x]" : "[ ]";
+        const dirLabel = item.direction === "they_promised" ? "【对方承诺我】" : "【我承诺对方】";
+        const dateStr = item.promisedOn ? `${item.promisedOn} ` : "";
+        const dueStr = item.dueOn ? ` (约定：${item.dueOn})` : "";
+        const fulfilledStr = item.fulfilledOn ? ` (已兑现：${item.fulfilledOn})` : "";
+        const detailStr = item.detail ? ` —— ${cleanMarkdownLine(item.detail)}` : "";
+        const idComment = item.id ? ` <!-- id:${item.id} -->` : "";
+        lines.push(`- ${checked} ${dateStr}${dirLabel}${item.title.trim()}${detailStr}${dueStr}${fulfilledStr}${idComment}`);
+    }
+    if (lines.length <= 2) return "";
+    return lines.join("\n");
+}
+
+/**
+ * 反向解析：从文档正文的个人偏好受控区块还原为 PersonSocialPreferenceItem 列表（自愈读取）
+ */
+export function parseSocialPreferencesSectionMarkdown(markdown: string, personDocId: string): PersonSocialPreferenceItem[] {
+    if (!markdown) return [];
+    const items: PersonSocialPreferenceItem[] = [];
+    const lines = markdown.split(/\r?\n/);
+
+    const labelToCategory: Record<string, SocialPreferenceCategory> = {
+        "饮食偏好与忌口": "dietary",
+        "饮食偏好": "dietary",
+        "饮食忌口": "dietary",
+        "忌口": "dietary",
+        "茶酒咖啡饮品": "beverage",
+        "茶酒咖啡": "beverage",
+        "饮品偏好": "beverage",
+        "饮品": "beverage",
+        "会面与交往习惯": "habits",
+        "交往习惯": "habits",
+        "会面习惯": "habits",
+        "习惯": "habits",
+        "敏感话题与雷区": "taboos",
+        "敏感话题": "taboos",
+        "雷区": "taboos",
+        "禁忌": "taboos",
+    };
+
+    const iconToCategory: Record<string, SocialPreferenceCategory> = {
+        "🍲": "dietary",
+        "☕": "beverage",
+        "🤝": "habits",
+        "🚫": "taboos",
+    };
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("- ")) continue;
+
+        const idMatch = trimmed.match(/<!--\s*id:([a-zA-Z0-9_-]+)\s*-->/);
+        const id = idMatch ? idMatch[1] : newSocialPreferenceId();
+        const cleanLine = trimmed.replace(/<!--\s*id:[a-zA-Z0-9_-]+\s*-->/, "").trim();
+
+        const match = cleanLine.match(/^- (?:([^\*]+?)\s+)?\*\*(.*?)\*\*[：:]\s*(.*?)$/);
+        if (match) {
+            const icon = match[1]?.trim();
+            const label = match[2]?.trim();
+            let rawContent = match[3]?.trim() || "";
+
+            const isTaboo = /\*\(忌口\/雷区\)\*|\(忌口\/雷区\)|\(雷区\)|\[雷区\]/i.test(rawContent) || icon === "🚫" || label === "敏感话题与雷区";
+            const content = rawContent.replace(/\s*(\*\(忌口\/雷区\)\*|\(忌口\/雷区\)|\(雷区\)|\[雷区\])\s*$/i, "").trim();
+            if (!content) continue;
+
+            let category: SocialPreferenceCategory = "dietary";
+            if (icon && iconToCategory[icon]) category = iconToCategory[icon];
+            else if (label && labelToCategory[label]) category = labelToCategory[label];
+
+            items.push({
+                id,
+                personDocId,
+                category,
+                content,
+                isTaboo,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            });
+        }
+    }
+    return items;
+}
+
+/**
+ * 反向解析：从文档正文的信诺履约受控区块还原为 PersonPromiseItem 列表（自愈读取）
+ */
+export function parsePromisesSectionMarkdown(markdown: string, personDocId: string): PersonPromiseItem[] {
+    if (!markdown) return [];
+    const items: PersonPromiseItem[] = [];
+    const lines = markdown.split(/\r?\n/);
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("- [ ]") && !trimmed.startsWith("- [x]") && !trimmed.startsWith("- [X]")) continue;
+
+        const idMatch = trimmed.match(/<!--\s*id:([a-zA-Z0-9_-]+)\s*-->/);
+        const id = idMatch ? idMatch[1] : newPromiseId();
+        const cleanLine = trimmed.replace(/<!--\s*id:[a-zA-Z0-9_-]+\s*-->/, "").trim();
+
+        const isFulfilled = cleanLine.startsWith("- [x]") || cleanLine.startsWith("- [X]");
+        const rest = cleanLine.slice(5).trim();
+
+        const dateMatch = rest.match(/^(\d{4}-\d{2}-\d{2})\s+/);
+        const promisedOn = dateMatch ? dateMatch[1] : "";
+        let body = dateMatch ? rest.slice(dateMatch[0].length).trim() : rest;
+
+        let direction: PromiseDirection = "i_promised";
+        if (body.startsWith("【对方承诺我】")) {
+            direction = "they_promised";
+            body = body.slice("【对方承诺我】".length).trim();
+        } else if (body.startsWith("【我承诺对方】")) {
+            direction = "i_promised";
+            body = body.slice("【我承诺对方】".length).trim();
+        }
+
+        let dueOn: string | undefined;
+        const dueMatch = body.match(/\(约定[：:]\s*(\d{4}-\d{2}-\d{2})\)/);
+        if (dueMatch) {
+            dueOn = dueMatch[1];
+            body = body.replace(/\(约定[：:]\s*(\d{4}-\d{2}-\d{2})\)/, "").trim();
+        }
+
+        let fulfilledOn: string | undefined;
+        const fulMatch = body.match(/\(已兑现[：:]\s*(\d{4}-\d{2}-\d{2})\)/);
+        if (fulMatch) {
+            fulfilledOn = fulMatch[1];
+            body = body.replace(/\(已兑现[：:]\s*(\d{4}-\d{2}-\d{2})\)/, "").trim();
+        }
+
+        let title = body;
+        let detail: string | undefined;
+        if (body.includes(" —— ")) {
+            const parts = body.split(" —— ");
+            title = parts[0].trim();
+            detail = parts.slice(1).join(" —— ").trim();
+        }
+
+        if (!title) continue;
+
+        items.push({
+            id,
+            personDocId,
+            direction,
+            title,
+            ...(detail ? { detail } : {}),
+            promisedOn,
+            ...(dueOn ? { dueOn } : {}),
+            status: isFulfilled ? "fulfilled" : "pending",
+            ...(fulfilledOn ? { fulfilledOn } : {}),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        });
     }
     return items;
 }

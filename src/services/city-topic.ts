@@ -7,7 +7,6 @@ import { findCityTopicDocument, flushBlockIndex, setBlockAttrs, upsertMarkedBloc
 import { createDocWithMd } from "../api/client";
 import {
     buildCityTopicSectionMarkdown,
-    buildCityInitialDocumentMarkdown,
     CITY_TOPIC_ATTR,
     CITY_CONTACTS_SECTION_ATTR,
     extractCityOrganizations,
@@ -53,11 +52,12 @@ export async function syncCityTopicDocument(
             return { docId: existing.docId, created: false };
         }
 
-        // 不存在则新建文档：以正式城市名命名文档标题（如 /城市/深圳），下方挂载人脉受控区块
-        const initialDocMarkdown = buildCityInitialDocumentMarkdown(topicInput);
-        const hPath = `/城市/${cityName}`;
-        const newDocId = await createDocWithMd(input.notebookId, hPath, `${initialDocMarkdown}\n{: ${CITY_CONTACTS_SECTION_ATTR}="1"}`);
+        // 不存在则新建文档：以正式城市名命名文档标题（清洗 Windows 9 大非法字符），下方挂载人脉受控区块
+        const safeCityName = cityName.replace(/[/\\:<>|?*"~\p{Cc}\p{Cf}\r\n]+/gu, " ").trim().slice(0, 50) || "城市";
+        const hPath = `/城市/${safeCityName}`;
+        const newDocId = await createDocWithMd(input.notebookId, hPath, `# ${cityName}`);
         if (newDocId) {
+            await upsertMarkedBlock(newDocId, CITY_CONTACTS_SECTION_ATTR, sectionMarkdown);
             await setBlockAttrs(newDocId, {
                 [CITY_TOPIC_ATTR]: cityName,
                 "custom-lvct-created": String(Date.now()),
@@ -141,7 +141,8 @@ export async function createTripItineraryDoc(
     const cityName = input.city.trim();
     const targetDate = input.date || toLocalDateKey(new Date());
     const ctx = TRIP_CONTEXT_METAS.find((c) => c.id === input.context) ?? TRIP_CONTEXT_METAS[0];
-    const hpath = `/出差行程/${ctx.titlePrefix} · ${cityName} · ${targetDate}`;
+    const safeCityName = cityName.replace(/[/\\:<>|?*"~\p{Cc}\p{Cf}\r\n]+/gu, " ").trim().slice(0, 50) || "城市";
+    const hpath = `/出差行程/${ctx.titlePrefix} · ${safeCityName} · ${targetDate}`;
     const md = buildTripItineraryMarkdown({ ...input, city: cityName, date: targetDate });
 
     const docId = await createDocWithMd(notebookId, hpath, md);

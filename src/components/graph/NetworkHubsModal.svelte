@@ -69,7 +69,7 @@
         </div>
         <div class="metric-card">
             <span class="metric-title">{text("netHubsDensity", "网络连接密度")}</span>
-            <span class="metric-number ft__smaller" style="font-weight: 700; color: var(--b3-theme-on-surface-light);">
+            <span class="metric-number ft__smaller" style="font-weight: 700; color: var(--lvct-text-3);">
                 {(summary.density * 100).toFixed(1)}%
             </span>
         </div>
@@ -356,7 +356,7 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: var(--b3-theme-surface-lighter);
+        background: var(--lvct-border-subtle);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -433,14 +433,14 @@
         font-size: 10px;
         padding: 1px 6px;
         border-radius: 4px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
         font-weight: 500;
     }
 
     .arrow-sep {
         font-size: 10px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .card-bottom-actions {
@@ -448,7 +448,7 @@
         align-items: center;
         justify-content: flex-end;
         gap: 6px;
-        border-top: 1px dashed var(--b3-border-color);
+        border-top: 1px dashed var(--lvct-border-subtle);
         padding-top: 6px;
         margin-top: 2px;
     }
@@ -461,6 +461,6 @@
     .empty-state {
         text-align: center;
         padding: 40px 16px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 </style>

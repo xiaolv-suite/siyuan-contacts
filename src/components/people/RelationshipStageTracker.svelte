@@ -223,8 +223,8 @@
     .lvct-stage-tracker {
         margin: 14px 0;
         padding: 12px 14px;
-        background: var(--b3-theme-surface);
-        border: 1px solid var(--b3-theme-surface-lighter);
+        background: var(--lvct-bg-surface);
+        border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--b3-border-radius-b);
         display: flex;
         flex-direction: column;
@@ -259,11 +259,11 @@
         align-items: center;
         gap: 4px;
         padding: 4px 8px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-canvas);
+        border: 1px solid var(--lvct-border-subtle);
         border-radius: 6px;
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         flex-shrink: 0;
         position: relative;
     }
@@ -286,12 +286,12 @@
         line-height: 15px;
         text-align: center;
         border-radius: 50%;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface-light);
+        background: var(--lvct-border-subtle);
+        color: var(--lvct-text-3);
     }
 
     .stage-step-pill.active .step-num {
-        background: var(--b3-theme-primary);
+        background: var(--lvct-accent);
         color: var(--lvct-on-accent);
     }
 
@@ -299,14 +299,14 @@
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: var(--b3-theme-primary);
+        background: var(--lvct-accent);
     }
 
     .stage-step-line {
         flex: 1;
         min-width: 10px;
         height: 2px;
-        background: var(--b3-border-color);
+        background: var(--lvct-border-subtle);
         margin: 0 4px;
     }
 
@@ -315,9 +315,9 @@
         align-items: center;
         justify-content: space-between;
         padding: 8px 12px;
-        background: var(--b3-theme-background);
+        background: var(--lvct-bg-canvas);
         border-radius: 6px;
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         gap: 12px;
     }
 
@@ -343,7 +343,7 @@
     .guideline-label {
         font-size: 13px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .guideline-desc {
@@ -364,18 +364,18 @@
     }
 
     .cadence-title {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .cadence-val {
         font-weight: 600;
-        color: var(--b3-theme-primary);
+        color: var(--lvct-accent);
     }
 
     .stage-edit-form {
         padding: 10px 12px;
-        background: var(--b3-theme-background);
-        border: 1px dashed var(--b3-theme-primary-light);
+        background: var(--lvct-bg-canvas);
+        border: 1px dashed var(--lvct-accent-soft);
         border-radius: 6px;
         display: flex;
         flex-direction: column;
@@ -391,7 +391,7 @@
     .form-label {
         width: 70px;
         font-size: 12px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
     }
 
@@ -402,13 +402,13 @@
     }
 
     .stage-select-btn {
-        border: 1px solid var(--b3-border-color);
+        border: 1px solid var(--lvct-border-subtle);
         background: transparent;
         font-size: 12px;
         padding: 3px 8px;
         border-radius: 4px;
         cursor: pointer;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
@@ -439,7 +439,7 @@
         border: none;
         padding: 0;
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         cursor: pointer;
     }
 
@@ -448,7 +448,7 @@
         flex-direction: column;
         gap: 6px;
         padding-left: 12px;
-        border-left: 2px solid var(--b3-theme-surface-lighter);
+        border-left: 2px solid var(--lvct-border-subtle);
         margin-left: 4px;
     }
 
@@ -460,7 +460,7 @@
     }
 
     .history-date {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         display: flex;
         align-items: center;
         flex-shrink: 0;
@@ -469,15 +469,15 @@
     .history-badge {
         padding: 1px 6px;
         border-radius: 4px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-canvas);
+        border: 1px solid var(--lvct-border-subtle);
         font-size: 10px;
         font-weight: 600;
         flex-shrink: 0;
     }
 
     .history-note {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

@@ -134,7 +134,7 @@
                 <button
                     type="button"
                     class="b3-button b3-button--small b3-button--text"
-                    style="color: var(--b3-theme-primary);"
+                    style="color: var(--lvct-accent);"
                     onclick={() => {
                         onClose?.();
                         facade.openPersonDoc?.(createdDocInfo!.docId);

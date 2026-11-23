@@ -37,7 +37,12 @@ export function validatePersonName(name: string): string | null {
  * 将路径段内的半角斜杠安全转义为全角斜杠，防止思源文件树将复合名称（如 张三 / CTO）误切分为多级子目录。
  */
 export function sanitizeHPathSegment(segment: string): string {
-    return segment.trim().replace(/\//g, "／");
+    return segment
+        .trim()
+        .replace(/\//g, "／")
+        .replace(/[/\\:<>|?*"~\p{Cc}\p{Cf}\r\n]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 }
 
 export function documentHPath(...segments: readonly string[]): string {
@@ -65,19 +70,21 @@ export function resolveContactsRootSegments(settings: { notebookName?: string; r
 /** 统一小驴空间下归入 /03-小驴人脉/人物档案/<姓名>；独立笔记本保持兼容路径 */
 export function personDocumentHPath(settings: { notebookName: string; rootPath?: string }, personName: string): string {
     const rootSegs = resolveContactsRootSegments(settings);
+    const safePerson = sanitizeHPathSegment(personName) || "联系人";
     if (rootSegs.length > 0) {
-        return documentHPath(...rootSegs, "人物档案", sanitizeHPathSegment(personName));
+        return documentHPath(...rootSegs, "人物档案", safePerson);
     }
-    return documentHPath(settings.notebookName, personName);
+    return documentHPath(settings.notebookName, safePerson);
 }
 
 /** 统一小驴空间下归入 /03-小驴人脉/组织与机构/<组织名> */
 export function orgDocumentHPath(settings: { notebookName?: string; rootPath?: string }, orgName: string): string {
     const rootSegs = resolveContactsRootSegments(settings);
+    const safeOrg = sanitizeHPathSegment(orgName) || "机构";
     if (rootSegs.length > 0) {
-        return documentHPath(...rootSegs, "组织与机构", sanitizeHPathSegment(orgName));
+        return documentHPath(...rootSegs, "组织与机构", safeOrg);
     }
-    return documentHPath(orgName);
+    return documentHPath(safeOrg);
 }
 
 /** 统一小驴空间下为次级沉淀文档（简报/闪卡/人情账/周报/回顾/里程碑等）挂载 /03-小驴人脉 前缀 */
@@ -100,10 +107,13 @@ export function escapeMarkdown(text: string): string {
 
 /**
  * C-14：Markdown 链接标签文本转义。
- * 保证含 `[`、`]`、`\` 或换行的人名/组织名不会破坏 `[标签](siyuan://blocks/...)` 的 Markdown 链接语法结构。
+ * 保证含 `[`、`]`、`\`、单引号 `'` 或换行的人名/组织名不会破坏 `[标签](siyuan://blocks/...)` 或原生块引用 `(( id '标签' ))` 的语法结构。
  */
 export function escapeLinkLabel(value: string): string {
-    return value.trim().replace(/[\r\n]+/g, " ").replace(/([\\\[\]])/g, "\\$1");
+    return value.trim()
+        .replace(/[\r\n]+/g, " ")
+        .replace(/'/g, "’")
+        .replace(/([\\\[\]])/g, "\\$1");
 }
 
 export function markdownHeading(title: string): string {

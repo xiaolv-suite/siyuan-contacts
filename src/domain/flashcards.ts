@@ -167,10 +167,12 @@ export function buildFlashcardDocumentMarkdown(
     for (const card of cards) {
         lines.push(`### 🎴 ${card.title}`);
         lines.push("");
+        const cleanPrompt = card.prompt.replace(/\r?\n/g, " ").replace(/"/g, "&quot;");
         lines.push(card.prompt);
-        lines.push(`{: custom-riff-decks="${deckName}" }`);
+        lines.push(`{: custom-riff-title="${cleanPrompt}" }`);
         lines.push("?");
         lines.push(card.answer);
+        lines.push(`{: custom-riff-decks="${deckName}" }`);
         lines.push("");
     }
 
@@ -230,10 +232,12 @@ export function buildBatchFlashcardsDocumentMarkdown(
         for (const card of entry.cards) {
             lines.push(`### 🎴 ${card.title}（${cleanName}）`);
             lines.push("");
+            const cleanPrompt = card.prompt.replace(/\r?\n/g, " ").replace(/"/g, "&quot;");
             lines.push(card.prompt);
-            lines.push(`{: custom-riff-decks="${deckName}" }`);
+            lines.push(`{: custom-riff-title="${cleanPrompt}" }`);
             lines.push("?");
             lines.push(card.answer);
+            lines.push(`{: custom-riff-decks="${deckName}" }`);
             lines.push("");
         }
     }

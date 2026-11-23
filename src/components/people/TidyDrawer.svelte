@@ -261,7 +261,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        border-bottom: 1px solid var(--b3-border-color);
+        border-bottom: 1px solid var(--lvct-border-subtle);
         padding-bottom: 8px;
     }
 
@@ -333,7 +333,7 @@
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background: var(--b3-theme-surface-lighter);
+        background: var(--lvct-border-subtle);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -379,7 +379,7 @@
     }
 
     .sugg-label {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
     }
 
@@ -392,16 +392,16 @@
         display: inline-flex;
         align-items: center;
         gap: 3px;
-        background: var(--b3-theme-surface-lighter);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-border-subtle);
+        border: 1px solid var(--lvct-border-subtle);
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
     }
 
     .sugg-chip.is-adopted,
     .sugg-tag-chip.is-adopted {
-        background: color-mix(in srgb, var(--b3-theme-primary) 15%, transparent);
-        color: var(--b3-theme-primary);
-        border-color: var(--b3-theme-primary);
+        background: color-mix(in srgb, var(--lvct-accent) 15%, transparent);
+        color: var(--lvct-accent);
+        border-color: var(--lvct-accent);
         font-weight: 600;
     }
 
@@ -426,7 +426,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        border-top: 1px solid var(--b3-border-color);
+        border-top: 1px solid var(--lvct-border-subtle);
         padding-top: 10px;
         margin-top: 4px;
 
@@ -442,6 +442,6 @@
     .empty-state {
         text-align: center;
         padding: 40px 16px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 </style>

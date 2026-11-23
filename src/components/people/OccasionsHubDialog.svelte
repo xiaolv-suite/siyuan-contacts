@@ -450,7 +450,7 @@
         left: 8px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         pointer-events: none;
         display: flex;
         align-items: center;
@@ -549,7 +549,7 @@
         min-width: 28px;
         min-height: 28px;
         padding: 0;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         opacity: 0;
         border-radius: 50% !important;
         display: inline-flex;
@@ -589,7 +589,7 @@
         margin: 0;
         font-size: 14px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         word-break: break-word;
         overflow-wrap: break-word;
     }
@@ -597,7 +597,7 @@
     .occ-note {
         margin: 0;
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         font-style: italic;
         line-height: 1.5;
     }
@@ -609,7 +609,7 @@
         gap: 12px;
         flex-wrap: wrap;
         padding-top: 6px;
-        border-top: 1px dashed var(--b3-border-color);
+        border-top: 1px dashed var(--lvct-border-subtle);
     }
 
     .occ-attendees-left {
@@ -632,8 +632,8 @@
         align-items: center;
         gap: 6px;
         min-height: 28px;
-        background: var(--b3-theme-background);
-        border: 1px solid var(--b3-border-color);
+        background: var(--lvct-bg-canvas);
+        border: 1px solid var(--lvct-border-subtle);
         padding: 2px 10px;
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
@@ -642,16 +642,16 @@
     }
 
     .attendee-chip:hover {
-        border-color: var(--b3-theme-primary);
-        background: var(--b3-theme-surface-lighter);
+        border-color: var(--lvct-accent);
+        background: var(--lvct-border-subtle);
     }
 
     .attendee-avatar {
         width: 20px;
         height: 20px;
         border-radius: 50%;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface);
+        background: var(--lvct-border-subtle);
+        color: var(--lvct-text-2);
         font-size: 11px;
         font-weight: 600;
         display: flex;
@@ -661,7 +661,7 @@
 
     .attendee-name {
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .role-badge {
@@ -688,7 +688,7 @@
         justify-content: space-between;
         align-items: center;
         padding-top: 8px;
-        border-top: 1px solid var(--b3-border-color);
+        border-top: 1px solid var(--lvct-border-subtle);
         margin-top: 4px;
 
         .b3-button {

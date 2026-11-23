@@ -11,6 +11,8 @@ import { loadExchangeStore } from "../data/exchanges";
 import { loadAnniversaryStore } from "../data/anniversaries";
 import { loadPersonOrigin } from "../data/person-origins.ts";
 import { loadPersonKinships } from "../data/kinship.ts";
+import { loadSocialPreferencesStore } from "../data/social-preferences.ts";
+import { loadPromisesStore } from "../data/promises.ts";
 import { syncFollowUpTasksToDoc } from "./followup-sync";
 import { loadPersonFields } from "./person-fields";
 import type { Plugin } from "siyuan";
@@ -22,6 +24,9 @@ import {
     EXCHANGES_SECTION_ATTR,
     ANNIVERSARIES_SECTION_ATTR,
     FACTS_SECTION_ATTR,
+    CHANNELS_SECTION_ATTR,
+    SOCIAL_PREFERENCES_SECTION_ATTR,
+    PROMISES_SECTION_ATTR,
     profileSectionMarkdown,
     interactionSectionMarkdown,
     followupsSectionMarkdown,
@@ -30,9 +35,18 @@ import {
     relatedSectionMarkdown,
     buildFactsSectionMarkdown,
     parseFactsSectionMarkdown,
+    channelsSectionMarkdown,
+    parseChannelsSectionMarkdown,
+    socialPreferencesSectionMarkdown,
+    promisesSectionMarkdown,
+    parseSocialPreferencesSectionMarkdown,
+    parsePromisesSectionMarkdown,
     type PersonFactItem,
     type ProfileSectionDetails,
 } from "../domain/doc-section.ts";
+import type { ContactChannel } from "../domain/person-channels.ts";
+import type { PersonSocialPreferenceItem } from "../domain/social-preferences.ts";
+import type { PersonPromiseItem } from "../domain/promises.ts";
 
 export {
     RELATED_SECTION_ATTR,
@@ -42,6 +56,9 @@ export {
     EXCHANGES_SECTION_ATTR,
     ANNIVERSARIES_SECTION_ATTR,
     FACTS_SECTION_ATTR,
+    CHANNELS_SECTION_ATTR,
+    SOCIAL_PREFERENCES_SECTION_ATTR,
+    PROMISES_SECTION_ATTR,
     profileSectionMarkdown,
     interactionSectionMarkdown,
     followupsSectionMarkdown,
@@ -50,6 +67,12 @@ export {
     relatedSectionMarkdown,
     buildFactsSectionMarkdown,
     parseFactsSectionMarkdown,
+    channelsSectionMarkdown,
+    parseChannelsSectionMarkdown,
+    socialPreferencesSectionMarkdown,
+    promisesSectionMarkdown,
+    parseSocialPreferencesSectionMarkdown,
+    parsePromisesSectionMarkdown,
     type PersonFactItem,
 };
 
@@ -96,6 +119,63 @@ export async function syncPersonProfileDocSection(
             console.warn("[LvContacts] 人脉基本档案同步到正文未完成", err);
         }
     });
+}
+
+/** 同步某人物文档的正文多维通讯条目受控区块（真实落盘到思源笔记正文，受 withDocLock 保护） */
+export async function syncChannelsDocSection(
+    personDocId: string,
+    channels: readonly ContactChannel[],
+    options: { strict?: boolean } = {},
+): Promise<void> {
+    if (!personDocId) return;
+    return withDocLock(personDocId, async () => {
+        const existing = await readMarkedBlocks(personDocId, CHANNELS_SECTION_ATTR);
+        const markdown = channelsSectionMarkdown(channels);
+        if (existing.length === 0 && !markdown) return;
+        if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+        try {
+            await upsertMarkedBlock(personDocId, CHANNELS_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 通讯条目同步到正文未完成", err);
+        }
+    });
+}
+
+/** 从人物文档正文受控区块回读通讯条目（自愈回退机制） */
+export async function loadChannelsFromDoc(personDocId: string): Promise<ContactChannel[]> {
+    if (!personDocId) return [];
+    try {
+        const blocks = await readMarkedBlocks(personDocId, CHANNELS_SECTION_ATTR);
+        if (blocks.length === 0) return [];
+        return parseChannelsSectionMarkdown(contentWithoutIal(blocks[0].markdown));
+    } catch {
+        return [];
+    }
+}
+
+/** 从人物文档正文受控区块回读社交偏好与忌口（自愈回退机制） */
+export async function loadSocialPreferencesFromDoc(personDocId: string): Promise<PersonSocialPreferenceItem[]> {
+    if (!personDocId) return [];
+    try {
+        const blocks = await readMarkedBlocks(personDocId, SOCIAL_PREFERENCES_SECTION_ATTR);
+        if (blocks.length === 0) return [];
+        return parseSocialPreferencesSectionMarkdown(contentWithoutIal(blocks[0].markdown), personDocId);
+    } catch {
+        return [];
+    }
+}
+
+/** 从人物文档正文受控区块回读信诺约定（自愈回退机制） */
+export async function loadPromisesFromDoc(personDocId: string): Promise<PersonPromiseItem[]> {
+    if (!personDocId) return [];
+    try {
+        const blocks = await readMarkedBlocks(personDocId, PROMISES_SECTION_ATTR);
+        if (blocks.length === 0) return [];
+        return parsePromisesSectionMarkdown(contentWithoutIal(blocks[0].markdown), personDocId);
+    } catch {
+        return [];
+    }
 }
 
 /** 同步某人物文档的正文往来记录区块（真实落盘到思源笔记正文，受 withDocLock 互斥排队保护） */
@@ -171,6 +251,42 @@ export async function syncAnniversariesDocSection(plugin: Plugin, personDocId: s
     });
 }
 
+export async function syncSocialPreferencesDocSection(plugin: Plugin, personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
+    if (!personDocId) return;
+    return withDocLock(personDocId, async () => {
+        try {
+            const store = await loadSocialPreferencesStore(plugin);
+            const items = store.preferences[personDocId] ?? [];
+            const existing = await readMarkedBlocks(personDocId, SOCIAL_PREFERENCES_SECTION_ATTR);
+            const markdown = socialPreferencesSectionMarkdown(items);
+            if (existing.length === 0 && !markdown) return;
+            if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+            await upsertMarkedBlock(personDocId, SOCIAL_PREFERENCES_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 社交偏好同步到正文未完成", err);
+        }
+    });
+}
+
+export async function syncPromisesDocSection(plugin: Plugin, personDocId: string, options: { strict?: boolean } = {}): Promise<void> {
+    if (!personDocId) return;
+    return withDocLock(personDocId, async () => {
+        try {
+            const store = await loadPromisesStore(plugin);
+            const items = store.promises[personDocId] ?? [];
+            const existing = await readMarkedBlocks(personDocId, PROMISES_SECTION_ATTR);
+            const markdown = promisesSectionMarkdown(items);
+            if (existing.length === 0 && !markdown) return;
+            if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+            await upsertMarkedBlock(personDocId, PROMISES_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 信诺约定同步到正文未完成", err);
+        }
+    });
+}
+
 /** 读取人物文档中的谈资与关键事实（读取异常或存在多个受控块时显式抛错，禁止静默返回空数组导致后续写入覆盖） */
 export async function loadPersonFactsFromDoc(personDocId: string): Promise<PersonFactItem[]> {
     if (!personDocId) return [];
@@ -220,6 +336,7 @@ export async function syncFullPersonDocument(plugin: Plugin, person: ContactSumm
 
     await Promise.all([
         syncPersonProfileDocSection(person, { strict: true, plugin }),
+        syncChannelsDocSection(person.docId, person.channels || [], { strict: true }),
         syncInteractionDocSection(plugin, person.docId, { strict: true }),
         withDocLock(person.docId, async () => {
             await syncFollowUpTasksToDoc(plugin, person.docId).catch((e) => console.warn("[LvContacts] 原生跟进同步未完成:", e));
@@ -227,6 +344,8 @@ export async function syncFullPersonDocument(plugin: Plugin, person: ContactSumm
         syncPersonFieldsDocSection(person.docId, { strict: true }),
         syncExchangesDocSection(plugin, person.docId, { strict: true }),
         syncAnniversariesDocSection(plugin, person.docId, { strict: true }),
+        syncSocialPreferencesDocSection(plugin, person.docId, { strict: true }),
+        syncPromisesDocSection(plugin, person.docId, { strict: true }),
     ]);
 }
 

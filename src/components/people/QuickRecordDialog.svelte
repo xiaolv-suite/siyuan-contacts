@@ -73,7 +73,8 @@
         errorMessage = "";
         try {
             const targetDate = date || toLocalDateKey();
-            const occurredAt = new Date(`${targetDate}T12:00:00`).getTime();
+            const isToday = targetDate === toLocalDateKey();
+            const occurredAt = isToday ? Date.now() : new Date(`${targetDate}T12:00:00`).getTime();
             if (!interactionRecorded) {
                 const res = await recordInteractionWithResult(plugin, {
                     personDocId: person.docId,

@@ -132,7 +132,7 @@
 <style>
 .lvct-fu-group {
     margin-top: 8px;
-    border-top: 1px dashed var(--b3-border-color, rgba(0,0,0,0.08));
+    border-top: 1px dashed var(--lvct-border-subtle, rgba(0,0,0,0.08));
     padding-top: 8px;
 }
 .lvct-fu-group__summary {
@@ -148,13 +148,13 @@
     gap: 6px;
     margin: 6px 0 8px 0;
     padding-bottom: 6px;
-    border-bottom: 1px solid var(--b3-border-color, rgba(0,0,0,0.06));
+    border-bottom: 1px solid var(--lvct-border-subtle, rgba(0,0,0,0.06));
 }
 .lvct-fu-group__pill {
     padding: 3px 10px;
     font-size: 11px;
     border-radius: var(--lv-r-pill, 9999px);
-    color: var(--b3-theme-on-surface);
+    color: var(--lvct-text-2);
     background: transparent;
     opacity: 0.8;
     transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
@@ -230,7 +230,7 @@
     border-color: color-mix(in srgb, var(--lvct-success) 30%, transparent);
 }
 .lvct-fu-group__status--cancelled {
-    color: var(--b3-theme-on-surface-light);
+    color: var(--lvct-text-3);
     border-color: var(--lvct-border-subtle);
 }
 </style>

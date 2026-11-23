@@ -61,6 +61,18 @@ export async function updatePersonPromise(
     });
 }
 
+/** 彻底清理指定联系人的全部承诺，防孤儿数据残留 */
+export async function purgePersonPromises(plugin: Plugin, personDocId: string): Promise<void> {
+    if (!personDocId) return;
+    return withStoreLock(PERSON_PROMISES_STORAGE_KEY, async () => {
+        const store = normalizePromisesStoreForWrite(await loadJsonStrict(plugin, PERSON_PROMISES_STORAGE_KEY));
+        if (store.promises && personDocId in store.promises) {
+            delete store.promises[personDocId];
+            await saveJsonVerified(plugin, PERSON_PROMISES_STORAGE_KEY, store);
+        }
+    });
+}
+
 /** 移除指定承诺并落盘 */
 export async function removePersonPromise(
     plugin: Plugin,

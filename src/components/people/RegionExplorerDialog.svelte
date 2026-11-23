@@ -510,7 +510,7 @@
         height: 600px;
         max-height: 80vh;
         gap: 12px;
-        color: var(--b3-theme-on-background);
+        color: var(--lvct-text-1);
         outline: none;
     }
     .lvct-region-dialog__header {
@@ -519,7 +519,7 @@
         justify-content: space-between;
         gap: 16px;
         padding-bottom: 8px;
-        border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
     }
     .lvct-region-dialog__header-left {
         display: flex;
@@ -527,13 +527,13 @@
         gap: 10px;
     }
     :global(.lvct-region-dialog__header-icon) {
-        color: var(--b3-theme-primary);
+        color: var(--lvct-accent);
         flex-shrink: 0;
     }
     .lvct-region-dialog__subtitle {
         margin: 0;
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
     .lvct-region-dialog__header-search {
         min-width: 220px;
@@ -559,17 +559,17 @@
         font-variant-numeric: tabular-nums;
     }
     .lvct-region-dialog__chips-label {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
     .lvct-region-dialog__body {
         display: flex;
         flex: 1;
         min-height: 0;
         gap: 0;
-        border: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        border: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         border-radius: var(--lvct-r-card, 16px);
         overflow: hidden;
-        background: var(--lvct-bg-surface, var(--b3-theme-surface));
+        background: var(--lvct-bg-surface, var(--lvct-bg-surface));
         box-shadow: var(--lvct-shadow-card, 0 1px 4px rgba(0, 0, 0, 0.04));
     }
     /* 左侧城市列表 */
@@ -577,8 +577,8 @@
         width: 230px;
         display: flex;
         flex-direction: column;
-        border-right: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
-        background: var(--b3-theme-surface);
+        border-right: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
+        background: var(--lvct-bg-surface);
     }
     .lvct-region-dialog__sidebar-header {
         padding: 8px 12px;
@@ -586,8 +586,8 @@
         font-weight: 600;
         display: flex;
         justify-content: space-between;
-        background: var(--b3-theme-background);
-        border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        background: var(--lvct-bg-canvas);
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         font-variant-numeric: tabular-nums;
     }
     .lvct-region-dialog__city-list {
@@ -613,7 +613,7 @@
     }
     .lvct-region-dialog__city-item:hover {
         background: var(--lvct-bg-hover, rgba(0, 0, 0, 0.04));
-        color: var(--lvct-text-1, var(--b3-theme-on-background));
+        color: var(--lvct-text-1, var(--lvct-text-1));
     }
     .lvct-region-dialog__city-item--active {
         background: color-mix(in srgb, var(--lv-brand, #ea580c) 12%, var(--lvct-bg-surface));
@@ -628,11 +628,11 @@
     .lvct-region-dialog__city-name {
         font-size: 13px;
         font-weight: 600;
-        color: var(--lvct-text-1, var(--b3-theme-on-background));
+        color: var(--lvct-text-1, var(--lvct-text-1));
     }
     .lvct-region-dialog__city-meta {
         font-size: 11px;
-        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+        color: var(--lvct-text-3, var(--lvct-text-3));
     }
     .lvct-region-dialog__city-count {
         padding: 1px 6px;
@@ -645,7 +645,7 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
-        background: var(--b3-theme-background);
+        background: var(--lvct-bg-canvas);
         padding: 14px;
     }
     .lvct-region-dialog__target-header {
@@ -653,7 +653,7 @@
         justify-content: space-between;
         align-items: flex-start;
         padding-bottom: 12px;
-        border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        border-bottom: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         margin-bottom: 12px;
         gap: 12px;
     }
@@ -685,7 +685,7 @@
         }
     }
     .lvct-region-dialog__nearby-label {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
     .lvct-region-dialog__actions {
         display: flex;
@@ -708,7 +708,7 @@
     }
     .lvct-region-dialog__trip-contexts-label {
         font-size: 11px;
-        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+        color: var(--lvct-text-3, var(--lvct-text-3));
     }
     .lvct-region-dialog__context-chip {
         border-radius: var(--lv-r-pill, 9999px) !important;
@@ -726,8 +726,8 @@
     .lvct-region-dialog__person-card {
         padding: 10px 12px;
         border-radius: var(--lvct-r-card, 14px);
-        background: var(--lvct-bg-surface, var(--b3-theme-surface));
-        border: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+        background: var(--lvct-bg-surface, var(--lvct-bg-surface));
+        border: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         box-shadow: var(--lvct-shadow-card, 0 1px 3px rgba(0,0,0,0.04));
         display: flex;
         flex-direction: column;
@@ -781,7 +781,7 @@
         align-items: center;
         gap: 4px;
         font-size: 11px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         margin-top: 2px;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -789,12 +789,12 @@
     }
     .lvct-region-dialog__person-details {
         font-size: 11px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         display: flex;
         flex-direction: column;
         gap: 4px;
         padding-top: 6px;
-        border-top: 1px dashed var(--b3-theme-surface-lighter);
+        border-top: 1px dashed var(--lvct-border-subtle);
     }
     .lvct-region-dialog__person-detail-row {
         display: flex;
@@ -807,7 +807,7 @@
         align-items: center;
         justify-content: center;
         flex: 1;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         gap: 8px;
     }
     :global(.lvct-empty-state__icon) {
@@ -816,8 +816,8 @@
     .font-size-10 { font-size: 10px; }
     .font-size-11 { font-size: 11px; }
     .font-size-12 { font-size: 12px; }
-    :global(.lvct-text-primary) { color: var(--b3-theme-primary); }
-    .lvct-text-muted { color: var(--b3-theme-on-surface); }
+    :global(.lvct-text-primary) { color: var(--lvct-accent); }
+    .lvct-text-muted { color: var(--lvct-text-2); }
     @media (max-width: 640px) {
         .lvct-region-dialog {
             height: auto;
@@ -839,7 +839,7 @@
             width: 100%;
             max-height: 150px;
             border-right: none;
-            border-bottom: 1px solid var(--lvct-border-subtle, var(--b3-theme-surface-lighter));
+            border-bottom: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         }
     }
 </style>

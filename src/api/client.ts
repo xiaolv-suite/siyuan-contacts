@@ -122,10 +122,13 @@ function kernelPost<T>(
             };
 
             try {
+                // 关键优化：严禁对 AI 类长请求调用 fetchSyncPost，杜绝全屏 Requesting... 遮罩与假死；统一使用无遮罩的异步 fetchPost
+                const isAi = route.startsWith("/api/ai/") || route.includes("/ai/chat");
+
                 const isRealHost = typeof window !== "undefined"
                     && Boolean((window as unknown as { siyuan?: { ws?: unknown } }).siyuan?.ws)
                     && typeof siyuanSdk.fetchSyncPost === "function";
-                if (isRealHost) {
+                if (isRealHost && !isAi) {
                     (siyuanSdk.fetchSyncPost as (
                         url: string,
                         data?: unknown,
@@ -251,10 +254,17 @@ export { newNodeId };
 export interface NotebookMeta {
     id: string;
     name: string;
+    /** 思源加密笔记本在重启后处于 closed=true（密码未输入则锁定），内核不索引其块到 SQL。 */
+    closed?: boolean;
 }
 
 export async function listNotebooks(): Promise<NotebookMeta[]> {
     return kernelPost("/api/notebook/lsNotebooks", {}, { decode: (data) => decodeNotebookList("/api/notebook/lsNotebooks", data) });
+}
+
+/** 打开关闭的笔记本（加密笔记本输入密码后由内核自动解锁并开始索引）。 */
+export async function openNotebook(notebookId: string): Promise<void> {
+    await kernelPost("/api/notebook/openNotebook", { notebook: notebookId });
 }
 
 /** 思源在部分版本下 createNotebook 的返回值不是 ID，创建后统一重新列表获取（spike 结论） */

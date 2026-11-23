@@ -204,8 +204,9 @@ export async function appendFollowUpToDailyNote(
 export async function removeDailyNoteInteractionByEventId(eventId: string): Promise<boolean> {
     if (!eventId) return false;
     try {
+        const safeEventId = eventId.replace(/'/g, "''");
         const rows = await querySql<{ id: string }>(
-            `SELECT id FROM blocks WHERE ial LIKE '%custom-lvct-event-id="${eventId}"%' LIMIT 1`
+            `SELECT id FROM blocks WHERE ial LIKE '%custom-lvct-event-id="${safeEventId}"%' LIMIT 1`
         );
         if (!rows || rows.length === 0) return false;
         await deleteBlock(rows[0].id);
@@ -235,8 +236,9 @@ export async function updateDailyNoteInteractionByEventId(
 ): Promise<boolean> {
     if (!input.oldEventId) return false;
     try {
+        const safeOldId = input.oldEventId.replace(/'/g, "''");
         const rows = await querySql<{ id: string }>(
-            `SELECT id FROM blocks WHERE ial LIKE '%custom-lvct-event-id="${input.oldEventId}"%' LIMIT 1`
+            `SELECT id FROM blocks WHERE ial LIKE '%custom-lvct-event-id="${safeOldId}"%' LIMIT 1`
         );
         if (!rows || rows.length === 0) return false;
         const blockId = rows[0].id;

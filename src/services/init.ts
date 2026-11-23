@@ -6,7 +6,7 @@
  * 第二次撞同名笔记本"的卡死正是缺这条保证。
  * 识别现场只认「联系人总表」文档内的数据库块，绝不把同名笔记本里的无关数据库当自己的。
  */
-import { createDocWithMd, createNotebook, listNotebooks, newNodeId } from "../api/client";
+import { createDocWithMd, createNotebook, listNotebooks, newNodeId, openNotebook } from "../api/client";
 import { validateDocumentTitle, DEFAULT_CONTACTS_HUB_ROOT, isContactsHubNotebookName } from "../domain/format";
 import type { NotebookMeta } from "../api/client";
 import { countNotebookDocs, listNotebookDocs } from "../api/blocks";
@@ -74,6 +74,22 @@ export async function inspectWorkspace(notebookName: string): Promise<WorkspaceS
     if (titleError) throw new Error(titleError);
     const notebooks = (await listNotebooks()).filter((notebook) => notebook.name === name);
     if (notebooks.length === 0) return { ...EMPTY_SNAPSHOT };
+
+    // 2026-11-21 走查修复：加密笔记本在重启后处于 closed=true（密码未输入则锁定），内核不索引
+    // 其块到 SQL → querySql 返回空 → 插件误判"笔记本为空"而重建设施或报错。自动打开后重试。
+    for (const notebook of notebooks) {
+        if (notebook.closed) {
+            try {
+                await openNotebook(notebook.id);
+                // 等待内核索引完成（加密笔记本解锁后需要时间）
+                await new Promise((resolve) => setTimeout(resolve, 1200));
+            } catch {
+                throw new Error(
+                    `笔记本「${name}」已加密且处于锁定状态，无法自动打开。请先在思源左侧笔记本列表中点击该笔记本并输入密码解锁，再重试初始化。`,
+                );
+            }
+        }
+    }
 
     // 同名可能有多个：优先复用确实装着本插件半成品的那个（含宿主文档/数据库块）
     for (const candidate of notebooks) {
@@ -474,6 +490,21 @@ export async function initializeWorkspace(
     if (titleError) throw new Error(titleError);
 
     const snapshot = await inspectWorkspace(name);
+
+    // 2026-11-21 走查修复：与 inspectWorkspace 同样处理加密笔记本的 closed 态（幂等重入时也检查）
+    const allNotebooks = (await listNotebooks()).filter((notebook) => notebook.name === name);
+    for (const notebook of allNotebooks) {
+        if (notebook.closed) {
+            try {
+                await openNotebook(notebook.id);
+                await new Promise((resolve) => setTimeout(resolve, 1200));
+            } catch {
+                throw new Error(
+                    `笔记本「${name}」已加密且处于锁定状态，无法自动打开。请先在思源左侧笔记本列表中点击该笔记本并输入密码解锁，再重试初始化。`,
+                );
+            }
+        }
+    }
 
     let notebook: NotebookMeta;
     if (snapshot.notebook) {

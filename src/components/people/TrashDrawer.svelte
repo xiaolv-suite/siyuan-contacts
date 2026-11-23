@@ -306,7 +306,7 @@
         left: 8px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         pointer-events: none;
         display: flex;
         align-items: center;
@@ -331,7 +331,7 @@
         justify-content: space-between;
         padding: 12px 16px;
         background: var(--lvct-bg-surface);
-        border: 1px solid var(--lvct-border-subtle, var(--b3-border-color));
+        border: 1px solid var(--lvct-border-subtle, var(--lvct-border-subtle));
         border-radius: var(--lvct-r-card, 16px);
         box-shadow: var(--lvct-shadow-1, 0 2px 8px rgba(0, 0, 0, 0.06));
         gap: 12px;
@@ -369,8 +369,8 @@
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface);
+        background: var(--lvct-border-subtle);
+        color: var(--lvct-text-2);
         font-weight: 600;
         font-size: 14px;
         display: flex;
@@ -403,7 +403,7 @@
 
     .trash-item-name {
         font-size: 14px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .trash-days-pill {
@@ -459,7 +459,7 @@
         justify-content: space-between;
         align-items: center;
         padding-top: 8px;
-        border-top: 1px solid var(--b3-border-color);
+        border-top: 1px solid var(--lvct-border-subtle);
         margin-top: 4px;
     }
 </style>

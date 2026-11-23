@@ -349,7 +349,7 @@
         align-items: center;
         justify-content: center;
         font-size: 12px;
-        background: var(--b3-theme-background);
+        background: var(--lvct-bg-canvas);
         border: 1px solid var(--lvct-color-border-200, rgba(44, 28, 16, 0.05));
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         z-index: 1;
@@ -463,7 +463,7 @@
     .event-title {
         font-size: 13px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .event-detail {

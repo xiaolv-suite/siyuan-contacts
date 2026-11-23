@@ -31,13 +31,15 @@ export async function loadPersonInsights(
     const nameByDoc = new Map(roster.map((person) => [person.docId, person.name]));
     const currentName = nameByDoc.get(docId) || "";
     const backlinks = await findPersonBacklinks(docId, currentName).catch(() => [] as BacklinkMentionItem[]);
-    const coAttendance = buildCoAttendance(store.events, docId)
+    const tombstones = new Set(store.tombstones || []);
+    const liveEvents = store.events.filter((e) => !tombstones.has(e.id));
+    const coAttendance = buildCoAttendance(liveEvents, docId)
         .map((item) => ({ ...item, name: nameByDoc.get(item.otherDocId) ?? "" }))
         .filter((item) => item.name.length > 0);
     return {
-        timeline: buildTimeline(store.events, docId),
+        timeline: buildTimeline(liveEvents, docId),
         coAttendance,
-        totalEvents: store.events.filter((event) => event.personDocId === docId).length,
+        totalEvents: liveEvents.filter((event) => event.personDocId === docId).length,
         backlinks,
     };
 }

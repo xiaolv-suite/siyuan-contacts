@@ -39,26 +39,39 @@ function isCarrierMissing(error: unknown): boolean {
             && /resolve attribute view carrier:\s*block\s*\[[^\]]+\]\s*not found/i.test(error.responseMessage ?? ""));
 }
 
+let inFlightAnchorProbe: Promise<SettingsAnchorProbe> | null = null;
+
 /**
  * 只读核验设置中的四段原生锚点。先查宿主文档中的 AV 块，再调用 render，
  * 这样块已被删除时不会再次把失效 blockID 送进内核而触发 toast。
+ * 轨道 A：带 in-flight Promise 单飞守卫，防止并发重复探测。
  */
-export async function probeSettingsAnchor(settings: ContactsSettings): Promise<SettingsAnchorProbe> {
-    try {
-        parseRepairSettings(settings);
-        const notebooks = (await listNotebooks()).filter((notebook) => notebook.id === settings.notebookId);
-        if (notebooks.length !== 1) return { status: "missing", message: "人脉笔记本不存在或不唯一" };
-        const doc = await readNotebookDocument(settings.notebookId, settings.hostDocId);
-        if (!doc) return { status: "missing", message: "联系人总表文档已删除或不属于原笔记本" };
-        const blocks = await findAvBlocksInDoc(settings.hostDocId);
-        const matches = blocks.filter((block) => block.dbBlockId === settings.dbBlockId && block.avId === settings.avId);
-        if (matches.length !== 1) return { status: "missing", message: "属性视图载体块已删除、移动或 AV 标识不一致" };
-        await renderView(settings.avId, settings.dbBlockId);
-        return { status: "verified" };
-    } catch (error) {
-        if (isCarrierMissing(error)) return { status: "missing", message: "属性视图载体块已被删除或当前不可达" };
-        return { status: "unknown", message: error instanceof Error ? error.message : String(error) };
-    }
+export function probeSettingsAnchor(settings: ContactsSettings): Promise<SettingsAnchorProbe> {
+    if (inFlightAnchorProbe) return inFlightAnchorProbe;
+    const cleanup = () => {
+        inFlightAnchorProbe = null;
+    };
+    const task = (async (): Promise<SettingsAnchorProbe> => {
+        try {
+            parseRepairSettings(settings);
+            const notebooks = (await listNotebooks()).filter((notebook) => notebook.id === settings.notebookId);
+            if (notebooks.length !== 1) return { status: "missing", message: "人脉笔记本不存在或不唯一" };
+            const doc = await readNotebookDocument(settings.notebookId, settings.hostDocId);
+            if (!doc) return { status: "missing", message: "联系人总表文档已删除或不属于原笔记本" };
+            const blocks = await findAvBlocksInDoc(settings.hostDocId);
+            const matches = blocks.filter((block) => block.dbBlockId === settings.dbBlockId && block.avId === settings.avId);
+            if (matches.length !== 1) return { status: "missing", message: "属性视图载体块已删除、移动或 AV 标识不一致" };
+            await renderView(settings.avId, settings.dbBlockId);
+            return { status: "verified" };
+        } catch (error) {
+            if (isCarrierMissing(error)) return { status: "missing", message: "属性视图载体块已被删除或当前不可达" };
+            return { status: "unknown", message: error instanceof Error ? error.message : String(error) };
+        } finally {
+            cleanup();
+        }
+    })();
+    inFlightAnchorProbe = task;
+    return task;
 }
 
 function anchorsOf(settings: ContactsSettings): SettingsAnchors {

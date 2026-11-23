@@ -298,7 +298,7 @@
     .form-label {
         width: 70px;
         font-size: 12px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
     }
 
@@ -339,7 +339,7 @@
         gap: 6px;
         font-size: 12px;
         font-weight: 600;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
     }
 
     .cat-icon {
@@ -348,7 +348,7 @@
 
     .cat-count {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         font-weight: normal;
         font-variant-numeric: tabular-nums;
     }
@@ -420,7 +420,7 @@
 
     .pref-text {
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         line-height: 1.4;
         word-break: break-word;
     }

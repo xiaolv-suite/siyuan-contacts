@@ -221,7 +221,7 @@
 
     .control-label {
         font-size: 12px;
-        color: var(--lvct-text-3, var(--b3-theme-on-surface-light));
+        color: var(--lvct-text-3, var(--lvct-text-3));
         display: flex;
         align-items: center;
     }
@@ -234,7 +234,7 @@
         padding: 4px 12px;
         border-radius: var(--lv-r-pill, 9999px);
         cursor: pointer;
-        color: var(--lvct-text-2, var(--b3-theme-on-surface));
+        color: var(--lvct-text-2, var(--lvct-text-2));
         touch-action: manipulation;
         transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 

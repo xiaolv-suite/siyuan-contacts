@@ -1537,13 +1537,13 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                         </div>
                     {/if}
                     {#if digestDocInfo}
-                        <div class="lvct-week-glance__digest-notice fn__flex" style="align-items: center; justify-content: space-between; margin-top: 8px; padding: 6px 12px; background: color-mix(in srgb, var(--b3-theme-primary) 10%, var(--b3-theme-surface)); border: 1px solid color-mix(in srgb, var(--b3-theme-primary) 30%, transparent); border-radius: 6px; font-size: 12px;">
-                            <span style="color: var(--b3-theme-on-surface);">{text("dashDigestNotice", "📄 {week} 人脉周报 已生成至 {hpath}", { week: digestDocInfo.weekLabel, hpath: digestDocInfo.hpath })}</span>
+                        <div class="lvct-week-glance__digest-notice fn__flex" style="align-items: center; justify-content: space-between; margin-top: 8px; padding: 6px 12px; background: color-mix(in srgb, var(--lvct-accent) 10%, var(--lvct-bg-surface)); border: 1px solid color-mix(in srgb, var(--lvct-accent) 30%, transparent); border-radius: 6px; font-size: 12px;">
+                            <span style="color: var(--lvct-text-2);">{text("dashDigestNotice", "📄 {week} 人脉周报 已生成至 {hpath}", { week: digestDocInfo.weekLabel, hpath: digestDocInfo.hpath })}</span>
                             <div class="fn__flex" style="gap: 6px;">
                                 <button
                                     type="button"
                                     class="b3-button b3-button--text b3-button--small"
-                                    style="padding: 0 4px; font-size: 11.5px; color: var(--b3-theme-primary);"
+                                    style="padding: 0 4px; font-size: 11.5px; color: var(--lvct-accent);"
                                     onclick={() => {
                                         facade.openPersonDoc?.(digestDocInfo!.docId);
                                     }}
@@ -2102,7 +2102,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
 </div>
 
 {#if reviewOpen}
-    <LvctDialog title="交往回顾报表" wide onClose={() => (reviewOpen = false)}>
+    <LvctDialog title={text("dash.reviewReportTitle", "交往回顾报表")} closeLabel={text("dialog.close", "关闭")} wide onClose={() => (reviewOpen = false)}>
         <ReviewReportDialog
             i18n={facade.i18n}
             buildReport={(range) => facade.buildReviewReport(range.from, range.to)}

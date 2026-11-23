@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.13** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.13) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
+**Latest stable release: v0.7.14** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.14) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -19,7 +19,7 @@ English | [简体中文](README.md)
 
 ---
 
-## 🚀 What's New in v0.7.13 (Cumulative Updates)
+## 🚀 What's New in v0.7.14 (Cumulative Updates)
 
 - **First-Meeting Provenance & Introducer Network**: Tracks "Introduced by whom / Encounter occasion" directed links, rendering radial referral paths in Cytoscape graph view to uncover 1st-degree icebreaking mutual contacts;
 - **30-Second Pre-Meeting Brief Card**: Instant pre-meeting summary compiling shared organizations, recent interactions, social radar metrics, and outstanding promises, copyable as standard Markdown Callouts;

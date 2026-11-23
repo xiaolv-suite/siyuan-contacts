@@ -225,12 +225,12 @@
     }
 
     .preview-label {
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         flex-shrink: 0;
     }
 
     .preview-text {
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         font-style: italic;
         overflow: hidden;
         text-overflow: ellipsis;

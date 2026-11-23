@@ -50,7 +50,7 @@
         { key: "blue", label: "天蓝", bg: "var(--lvct-info, #0284c7)" },
         { key: "green", label: "青翠", bg: "var(--lvct-success, #10b981)" },
         { key: "purple", label: "浅紫", bg: "var(--lvct-accent, #8b5cf6)" },
-        { key: "default", label: "默认", bg: "var(--b3-theme-surface-lighter)" },
+        { key: "default", label: "默认", bg: "var(--lvct-border-subtle)" },
     ];
 
     async function handleAdd() {
@@ -391,22 +391,22 @@
     }
 
     .memo-card--warm {
-        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 8%, var(--b3-theme-surface));
+        background: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 8%, var(--lvct-bg-surface));
         border-color: color-mix(in srgb, var(--lv-heat-cool, #f59e0b) 28%, transparent);
     }
 
     .memo-card--blue {
-        background: color-mix(in srgb, var(--lvct-info, #0284c7) 8%, var(--b3-theme-surface));
+        background: color-mix(in srgb, var(--lvct-info, #0284c7) 8%, var(--lvct-bg-surface));
         border-color: color-mix(in srgb, var(--lvct-info, #0284c7) 28%, transparent);
     }
 
     .memo-card--green {
-        background: color-mix(in srgb, var(--lvct-success, #10b981) 8%, var(--b3-theme-surface));
+        background: color-mix(in srgb, var(--lvct-success, #10b981) 8%, var(--lvct-bg-surface));
         border-color: color-mix(in srgb, var(--lvct-success, #10b981) 28%, transparent);
     }
 
     .memo-card--purple {
-        background: color-mix(in srgb, var(--lvct-accent, #8b5cf6) 8%, var(--b3-theme-surface));
+        background: color-mix(in srgb, var(--lvct-accent, #8b5cf6) 8%, var(--lvct-bg-surface));
         border-color: color-mix(in srgb, var(--lvct-accent, #8b5cf6) 28%, transparent);
     }
 
@@ -421,14 +421,14 @@
         border: none;
         padding: 2px;
         cursor: pointer;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         display: flex;
         align-items: center;
         border-radius: 4px;
     }
 
     .pin-btn.is-pinned {
-        color: var(--b3-theme-primary);
+        color: var(--lvct-accent);
     }
 
     .memo-actions {
@@ -464,7 +464,7 @@
 
     .memo-body {
         font-size: 12px;
-        color: var(--b3-theme-on-surface);
+        color: var(--lvct-text-2);
         line-height: 1.5;
         white-space: pre-wrap;
         word-break: break-word;

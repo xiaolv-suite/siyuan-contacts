@@ -31,6 +31,14 @@ import type { ViewPreferences } from "../domain/preferences";
 import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 import { toLocalDateKey } from "../domain/date-key.ts";
 import { lvEcosystem } from "../libs/lv-notice-kit";
+// DL2 阶段0：生态统一「外观与动效」偏好分组（庆祝/吉祥物/光效可关）
+import { createLvUiPrefsSection } from "../libs/lv-ui-prefs";
+
+/** 挂载生态外观偏好分组（svelte action：随通用面板挂载/卸载） */
+function mountLvUiPrefsSectionAction(node: HTMLElement) {
+    node.appendChild(createLvUiPrefsSection());
+    return {};
+}
 
     let {
         facade,
@@ -1413,6 +1421,9 @@ import { lvEcosystem } from "../libs/lv-notice-kit";
                             {draft.onboardingDismissed ? text("onboardingReopen", "重新显示引导") : text("onboardingAlreadyVisible", "当前已显示")}
                         </button>
                     </div>
+
+                    <!-- DL2 阶段0：生态统一外观与动效偏好分组 -->
+                    <div class="lvct-settings__row" use:mountLvUiPrefsSectionAction></div>
 
                     <div class="lvct-settings__actions">
                         <button class="b3-button b3-button--outline" onclick={savePreferences} disabled={savingPreferences || !preferencesDirty} title={!preferencesDirty ? "当前没有待保存的偏好修改" : undefined}>

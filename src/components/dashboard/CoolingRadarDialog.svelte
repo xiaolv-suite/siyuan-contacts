@@ -104,7 +104,7 @@
         </div>
         <div class="metric-card">
             <span class="metric-title">{text("coolingCoolTitle", "微凉轻度逾期")}</span>
-            <span class="metric-number" style="color: var(--b3-theme-primary); display: inline-flex; align-items: center; gap: 4px;">
+            <span class="metric-number" style="color: var(--lvct-accent); display: inline-flex; align-items: center; gap: 4px;">
                 <Wind size={16} />
                 {coolCount}
             </span>
@@ -349,7 +349,7 @@
         left: 8px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         pointer-events: none;
     }
 
@@ -435,7 +435,7 @@
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: var(--b3-theme-surface-lighter);
+        background: var(--lvct-border-subtle);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -468,13 +468,13 @@
         font-size: 10px;
         padding: 1px 5px;
         border-radius: 4px;
-        background: var(--b3-theme-surface-lighter);
-        color: var(--b3-theme-on-surface-light);
+        background: var(--lvct-border-subtle);
+        color: var(--lvct-text-3);
     }
 
     .org-line {
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
         margin-top: 1px;
     }
 
@@ -500,7 +500,7 @@
         flex-direction: column;
         gap: 2px;
         font-size: 11px;
-        color: var(--b3-theme-on-surface-light);
+        color: var(--lvct-text-3);
     }
 
     .rhythm-item {
@@ -519,7 +519,7 @@
     .cooling-card-actions {
         display: flex;
         justify-content: flex-end;
-        border-top: 1px dashed var(--b3-border-color);
+        border-top: 1px dashed var(--lvct-border-subtle);
         padding-top: 6px;
         margin-top: 2px;
     }

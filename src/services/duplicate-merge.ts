@@ -28,6 +28,7 @@ import { ORG_MEMBERSHIP_STORAGE_KEY, loadOrgMembershipStore } from "../data/org-
 import { ANNIVERSARIES_STORAGE_KEY, loadAnniversaryStoreStrict } from "../data/anniversaries.ts";
 import { PERSON_PROMISES_STORAGE_KEY, loadPromisesStoreStrict } from "../data/promises.ts";
 import { PERSON_KINSHIP_STORAGE_KEY, loadKinshipStoreStrict } from "../data/kinship.ts";
+import type { KinshipMemberItem } from "../domain/kinship.ts";
 import { PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, loadSocialPreferencesStoreStrict } from "../data/social-preferences.ts";
 import { PERSON_SCRATCHPAD_STORAGE_KEY, loadScratchpadStoreStrict } from "../data/person-scratchpad.ts";
 import { ITINERARIES_STORAGE_KEY, loadItinerariesStoreStrict } from "../data/itineraries.ts";
@@ -264,21 +265,55 @@ export async function executeContactMerge(
         if (secondaryKinships && secondaryKinships.length > 0) {
             const primaryList = store.kinships[primary.docId] ? [...store.kinships[primary.docId]] : [];
             for (const k of secondaryKinships) {
+                // 次人物与主人物代表同一人，两实体间的关联或自引用不能迁移为主人物的亲属
+                if (k.linkedDocId === primary.docId || k.linkedDocId === secondary.docId) {
+                    continue;
+                }
                 if (!primaryList.some((item) => item.id === k.id || (item.name === k.name && item.role === k.role))) {
                     primaryList.push({ ...k, personDocId: primary.docId });
                     migrated.kinships += 1;
                 }
             }
-            store.kinships[primary.docId] = primaryList;
+            if (primaryList.length > 0) {
+                store.kinships[primary.docId] = primaryList;
+            } else {
+                delete store.kinships[primary.docId];
+            }
             delete store.kinships[secondary.docId];
             changed = true;
         }
-        for (const list of Object.values(store.kinships)) {
+        for (const [docId, list] of Object.entries(store.kinships)) {
+            const nextList: KinshipMemberItem[] = [];
+            const seen = new Set<string>();
             for (const item of list) {
                 if (item.linkedDocId === secondary.docId) {
+                    if (docId === primary.docId) {
+                        // 主人物原本记录了次人物（自己与自己的关系），合并后直接剔除
+                        changed = true;
+                        continue;
+                    }
                     item.linkedDocId = primary.docId;
                     changed = true;
                 }
+                // 剔除任何人物指向自身的自引用关系
+                if (item.linkedDocId && item.linkedDocId === docId) {
+                    changed = true;
+                    continue;
+                }
+                // 去重：同一列表中指向同一个 linkedDocId 且 role 相同的冗余项
+                const dedupeKey = item.linkedDocId ? `${item.role}:${item.linkedDocId}` : `${item.role}:${item.name}`;
+                if (seen.has(dedupeKey)) {
+                    changed = true;
+                    continue;
+                }
+                seen.add(dedupeKey);
+                nextList.push(item);
+            }
+            if (nextList.length > 0) {
+                store.kinships[docId] = nextList;
+            } else {
+                delete store.kinships[docId];
+                changed = true;
             }
         }
         if (changed) {

@@ -32,7 +32,10 @@ export interface OrganizationDossierInput {
 export const ORG_DOSSIER_ATTR = "custom-lvct-org-dossier";
 
 function escapeLinkLabel(text: string): string {
-    return text.replace(/[\[\]]/g, "").trim();
+    return text.replace(/[\r\n]+/g, " ")
+        .replace(/'/g, "’")
+        .replace(/[\[\]]/g, "")
+        .trim();
 }
 
 function cleanLine(text: string | undefined): string {
@@ -57,13 +60,22 @@ function formatMemberDetails(m: OrgMemberDossierItem): string {
     return parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
 }
 
-function renderDepartmentTreeLines(depts: readonly OrganizationDepartmentItem[], indent = "  "): string[] {
+function renderDepartmentTreeLines(
+    depts: readonly OrganizationDepartmentItem[],
+    indent = "  ",
+    depth = 0,
+    visited = new Set<string>()
+): string[] {
+    if (depth > 12) return [];
     const lines: string[] = [];
     for (const d of depts) {
         if (!d.name.trim()) continue;
+        const nameKey = d.id || d.name.trim();
+        if (visited.has(nameKey)) continue;
+        visited.add(nameKey);
         lines.push(`${indent}- ${cleanLine(d.name)}`);
-        if (d.children && d.children.length > 0) {
-            lines.push(...renderDepartmentTreeLines(d.children, `${indent}  `));
+        if (d.children && d.children.length > 0 && depth < 12) {
+            lines.push(...renderDepartmentTreeLines(d.children, `${indent}  `, depth + 1, visited));
         }
     }
     return lines;

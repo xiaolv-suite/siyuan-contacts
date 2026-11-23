@@ -64,6 +64,18 @@ export async function updatePersonSocialPreference(
     });
 }
 
+/** 彻底清理指定联系人的社交偏好与忌口记录，防孤儿数据残留 */
+export async function purgePersonSocialPreferences(plugin: Plugin, personDocId: string): Promise<void> {
+    if (!personDocId) return;
+    return withStoreLock(PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, async () => {
+        const store = normalizeSocialPreferencesStoreForWrite(await loadJsonStrict(plugin, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY));
+        if (store.preferences && personDocId in store.preferences) {
+            delete store.preferences[personDocId];
+            await saveJsonVerified(plugin, PERSON_SOCIAL_PREFERENCES_STORAGE_KEY, store);
+        }
+    });
+}
+
 /** 移除指定偏好忌口并落盘 */
 export async function removePersonSocialPreference(
     plugin: Plugin,
