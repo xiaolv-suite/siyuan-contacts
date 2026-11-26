@@ -101,7 +101,11 @@ export function buildContactWritePlan(
     const group = draft.group.trim();
     const tags = normalizedTags(draft.tags);
     const birthday = draft.birthday.trim();
-    const birthdayMs = birthday ? birthdayToMs(birthday) : null;
+    // 遵循 DATA-CONTRACT §1：常规农历日期仍按 YYYY-MM-DD 毫秒保存以保证 summaryFromRow 无损回读；
+    // 仅当公历日历校验不通过（如农历二月廿九/三十）且 isLunar=true 时，按农历换算编码避免被抹空。
+    const birthdayMs = birthday
+        ? (birthdayToMs(birthday) ?? (draft.isLunar ? birthdayToMs(birthday, true) : null))
+        : null;
 
     add("phone", phone, phone.length > 0);
     add("email", email, email.length > 0);

@@ -212,11 +212,35 @@ export function useCloseGuard(item: CloseGuardItem): (close: () => void) => Prom
 
 export type CloseGuardChoice = "save" | "discard" | "cancel";
 
+const activeCloseGuardCleanups = new Set<() => void>();
+
+/** 插件卸载或清理 UI 资源时，强制收起残留关闭守卫浮层并恢复背景 DOM 的 inert/aria-hidden 状态 */
+export function disposeActiveCloseGuards(): void {
+    for (const cleanup of [...activeCloseGuardCleanups]) {
+        try { cleanup(); } catch {}
+    }
+    activeCloseGuardCleanups.clear();
+    if (typeof document === "undefined") return;
+    const leftovers = document.querySelectorAll(".lvct-closeguard");
+    if (leftovers.length > 0) {
+        for (const el of leftovers) el.remove();
+        for (const child of document.body.children) {
+            if (child instanceof HTMLElement) {
+                child.removeAttribute("inert");
+                if (child.getAttribute("aria-hidden") === "true") {
+                    child.removeAttribute("aria-hidden");
+                }
+            }
+        }
+    }
+}
+
 /** 三选一弹窗（DOM 直挂 body，带 lvct-dialog-root 令牌根）。Esc/遮罩 = 取消。只出选择，不执行保存。 */
 function openGuardDialog(summary: { changes: string[]; canSave: boolean }): Promise<CloseGuardChoice> {
     return new Promise((resolve) => {
         const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         let finished = false;
+        let cleanupRef: (() => void) | null = null;
         const onKeydown = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
                 event.preventDefault();
@@ -250,6 +274,7 @@ function openGuardDialog(summary: { changes: string[]; canSave: boolean }): Prom
         const finish = (choice: CloseGuardChoice) => {
             if (finished) return;
             finished = true;
+            if (cleanupRef) activeCloseGuardCleanups.delete(cleanupRef);
             document.removeEventListener("keydown", onKeydown, true);
             for (const item of isolatedSiblings) {
                 if (!item.element.isConnected) continue;
@@ -266,6 +291,8 @@ function openGuardDialog(summary: { changes: string[]; canSave: boolean }): Prom
             if (previousActive?.isConnected) queueMicrotask(() => previousActive.focus());
             resolve(choice);
         };
+        cleanupRef = () => finish("cancel");
+        activeCloseGuardCleanups.add(cleanupRef);
 
         const overlay = document.createElement("div");
         overlay.className = "lvct-dialog-root lvct-closeguard";

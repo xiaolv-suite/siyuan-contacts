@@ -24,8 +24,50 @@ import type { ImportMapping } from "../domain/import.ts";
 import { writeImportFields } from "./import";
 import type { ImportQueueControl } from "./import";
 import { discoverAllImportCandidates } from "./import-scan";
+import { loadPersonNote, savePersonNote } from "./person-note";
+import { loadPersonFields, savePersonFields } from "./person-fields";
 
 const BIND_CHUNK = ATTRIBUTE_VIEW_BATCH_SIZE;
+
+function newFieldUuidV4(): string {
+    if (typeof globalThis.crypto?.randomUUID === "function") {
+        return globalThis.crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
+
+async function persistImportedDocExtras(docId: string, contact: VCardContact): Promise<void> {
+    const note = contact.note?.trim() ?? "";
+    if (note) {
+        const currentNote = await loadPersonNote(docId);
+        if (!currentNote) {
+            await savePersonNote(docId, note, currentNote);
+        }
+    }
+    const entries: Array<{ label: string; value: string }> = [];
+    if (contact.org?.trim()) entries.push({ label: "组织/公司", value: contact.org.trim() });
+    if (contact.department?.trim()) entries.push({ label: "部门", value: contact.department.trim() });
+    if (contact.title?.trim()) entries.push({ label: "职位", value: contact.title.trim() });
+    if (entries.length > 0) {
+        const state = await loadPersonFields(docId);
+        const nextItems = [...state.snapshot.items];
+        let changed = false;
+        for (const entry of entries) {
+            const exists = nextItems.some((item) => item.kind === "entry" && item.label === entry.label && item.value === entry.value);
+            if (!exists) {
+                nextItems.push({ id: newFieldUuidV4(), kind: "entry", label: entry.label, value: entry.value });
+                changed = true;
+            }
+        }
+        if (changed) {
+            await savePersonFields(docId, { ...state.snapshot, items: nextItems }, state);
+        }
+    }
+}
 
 export interface VcfImportPlan {
     contact: VCardContact;
@@ -107,7 +149,9 @@ export async function buildVcfImportPlan(settings: ContactsSettings, text: strin
         const draft: ContactDraft = {
             ...emptyDraft(), name: contact.name, phone: contact.phone, email: contact.email,
             wechat: contact.wechat ?? "",
-            website: contact.website, birthday: contact.birthday, isLunar: contact.isLunar, tags: [...contact.tags],
+            website: contact.website, birthday: contact.birthday, isLunar: contact.isLunar,
+            group: contact.group ?? "",
+            tags: [...contact.tags],
         };
         return {
             contact,
@@ -259,6 +303,7 @@ async function importVcfContactsLocked(
                 results.push(vcfResult(item.planIndex, item.plan, "unknown", reason, failedFields));
                 continue;
             }
+            await persistImportedDocExtras(item.docId, item.plan.contact);
             report.imported += 1;
             results.push(vcfResult(item.planIndex, item.plan, "imported"));
         } catch (error) {
@@ -340,6 +385,7 @@ async function retryVcfContactsLocked(
                 const reason = `字段写入失败：${report.unresolved.map((failure) => `${failure.label}（${failure.message}）`).join("、")}`;
                 results.push(vcfResult(planIndex, plan, "unknown", reason, nextFailedFields));
             } else {
+                await persistImportedDocExtras(docId, plan.contact);
                 results.push(vcfResult(planIndex, plan, "imported"));
             }
         } catch (error) {

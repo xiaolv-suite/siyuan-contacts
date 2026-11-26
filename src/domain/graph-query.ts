@@ -3,7 +3,7 @@ import { secondDegreeGraphIds, shortestGraphPath } from "./graph-path.ts";
 import type { GraphNode, PersonGraph } from "./graph.ts";
 import type { ContactSummary } from "./person.ts";
 import type { OrgMembership } from "./org-membership.ts";
-import type { GraphQueryKind } from "./graph-export.ts";
+import type { GraphQueryKind } from "./graph-types.ts";
 import type { InteractionEvent } from "./interactions.ts";
 import type { PersonOrigin } from "./person-origin.ts";
 

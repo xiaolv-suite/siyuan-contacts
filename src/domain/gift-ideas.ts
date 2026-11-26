@@ -309,8 +309,6 @@ export function normalizeGiftIdeaStore(raw: unknown): GiftIdeaStore {
                 createdAt,
                 updatedAt,
             });
-
-            if (validList.length >= MAX_GIFT_IDEAS_PER_PERSON) break;
         }
 
         if (validList.length > 0) ideas[docId] = validList;

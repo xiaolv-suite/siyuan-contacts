@@ -2,7 +2,7 @@ import type { ContactsSettings } from "./domain/model";
 import type { ContactSummary } from "./domain/person";
 import type { DashboardData, DashboardOptions } from "./services/dashboard";
 import type { CaptureOptions, CapturePreview, CaptureResult } from "./services/capture";
-import type { AiExtractOutcome, AiExtractionConfirmation } from "./services/ai-extract";
+import type { AiExtractOutcome, AiExtractionConfirmation } from "./domain/ai-extract-types";
 import type { AiPreflight, AiPreflightOptions } from "./domain/ai-preflight";
 import type { PersonInsights } from "./services/insights";
 import type { FieldMapPatch, FieldRebuildPreview, SettingsRebindPreview, SettingsAnchorPatch, SettingsHealth } from "./services/settings-health";
@@ -20,13 +20,15 @@ import type { AnchorScanOptions, AnchorScanResult, InitProgressStep, WorkspaceSn
 import type { CreatePersonExchangeInput, ExchangePatch, ExchangeRecord, ExchangeStatus } from "./services/exchanges";
 import type { PersonIdentityResolution as AliasResolution, PersonAlias } from "./services/person-aliases";
 import type { WorkspaceState } from "./domain/workspace-state";
+import type { ContactsPluginContext } from "./core/context";
 
+export type { ContactsPluginContext };
 export type WorkbenchView = "home" | "people" | "graph" | "orgs" | "settings";
 
 /**
  * 插件实例暴露给组件层的结构化视图（避免组件 import 插件入口造成循环依赖）。
  */
-export interface ContactsPluginFacade {
+export interface ContactsPluginFacade extends ContactsPluginContext {
     readonly i18n?: Readonly<Record<string, string>>;
     readonly settings: ContactsSettings | null;
     readonly workspaceState: WorkspaceState;
@@ -66,11 +68,18 @@ export interface ContactsPluginFacade {
     /** 联系人多通讯条目与多维度资料条目：保存至思源文档属性 custom-lvct-channels */
     savePersonChannels?(personDocId: string, channels: import("./domain/person-channels").ContactChannel[]): Promise<void>;
     loadPersonChannels?(personDocId: string): Promise<import("./domain/person-channels").ContactChannel[]>;
+    /** 联系人结构化常住地与籍贯：保存至思源文档属性 custom-lv-locations 并同步正文基本档案 */
+    savePersonLocations?(personDocId: string, locations: import("./domain/china-regions").ContactLocations): Promise<void>;
+    loadPersonLocations?(personDocId: string): Promise<import("./domain/china-regions").ContactLocations>;
     /** 联系人实体名片照片：保存至思源文档属性 custom-lvct-business-card */
     savePersonBusinessCard?(personDocId: string, cardDataUrl: string): Promise<void>;
     loadPersonBusinessCard?(personDocId: string): Promise<string>;
     syncPersonDocument?(person: ContactSummary): Promise<void>;
     backfillDataSovereignty?(options?: { onProgress?: (current: number, total: number, docId: string) => void }): Promise<{ total: number; success: number; failed: number }>;
+    /** 老数据一键迁入「一人一档」思源文档（Dry-Run 预检 / 分批幂等执行 / 30 天备份回滚） */
+    previewOneDocMigration?(): Promise<import("./domain/one-doc-migration").OneDocMigrationDryRun>;
+    executeOneDocMigration?(options?: { chunkSize?: number; onProgress?: (current: number, total: number, docId: string) => void }): Promise<import("./domain/one-doc-migration").OneDocMigrationResult>;
+    rollbackOneDocMigration?(): Promise<import("./domain/one-doc-migration").OneDocMigrationRollbackResult>;
     inspectLegacyPersonNote(personDocId: string): Promise<import("./domain/person-note").LegacyPersonNoteSnapshot>;
     detachLegacyPersonNote(personDocId: string, expected: import("./domain/person-note").LegacyPersonNoteSnapshot): Promise<void>;
     /** 原生人物文档中的可重复资料条目与两层分组；不投影主联系方式。 */
@@ -108,12 +117,13 @@ export interface ContactsPluginFacade {
     importMigrationBundle(text: string): Promise<MigrationImportResult>;
     /** 全生态联合灾备数据转储与恢复切面 (lvBackup) */
     dumpData?(): Promise<Record<string, unknown>>;
-    restoreData?(data: Record<string, unknown>): Promise<boolean>;
+    restoreData?(data: Record<string, unknown> | string): Promise<boolean>;
     /** 获取全生态协同状态指示徽章文案 (lvEcosystem) */
     getEcosystemStatusBadgeText?(): string;
     /** 小驴罗盘相关操作与状态 (lvLaunchpad) */
     getFollowupDueCount?(): number;
     openContactsView?(): void;
+    openWorkbench?(view?: WorkbenchView): void;
     handleQuickAction?(action: string): void;
     /** Mobile Spec v1：关闭移动端全屏工作台 Dialog（下拉手势/罗盘返回共用出口） */
     closeWorkbenchDialog?(): void;
@@ -150,7 +160,7 @@ export interface ContactsPluginFacade {
     /** E-33：联系人软删除回收站（Trash & Soft Delete Buffer） */
     removeContactToTrash?(person: import("./domain/person").ContactSummary): Promise<void>;
     listTrash?(): Promise<import("./domain/trash").TrashContactEntry[]>;
-    restoreContactFromTrash?(entryId: string): Promise<{ docId: string; itemId: string; name: string }>;
+    restoreContactFromTrash?(entryId: string): Promise<{ docId: string; itemId: string; name: string; warnings?: string[] }>;
     emptyTrash?(): Promise<void>;
     /** E-31 重复联系人字段级安全合并并迁移关联自管数据 */
     executeContactMerge?(plan: import("./domain/duplicate-merge").ContactMergePlan): Promise<import("./services/duplicate-merge").ExecuteMergeResult>;

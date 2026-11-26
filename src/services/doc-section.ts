@@ -13,6 +13,10 @@ import { loadPersonOrigin } from "../data/person-origins.ts";
 import { loadPersonKinships } from "../data/kinship.ts";
 import { loadSocialPreferencesStore } from "../data/social-preferences.ts";
 import { loadPromisesStore } from "../data/promises.ts";
+import { loadPersonProjectsStore, markPersonProjectsDocSyncPending } from "../data/projects.ts";
+import { loadTopicsStore } from "../data/topics.ts";
+import { loadGiftIdeaStore } from "../data/gift-ideas.ts";
+import { loadScratchpadStore } from "../data/person-scratchpad.ts";
 import { syncFollowUpTasksToDoc } from "./followup-sync";
 import { loadPersonFields } from "./person-fields";
 import type { Plugin } from "siyuan";
@@ -27,6 +31,10 @@ import {
     CHANNELS_SECTION_ATTR,
     SOCIAL_PREFERENCES_SECTION_ATTR,
     PROMISES_SECTION_ATTR,
+    PROJECTS_SECTION_ATTR,
+    TOPICS_SECTION_ATTR,
+    GIFT_IDEAS_SECTION_ATTR,
+    SCRATCHPAD_SECTION_ATTR,
     profileSectionMarkdown,
     interactionSectionMarkdown,
     followupsSectionMarkdown,
@@ -41,12 +49,18 @@ import {
     promisesSectionMarkdown,
     parseSocialPreferencesSectionMarkdown,
     parsePromisesSectionMarkdown,
+    projectsSectionMarkdown,
+    parseProjectsSectionMarkdown,
+    topicsSectionMarkdown,
+    giftIdeasSectionMarkdown,
+    scratchpadSectionMarkdown,
     type PersonFactItem,
     type ProfileSectionDetails,
 } from "../domain/doc-section.ts";
 import type { ContactChannel } from "../domain/person-channels.ts";
 import type { PersonSocialPreferenceItem } from "../domain/social-preferences.ts";
 import type { PersonPromiseItem } from "../domain/promises.ts";
+import type { PersonProjectItem } from "../domain/projects.ts";
 
 export {
     RELATED_SECTION_ATTR,
@@ -59,6 +73,10 @@ export {
     CHANNELS_SECTION_ATTR,
     SOCIAL_PREFERENCES_SECTION_ATTR,
     PROMISES_SECTION_ATTR,
+    PROJECTS_SECTION_ATTR,
+    TOPICS_SECTION_ATTR,
+    GIFT_IDEAS_SECTION_ATTR,
+    SCRATCHPAD_SECTION_ATTR,
     profileSectionMarkdown,
     interactionSectionMarkdown,
     followupsSectionMarkdown,
@@ -73,6 +91,11 @@ export {
     promisesSectionMarkdown,
     parseSocialPreferencesSectionMarkdown,
     parsePromisesSectionMarkdown,
+    projectsSectionMarkdown,
+    parseProjectsSectionMarkdown,
+    topicsSectionMarkdown,
+    giftIdeasSectionMarkdown,
+    scratchpadSectionMarkdown,
     type PersonFactItem,
 };
 
@@ -88,7 +111,7 @@ function contentWithoutIal(markdown: string): string {
 /** 同步某人物文档的正文基本资料档案区块（真实落盘到思源笔记正文，受 withDocLock 保护） */
 export async function syncPersonProfileDocSection(
     person: ContactSummary,
-    options: { strict?: boolean; plugin?: Plugin } = {},
+    options: { strict?: boolean; plugin?: Plugin; onIntent?: (markdown: string) => void | Promise<void> } = {},
 ): Promise<void> {
     if (!person.docId) return;
     return withDocLock(person.docId, async () => {
@@ -113,6 +136,7 @@ export async function syncPersonProfileDocSection(
         if (existing.length === 0 && !markdown) return;
         if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
         try {
+            await options.onIntent?.(markdown);
             await upsertMarkedBlock(person.docId, PROFILE_SECTION_ATTR, markdown, existing[0]?.id);
         } catch (err) {
             if (options.strict) throw err;
@@ -287,6 +311,135 @@ export async function syncPromisesDocSection(plugin: Plugin, personDocId: string
     });
 }
 
+export interface SyncProjectsDocResult {
+    synced: boolean;
+    docSyncPending: boolean;
+    warning?: string;
+}
+
+/** 同步某人物文档的「协作项目与主题」受控区块（custom-lv-projects-section，受 withDocLock 保护） */
+export async function syncProjectsDocSection(
+    plugin: Plugin,
+    personDocId: string,
+    options: { strict?: boolean; items?: readonly PersonProjectItem[]; onIntent?: (markdown: string) => void | Promise<void> } = {},
+): Promise<SyncProjectsDocResult> {
+    if (!personDocId) return { synced: true, docSyncPending: false };
+    return withDocLock(personDocId, async () => {
+        try {
+            const store = await loadPersonProjectsStore(plugin);
+            const items = options.items ?? (store.projects[personDocId] ?? []);
+            const existing = await readMarkedBlocks(personDocId, PROJECTS_SECTION_ATTR);
+            const markdown = projectsSectionMarkdown(items);
+            if (existing.length === 0 && !markdown) {
+                if (store.docSyncPending?.[personDocId]) {
+                    await markPersonProjectsDocSyncPending(plugin, personDocId, false).catch(() => {});
+                }
+                return { synced: true, docSyncPending: false };
+            }
+            if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) {
+                if (store.docSyncPending?.[personDocId]) {
+                    await markPersonProjectsDocSyncPending(plugin, personDocId, false).catch(() => {});
+                }
+                return { synced: true, docSyncPending: false };
+            }
+            await options.onIntent?.(markdown);
+            await upsertMarkedBlock(personDocId, PROJECTS_SECTION_ATTR, markdown, existing[0]?.id);
+            if (store.docSyncPending?.[personDocId]) {
+                await markPersonProjectsDocSyncPending(plugin, personDocId, false).catch(() => {});
+            }
+            return { synced: true, docSyncPending: false };
+        } catch (err) {
+            await markPersonProjectsDocSyncPending(plugin, personDocId, true).catch(() => {});
+            if (options.strict) throw err;
+            const detail = err instanceof Error ? err.message : String(err);
+            const warning = `协作项目本地记录已更新，但同步思源正文区块失败（已标记待对账）：${detail}`;
+            console.warn("[LvContacts]", warning, err);
+            return { synced: false, docSyncPending: true, warning };
+        }
+    });
+}
+
+/** 从人物文档正文受控区块回读「协作项目与主题」（支持双向读写一致与文档自愈恢复） */
+export async function loadProjectsFromDoc(personDocId: string): Promise<PersonProjectItem[]> {
+    if (!personDocId) return [];
+    const blocks = await readMarkedBlocks(personDocId, PROJECTS_SECTION_ATTR);
+    if (blocks.length > 1) throw new Error("存在多个协作项目标记区块，未自动读取；请先核对文档");
+    if (blocks.length === 0) return [];
+    return parseProjectsSectionMarkdown(contentWithoutIal(blocks[0].markdown), personDocId);
+}
+
+/** 同步会面谈资与备忘到人物正文受控区块 */
+export async function syncTopicsDocSection(
+    plugin: Plugin,
+    personDocId: string,
+    options: { strict?: boolean; onIntent?: (markdown: string) => void | Promise<void> } = {},
+): Promise<void> {
+    if (!personDocId) return;
+    return withDocLock(personDocId, async () => {
+        try {
+            const store = await loadTopicsStore(plugin);
+            const items = store.topics[personDocId] ?? [];
+            const existing = await readMarkedBlocks(personDocId, TOPICS_SECTION_ATTR);
+            const markdown = topicsSectionMarkdown(items);
+            if (existing.length === 0 && !markdown) return;
+            if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+            await options.onIntent?.(markdown);
+            await upsertMarkedBlock(personDocId, TOPICS_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 会面谈资同步到正文未完成", err);
+        }
+    });
+}
+
+/** 同步礼物点子与偏好到人物正文受控区块 */
+export async function syncGiftIdeasDocSection(
+    plugin: Plugin,
+    personDocId: string,
+    options: { strict?: boolean; onIntent?: (markdown: string) => void | Promise<void> } = {},
+): Promise<void> {
+    if (!personDocId) return;
+    return withDocLock(personDocId, async () => {
+        try {
+            const store = await loadGiftIdeaStore(plugin);
+            const items = store.ideas[personDocId] ?? [];
+            const existing = await readMarkedBlocks(personDocId, GIFT_IDEAS_SECTION_ATTR);
+            const markdown = giftIdeasSectionMarkdown(items);
+            if (existing.length === 0 && !markdown) return;
+            if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+            await options.onIntent?.(markdown);
+            await upsertMarkedBlock(personDocId, GIFT_IDEAS_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 礼物点子同步到正文未完成", err);
+        }
+    });
+}
+
+/** 同步闪念速记便签到人物正文受控区块 */
+export async function syncScratchpadDocSection(
+    plugin: Plugin,
+    personDocId: string,
+    options: { strict?: boolean; onIntent?: (markdown: string) => void | Promise<void> } = {},
+): Promise<void> {
+    if (!personDocId) return;
+    return withDocLock(personDocId, async () => {
+        try {
+            const store = await loadScratchpadStore(plugin);
+            const items = store.notes[personDocId] ?? [];
+            const existing = await readMarkedBlocks(personDocId, SCRATCHPAD_SECTION_ATTR);
+            const markdown = scratchpadSectionMarkdown(items);
+            if (existing.length === 0 && !markdown) return;
+            if (existing.length === 1 && contentWithoutIal(existing[0].markdown) === markdown) return;
+            await options.onIntent?.(markdown);
+            await upsertMarkedBlock(personDocId, SCRATCHPAD_SECTION_ATTR, markdown, existing[0]?.id);
+        } catch (err) {
+            if (options.strict) throw err;
+            console.warn("[LvContacts] 闪念便签同步到正文未完成", err);
+        }
+    });
+}
+
 /** 读取人物文档中的谈资与关键事实（读取异常或存在多个受控块时显式抛错，禁止静默返回空数组导致后续写入覆盖） */
 export async function loadPersonFactsFromDoc(personDocId: string): Promise<PersonFactItem[]> {
     if (!personDocId) return [];
@@ -346,6 +499,10 @@ export async function syncFullPersonDocument(plugin: Plugin, person: ContactSumm
         syncAnniversariesDocSection(plugin, person.docId, { strict: true }),
         syncSocialPreferencesDocSection(plugin, person.docId, { strict: true }),
         syncPromisesDocSection(plugin, person.docId, { strict: true }),
+        syncProjectsDocSection(plugin, person.docId, { strict: true }),
+        syncTopicsDocSection(plugin, person.docId, { strict: true }),
+        syncGiftIdeasDocSection(plugin, person.docId, { strict: true }),
+        syncScratchpadDocSection(plugin, person.docId, { strict: true }),
     ]);
 }
 

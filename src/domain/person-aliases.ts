@@ -1,19 +1,9 @@
 import { parseStoreRecords, StoreIntegrityError } from "./store-integrity.ts";
-import type { ContactSummary } from "./person.ts";
+import { normalizeAliasKey } from "./alias-core.ts";
+import type { PersonAlias, PersonAliasStore } from "./alias-core.ts";
 
-export interface PersonAlias {
-    id: string;
-    personDocId: string;
-    alias: string;
-    createdAt: number;
-    updatedAt: number;
-}
-
-export interface PersonAliasStore {
-    schemaVersion: 1;
-    aliases: PersonAlias[];
-    tombstones?: string[];
-}
+export { normalizeAliasKey };
+export type { PersonAlias, PersonAliasStore };
 
 export type AliasResolution =
     | { status: "missing" }
@@ -31,10 +21,6 @@ export type PersonAliasAppendResult =
 const ID_PATTERN = /^\d{14}-[0-9a-z]{7}$/;
 const HONORIFIC_PATTERN = /^[\u4e00-\u9fff]{1,4}(总|老板|经理|主管|主任|老师|先生|女士|总监|董事长|校长|院长|局长|部长|秘书|助理)$/;
 const STANDALONE_TITLE_PATTERN = /^(老板|经理|主管|主任|老师|先生|女士|总监|董事长|校长|院长|局长|部长|秘书|助理)$/;
-
-export function normalizeAliasKey(alias: string): string {
-    return alias.trim().toLocaleLowerCase();
-}
 
 export function validatePersonAlias(alias: string, personDocId: string): string[] {
     const trimmed = alias.trim();
@@ -132,7 +118,7 @@ export function resolvePersonAlias(store: PersonAliasStore, alias: string): Alia
     return { status: "resolved", personDocId: personDocIds[0], alias: matches[0].alias };
 }
 
-export function resolvePersonIdentity(store: PersonAliasStore, people: readonly ContactSummary[], name: string): PersonIdentityResolution {
+export function resolvePersonIdentity(store: PersonAliasStore, people: readonly { docId: string; name: string }[], name: string): PersonIdentityResolution {
     const key = normalizeAliasKey(name);
     if (!key) return { status: "missing" };
     const aliasIds = new Set(store.aliases.filter((entry) => normalizeAliasKey(entry.alias) === key).map((entry) => entry.personDocId));

@@ -12,6 +12,11 @@ import { escapeLinkLabel } from "./format.ts";
 import { CHANNEL_TYPE_MAP, type ChannelType, type ContactChannel } from "./person-channels.ts";
 import { getCategoryMeta, newSocialPreferenceId, type PersonSocialPreferenceItem, type SocialPreferenceCategory } from "./social-preferences.ts";
 import { newPromiseId, type PersonPromiseItem, type PromiseDirection } from "./promises.ts";
+import { formatContactLocation, type ContactLocations } from "./china-regions.ts";
+import { newProjectId, getProjectStatusMeta, type PersonProjectItem, type ProjectStatus } from "./projects.ts";
+import type { PersonTopicItem } from "./topics.ts";
+import type { GiftIdeaItem } from "./gift-ideas.ts";
+import type { PersonScratchpadItem } from "./person-scratchpad.ts";
 
 export const RELATED_SECTION_ATTR = "custom-lvct-related";
 export const INTERACTIONS_SECTION_ATTR = "custom-lvct-interactions";
@@ -23,6 +28,10 @@ export const FACTS_SECTION_ATTR = "custom-lvct-facts";
 export const CHANNELS_SECTION_ATTR = "custom-lvct-channels-section";
 export const SOCIAL_PREFERENCES_SECTION_ATTR = "custom-lvct-social-preferences";
 export const PROMISES_SECTION_ATTR = "custom-lvct-promises";
+export const PROJECTS_SECTION_ATTR = "custom-lv-projects-section";
+export const TOPICS_SECTION_ATTR = "custom-lv-topics-section";
+export const GIFT_IDEAS_SECTION_ATTR = "custom-lv-gift-ideas-section";
+export const SCRATCHPAD_SECTION_ATTR = "custom-lv-scratchpad-section";
 
 export type FactCategory = "quote" | "preference" | "background" | "fact";
 
@@ -56,6 +65,7 @@ export interface ProfileSectionDetails {
         name: string;
         linkedDocId?: string;
     }[];
+    locations?: ContactLocations | null;
 }
 
 export function profileSectionMarkdown(person: ContactSummary, details?: ProfileSectionDetails): string {
@@ -67,6 +77,11 @@ export function profileSectionMarkdown(person: ContactSummary, details?: Profile
         const bdayStr = person.isLunar ? `${person.birthday}（农历）` : person.birthday;
         lines.push(`- **生日**：${bdayStr}`);
     }
+    const locations = details?.locations ?? person.locations;
+    const residentText = formatContactLocation(locations?.resident);
+    const hometownText = formatContactLocation(locations?.hometown);
+    if (residentText) lines.push(`- **常住地**：${residentText}`);
+    if (hometownText) lines.push(`- **籍贯**：${hometownText}`);
     if (person.group) lines.push(`- **分组**：${person.group}`);
     if (person.tags && person.tags.length > 0) lines.push(`- **标签**：${person.tags.map((t) => `#${t}`).join(" ")}`);
     if (person.profile) {
@@ -572,3 +587,139 @@ export function parsePromisesSectionMarkdown(markdown: string, personDocId: stri
     }
     return items;
 }
+
+/**
+ * 将「协作项目与主题」渲染为思源原生 Markdown 受控区块（custom-lv-projects-section）。
+ * 保持可读性且支持双向无损解析与用户手工编辑兼容。
+ */
+export function projectsSectionMarkdown(items: readonly PersonProjectItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 📁 协作项目与主题", ""];
+    for (const item of items) {
+        if (!item || !item.title?.trim()) continue;
+        const meta = getProjectStatusMeta(item.status);
+        const cleanTitle = cleanMarkdownLine(item.title);
+        const roleStr = item.role?.trim() ? ` （角色：${cleanMarkdownLine(item.role)}）` : "";
+        const docStr = item.docId ? ` · ((${item.docId} '关联文档'))` : "";
+        const noteStr = item.note?.trim() ? ` —— ${cleanMarkdownLine(item.note)}` : "";
+        const idComment = item.id ? ` <!-- id:${item.id} -->` : "";
+        lines.push(`- **${meta.label}**：${cleanTitle}${roleStr}${docStr}${noteStr}${idComment}`);
+    }
+    if (lines.length <= 2) return "";
+    return lines.join("\n");
+}
+
+/**
+ * 反向解析：从人物文档正文的「协作项目与主题」受控区块还原为 PersonProjectItem 列表。
+ * 兼容插件写入格式与用户手工在思源正文增删改后的 Markdown 条目。
+ */
+export function parseProjectsSectionMarkdown(markdown: string, personDocId: string): PersonProjectItem[] {
+    if (!markdown) return [];
+    const items: PersonProjectItem[] = [];
+    const lines = markdown.split(/\r?\n/);
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("- ")) continue;
+
+        const idMatch = trimmed.match(/<!--\s*id:([a-zA-Z0-9_-]+)\s*-->/);
+        const id = idMatch ? idMatch[1] : newProjectId();
+        let body = trimmed.replace(/<!--\s*id:[a-zA-Z0-9_-]+\s*-->/, "").slice(2).trim();
+
+        let status: ProjectStatus = "active";
+        const colonStatusMatch = body.match(/^(?:\*\*)?(进行中|已结项|已归档)(?:\*\*)?[：:]\s*/);
+        const bracketStatusMatch = body.match(/^(?:(?:🚀|✅|📦)\s*)?(?:\*\*)?\[(进行中|已结项|已归档)\](?:\*\*)?\s*/);
+        const statusMatch = colonStatusMatch ?? bracketStatusMatch;
+        if (statusMatch) {
+            const label = statusMatch[1];
+            if (label === "已结项") status = "completed";
+            else if (label === "已归档") status = "archived";
+            else status = "active";
+            body = body.slice(statusMatch[0].length).trim();
+        }
+
+        let note: string | undefined;
+        const noteSepIdx = body.lastIndexOf(" —— ");
+        if (noteSepIdx > 0) {
+            note = body.slice(noteSepIdx + 4).replace(/\s*<br\s*\/?>\s*/gi, "\n").trim() || undefined;
+            body = body.slice(0, noteSepIdx).trim();
+        }
+
+        let docId: string | undefined;
+        const refMatch = body.match(/\s*·\s*\(\((\d{14}-[0-9a-z]{7})(?:\s+'[^']*')?\)\)\s*$/);
+        if (refMatch) {
+            docId = refMatch[1];
+            body = body.slice(0, refMatch.index).trim();
+        } else {
+            const uriMatch = body.match(/\s*·\s*\[[^\]]*\]\(siyuan:\/\/blocks\/(\d{14}-[0-9a-z]{7})\)\s*$/);
+            if (uriMatch) {
+                docId = uriMatch[1];
+                body = body.slice(0, uriMatch.index).trim();
+            }
+        }
+
+        let role: string | undefined;
+        const roleMatch = body.match(/\s*[（(]角色[：:]\s*([^）)]+)[）)]\s*$/);
+        if (roleMatch) {
+            role = roleMatch[1].trim() || undefined;
+            body = body.slice(0, roleMatch.index).trim();
+        }
+
+        const title = body.replace(/^\*\*(.*)\*\*$/, "$1").trim();
+        if (!title) continue;
+
+        items.push({
+            id,
+            personDocId,
+            title,
+            ...(docId ? { docId } : {}),
+            status,
+            ...(role ? { role } : {}),
+            ...(note ? { note } : {}),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        });
+    }
+    return items;
+}
+
+/** 将会面谈资与备忘渲染为思源受控区块（custom-lv-topics-section） */
+export function topicsSectionMarkdown(items: readonly PersonTopicItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 💬 会面谈资与备忘", ""];
+    for (const item of items) {
+        if (!item || !item.text?.trim()) continue;
+        const idComment = item.id ? ` <!-- id:${item.id} -->` : "";
+        lines.push(`- ${cleanMarkdownLine(item.text)}${idComment}`);
+    }
+    return lines.length > 2 ? lines.join("\n") : "";
+}
+
+/** 将礼物点子与偏好渲染为思源受控区块（custom-lv-gift-ideas-section） */
+export function giftIdeasSectionMarkdown(items: readonly GiftIdeaItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 🎁 礼物点子与偏好", ""];
+    for (const item of items) {
+        if (!item || !item.title?.trim()) continue;
+        const typeTag = item.type === "idea" ? "送礼点子" : "喜好偏好";
+        const priceTag = item.priceEstimate !== undefined ? ` · 预算¥${item.priceEstimate}` : "";
+        const occTag = item.targetOccasion ? ` · ${cleanMarkdownLine(item.targetOccasion)}` : "";
+        const idComment = item.id ? ` <!-- id:${item.id} -->` : "";
+        lines.push(`- [${typeTag}] ${cleanMarkdownLine(item.title)}${priceTag}${occTag}${idComment}`);
+    }
+    return lines.length > 2 ? lines.join("\n") : "";
+}
+
+/** 将闪念速记便签渲染为思源受控区块（custom-lv-scratchpad-section） */
+export function scratchpadSectionMarkdown(items: readonly PersonScratchpadItem[]): string {
+    if (!items || items.length === 0) return "";
+    const lines = ["## 📝 闪念速记便签", ""];
+    for (const item of items) {
+        if (!item || !item.content?.trim()) continue;
+        const pinTag = item.pinned ? "[置顶] " : "";
+        const idComment = item.id ? ` <!-- id:${item.id} -->` : "";
+        lines.push(`- ${pinTag}${cleanMarkdownLine(item.content)}${idComment}`);
+    }
+    return lines.length > 2 ? lines.join("\n") : "";
+}
+

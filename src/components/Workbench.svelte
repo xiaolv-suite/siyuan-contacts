@@ -16,6 +16,7 @@
     import LvctIcon from "./LvctIcon.svelte";
     import SettingsView from "./SettingsView.svelte";
     import { getContext, onDestroy, onMount, tick } from "svelte";
+    import { CONTACTS_CONTEXT_KEY, type ContactsPluginContext } from "../core/context";
     import { translateText } from "../domain/translation";
     import { subscribeDataChangedDebounced, subscribePersonNavigation, subscribeWorkbenchNavigation } from "../libs/data-events";
     import { lvLaunchpad } from "../libs/lv-notice-kit";
@@ -34,7 +35,6 @@
     import { normalizeOrganizationProfileDraft } from "../domain/organization-profile";
 
     let {
-        facade,
         settings,
         preferences,
         initialView,
@@ -42,7 +42,6 @@
         onPreferencesUpdated,
         onOpenPersonDoc,
     }: {
-        facade: ContactsPluginFacade;
         settings: ContactsSettings;
         preferences: ViewPreferences;
         initialView?: WorkbenchView;
@@ -50,6 +49,12 @@
         isMobile: boolean;
         onOpenPersonDoc: (docId: string) => void;
     } = $props();
+
+    // 真正从 Context 消费 ContactsPluginContext 窄契约（零强转！）
+    const facade = getContext<ContactsPluginContext>(CONTACTS_CONTEXT_KEY);
+    if (!facade) {
+        throw new Error("[Workbench] 缺少必要的 ContactsPluginContext 上下文");
+    }
 
     type ViewId = WorkbenchView;
     const validViewIds: readonly ViewId[] = ["home", "people", "graph", "orgs", "settings"];
@@ -173,7 +178,8 @@
 
     function applyPreferences(updated: ViewPreferences) {
         if (!lifecycleToken.isAlive()) return;
-        if (updated.revision < currentPreferences.revision) return;
+        if (!updated || typeof updated !== "object") return;
+        if ((updated?.revision ?? 0) < (currentPreferences?.revision ?? 0)) return;
         currentPreferences = updated;
         preferencesNotice = "";
         onPreferencesUpdated(updated);
@@ -533,7 +539,7 @@
             const docIdSet = new Set(focus.memberDocIds);
             const source = peopleOrder.length > 0 ? peopleOrder : await facade.listContacts().catch(() => []);
             if (!lifecycleToken.isAlive()) return;
-            targetItemIds = source.filter((p) => docIdSet.has(p.docId)).map((p) => p.itemId);
+            targetItemIds = source.filter((p: any) => docIdSet.has(p.docId)).map((p: any) => p.itemId);
         }
 
         peopleFocusIds = targetItemIds;
@@ -666,6 +672,10 @@
     let dataChangeNotice = $state("");
     onMount(() => {
         if (!lifecycleToken.isAlive()) return;
+        const hostDialog = workbenchElement?.closest<HTMLElement>(".b3-dialog");
+        const hostContainer = workbenchElement?.closest<HTMLElement>(".b3-dialog__container");
+        hostDialog?.classList.add("lvct-dialog-host", "lvct-dialog-host--workbench");
+        hostContainer?.classList.add("lvct-dialog", "lvct-dialog--workbench");
         let unbindVv: (() => void) | null = null;
         if (typeof window !== "undefined") {
             const vv = window.visualViewport;
@@ -715,6 +725,8 @@
             }
         }, { invalidate: () => { invalidateRoster(); preferenceRequests.invalidate(); }, token: lifecycleToken });
         return () => {
+            hostDialog?.classList.remove("lvct-dialog-host--workbench");
+            hostContainer?.classList.remove("lvct-dialog--workbench");
             unbindVv?.();
             lifecycleToken.invalidate();
             unsubscribe();
@@ -934,7 +946,7 @@
                         }
                         if (details.aliases.trim()) {
                             const existingAliases = await facade.listPersonAliases(person.docId);
-                            const existing = new Set(existingAliases.map((alias) => alias.alias.trim().toLocaleLowerCase()));
+                            const existing = new Set(existingAliases.map((alias: any) => alias.alias.trim().toLocaleLowerCase()));
                             const aliases = details.aliases.split(/[、,，\n]/).map((alias) => alias.trim()).filter(Boolean);
                             for (const alias of aliases) {
                                 const key = alias.toLocaleLowerCase();
@@ -943,6 +955,9 @@
                                     existing.add(key);
                                 }
                             }
+                        }
+                        if (details.locations && (details.locations.resident || details.locations.hometown) && facade.savePersonLocations) {
+                            await facade.savePersonLocations(person.docId, details.locations);
                         }
                         if (details.note.trim()) {
                             const currentNote = await facade.loadPersonNote(person.docId);
@@ -966,7 +981,6 @@
                 />
             {:else if current === "orgs"}
                 <OrgsView
-                    {facade}
                     revision={dataRevision}
                     i18n={facade.i18n}
                     onOpenOrgManager={(docId) => void openOrganization(docId)}
@@ -1001,7 +1015,7 @@
 </div>
 
 {#if organizationOpen}
-    <LvctDialog title={text("orgManagerTitle", "组织管理")} closeLabel={text("dialog.close", "关闭")} wide closeOnBackdrop={false} onClose={() => void closeOrganization()}>
+    <LvctDialog title={text("orgManagerTitle", "组织管理")} closeLabel={text("dialog.close", "关闭")} wide closeOnBackdrop={false} panelClass="lvct-dialog-panel--org-manager" onClose={() => void closeOrganization()}>
         <OrgManagerDialog {facade} i18n={facade.i18n} initialOrgDocId={organizationDocId}
             onOpenPerson={(docId, orgDocId) => void openPersonByDocId(docId, personReturnContext(current, { orgDocId }))}
             onCreateOrganization={() => void openCreateOrganization()}
@@ -1011,7 +1025,7 @@
 {/if}
 
 {#if detailPerson}
-    <LvctDialog title={text("personDetailTitle", "人物详情 · {name}", { name: detailPerson.name })} closeLabel={detailCloseLabel} wide closeOnBackdrop={false} onClose={() => void closeDetail()}>
+    <LvctDialog title={text("personDetailTitle", "人物详情 · {name}", { name: detailPerson.name })} closeLabel={detailCloseLabel} wide closeOnBackdrop={false} panelClass="lvct-dialog-panel--detail" onClose={() => void closeDetail()}>
         {#key detailKey}
         <PersonDetail
             settings={currentSettings}
@@ -1046,6 +1060,8 @@
 			            onLoadAvatar={facade.loadPersonAvatar ? (docId) => facade.loadPersonAvatar!(docId) : undefined}
 			            onSaveChannels={facade.savePersonChannels ? (docId, channels) => facade.savePersonChannels!(docId, channels) : undefined}
 			            onLoadChannels={facade.loadPersonChannels ? (docId) => facade.loadPersonChannels!(docId) : undefined}
+			            onSaveLocations={facade.savePersonLocations ? (docId, locations) => facade.savePersonLocations!(docId, locations) : undefined}
+			            onLoadLocations={facade.loadPersonLocations ? (docId) => facade.loadPersonLocations!(docId) : undefined}
 			            onSaveBusinessCard={facade.savePersonBusinessCard ? (docId, url) => facade.savePersonBusinessCard!(docId, url) : undefined}
 			            onLoadBusinessCard={facade.loadPersonBusinessCard ? (docId) => facade.loadPersonBusinessCard!(docId) : undefined}
 		            onLoadPersonFields={facade.loadPersonFields ? (docId) => facade.loadPersonFields(docId) : undefined}
@@ -1148,7 +1164,7 @@
 
 <!-- 详情或编辑窗口内新建组织时，资料窗口必须在已有模态之上。 -->
 {#if organizationProfileOpen}
-    <LvctDialog title={organizationProfileDocId ? text("orgEditTitle", "编辑组织资料") : text("orgCreateTitle", "新建组织")} wide closeOnBackdrop={false} beforeClose={() => organizationProfileEditor?.requestClose() ?? Promise.resolve(false)} onClose={() => { if (!organizationProfileSaving) { organizationProfileOpen = false; returnToContactAfterOrganizationProfile = false; organizationProfileCompletion?.(); organizationProfileCompletion = null; } }}>
+    <LvctDialog title={organizationProfileDocId ? text("orgEditTitle", "编辑组织资料") : text("orgCreateTitle", "新建组织")} wide closeOnBackdrop={false} panelClass="lvct-dialog-panel--org-profile-editor" beforeClose={() => organizationProfileEditor?.requestClose() ?? Promise.resolve(false)} onClose={() => { if (!organizationProfileSaving) { organizationProfileOpen = false; returnToContactAfterOrganizationProfile = false; organizationProfileCompletion?.(); organizationProfileCompletion = null; } }}>
         <OrganizationProfileEditor
             bind:this={organizationProfileEditor}
             mode={organizationProfileDocId ? "edit" : "create"}

@@ -343,7 +343,6 @@ export function normalizeAnniversaryStore(raw: unknown): AnniversaryStore {
                 createdAt: Number.isFinite(candidate.createdAt) ? candidate.createdAt! : Date.now(),
                 updatedAt: Number.isFinite(candidate.updatedAt) ? candidate.updatedAt! : Date.now(),
             });
-            if (validList.length >= MAX_ANNIVERSARIES_PER_PERSON) break;
         }
 
         if (validList.length > 0) {

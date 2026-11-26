@@ -9,8 +9,9 @@ export const VIEW_PREFERENCES_VERSION = 1;
 export const BRAND_AVATAR_IMAGE_MAX_LENGTH = 1_500_000;
 const BRAND_AVATAR_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/;
 
+import type { PeopleSortMode } from "./sort-modes.ts";
 export type DefaultView = "home" | "people" | "graph" | "orgs";
-export type PeopleSortMode = "name" | "group" | "birthday" | "recent" | "frequency" | "created";
+export type { PeopleSortMode };
 /** 联系人默认形态（F02）：卡片 / 表格 */
 export type PeopleViewMode = "card" | "table";
 /** 表格可选列（F02）。「姓名」是固定列，不参与显隐与排序，恒为首列。
@@ -80,7 +81,8 @@ export type DetailSectionKey =
     | "notes"
     | "followUps"
     | "exchanges"
-    | "facts";
+    | "facts"
+    | "advanced";
 
 export const DETAIL_SECTION_KEYS: readonly DetailSectionKey[] = [
     "topics",
@@ -92,6 +94,7 @@ export const DETAIL_SECTION_KEYS: readonly DetailSectionKey[] = [
     "followUps",
     "exchanges",
     "facts",
+    "advanced",
 ] as const;
 
 export type DetailCollapsedSections = Partial<Record<DetailSectionKey, boolean>>;

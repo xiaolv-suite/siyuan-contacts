@@ -34,16 +34,17 @@ export function formatBirthdayDisplay(birthday: string, isLunar: boolean): strin
         if (!parsed) return `${birthday}（公历，日期待核实）`;
         return `${birthday}（公历）`;
     }
-    if (day > 30 || (!lunarToSolar(year, month, day) && (day !== 30 || !lunarToSolar(year, month, 29)))) {
+    const checkYear = year === 0 ? 2000 : year;
+    if (day > 30 || (!lunarToSolar(checkYear, month, day) && (day !== 30 || !lunarToSolar(checkYear, month, 29)))) {
         return `${birthday}（农历，日期待核实）`;
     }
     const label = formatLunar({
-        year,
+        year: checkYear,
         month,
         day,
         leap: false,
     });
-    return `${label}（农历，出生年 ${year}）`;
+    return year > 0 ? `${label}（农历，出生年 ${year}）` : `${label}（农历）`;
 }
 
 /** YYYY-MM-DD → 本地零点 Date；年份为 0000 时以 2000 润年校验月日；非法返回 undefined */
@@ -121,9 +122,10 @@ export function nextBirthday(birthday: string, isLunar: boolean, now: Date = new
         day: rawDay,
         leap: false,
     } as const;
-    // 出生年份用于校验月日组合；无效的农历日期不进入提醒或排序。
-    if (!lunarToSolar(birthLunar.year, birthLunar.month, birthLunar.day) &&
-        !lunarToSolar(birthLunar.year, birthLunar.month, Math.min(birthLunar.day, 29))) {
+    // 出生年份为 0000（未知年份）时以 2000 校验月日合法性；无效的农历日期不进入提醒或排序。
+    const checkYear = rawYear > 0 ? rawYear : 2000;
+    if (!lunarToSolar(checkYear, birthLunar.month, birthLunar.day) &&
+        !lunarToSolar(checkYear, birthLunar.month, Math.min(birthLunar.day, 29))) {
         return undefined;
     }
     const todayLunar = solarToLunar(today);
@@ -139,7 +141,7 @@ export function nextBirthday(birthday: string, isLunar: boolean, now: Date = new
     return {
         date: target,
         daysUntil: daysBetween(today, target),
-        age: targetYear - birthLunar.year,
+        age: rawYear > 0 ? targetYear - birthLunar.year : undefined,
         label: formatLunar(birthLunar),
     };
 }

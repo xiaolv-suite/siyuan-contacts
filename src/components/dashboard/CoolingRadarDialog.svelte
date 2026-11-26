@@ -378,9 +378,9 @@
     }
 
     .filter-pill.is-active {
-        background: var(--lv-brand);
-        color: var(--lvct-on-accent);
-        border-color: var(--lv-brand);
+        background: var(--lvct-btn-primary-bg);
+        color: var(--lvct-btn-primary-fg);
+        border-color: var(--lvct-btn-primary-bg);
         font-weight: 600;
     }
 

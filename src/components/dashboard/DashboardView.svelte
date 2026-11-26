@@ -22,7 +22,7 @@
         MessageSquare,
         FileText,
     } from "@lucide/svelte";
-    import { querySql, assertKernelRecord } from "../../api/client";
+    import { queryBlocksIal } from "../../api/sql-coalescer";
     import { lvTicker, lvNotify, lvLaunchpad } from "../../libs/lv-notice-kit";
     import { formatBirthdayDisplay } from "../../domain/occasions";
     import { organizationIalAttributes } from "../../domain/organization-operations";
@@ -726,18 +726,13 @@ import { copyPlainText } from "../../shared/clipboard.ts";
         const validIds = [...new Set(docIds.filter((id): id is string => Boolean(id)))];
         if (validIds.length === 0) return;
         try {
-            const inList = validIds.map((id) => `'${id}'`).join(",");
-            const rows = await querySql<unknown>(`SELECT id, ial FROM blocks WHERE id IN (${inList}) AND type = 'd'`);
-            if (!Array.isArray(rows)) return;
+            const ialMap = await queryBlocksIal(validIds);
             const map = new Map<string, string>();
-            for (const r of rows) {
+            for (const [id, ial] of ialMap) {
                 try {
-                    const rec = assertKernelRecord("/api/query/sql", r);
-                    if (typeof rec.id === "string" && typeof rec.ial === "string") {
-                        const attrs = organizationIalAttributes(rec.ial);
-                        const av = attrs["custom-lvct-avatar"] || attrs["icon"];
-                        if (av) map.set(rec.id, av);
-                    }
+                    const attrs = organizationIalAttributes(ial);
+                    const av = attrs["custom-lvct-avatar"] || attrs["icon"];
+                    if (av) map.set(id, av);
                 } catch {}
             }
             if (map.size > 0 && alive && data) {
@@ -1727,8 +1722,11 @@ import { copyPlainText } from "../../shared/clipboard.ts";
             {/if}
         {/if}
 
-        <div class="lvct-dash__grid">
-            <div class="lvct-home__card">
+        <div
+            class="lvct-dash__grid"
+            class:lvct-dash__grid--has-rows={(!data.ordinaryScopeUnknown && (data.birthdays.length > 0 || data.stale.length > 0)) || (data.followUps ?? []).length > 0}
+        >
+            <div class="lvct-home__card" class:lvct-home__card--empty={data.ordinaryScopeUnknown || data.birthdays.length === 0}>
                 <h3>{text("dashUpcomingBirthdays", "近期生日")}</h3>
                 {#if data.ordinaryScopeUnknown}
                     <ViewState compact title={text("dashSelfUnverifiedTitle", "提醒范围尚未核实")} description={text("dashSelfUnverifiedDesc", "核实本人身份后可恢复统计和提醒；原始记录保留。")} />
@@ -1804,7 +1802,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 {/if}
             </div>
 
-            <div class="lvct-home__card lvct-dash__secondary-card lvct-dash__stale-card">
+            <div class="lvct-home__card lvct-dash__secondary-card lvct-dash__stale-card" class:lvct-home__card--empty={data.ordinaryScopeUnknown || data.stale.length === 0}>
                 <h3>{text("dashStaleTitle", "久未联系")}</h3>
                 <StatusNotice message={quickError ? text("dashRecordFail", "记录失败：{msg}", { msg: quickError }) : ""} error />
                 <StatusNotice message={quickMessage} onDismiss={() => (quickMessage = "")} />
@@ -1883,7 +1881,7 @@ import { copyPlainText } from "../../shared/clipboard.ts";
                 {/if}
             </div>
 
-            <div class="lvct-home__card lvct-dash__secondary-card lvct-dash__followup-card">
+            <div class="lvct-home__card lvct-dash__secondary-card lvct-dash__followup-card" class:lvct-home__card--empty={(data.followUps ?? []).length === 0}>
                 <h3>{text("dashFollowupsTitle", "待办跟进")}</h3>
                 <StatusNotice message={fuError ? text("dashOpFailed", "操作失败：{msg}", { msg: fuError }) : ""} error />
                 <StatusNotice message={fuMessage} onDismiss={() => (fuMessage = "")} />

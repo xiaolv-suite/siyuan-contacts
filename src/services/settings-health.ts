@@ -60,7 +60,7 @@ export function probeSettingsAnchor(settings: ContactsSettings): Promise<Setting
             if (!doc) return { status: "missing", message: "联系人总表文档已删除或不属于原笔记本" };
             const blocks = await findAvBlocksInDoc(settings.hostDocId);
             const matches = blocks.filter((block) => block.dbBlockId === settings.dbBlockId && block.avId === settings.avId);
-            if (matches.length !== 1) return { status: "missing", message: "属性视图载体块已删除、移动或 AV 标识不一致" };
+            if (matches.length !== 1) return { status: "missing", message: "属性表载体块已删除、移动或数据库标识不一致" };
             await renderView(settings.avId, settings.dbBlockId);
             return { status: "verified" };
         } catch (error) {
@@ -149,7 +149,7 @@ async function readVerifiedAnchor(settings: ContactsSettings): Promise<{ columns
     const blocks = await findAvBlocksInDoc(settings.hostDocId);
     const matches = blocks.filter((block) => block.dbBlockId === settings.dbBlockId || block.avId === settings.avId);
     if (matches.length !== 1 || matches[0].hostDocId !== settings.hostDocId
-        || matches[0].dbBlockId !== settings.dbBlockId || matches[0].avId !== settings.avId) throw new Error("宿主文档、数据库块与 AV 归属不一致或多重绑定，设置操作已停止");
+        || matches[0].dbBlockId !== settings.dbBlockId || matches[0].avId !== settings.avId) throw new Error("宿主文档、数据库块与属性表归属不一致或多重绑定，设置操作已停止");
     const rendered = await renderView(settings.avId, settings.dbBlockId);
     assertRepairColumns(rendered.view.columns);
     return { columns: rendered.view.columns.map(({ id, name, type }) => ({ id, name, type })),
@@ -303,7 +303,7 @@ async function ensureRepairRelation(plugin: Plugin, checkpoint: SettingsRepairCh
         }
     }
     const columns = await readStepColumns(checkpoint);
-    if (!columns.some((column) => column.id === step.backKeyId && column.type === "relation")) throw new SettingsRepairUnknownError("回链未出现在原 AV 渲染列中", checkpoint);
+    if (!columns.some((column) => column.id === step.backKeyId && column.type === "relation")) throw new SettingsRepairUnknownError("回链未出现在原数据库渲染列中", checkpoint);
     if (step.relationState !== "verified") {
         step.relationState = "verified";
         await saveSettingsRepairCheckpoint(plugin, checkpoint);

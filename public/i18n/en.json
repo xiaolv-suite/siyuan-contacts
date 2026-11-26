@@ -1632,7 +1632,7 @@
   "captureSelectTargetTitle": "Select created contact target (explicit binding)",
   "capturePendingTargetDoc": "Pending target doc selection",
   "captureRejectDraft": "Reject",
-  "captureSourceNoteDesc": "Source {docId} · Double links verified by doc ID. Original note preserved, only plugin blocks updated.",
+  "captureSourceNoteDesc": "Contacts are matched by bi-directional links in this note; your original text stays untouched and only plugin blocks are updated.",
   "captureBadgeMention": "Mentioned in Body",
   "captureCancelAi": "Cancel AI, Ignore Output",
   "captureAiPreflightTitle": "AI Preflight Confirmation",

@@ -1,4 +1,27 @@
 import type { ContactChannel } from "./person-channels.ts";
+import {
+    CHINA_REGIONS,
+    LOCATIONS_ATTR,
+    LEGACY_LOCATIONS_ATTR,
+    normalizeChinaCityName,
+    parseChinaRegionFromText,
+    parseContactLocationsAttr,
+    resolveChinaCity,
+    normalizeContactLocations,
+    type ContactLocation,
+    type ContactLocations,
+} from "./china-regions.ts";
+
+export type { ContactLocation, ContactLocations };
+export {
+    CHINA_REGIONS,
+    LOCATIONS_ATTR,
+    LEGACY_LOCATIONS_ATTR,
+    normalizeChinaCityName,
+    parseChinaRegionFromText,
+    parseContactLocationsAttr,
+    resolveChinaCity,
+};
 
 export interface Person {
     id?: string;
@@ -7,6 +30,13 @@ export interface Person {
     name: string;
     address?: string;
     location?: string;
+    locations?: ContactLocations;
+    residentLocation?: ContactLocation;
+    hometownLocation?: ContactLocation;
+    resident_province?: string;
+    resident_city?: string;
+    resident_district?: string;
+    hometown?: string;
     organization?: string;
     role?: string;
     phone?: string;
@@ -235,6 +265,12 @@ export function extractCityFromAddress(rawAddress: string | undefined): { provin
         }
     }
 
+    // 2.5 使用全量离线中国行政区划树匹配全部地级市/自治州
+    const treeCity = resolveChinaCity(text);
+    if (treeCity) {
+        return { province: treeCity.provinceShortName, city: treeCity.canonicalCity };
+    }
+
     // 3. 通用正则匹配：XX省XX市 或 XX自治区XX市 或 XX市
     const provCityRegex = /([\u4e00-\u9fa5]{2,5}?(?:省|自治区|特别行政区))?\s*([\u4e00-\u9fa5]{2,6}?市)/;
     const match = text.match(provCityRegex);
@@ -424,29 +460,119 @@ export function extractChannelsFromPerson(person: Person): ContactChannel[] {
     return [];
 }
 
+const HOMETOWN_LABEL_RE = /老家|籍贯|家乡|祖籍|出生地|户籍|原籍/i;
+const HOMETOWN_VALUE_PREFIX_RE = /^(?:老家|籍贯|家乡|祖籍|出生地|户籍|原籍)[：:\s]/;
+
+export function isHometownLabel(label: string | undefined): boolean {
+    return Boolean(label && HOMETOWN_LABEL_RE.test(label));
+}
+
+function extractIalAttr(ial: string, attrName: string): string | undefined {
+    const escaped = attrName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const m = ial.match(new RegExp(`(?:^|[\\s{:])${escaped}="([^"]*)"`));
+    if (!m?.[1]) return undefined;
+    return m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+}
+
+function extractRawLocationsObject(person: Person): ContactLocations {
+    if (!person) return {};
+    if (person.locations && (person.locations.resident || person.locations.hometown)) {
+        return normalizeContactLocations(person.locations);
+    }
+    if (person.residentLocation || person.hometownLocation) {
+        return normalizeContactLocations({
+            resident: person.residentLocation,
+            hometown: person.hometownLocation,
+        });
+    }
+    const rawAttr = person[LOCATIONS_ATTR] ?? person[LEGACY_LOCATIONS_ATTR] ?? person.customLvLocations ?? person.customLvctLocations;
+    if (rawAttr) {
+        const parsed = parseContactLocationsAttr(rawAttr);
+        if (parsed.resident || parsed.hometown) return parsed;
+    }
+    if (typeof person.ial === "string") {
+        const locRaw = extractIalAttr(person.ial, LOCATIONS_ATTR) ?? extractIalAttr(person.ial, LEGACY_LOCATIONS_ATTR);
+        if (locRaw) {
+            const parsed = parseContactLocationsAttr(locRaw);
+            if (parsed.resident || parsed.hometown) return parsed;
+        }
+    }
+    if (person.resident_city || person.resident_province || person.resident_district || person.hometown) {
+        const residentRaw = [person.resident_province, person.resident_city, person.resident_district].filter(Boolean).join(" ").trim();
+        const resident = residentRaw ? (parseChinaRegionFromText(residentRaw, "resident") ?? { kind: "resident" as const, rawText: residentRaw }) : undefined;
+        const hometown = person.hometown ? (parseChinaRegionFromText(person.hometown, "hometown") ?? { kind: "hometown" as const, rawText: person.hometown.trim() }) : undefined;
+        return normalizeContactLocations({ resident, hometown });
+    }
+    return {};
+}
+
 /**
- * 从多维通讯条目中筛选出地址条目，并按权威权重排序：
+ * 从联系人记录提取结构化的常住地（resident）与籍贯（hometown），兼容旧自由文本无损回显
+ */
+export function extractLocationsFromPerson(person: Person): ContactLocations {
+    if (!person) return {};
+    const direct = extractRawLocationsObject(person);
+    let resident = direct.resident;
+    let hometown = direct.hometown;
+
+    const channels = extractChannelsFromPerson(person);
+    if (!resident) {
+        const residentAddrs = extractAddressCandidatesFromChannels(channels);
+        if (residentAddrs.length > 0) {
+            resident = parseChinaRegionFromText(residentAddrs[0], "resident") ?? undefined;
+        } else {
+            const explicitAddr = (person.address || person.location || "").trim();
+            if (explicitAddr && !HOMETOWN_VALUE_PREFIX_RE.test(explicitAddr)) {
+                resident = parseChinaRegionFromText(explicitAddr, "resident") ?? undefined;
+            }
+        }
+    }
+    if (!hometown) {
+        const hometownCh = channels.find((c) => c && typeof c.value === "string" && c.value.trim() && (isHometownLabel(c.label) || HOMETOWN_VALUE_PREFIX_RE.test(c.value.trim())));
+        if (hometownCh) {
+            const cleanedVal = hometownCh.value.trim().replace(HOMETOWN_VALUE_PREFIX_RE, "").trim();
+            hometown = parseChinaRegionFromText(cleanedVal || hometownCh.value.trim(), "hometown") ?? undefined;
+        } else {
+            const explicitAddr = (person.address || person.location || "").trim();
+            if (explicitAddr && HOMETOWN_VALUE_PREFIX_RE.test(explicitAddr)) {
+                const cleanedVal = explicitAddr.replace(HOMETOWN_VALUE_PREFIX_RE, "").trim();
+                hometown = parseChinaRegionFromText(cleanedVal || explicitAddr, "hometown") ?? undefined;
+            }
+        }
+    }
+    return {
+        ...(resident ? { resident } : {}),
+        ...(hometown ? { hometown } : {}),
+    };
+}
+
+/**
+ * 从多维通讯条目中筛选出常住/办公地址条目（严格排除老家/籍贯/户籍条目，避免混淆同城识别），并按权威权重排序：
  * 权重优先级：
- * 1. 显式主条目 (isPrimary === true) 且为地址
- * 2. 常驻类地址（label 包含“常驻”、“常住”、“主要”）
- * 3. 居住/家庭类地址（label 包含“家”、“住址”、“居住”、“户籍”）
+ * 1. 显式主条目 (isPrimary === true) 且为非籍贯地址
+ * 2. 常驻类地址（label 包含“常驻”、“常住”、“现居”、“主要”）
+ * 3. 居住/家庭住址类（label 为家庭住址/住址/居住，不含老家/户籍）
  * 4. 工作/公司类地址（label 包含“公司”、“工作”、“办公”、“单位”）
  * 5. 普通/其他地址条目（type === "address"）
  */
 export function extractAddressCandidatesFromChannels(channels: ContactChannel[]): string[] {
     if (!channels || channels.length === 0) return [];
 
-    const addressEntries = channels.filter(
-        (c) => c && (c.type === "address" || /地址|住址|常驻|居住/i.test(c.label || "")) && typeof c.value === "string" && c.value.trim()
-    );
+    const addressEntries = channels.filter((c) => {
+        if (!c || typeof c.value !== "string") return false;
+        const val = c.value.trim();
+        if (!val) return false;
+        if (isHometownLabel(c.label) || HOMETOWN_VALUE_PREFIX_RE.test(val)) return false;
+        return c.type === "address" || /地址|住址|常驻|常住|现居|居住/i.test(c.label || "");
+    });
     if (addressEntries.length === 0) return [];
 
     const scored = addressEntries.map((c) => {
         let score = 0;
         if (c.isPrimary) score += 100;
         const lbl = (c.label || "").trim();
-        if (/常驻|常住|主要/i.test(lbl)) score += 50;
-        else if (/家|住址|居住|户籍/i.test(lbl)) score += 30;
+        if (/常驻|常住|现居|主要/i.test(lbl)) score += 50;
+        else if (/^(?:家庭住址|家庭地址|家住|住址|居住|家)$/i.test(lbl)) score += 30;
         else if (/公司|工作|办公|单位/i.test(lbl)) score += 20;
         else score += 10;
         return { value: c.value.trim(), score };
@@ -457,41 +583,150 @@ export function extractAddressCandidatesFromChannels(channels: ContactChannel[])
 }
 
 /**
- * 综合联系人的通讯多维资料地址条目、显式单值地址、标签、组织单位等线索，提炼出规范化的地域信息。
- * 算法重构：基于通讯多维资料地址条目（家庭/公司/常驻地址）精准提取取代单一组织推断。
+ * 综合联系人的结构化常住地（resident）、多维资料地址条目、显式单值地址、标签、组织单位等线索，提炼出规范化的常住地域信息。
+ * 严格排除籍贯/老家（hometown），绝不把籍贯误判为同城常住地。
  */
-export function extractNormalizedRegion(person: Person): { city: string; province?: string; region?: string } {
+export function extractNormalizedRegion(person: Person): {
+    city: string;
+    province?: string;
+    provinceName?: string;
+    district?: string;
+    region?: string;
+    cityCode?: string;
+    provinceCode?: string;
+    districtCode?: string;
+} {
     if (!person) return { city: "未知" };
 
-    // 1. 第一优先级：从通讯多维资料地址条目（家庭/公司/常驻地址等）中精准提取
+    // 0. 最高优先级：显式结构化常住地 (resident_city / locations.resident / custom-lv-locations)
+    const structured = extractRawLocationsObject(person).resident;
+    if (structured) {
+        const parsedRaw = structured.rawText ? parseChinaRegionFromText(structured.rawText, "resident") : null;
+        const districtName = structured.districtName ?? parsedRaw?.districtName;
+        const districtCode = structured.districtCode ?? parsedRaw?.districtCode;
+        const districtInfo = districtName || districtCode
+            ? { ...(districtName ? { district: districtName } : {}), ...(districtCode ? { districtCode } : {}) }
+            : {};
+
+        const resolved = resolveChinaCity(structured.cityCode || structured.cityName || structured.rawText);
+        if (resolved) {
+            return {
+                city: resolved.canonicalCity,
+                province: resolved.provinceShortName,
+                provinceName: resolved.provinceName,
+                cityCode: resolved.cityCode,
+                provinceCode: resolved.provinceCode,
+                ...districtInfo,
+            };
+        }
+        if (structured.cityName) {
+            const canonical = normalizeChinaCityName(structured.cityName) || structured.cityName;
+            const provNode = structured.provinceCode
+                ? CHINA_REGIONS.find((p) => p.code === structured.provinceCode)
+                : structured.provinceName
+                    ? CHINA_REGIONS.find((p) => p.name === structured.provinceName || p.shortName === structured.provinceName)
+                    : undefined;
+            const prov = provNode?.shortName ?? structured.provinceName?.replace(/(?:省|自治区|特别行政区|市)$/, "");
+            return {
+                city: canonical,
+                ...(prov ? { province: prov } : {}),
+                ...(provNode?.name ?? structured.provinceName ? { provinceName: provNode?.name ?? structured.provinceName } : {}),
+                ...(structured.cityCode ? { cityCode: structured.cityCode } : {}),
+                ...(provNode?.code ?? structured.provinceCode ? { provinceCode: provNode?.code ?? structured.provinceCode } : {}),
+                ...districtInfo,
+            };
+        }
+        if (structured.rawText) {
+            const fromRaw = extractCityFromAddress(structured.rawText);
+            if (fromRaw) {
+                const tree = resolveChinaCity(fromRaw.city);
+                const provNode = tree
+                    ? CHINA_REGIONS.find((p) => p.code === tree.provinceCode)
+                    : CHINA_REGIONS.find((p) => p.shortName === fromRaw.province || p.name === fromRaw.province);
+                return {
+                    city: tree?.canonicalCity ?? fromRaw.city,
+                    province: tree?.provinceShortName ?? fromRaw.province,
+                    ...(provNode ? { provinceName: provNode.name } : {}),
+                    cityCode: tree?.cityCode,
+                    provinceCode: tree?.provinceCode ?? provNode?.code,
+                    ...districtInfo,
+                };
+            }
+        }
+        // 仅选省（未选城市）或仅保留省/区县：不得回退丢弃已选省份与区县
+        const provCode = structured.provinceCode ?? parsedRaw?.provinceCode;
+        const provNameRaw = structured.provinceName ?? parsedRaw?.provinceName;
+        const provNode = provCode
+            ? CHINA_REGIONS.find((p) => p.code === provCode)
+            : provNameRaw
+                ? CHINA_REGIONS.find((p) => p.name === provNameRaw || p.shortName === provNameRaw)
+                : undefined;
+        const provShort = provNode?.shortName ?? provNameRaw?.replace(/(?:壮族自治区|回族自治区|维吾尔自治区|自治区|特别行政区|省|市)$/, "");
+        if (provShort || provCode || districtName || districtCode) {
+            return {
+                city: "未知",
+                ...(provShort ? { province: provShort } : {}),
+                ...(provNode?.name ?? provNameRaw ? { provinceName: provNode?.name ?? provNameRaw } : {}),
+                ...(provNode?.code ?? provCode ? { provinceCode: provNode?.code ?? provCode } : {}),
+                ...districtInfo,
+            };
+        }
+    }
+
+    // 1. 第一优先级：从通讯多维资料地址条目（排除籍贯/老家后，常驻/住址/公司地址）精准提取
     const channels = extractChannelsFromPerson(person);
     const channelAddresses = extractAddressCandidatesFromChannels(channels);
     for (const addr of channelAddresses) {
         const fromAddr = extractCityFromAddress(addr);
         if (fromAddr) {
-            return { city: fromAddr.city, province: fromAddr.province };
+            const tree = resolveChinaCity(fromAddr.city);
+            return {
+                city: tree?.canonicalCity ?? fromAddr.city,
+                province: tree?.provinceShortName ?? fromAddr.province,
+                cityCode: tree?.cityCode,
+                provinceCode: tree?.provinceCode,
+            };
         }
     }
 
-    // 2. 第二优先级：显式单值地址字段（person.address 或 person.location）
-    const explicitAddr = person.address || person.location;
-    if (explicitAddr) {
+    // 2. 第二优先级：显式单值地址字段（person.address 或 person.location，排除显式老家前缀）
+    const explicitAddr = (person.address || person.location || "").trim();
+    if (explicitAddr && !HOMETOWN_VALUE_PREFIX_RE.test(explicitAddr)) {
         const fromAddr = extractCityFromAddress(explicitAddr);
         if (fromAddr) {
-            return { city: fromAddr.city, province: fromAddr.province };
+            const tree = resolveChinaCity(fromAddr.city);
+            return {
+                city: tree?.canonicalCity ?? fromAddr.city,
+                province: tree?.provinceShortName ?? fromAddr.province,
+                cityCode: tree?.cityCode,
+                provinceCode: tree?.provinceCode,
+            };
         }
     }
 
-    // 3. 第三优先级：从标签中提取明确标注的城市
+    // 3. 第三优先级：从标签中提取明确标注的城市（排除老家/籍贯类标签）
     if (Array.isArray(person.tags)) {
         for (const tag of person.tags) {
             const trimmed = tag.trim();
+            if (!trimmed || HOMETOWN_LABEL_RE.test(trimmed)) continue;
             if (KNOWN_CITY_PROVINCE_MAP[trimmed]) {
-                return { city: trimmed, province: KNOWN_CITY_PROVINCE_MAP[trimmed] };
+                const tree = resolveChinaCity(trimmed);
+                return {
+                    city: trimmed,
+                    province: KNOWN_CITY_PROVINCE_MAP[trimmed],
+                    cityCode: tree?.cityCode,
+                    provinceCode: tree?.provinceCode,
+                };
             }
             const fromTag = extractCityFromAddress(trimmed);
             if (fromTag) {
-                return { city: fromTag.city, province: fromTag.province };
+                const tree = resolveChinaCity(fromTag.city);
+                return {
+                    city: tree?.canonicalCity ?? fromTag.city,
+                    province: tree?.provinceShortName ?? fromTag.province,
+                    cityCode: tree?.cityCode,
+                    provinceCode: tree?.provinceCode,
+                };
             }
         }
     }
@@ -513,7 +748,13 @@ export function extractNormalizedRegion(person: Person): { city: string; provinc
     for (const text of orgSources) {
         const fromOrg = extractCityFromAddress(text);
         if (fromOrg) {
-            return { city: fromOrg.city, province: fromOrg.province };
+            const tree = resolveChinaCity(fromOrg.city);
+            return {
+                city: tree?.canonicalCity ?? fromOrg.city,
+                province: tree?.provinceShortName ?? fromOrg.province,
+                cityCode: tree?.cityCode,
+                provinceCode: tree?.provinceCode,
+            };
         }
     }
 
@@ -521,20 +762,70 @@ export function extractNormalizedRegion(person: Person): { city: string; provinc
 }
 
 /**
+ * 获取严格基于常住地（resident_city）的同城匹配键，绝不与籍贯混淆
+ */
+export function getResidentCityMatchKey(person: Person): { cityCode?: string; city: string } | null {
+    const norm = extractNormalizedRegion(person);
+    if (!norm.city || norm.city === "未知" || norm.city === "未填写") return null;
+    // 如果仅命中了纯省份而没有具体地级市，不作为精确同城
+    const resolved = resolveChinaCity(norm.cityCode || norm.city);
+    if (resolved) {
+        return { cityCode: resolved.cityCode, city: resolved.canonicalCity };
+    }
+    return { city: normalizeChinaCityName(norm.city) || norm.city };
+}
+
+/**
+ * 判断两位联系人是否同城：严格基于 resident_city 标准编码/城市名，绝不因「成都」vs「四川省成都市」写法差异漏匹配，绝不与籍贯混淆
+ */
+export function isSameResidentCity(a: Person, b: Person): boolean {
+    const ka = getResidentCityMatchKey(a);
+    const kb = getResidentCityMatchKey(b);
+    if (!ka || !kb) return false;
+    if (ka.cityCode && kb.cityCode) return ka.cityCode === kb.cityCode;
+    return ka.city === kb.city;
+}
+
+/**
+ * 判断联系人是否与目标城市（支持编码如 "510100"、全称 "四川省成都市"、简称 "成都"）同城
+ */
+export function matchesResidentCity(person: Person, targetCityOrCode: string | ContactLocation): boolean {
+    const kp = getResidentCityMatchKey(person);
+    if (!kp) return false;
+    const targetInput = typeof targetCityOrCode === "string"
+        ? targetCityOrCode
+        : (targetCityOrCode.cityCode || targetCityOrCode.cityName || targetCityOrCode.rawText || "");
+    const resolvedTarget = resolveChinaCity(targetInput);
+    if (kp.cityCode && resolvedTarget) return kp.cityCode === resolvedTarget.cityCode;
+    const normalizedTarget = resolvedTarget?.canonicalCity ?? normalizeChinaCityName(targetInput);
+    return Boolean(normalizedTarget && kp.city === normalizedTarget);
+}
+
+/**
  * 获取同省或周边的关联城市名单
  */
 export function findNearbyOrSameProvinceCities(city: string): string[] {
     if (!city || city === "未知") return [];
-    const prov = KNOWN_CITY_PROVINCE_MAP[city];
+    const resolved = resolveChinaCity(city);
+    const prov = resolved?.provinceShortName ?? KNOWN_CITY_PROVINCE_MAP[city];
     if (!prov) return [];
 
-    const result: string[] = [];
+    const canonicalSelf = resolved?.canonicalCity ?? normalizeChinaCityName(city);
+    const result = new Set<string>();
     for (const [c, p] of Object.entries(KNOWN_CITY_PROVINCE_MAP)) {
-        if (p === prov && c !== city) {
-            result.push(c);
+        if (p === prov && c !== canonicalSelf) {
+            result.add(c);
         }
     }
-    return result;
+    for (const pNode of CHINA_REGIONS) {
+        if (pNode.shortName === prov) {
+            for (const cNode of pNode.cities) {
+                const cName = normalizeChinaCityName(cNode.name) || cNode.name;
+                if (cName !== canonicalSelf) result.add(cName);
+            }
+        }
+    }
+    return Array.from(result);
 }
 
 /**
@@ -573,24 +864,42 @@ export function groupContactsByRegion<T extends Person>(contacts: readonly T[]):
 }
 
 /**
- * 按指定目标城市过滤联系人
+ * 按指定目标城市过滤联系人（支持标准编码与省市全称/简称精确同城匹配，排除籍贯误命中）
  */
 export function filterContactsByRegion<T extends Person>(contacts: readonly T[], targetCity: string): T[] {
     if (!targetCity) return [...contacts];
     const target = targetCity.trim().toLowerCase();
 
     if (target === "未知" || target === "未填写") {
-        return contacts.filter((p) => extractNormalizedRegion(p).city === "未知");
+        return contacts.filter((p) => {
+            const norm = extractNormalizedRegion(p);
+            return norm.city === "未知" && !norm.province && !norm.district;
+        });
     }
+
+    const resolvedTarget = resolveChinaCity(targetCity);
+    const matchedProvince = CHINA_REGIONS.find(
+        (prov) => prov.name.toLowerCase() === target || prov.shortName.toLowerCase() === target,
+    );
 
     return contacts.filter((p) => {
         const norm = extractNormalizedRegion(p);
-        if (norm.city.toLowerCase() === target) return true;
+        if (resolvedTarget && norm.cityCode && norm.cityCode === resolvedTarget.cityCode) return true;
+        if (resolvedTarget && norm.city === resolvedTarget.canonicalCity) return true;
+        if (matchedProvince && (
+            norm.provinceCode === matchedProvince.code
+            || norm.province?.toLowerCase() === matchedProvince.shortName.toLowerCase()
+            || norm.provinceName?.toLowerCase() === matchedProvince.name.toLowerCase()
+        )) return true;
+        if (norm.city !== "未知" && norm.city.toLowerCase() === target) return true;
         if (norm.province && norm.province.toLowerCase() === target) return true;
-        if (p.address && p.address.toLowerCase().includes(target)) return true;
+        if (norm.provinceName && norm.provinceName.toLowerCase() === target) return true;
+        if (norm.district && norm.district.toLowerCase().includes(target)) return true;
+        if (p.address && !HOMETOWN_VALUE_PREFIX_RE.test(p.address.trim()) && p.address.toLowerCase().includes(target)) return true;
         const channels = extractChannelsFromPerson(p);
         for (const ch of channels) {
-            if ((ch.type === "address" || /地址|住址|常驻/i.test(ch.label || "")) && typeof ch.value === "string" && ch.value.toLowerCase().includes(target)) {
+            if (isHometownLabel(ch.label) || (typeof ch.value === "string" && HOMETOWN_VALUE_PREFIX_RE.test(ch.value.trim()))) continue;
+            if ((ch.type === "address" || /地址|住址|常驻|常住|现居/i.test(ch.label || "")) && typeof ch.value === "string" && ch.value.toLowerCase().includes(target)) {
                 return true;
             }
         }
@@ -599,28 +908,56 @@ export function filterContactsByRegion<T extends Person>(contacts: readonly T[],
 }
 
 /**
- * 供名册过滤器使用的多维地域筛选（支持城市名、省份名或“未填写”）
+ * 供名册过滤器使用的多维地域筛选（支持城市名、省份全称/简称、区县名、编码或“未填写”，排除籍贯误命中常住同城）
  */
 export function filterPeopleByRegion<T extends Person>(people: readonly T[], regionQuery: string): T[] {
     if (!regionQuery || !regionQuery.trim()) return [...people];
     const q = regionQuery.trim().toLowerCase();
 
     if (q === "未填写" || q === "未知") {
-        return people.filter((p) => extractNormalizedRegion(p).city === "未知");
+        return people.filter((p) => {
+            const norm = extractNormalizedRegion(p);
+            return norm.city === "未知" && !norm.province && !norm.district;
+        });
     }
+
+    const resolvedTarget = resolveChinaCity(regionQuery);
+    const matchedProvince = CHINA_REGIONS.find(
+        (prov) => prov.name.toLowerCase() === q || prov.shortName.toLowerCase() === q,
+    );
 
     return people.filter((p) => {
         const norm = extractNormalizedRegion(p);
-        if (norm.city.toLowerCase().includes(q)) return true;
+        if (resolvedTarget && norm.cityCode && norm.cityCode === resolvedTarget.cityCode) return true;
+        if (resolvedTarget && norm.city === resolvedTarget.canonicalCity) return true;
+        if (matchedProvince && (
+            norm.provinceCode === matchedProvince.code
+            || norm.province?.toLowerCase() === matchedProvince.shortName.toLowerCase()
+            || norm.provinceName?.toLowerCase() === matchedProvince.name.toLowerCase()
+        )) return true;
+        if (norm.city !== "未知" && norm.city.toLowerCase().includes(q)) return true;
         if (norm.province && norm.province.toLowerCase().includes(q)) return true;
-        if (p.address && p.address.toLowerCase().includes(q)) return true;
+        if (norm.provinceName && norm.provinceName.toLowerCase().includes(q)) return true;
+        if (norm.district && norm.district.toLowerCase().includes(q)) return true;
+        if (norm.districtCode && norm.districtCode.toLowerCase() === q) return true;
+
+        const resident = extractRawLocationsObject(p).resident;
+        if (resident) {
+            if (resident.districtName && resident.districtName.toLowerCase().includes(q)) return true;
+            if (resident.cityName && resident.cityName.toLowerCase().includes(q)) return true;
+            if (resident.provinceName && resident.provinceName.toLowerCase().includes(q)) return true;
+            if (resident.rawText && !HOMETOWN_VALUE_PREFIX_RE.test(resident.rawText) && resident.rawText.toLowerCase().includes(q)) return true;
+        }
+
+        if (p.address && !HOMETOWN_VALUE_PREFIX_RE.test(p.address.trim()) && p.address.toLowerCase().includes(q)) return true;
         const channels = extractChannelsFromPerson(p);
         for (const ch of channels) {
-            if ((ch.type === "address" || /地址|住址|常驻/i.test(ch.label || "")) && typeof ch.value === "string" && ch.value.toLowerCase().includes(q)) {
+            if (isHometownLabel(ch.label) || (typeof ch.value === "string" && HOMETOWN_VALUE_PREFIX_RE.test(ch.value.trim()))) continue;
+            if ((ch.type === "address" || /地址|住址|常驻|常住|现居/i.test(ch.label || "")) && typeof ch.value === "string" && ch.value.toLowerCase().includes(q)) {
                 return true;
             }
         }
-        if (Array.isArray(p.tags) && p.tags.some((t) => t.toLowerCase().includes(q))) return true;
+        if (Array.isArray(p.tags) && p.tags.some((t) => !HOMETOWN_LABEL_RE.test(t) && t.toLowerCase().includes(q))) return true;
         if (p.company && p.company.toLowerCase().includes(q)) return true;
         if (p.organization && p.organization.toLowerCase().includes(q)) return true;
         return false;

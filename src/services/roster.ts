@@ -15,6 +15,7 @@ import type { ContactSummary } from "../domain/person";
 import { isSelfDoc } from "../domain/self-identity";
 import { loadSelfIdentityBound } from "../data/self-identity";
 import { normalizeChannels, type ContactChannel } from "../domain/person-channels";
+import { parseContactLocationsAttr, type ContactLocations } from "../domain/china-regions";
 
 let cache: RosterEntry | null = null;
 let cacheKey: string | null = null;
@@ -26,6 +27,109 @@ let contactDocIdSet: Set<string> | null = null;
 const associatedDocIdSet = new Set<string>();
 
 export { ROSTER_TTL_MS };
+
+function extractLocationsIalValue(ial: string): string | undefined {
+    for (const attr of ["custom-lv-locations", "custom-lvct-locations"]) {
+        const m = ial.match(new RegExp(`(?:^|[\\s{:])${attr}="([^"]*)"`));
+        if (m?.[1]) return m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+    }
+    return undefined;
+}
+
+function parseLocationsAndChannelsFromRows(
+    rows: unknown,
+    targetMap: Map<string, { channels?: ContactChannel[]; locations?: ContactLocations }>,
+): void {
+    if (!Array.isArray(rows)) return;
+    for (const r of rows as Array<{ id?: string; ial?: string }>) {
+        if (!r || typeof r.id !== "string" || !r.id) continue;
+        const ial = r.ial || "";
+        const entry: { channels?: ContactChannel[]; locations?: ContactLocations } = {};
+        const m = ial.match(/(?:^|[\s{:])custom-lvct-channels="([^"]*)"/);
+        if (m && m[1]) {
+            const rawCh = m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+            try {
+                const parsed = JSON.parse(decodeURIComponent(rawCh));
+                if (Array.isArray(parsed)) entry.channels = normalizeChannels(parsed);
+            } catch {
+                try {
+                    const parsed = JSON.parse(rawCh);
+                    if (Array.isArray(parsed)) entry.channels = normalizeChannels(parsed);
+                } catch {}
+            }
+        }
+        const locRaw = extractLocationsIalValue(ial);
+        if (locRaw) {
+            const parsedLocs = parseContactLocationsAttr(locRaw);
+            if (parsedLocs.resident || parsedLocs.hometown) {
+                entry.locations = parsedLocs;
+            }
+        }
+        targetMap.set(r.id, entry);
+    }
+}
+
+/** 批量预加载文档 IAL 中的 custom-lvct-channels 与 custom-lv-locations / custom-lvct-locations 并投影到联系人列表 */
+export async function enrichContactLocationsAndChannels(
+    people: ContactSummary[],
+): Promise<ContactSummary[]> {
+    try {
+        const docIds = [...new Set(people.map((p) => p.docId).filter(Boolean))];
+        if (docIds.length === 0) return people;
+        const resultCache = new Map<string, { channels?: ContactChannel[]; locations?: ContactLocations }>();
+        for (let i = 0; i < docIds.length; i += 500) {
+            const batch = docIds.slice(i, i + 500);
+            const inClause = batch.map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
+            const rows = await querySql<{ id: string; ial: string }>(
+                `SELECT id, ial FROM blocks WHERE id IN (${inClause}) AND (ial LIKE '%custom-lvct-channels%' OR ial LIKE '%custom-lv-locations%' OR ial LIKE '%custom-lvct-locations%')`,
+            );
+            parseLocationsAndChannelsFromRows(rows, resultCache);
+        }
+        return people.map((person) => {
+            const extra = resultCache.get(person.docId);
+            if (!extra || (!extra.channels && !extra.locations)) return person;
+            return {
+                ...person,
+                ...(extra.channels ? { channels: extra.channels } : {}),
+                ...(extra.locations ? { locations: extra.locations } : {}),
+            };
+        });
+    } catch {
+        /* 旁路容错，不阻断名册返回 */
+        return people;
+    }
+}
+
+/** 渐进列表投影器：同轮跨页仅读取一次地区与通讯条目 IAL 快照，并缓存复用 */
+export function createContactLocationsAndChannelsProjection(): (people: ContactSummary[]) => Promise<ContactSummary[]> {
+    let snapshotPromise: Promise<Map<string, { channels?: ContactChannel[]; locations?: ContactLocations }>> | undefined;
+    const readSnapshot = async (): Promise<Map<string, { channels?: ContactChannel[]; locations?: ContactLocations }>> => {
+        const map = new Map<string, { channels?: ContactChannel[]; locations?: ContactLocations }>();
+        try {
+            const rows = await querySql<{ id: string; ial: string }>(
+                `SELECT id, ial FROM blocks WHERE type = 'd' AND (ial LIKE '%custom-lvct-channels%' OR ial LIKE '%custom-lv-locations%' OR ial LIKE '%custom-lvct-locations%') LIMIT 5000`,
+            );
+            parseLocationsAndChannelsFromRows(rows, map);
+        } catch {
+            /* 旁路容错，不阻断名册返回 */
+        }
+        return map;
+    };
+    return async (people) => {
+        if (people.length === 0) return people;
+        const map = await (snapshotPromise ??= readSnapshot());
+        if (map.size === 0) return people;
+        return people.map((person) => {
+            const extra = map.get(person.docId);
+            if (!extra || (!extra.channels && !extra.locations)) return person;
+            return {
+                ...person,
+                ...(extra.channels ? { channels: extra.channels } : {}),
+                ...(extra.locations ? { locations: extra.locations } : {}),
+            };
+        });
+    };
+}
 
 /** 判断名册是否已加载就绪 */
 export function isRosterReady(): boolean {
@@ -129,48 +233,14 @@ export async function getRoster(settings: ContactsSettings): Promise<ContactSumm
                 }
             }
 
-            // 通讯多维条目批量预加载（赋能城市与地区识别、快捷外联等）：从块属性批量恢复 channels
-            try {
-                const docIds = people.map((p) => p.docId).filter(Boolean);
-                if (docIds.length > 0) {
-                    const channelsMap = new Map<string, ContactChannel[]>();
-                    for (let i = 0; i < docIds.length; i += 500) {
-                        const batch = docIds.slice(i, i + 500);
-                        const inClause = batch.map((id) => `'${id}'`).join(",");
-                        const rows = await querySql<{ id: string; ial: string }>(
-                            `SELECT id, ial FROM blocks WHERE id IN (${inClause}) AND ial LIKE '%custom-lvct-channels%'`
-                        );
-                        if (Array.isArray(rows)) {
-                            for (const r of rows) {
-                                const m = (r.ial || "").match(/custom-lvct-channels="([^"]*)"/);
-                                if (m && m[1]) {
-                                    try {
-                                        const parsed = JSON.parse(decodeURIComponent(m[1]));
-                                        if (Array.isArray(parsed)) channelsMap.set(r.id, normalizeChannels(parsed));
-                                    } catch {
-                                        try {
-                                            const parsed = JSON.parse(m[1]);
-                                            if (Array.isArray(parsed)) channelsMap.set(r.id, normalizeChannels(parsed));
-                                        } catch {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    for (const person of people) {
-                        const ch = channelsMap.get(person.docId);
-                        if (ch) person.channels = ch;
-                    }
-                }
-            } catch {
-                /* 旁路容错，不阻断名册返回 */
-            }
+            // 通讯多维条目与结构化常住地/籍贯批量预加载（赋能城市与地区识别、同城匹配、快捷外联等）
+            const enrichedPeople = await enrichContactLocationsAndChannels(people);
             // 已失效或被新配置的请求取代时，仅返回给原调用方，不回填共享缓存。
             if (request.generation === generation && pending === request) {
-                cache = { people, avId: settings.avId, fetchedAt: Date.now() };
+                cache = { people: enrichedPeople, avId: settings.avId, fetchedAt: Date.now() };
                 cacheKey = key;
                 const nextSet = new Set<string>();
-                for (const p of people) {
+                for (const p of enrichedPeople) {
                     if (p.docId) nextSet.add(p.docId);
                 }
                 for (const id of associatedDocIdSet) {
@@ -178,7 +248,7 @@ export async function getRoster(settings: ContactsSettings): Promise<ContactSumm
                 }
                 contactDocIdSet = nextSet;
             }
-            return people;
+            return enrichedPeople;
         } finally {
             if (pending === request) pending = null;
         }

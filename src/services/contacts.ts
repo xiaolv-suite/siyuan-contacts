@@ -12,7 +12,12 @@ import { ensurePersonRequestDocument } from "./person-document";
 import type { VcfDocumentCheckpoint } from "../domain/vcard.ts";
 import { withStoreLock } from "../data/storage";
 import { discoverAllImportCandidates } from "./import-scan";
-import { getRoster, invalidateRoster } from "./roster";
+import {
+    createContactLocationsAndChannelsProjection,
+    enrichContactLocationsAndChannels,
+    getRoster,
+    invalidateRoster,
+} from "./roster";
 import { createContactProfileProjection, enrichContactProfiles } from "./people-profiles";
 import { createContactAliasProjection, enrichContactAliases } from "./contact-aliases";
 import { filterContactSearch } from "../domain/contact-search";
@@ -111,7 +116,8 @@ export async function enrichContactAvatars(people: ContactSummary[]): Promise<Co
 export function createContactListProjection(): ContactListProjection {
     const profile = createContactProfileProjection();
     const aliases = createContactAliasProjection();
-    return async (people) => markSelfContacts(await aliases(await profile(people)));
+    const locAndChannels = createContactLocationsAndChannelsProjection();
+    return async (people) => markSelfContacts(await locAndChannels(await aliases(await profile(people))));
 }
 
 function markSelfContacts(people: ContactSummary[]): ContactSummary[] {
@@ -161,7 +167,7 @@ export async function listContactPage(
     }
     if (totalKnown && rawPeople.length > 0 && offset + rawPeople.length > total) throw new Error("联系人分页总数与实际读取不一致，请重新读取核实");
     const enriched = options.project ? await options.project(rawPeople)
-        : await enrichContactAliases(await enrichContactProfiles(rawPeople));
+        : await enrichContactLocationsAndChannels(await enrichContactAliases(await enrichContactProfiles(rawPeople)));
     const people = markSelfContacts(enriched);
     const state = rosterPageState(page, effectivePageSize, total, people.length);
     return {
@@ -372,8 +378,10 @@ export interface ContactCreationPreview {
 }
 
 export class ContactNameAmbiguityError extends Error {
-    constructor(readonly preview: ContactCreationPreview) {
+    readonly preview: ContactCreationPreview;
+    constructor(preview: ContactCreationPreview) {
         super(`联系人「${preview.name}」已存在同名候选，请选择具体文档或明确创建独立人物；未自动收编`);
+        this.preview = preview;
         this.name = "ContactNameAmbiguityError";
     }
 }
@@ -387,8 +395,10 @@ export interface ContactCreationRequest {
 }
 
 export class ContactCreationError extends Error {
-    constructor(message: string, readonly request: ContactCreationRequest, options?: ErrorOptions) {
+    readonly request: ContactCreationRequest;
+    constructor(message: string, request: ContactCreationRequest, options?: ErrorOptions) {
         super(`${message}；原请求 ${request.checkpoint.requestId}${request.checkpoint.docId ? `，人物文档 ${request.checkpoint.docId}` : ""} 已保留，请核实后续做`, options);
+        this.request = request;
         this.name = "ContactCreationError";
     }
 }

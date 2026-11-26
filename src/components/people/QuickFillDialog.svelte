@@ -220,7 +220,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<LvctDialog title={text("qfTitle", "粘贴并识别")} onClose={requestClose}>
+<LvctDialog title={text("qfTitle", "粘贴并识别")} maskClass="lvct-dialog-mask--qf" panelClass="lvct-dialog-panel--qf" onClose={requestClose}>
     <div class="lvct-qf">
         {#if !previewed}
             <p class="ft__smaller ft__on-surface">

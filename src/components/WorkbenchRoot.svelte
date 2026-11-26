@@ -6,10 +6,14 @@
     import type { ContactsPluginFacade, WorkbenchView } from "../types";
     import type { ViewPreferences } from "../domain/preferences";
     import type { WorkspaceState } from "../domain/workspace-state";
-    import { onMount } from "svelte";
+    import { onMount, setContext } from "svelte";
     import { LVCT_WORKSPACE_STATE } from "../libs/data-events";
+    import { CONTACTS_CONTEXT_KEY } from "../core/context";
 
     let { facade, initialView }: { facade: ContactsPluginFacade; initialView?: WorkbenchView } = $props();
+
+    // svelte-ignore state_referenced_locally
+    setContext(CONTACTS_CONTEXT_KEY, facade);
 
     // settings 仅作为当前工作台 props；任何设置/锚点变化都先切出工作台，避免旧 props 继续请求内核。
     // svelte-ignore state_referenced_locally
@@ -36,7 +40,6 @@
 
 {#if workspaceState.kind === "ready" && settings}
     <Workbench
-        {facade}
         {settings}
         {preferences}
         {initialView}

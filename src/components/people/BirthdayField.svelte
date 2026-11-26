@@ -77,10 +77,8 @@
     const validLunarDays = $derived.by(() => {
         if (!lunarYear || !lunarMonth) return [] as number[];
         return Array.from({ length: 30 }, (_, index) => index + 1)
-            // 联系人的现有 AV 日期列仍以 YYYY-MM-DD 毫秒保存；筛掉
-            // 虽然农历有效、但无法编码为该日期格式的组合，避免选完后保存失败。
             .filter((day) => Boolean(lunarToSolar(lunarYear, lunarMonth, day))
-                && birthdayToMs(formatDateKey(lunarYear, lunarMonth, day)) !== null);
+                && birthdayToMs(formatDateKey(lunarYear, lunarMonth, day), true) !== null);
     });
 
     function switchMode(nextIsLunar: boolean): void {
@@ -101,8 +99,8 @@
                     return;
                 }
                 nextValue = formatDateKey(lunar.year, lunar.month, lunar.day);
-                if (birthdayToMs(nextValue) === null) {
-                    modeError = "该日期对应农历三十，当前生日字段暂不能编码，请改选相邻日期。";
+                if (birthdayToMs(nextValue, true) === null) {
+                    modeError = "该日期对应的农历月日暂不能编码，请改选相邻日期。";
                     return;
                 }
                 lunarYear = lunar.year;

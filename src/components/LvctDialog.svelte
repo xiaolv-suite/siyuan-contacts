@@ -3,6 +3,7 @@
     import type { Snippet } from "svelte";
     import { createCloseScope } from "./close-guard";
     import { getFocusableElements } from "../shared/focusable-elements";
+    import { acquireModalBodyClass } from "../shared/modal-host";
 
     let {
         title,
@@ -10,6 +11,8 @@
         wide = false,
         modal = true,
         closeOnBackdrop = true,
+        maskClass = "",
+        panelClass = "",
         beforeClose,
         onClose,
         children,
@@ -19,6 +22,8 @@
         wide?: boolean;
         modal?: boolean;
         closeOnBackdrop?: boolean;
+        maskClass?: string;
+        panelClass?: string;
         /** 子窗口可使用自身编辑器的守卫，避免被等待其结果的父窗口 busy 阻断。 */
         beforeClose?: () => Promise<boolean>;
         onClose: () => void;
@@ -105,6 +110,7 @@
     }
 
     onMount(() => {
+        const releaseModalClass = acquireModalBodyClass();
         void tick().then(() => focusables()[0]?.focus());
 
         // 移动端虚拟键盘避让 (visualViewport)：若外层工作台/全屏移动容器已通过 --lvct-vv-h 扣减高度，禁止内层二次扣减
@@ -131,6 +137,7 @@
         }
 
         return () => {
+            releaseModalClass();
             if (typeof window !== "undefined" && window.visualViewport) {
                 window.visualViewport.removeEventListener("resize", updateViewport);
                 window.visualViewport.removeEventListener("scroll", updateViewport);
@@ -143,7 +150,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-    class="lvct-dialog-mask"
+    class={`lvct-dialog-mask${maskClass ? ` ${maskClass}` : ""}`}
     role="presentation"
     onclick={(event) => {
         if (closeOnBackdrop && event.target === event.currentTarget) void requestClose();
@@ -151,7 +158,7 @@
 >
     <div
         class:lvct-dialog-panel--wide={wide}
-        class="lvct-dialog-panel"
+        class={`lvct-dialog-panel${panelClass ? ` ${panelClass}` : ""}`}
         role="dialog"
         aria-modal={modal ? "true" : undefined}
         aria-labelledby={titleId}

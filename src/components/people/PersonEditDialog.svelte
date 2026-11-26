@@ -18,6 +18,9 @@
     import QuickFillDialog from "./QuickFillDialog.svelte";
     import GroupField from "./GroupField.svelte";
     import BirthdayField from "./BirthdayField.svelte";
+    import RegionPicker from "./RegionPicker.svelte";
+    import { extractLocationsFromPerson } from "../../domain/region";
+    import type { ContactLocation, ContactLocations } from "../../domain/china-regions";
     import { ClipboardPaste, Sparkles } from "@lucide/svelte";
     import { inferPersonaTags } from "../../domain/tag-inference.ts";
     import { onDestroy, onMount, tick, untrack } from "svelte";
@@ -37,6 +40,8 @@
         onAddOrgMembership,
         onUpdateOrgMembership,
         onRemoveOrgMembership,
+        onLoadLocations,
+        onSaveLocations,
         hostCloseChannel,
         onSaved,
         onClose,
@@ -57,6 +62,8 @@
         onAddOrgMembership?: (personDocId: string, orgDocId: string, extra?: { department?: string; title?: string; joinedOn?: string; leftOn?: string; status?: OrgMembershipStatus; statusLabel?: string; affiliationKind?: OrgAffiliationKind; note?: string }) => Promise<unknown>;
         onUpdateOrgMembership?: (membershipId: string, patch: OrgMembershipPatch, expected?: OrgMembership) => Promise<unknown>;
         onRemoveOrgMembership?: (membershipId: string, expected?: OrgMembership) => Promise<unknown>;
+        onLoadLocations?: (personDocId: string) => Promise<ContactLocations>;
+        onSaveLocations?: (personDocId: string, locations: ContactLocations) => Promise<void>;
         /** D-40：libs/dialog 注入的宿主关闭通道（X/Esc/遮罩经守卫路由）；缺省保持宿主原行为 */
         hostCloseChannel?: { request?: (close: () => void) => void };
         onSaved: () => void;
@@ -96,6 +103,31 @@
     const writeSettings = untrack(() => ({ ...settings, fieldMap: { ...settings.fieldMap } }));
     let alive = true;
     onDestroy(() => { alive = false; });
+
+    const initialLocs = untrack(() => (typeof extractLocationsFromPerson === "function" ? extractLocationsFromPerson(person) : {}));
+    let baseLocationsSnapshot: ContactLocations = $state(initialLocs);
+    let residentDraft = $state<ContactLocation | undefined>(initialLocs.resident);
+    let hometownDraft = $state<ContactLocation | undefined>(initialLocs.hometown);
+    const locationsDirty = $derived.by(() => {
+        const next: ContactLocations = {
+            ...(residentDraft ? { resident: residentDraft } : {}),
+            ...(hometownDraft ? { hometown: hometownDraft } : {}),
+        };
+        return JSON.stringify(next) !== JSON.stringify(baseLocationsSnapshot);
+    });
+    const loadLocationsInit = untrack(() => ({ fn: onLoadLocations, docId: person.docId }));
+    if (loadLocationsInit.fn) {
+        void loadLocationsInit.fn(loadLocationsInit.docId).then((loaded) => {
+            if (!alive || locationsDirty) return;
+            const merged: ContactLocations = {
+                ...(loaded.resident ?? initialLocs.resident ? { resident: loaded.resident ?? initialLocs.resident } : {}),
+                ...(loaded.hometown ?? initialLocs.hometown ? { hometown: loaded.hometown ?? initialLocs.hometown } : {}),
+            };
+            baseLocationsSnapshot = merged;
+            residentDraft = merged.resident;
+            hometownDraft = merged.hometown;
+        }).catch(() => {});
+    }
     // B12：编辑页面直接填写/选择组织归属与本人称谓。组织归属仍以 membership 为唯一事实源。
     // 资料区在首次挂载时先保持加载态，避免生命周期读取开始前短暂显示未初始化的输入框。
     let profileLoading = $state(true);
@@ -669,6 +701,17 @@
     async function persistAll(): Promise<void> {
         if (profileSupported && (profileLoading || profileBusy || creatingOrganization)) throw new Error("组织资料正在处理，请稍后再保存。");
         if (baseDraftDirty()) await persist();
+        if (locationsDirty && onSaveLocations) {
+            const nextLocs: ContactLocations = {
+                ...(residentDraft ? { resident: residentDraft } : {}),
+                ...(hometownDraft ? { hometown: hometownDraft } : {}),
+            };
+            await onSaveLocations(target.docId, nextLocs);
+            if (alive) {
+                baseLocationsSnapshot = nextLocs;
+                onSaved();
+            }
+        }
         if (profileDirty) {
             await saveProfileEditor();
             if (profileError) throw new Error(profileError);
@@ -676,8 +719,8 @@
     }
     const guardedClose = useCloseGuard({
         busy: () => running || profileBusy || profileLoading || creatingOrganization,
-        dirty: () => baseDraftDirty() || profileDirty,
-        changes: () => [...draftChanges(), ...profileChanges()],
+        dirty: () => baseDraftDirty() || profileDirty || locationsDirty,
+        changes: () => [...draftChanges(), ...(locationsDirty ? ["常住地/籍贯地区有未保存修改"] : []), ...profileChanges()],
         save: persistAll,
     });
     /* D-40：宿主 X/Esc/遮罩经同一守卫路由（返回 Promise 供拦截层重入门） */
@@ -798,7 +841,7 @@
                                     <div class="fn__flex-1">
                                         <strong>{membership.orgName}</strong>
                                         <span class="ft__smaller ft__on-surface"> · {affiliationLabel(membership.affiliationKind ?? (membership.orgName === "家庭" ? "family" : undefined))}</span>
-                                        <span class="lvct-chip {membership.status === "former" ? "lvct-bucket--stale" : "lvct-bucket--today"}">{orgMembershipStatusLabel({ ...membership, affiliationKind: membership.affiliationKind ?? (membership.orgName === "家庭" ? "family" : undefined) })}</span>
+                                        <span class="lvct-chip {membership.status === "former" ? "lvct-chip--muted" : "lvct-chip--success"}">{orgMembershipStatusLabel({ ...membership, affiliationKind: membership.affiliationKind ?? (membership.orgName === "家庭" ? "family" : undefined) })}</span>
                                         {#if membership.removed}<span class="lvct-chip lvct-bucket--stale">组织已移除</span>
                                         {:else if membership.archived}<span class="lvct-chip lvct-bucket--stale">组织已归档</span>{/if}
                                         {#if membership.reachable === false}<span class="lvct-chip lvct-bucket--stale">组织待核实</span>{/if}
@@ -902,6 +945,13 @@
             {/if}
         </label>
     </div>
+
+    {#if onSaveLocations}
+        <div class="lvct-person-edit__locations" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid var(--lvct-border-subtle); border-radius: var(--lvct-r-card, 12px);">
+            <RegionPicker kind="resident" label="常住地（同城匹配依据）" value={residentDraft} disabled={running} onChange={(next) => (residentDraft = next)} />
+            <RegionPicker kind="hometown" label="籍贯 / 老家" value={hometownDraft} disabled={running} onChange={(next) => (hometownDraft = next)} />
+        </div>
+    {/if}
 
     {#if errorText}
         <!-- D-35：读屏即时播报 + 焦点迁移 -->

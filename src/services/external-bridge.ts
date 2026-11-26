@@ -424,9 +424,9 @@ export function createExternalBridgeApi(deps: BridgeDependencies): LvContactsBri
                 const name = args[0]?.trim();
                 const note = args.slice(1).join(" ").trim();
                 if (!name) return { ok: false, message: "请输入联系人姓名" };
-                const ensured = await api.ensurePerson(name, { ref: `exoskeleton:${Date.now()}` });
+                const ensured = await api.ensurePerson(name, { ref: `quickcmd:${Date.now()}` });
                 if (ensured.docId) {
-                    await api.recordInteraction([ensured.docId], { note: note || "通过思源外骨骼记录互动", ref: `exoskeleton-record:${Date.now()}` });
+                    await api.recordInteraction([ensured.docId], { note: note || "通过快捷指令记录互动", ref: `quickcmd-record:${Date.now()}` });
                     return { ok: true, data: { docId: ensured.docId, name: ensured.name, recorded: true } };
                 }
                 return { ok: false, message: "未定位到联系人文档" };

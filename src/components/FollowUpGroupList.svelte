@@ -33,7 +33,7 @@
         sourceLabelByFollowUpId,
     }));
     const openCount = $derived(items.filter((item) => item.status === "open").length);
-    let selectedPerspective: "all" | "person" | "org" | "dept" | "source" = $state("all");
+    let selectedPerspective: "all" | "person" | "org" | "department" | "source" = $state("all");
     const displayedGroups = $derived.by(() => {
         if (selectedPerspective === "all") return groups;
         return groups.filter((g) => g.key === selectedPerspective);
@@ -83,9 +83,9 @@
                     type="button"
                     role="tab"
                     class="b3-button b3-button--text lvct-fu-group__pill"
-                    class:lvct-fu-group__pill--active={selectedPerspective === "dept"}
-                    aria-selected={selectedPerspective === "dept"}
-                    onclick={() => { selectedPerspective = "dept"; }}
+                    class:lvct-fu-group__pill--active={selectedPerspective === "department"}
+                    aria-selected={selectedPerspective === "department"}
+                    onclick={() => { selectedPerspective = "department"; }}
                 >按部门</button>
             {/if}
             {#if sourceLabelByFollowUpId && sourceLabelByFollowUpId.size > 0}
@@ -160,8 +160,8 @@
     transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 .lvct-fu-group__pill--active {
-    background: var(--lv-brand);
-    color: var(--lvct-on-accent);
+    background: var(--lvct-btn-primary-bg);
+    color: var(--lvct-btn-primary-fg);
     opacity: 1;
     font-weight: 600;
 }

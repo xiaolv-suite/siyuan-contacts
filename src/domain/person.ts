@@ -4,10 +4,11 @@
  */
 import type { AvRow, AvValue } from "../api/av";
 import type { FieldKey } from "./fields";
-import { validateDocumentTitle } from "./format.ts";
+import { validatePersonName } from "./format.ts";
 import type { PersonProfile } from "./people-profiles.ts";
 import { lunarToSolar } from "./lunar.ts";
 import { isValidDateKey } from "./date-key.ts";
+import type { ContactLocations } from "./china-regions.ts";
 
 /** 新建联系人表单草稿 */
 export interface ContactDraft {
@@ -32,8 +33,8 @@ export function emptyDraft(): ContactDraft {
 
 export function validateDraft(draft: ContactDraft): string[] {
     const errors: string[] = [];
-    const nameError = validateDocumentTitle(draft.name);
-    if (nameError) errors.push(draft.name.trim() ? nameError : "姓名不能为空");
+    const nameError = validatePersonName(draft.name);
+    if (nameError) errors.push(nameError);
     const email = draft.email.trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("邮箱格式不正确");
     const birthday = draft.birthday.trim();
@@ -106,6 +107,8 @@ export interface ContactSummary {
     avatar?: string;
     channels?: import("./person-channels.ts").ContactChannel[];
     address?: string;
+    /** 结构化常住地与籍贯（由文档 IAL custom-lv-locations 批量投影） */
+    locations?: ContactLocations;
 }
 
 /** 渲染响应的一行 → 联系人摘要。纯函数，逐单元格容错（缺值/未知字段跳过） */

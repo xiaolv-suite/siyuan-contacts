@@ -157,7 +157,6 @@ export function normalizeItineraryStore(raw: unknown): PersonItineraryStore {
             if (!parsed || seen.has(parsed.id)) continue;
             seen.add(parsed.id);
             validItems.push(parsed);
-            if (validItems.length >= MAX_ITINERARIES_PER_PERSON) break;
         }
         if (validItems.length > 0) itineraries[docId] = validItems;
     }

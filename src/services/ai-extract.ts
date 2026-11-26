@@ -1,5 +1,4 @@
 import { aiChat } from "../api/ai";
-import { lvAi } from "../libs/lv-notice-kit";
 import { fetchDocMarkdown } from "../api/blocks";
 import { KernelError } from "../api/client";
 import { parseExtraction } from "../domain/ai-extract.ts";
@@ -17,24 +16,9 @@ import { AsyncOperationError } from "../shared/async";
 import { getRoster, invalidateRoster } from "./roster";
 import { withStoreLock } from "../data/storage";
 
-export type { ExtractionResult };
+import type { AiExtractOutcome, AiExtractionConfirmation } from "../domain/ai-extract-types";
 
-export interface AiExtractOutcome {
-    extraction: ExtractionResult | null;
-    likelyUnconfigured: boolean;
-    matched: ContactSummary[];
-    unknownNames: string[];
-    ambiguousCandidates?: Array<{ name: string; people: ContactSummary[] }>;
-    candidates: AiCandidateDraft[];
-    preflightId: string;
-}
-
-export interface AiExtractionConfirmation {
-    preflight: AiPreflight;
-    confirmed: true;
-    signal?: AbortSignal;
-    timeoutMs?: number;
-}
+export type { ExtractionResult, AiExtractOutcome, AiExtractionConfirmation };
 
 const prepared = new WeakMap<AiPreflight, string>();
 
@@ -77,30 +61,12 @@ export async function extractFromDoc(settings: ContactsSettings, docId: string, 
     if (signal?.aborted) throw new AiExtractionError("cancelled");
     try {
         let reply = "";
-        let usedLvAi = false;
         try {
-            if (lvAi.getConfig()?.apiKey) {
-                usedLvAi = true;
-                const aiRes = await lvAi.chat({
-                    source: "人脉",
-                    messages: [
-                        { role: "system", content: "你是一个专业的人脉与联系人信息结构化提炼助手。" },
-                        { role: "user", content: preflight.msg },
-                    ],
-                    signal,
-                });
-                reply = aiRes.content;
-            } else {
-                reply = await aiChat(preflight, true, { signal, timeoutMs });
-            }
+            // 严格遵守外发预检契约：仅向预检页明确展示的思源原生端点（/api/ai/chatGPT）发送，绝不暗中改道外部端点
+            reply = await aiChat(preflight, true, { signal, timeoutMs });
         } catch (err) {
             if (signal?.aborted) throw new AiExtractionError("cancelled");
-            if (usedLvAi) {
-                // 优雅降级：仅当生态 AI 网关调用异常时平滑回退至思源原生 AI
-                reply = await aiChat(preflight, true, { signal, timeoutMs });
-            } else {
-                throw err;
-            }
+            throw err;
         }
         if (signal?.aborted) throw new AiExtractionError("cancelled");
         const extraction = parseExtraction(reply.trim());

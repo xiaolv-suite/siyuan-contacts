@@ -21,7 +21,13 @@
 .lvct-tab-root,
 .lvct-dialog-root,
 .lvct-doc-strip,
-.lvct-workbench {
+.lvct-workbench,
+.lvct-dialog-mask,
+.lvct-sheet,
+.lvct-dialog-host,
+.lvct-dialog,
+.b3-dialog__container.lvct-dialog,
+.lvct-confirm-dialog-root {
 
     font-family: var(--lvct-font-family);
     color: var(--lvct-text-1);
@@ -56,13 +62,13 @@
     /* 工具提示深色胶囊化（Dark Capsule Tooltip） */
     .lvct-tooltip,
     .b3-tooltips::after {
-        background: var(--lv-dark-block-bg, #1C1815) !important;
-        color: var(--lv-dark-block-text, #FAF8F5) !important;
+        background: var(--lv-dark-block-bg, #1E293B) !important;
+        color: var(--lv-dark-block-text, #F8FAFC) !important;
         border-radius: var(--lv-r-pill, 9999px) !important;
         font-size: 11px !important;
         font-weight: 500 !important;
         padding: 4px 10px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.24) !important;
         border: none !important;
         letter-spacing: 0.01em;
     }
@@ -102,43 +108,44 @@
         transform: translateY(1.5px) scale(0.985);
     }
 
-    /* 主按钮（无修饰类的填充按钮）：现代自然柔和外投影 + 悬停微上浮 */
-    .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text) {
-        background: var(--lv-brand);
-        color: #ffffff;
+    /* 主按钮（无修饰类的填充按钮）：克制柔和阴影 + 悬停微上浮 + 独立高对比填充/前景令牌 (>= 4.5:1) */
+    .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text),
+    .lvct-btn--primary {
+        background: var(--lvct-btn-primary-bg);
+        color: var(--lvct-btn-primary-fg);
         border: none;
-        box-shadow: 0 1px 3px color-mix(in srgb, var(--lv-brand) 28%, transparent), 0 2px 6px color-mix(in srgb, var(--lv-brand) 18%, transparent);
+        box-shadow: 0 1px 2px color-mix(in srgb, var(--lvct-btn-primary-bg) 22%, transparent);
 
         &:hover:not(:disabled) {
-            box-shadow: 0 4px 12px color-mix(in srgb, var(--lv-brand) 34%, transparent);
-            background: var(--lv-brand-hover);
+            box-shadow: 0 3px 10px color-mix(in srgb, var(--lvct-btn-primary-bg) 28%, transparent);
+            background: var(--lvct-btn-primary-bg-hover);
+            color: var(--lvct-btn-primary-fg);
             transform: translateY(-1px);
             filter: none;
         }
 
         &:active:not(:disabled) {
             box-shadow: none;
-            background: var(--lv-brand-hover);
+            background: var(--lvct-btn-primary-bg-active);
+            color: var(--lvct-btn-primary-fg);
             transform: translateY(1.5px) scale(0.985);
             filter: none;
         }
     }
 
-    /* 次按钮：表面底 + 柔和描边 + 统一 Level 1 阴影 */
-    .b3-button--outline,
-    .b3-button--cancel {
+    /* 次按钮：表面底 + 清晰中性描边 */
+    .b3-button--outline {
         background: var(--lvct-bg-surface);
         color: var(--lvct-text-1);
-        border: var(--lvct-control-border-width) solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
-        box-shadow: var(--lvct-shadow-1);
+        border: var(--lvct-control-border-width) solid var(--lvct-border-strong);
+        box-shadow: none;
 
         &:focus { box-shadow: none; }
 
         &:hover:not(:disabled) {
             background: var(--lvct-bg-hover);
-            border-color: var(--lvct-border-strong);
+            border-color: color-mix(in srgb, var(--lvct-text-2) 32%, transparent);
             color: var(--lvct-text-1);
-            box-shadow: var(--lvct-shadow-2);
             transform: translateY(-1px);
         }
 
@@ -146,6 +153,27 @@
             background: var(--lvct-bg-active);
             box-shadow: none;
             transform: translateY(1.5px) scale(0.985);
+        }
+    }
+
+    /* 取消/弱次按钮：低视觉权重，绝不抢主/保存按钮风头 */
+    .b3-button--cancel {
+        background: transparent;
+        color: var(--lvct-text-2);
+        border: var(--lvct-control-border-width) solid var(--lvct-border-subtle);
+        box-shadow: none;
+
+        &:focus { box-shadow: none; }
+
+        &:hover:not(:disabled) {
+            background: var(--lvct-bg-hover);
+            border-color: var(--lvct-border-strong);
+            color: var(--lvct-text-1);
+        }
+
+        &:active:not(:disabled) {
+            background: var(--lvct-bg-active);
+            box-shadow: none;
         }
     }
 
@@ -204,11 +232,11 @@
     /* 文字/幽灵按钮 */
     .b3-button--text {
         background: transparent;
-        color: var(--lv-brand);
+        color: var(--lvct-accent-text);
 
         &:hover:not(:disabled) {
             background: var(--lv-brand-soft);
-            color: var(--lv-brand);
+            color: var(--lvct-accent-text);
         }
     }
 
@@ -275,11 +303,11 @@
         }
     }
 
-    /* 文本输入框 / 下拉框：柔和描边 + 平整表面 + 焦点品牌呼吸环 */
+    /* 文本输入框 / 下拉框：清晰中性描边 + 平整表面 + 焦点品牌呼吸环 */
     .b3-text-field,
     .b3-select {
         border-radius: var(--lv-r-sm, 8px);
-        border: var(--lvct-control-border-width) solid color-mix(in srgb, var(--lvct-border-subtle) 85%, transparent);
+        border: var(--lvct-control-border-width) solid var(--lvct-border-strong);
         background: var(--lvct-bg-surface);
         color: var(--lvct-text-1);
         min-height: var(--lvct-touch-min);
@@ -293,12 +321,12 @@
         &::placeholder { color: var(--lvct-text-3); }
 
         &:hover:not(:disabled):not(:focus) {
-            border-color: var(--lvct-border-strong);
+            border-color: color-mix(in srgb, var(--lvct-text-2) 32%, transparent);
         }
 
         &:focus {
-            border-color: var(--lv-brand, #ea580c);
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-brand, #ea580c) 18%, transparent);
+            border-color: var(--lv-brand);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--lv-brand) 18%, transparent);
             outline: none;
         }
 
@@ -319,47 +347,64 @@
         line-height: 1.2;
         padding: 3px 8px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: color-mix(in srgb, var(--lvct-text-1) 8%, transparent);
-        color: var(--lvct-text-1);
-        border: 1px solid color-mix(in srgb, var(--lvct-border-subtle) 60%, transparent);
+        background: var(--lvct-surface-inset);
+        color: var(--lvct-text-2);
+        border: 1px solid var(--lvct-border-subtle);
         transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
 
         &:hover:not(:disabled) {
-            background: color-mix(in srgb, var(--lvct-accent) 12%, transparent);
-            color: var(--lvct-accent);
-            border-color: color-mix(in srgb, var(--lvct-accent) 30%, transparent);
+            background: var(--lv-brand-soft);
+            color: var(--lvct-accent-text);
+            border-color: color-mix(in srgb, var(--lv-brand) 28%, transparent);
         }
 
         &--primary {
-            background: var(--lv-brand, #ea580c);
-            color: #ffffff;
-            border-color: var(--lv-brand, #ea580c);
+            background: var(--lvct-btn-primary-bg);
+            color: var(--lvct-btn-primary-fg);
+            border-color: var(--lvct-btn-primary-bg);
             font-weight: 600;
 
             &:hover:not(:disabled) {
-                background: color-mix(in srgb, var(--lv-brand, #ea580c) 88%, #000);
-                color: #ffffff;
+                background: var(--lvct-btn-primary-bg-hover);
+                border-color: var(--lvct-btn-primary-bg-hover);
+                color: var(--lvct-btn-primary-fg);
+            }
+
+            &:active:not(:disabled) {
+                background: var(--lvct-btn-primary-bg-active);
+                border-color: var(--lvct-btn-primary-bg-active);
+                color: var(--lvct-btn-primary-fg);
             }
         }
     }
 
-    /* 下拉选择框：强制文字水平与垂直精确居中，修正与按钮等高 */
+    /* 下拉选择框：自然左对齐，与输入控件对齐 */
     .b3-select {
         height: var(--lvct-control-h-compact, 36px);
         min-height: var(--lvct-control-h-compact, 36px);
         max-height: var(--lvct-control-h-compact, 36px);
         line-height: calc(var(--lvct-control-h-compact, 36px) - 2px);
-        padding: 0 16px;
-        text-align: center;
-        text-align-last: center;
-        -webkit-text-align-last: center;
-        -moz-text-align-last: center;
+        padding: 0 28px 0 12px;
+        text-align: left;
+        text-align-last: left;
         vertical-align: middle;
         cursor: pointer;
 
         option {
-            text-align: center;
+            text-align: left;
+        }
+    }
+
+    /* 开关控件：在插件根内继承品牌主题色，消除宿主硬编码蓝色违和 */
+    input.b3-switch {
+        &:checked {
+            background-color: var(--lv-brand) !important;
+            border-color: var(--lv-brand) !important;
+        }
+        &:focus-visible {
+            outline: var(--lvct-focus-ring-width) solid var(--lvct-focus-ring-color);
+            outline-offset: var(--lvct-focus-ring-offset);
         }
     }
 
@@ -539,8 +584,7 @@
  * Body-Level Dialog Isolation & High-Contrast System Bridge (Epoch 5)
  * ============================================================================ */
 @media (forced-colors: active) {
-    .b3-dialog:has(.b3-dialog__content),
-    .b3-dialog:has(.b3-dialog__action),
+    .b3-dialog.lvct-dialog-host,
     .b3-dialog {
         .b3-dialog__container {
             border: 2px solid CanvasText !important;
@@ -589,8 +633,7 @@
 }
 
 @media (prefers-contrast: more) {
-    .b3-dialog:has(.b3-dialog__content),
-    .b3-dialog:has(.b3-dialog__action),
+    .b3-dialog.lvct-dialog-host,
     .b3-dialog {
         .b3-dialog__container {
             border: 2px solid var(--b3-theme-on-background, currentColor) !important;

@@ -6,7 +6,6 @@
  */
 import {
     getRoster,
-    invalidateRoster,
     isRosterReady,
     isKnownContactOrRelatedDoc,
     registerRelatedDocId,
@@ -24,115 +23,59 @@ import { formatBirthdayDisplay, nextBirthday } from "../domain/occasions";
 import { copyPlainText } from "../shared/clipboard";
 import { safePerfMark, safePerfMeasure } from "../shared/perf";
 import { svelteDialog } from "../libs/dialog";
-import { emitDataChanged, requestPersonNavigation, requestWorkbenchNavigation, subscribeDataChanged } from "../libs/data-events";
+import { emitDataChanged, requestPersonNavigation, requestWorkbenchNavigation } from "../libs/data-events";
 import PersonEditDialog from "../components/people/PersonEditDialog.svelte";
 import QuickRecordDialog from "../components/people/QuickRecordDialog.svelte";
 import { translateText } from "../domain/translation";
 import { extractNormalizedRegion } from "../domain/region";
 import { CITY_TOPIC_ATTR } from "../domain/city-topic";
-import { querySql, assertSafeBlockId } from "../api/client";
+import { assertSafeBlockId } from "../api/client";
+import { sqlCoalescer } from "../api/sql-coalescer";
 import type { Plugin } from "siyuan";
-import type { ContactsSettings } from "../domain/model";
 import type { ContactSummary } from "../domain/person";
-import type { LifecycleToken } from "../domain/lifecycle";
 
-const STRIP_CLASS = "lvct-doc-strip";
+import {
+    STRIP_CLASS,
+    StripController,
+    type PanelContext,
+    type ProtyleLike,
+    type ProtyleEvent,
+} from "./strip-controller";
+
 let stripOverflowSequence = 0;
-const stripRequests = new WeakMap<HTMLElement, number>();
-/** FUNC-01.7-a：已注入档案条的活跃文档登记——数据变化时原地重渲染（不整页刷新） */
-const activeStrips = new Map<HTMLElement, { context: PanelContext; protyle: ProtyleLike; rootId: string }>();
-let dataSubscription: (() => void) | null = null;
-const lifecycleCleanups = new Map<Plugin, () => void>();
 
-export interface PanelContext {
-    plugin: Plugin;
-    settings: ContactsSettings | null;
-    i18n?: Record<string, string>;
-    lifecycleToken?: LifecycleToken;
-}
+export type { PanelContext, ProtyleLike, ProtyleEvent };
 
-interface ProtyleLike {
-    element: HTMLElement;
-    block?: { rootID?: string };
-}
+export async function updateStrip(
+    context: PanelContext,
+    protyle: ProtyleLike,
+    rootId: string,
+    isCurrentFn?: () => boolean,
+    controller?: StripController,
+): Promise<void> {
+    const activeController = controller ?? context.stripController ?? (context.plugin as any)?.stripController;
 
-type ProtyleEvent = { detail?: { protyle?: ProtyleLike } };
+    // 当且仅当外部直接裸调 updateStrip（非 Controller 内部回调），委托至 activeController 调度
+    if (activeController && !isCurrentFn) {
+        return activeController.updateStrip(context, protyle, rootId);
+    }
 
-/** protyle 事件入口（loaded-protyle-static/dynamic、switch-protyle） */
-export function handleProtyleEvent(context: PanelContext, event: ProtyleEvent): void {
     if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
-    if (context.lifecycleToken && !lifecycleCleanups.has(context.plugin)) {
-        lifecycleCleanups.set(context.plugin, context.lifecycleToken.onDispose(() => disposePersonPanels(context.plugin)));
-    }
-    ensureDataSubscription();
-    const protyle = event.detail?.protyle;
-    if (!protyle?.element || !context.settings) return;
-    const rootId = protyle.block?.rootID ?? "";
-    void updateStrip(context, protyle, rootId);
-}
+    const isCurrent = isCurrentFn ?? (() => true);
 
-/** 释放关闭的编辑器档案条引用，杜绝 DOM 内存泄漏 */
-export function handleProtyleDestroy(event: ProtyleEvent): void {
-    const el = event.detail?.protyle?.element;
-    if (el) {
-        stripRequests.set(el, (stripRequests.get(el) ?? 0) + 1);
-        el.querySelector(`.${STRIP_CLASS}`)?.remove();
-        activeStrips.delete(el);
-    }
-}
-
-export function disposePersonPanels(plugin: Plugin): void {
-    const detach = lifecycleCleanups.get(plugin);
-    lifecycleCleanups.delete(plugin);
-    detach?.();
-    for (const [element, entry] of activeStrips) {
-        if (entry.context.plugin !== plugin) continue;
-        stripRequests.set(element, (stripRequests.get(element) ?? 0) + 1);
-        element.querySelector(`.${STRIP_CLASS}`)?.remove();
-        activeStrips.delete(element);
-    }
-    if (activeStrips.size === 0) {
-        dataSubscription?.();
-        dataSubscription = null;
-    }
-}
-
-/** 数据变化（含跨窗口）：名册缓存立即失效，活跃档案条逐个重渲染（乱序由 stripRequests 代际挡） */
-function ensureDataSubscription(): void {
-    if (dataSubscription) return;
-    dataSubscription = subscribeDataChanged(() => {
-        invalidateRoster();
-        for (const [element, entry] of [...activeStrips]) {
-            if (!element.isConnected || entry.context.lifecycleToken && !entry.context.lifecycleToken.isAlive()) {
-                activeStrips.delete(element);
-                continue;
-            }
-            void updateStrip(entry.context, entry.protyle, entry.rootId);
-        }
-    });
-}
-
-export async function updateStrip(context: PanelContext, protyle: ProtyleLike, rootId: string): Promise<void> {
-    if (context.lifecycleToken && !context.lifecycleToken.isAlive()) return;
-    const request = (stripRequests.get(protyle.element) ?? 0) + 1;
-    stripRequests.set(protyle.element, request);
-    const isCurrent = () => stripRequests.get(protyle.element) === request
-        && protyle.block?.rootID === rootId && protyle.element.isConnected
-        && (!context.lifecycleToken || context.lifecycleToken.isAlive());
     protyle.element.querySelector(`.${STRIP_CLASS}`)?.remove();
     if (!rootId || !context.settings || !/^\d{14}-[0-9a-z]{7}$/.test(rootId)) {
-        activeStrips.delete(protyle.element);
+        activeController?.unregisterActive(protyle.element);
         return;
     }
 
     // 轨道 A 快路径过滤：名册已就绪且普通笔记不在集合内时 O(1) 短路退出，0 次 SQL 探测
     if (isRosterReady() && !isKnownContactOrRelatedDoc(rootId)) {
         safePerfMark("lvct-strip-fast-exit");
-        activeStrips.delete(protyle.element);
+        activeController?.unregisterActive(protyle.element);
         return;
     }
 
-    activeStrips.set(protyle.element, { context, protyle, rootId });
     safePerfMark("lvct-strip-check-start");
     try {
         const roster = await getRoster(context.settings);
@@ -167,17 +110,13 @@ export async function updateStrip(context: PanelContext, protyle: ProtyleLike, r
 
             // 检查是否为城市人脉实体专题文档
             assertSafeBlockId(rootId, "rootId");
-            const cityRows = await querySql<unknown>(
-                `SELECT content, ial FROM blocks WHERE id = '${rootId}' AND type = 'd' AND ial LIKE '%${CITY_TOPIC_ATTR}="%' LIMIT 1`,
-            ).catch(() => []);
+            const cityRecord = await sqlCoalescer.queryBlockRecord(rootId).catch(() => null);
             if (!isCurrent()) return;
-            if (cityRows.length > 0) {
+            if (cityRecord && cityRecord.ial.includes(`${CITY_TOPIC_ATTR}="`)) {
                 registerRelatedDocId(rootId);
-                const row = cityRows[0] as { ial?: unknown; content?: string };
-                const ialStr = typeof row.ial === "string" ? row.ial : (row.ial && typeof row.ial === "object" ? JSON.stringify(row.ial) : "");
+                const ialStr = cityRecord.ial;
                 const match = ialStr.match(new RegExp(`${CITY_TOPIC_ATTR}="([^"]+)"`));
-                const objVal = typeof row.ial === "object" && row.ial ? (row.ial as Record<string, unknown>)[CITY_TOPIC_ATTR] : undefined;
-                const cityName = match?.[1] || (objVal ? String(objVal) : row.content) || "未知";
+                const cityName = match?.[1] || cityRecord.content || "未知";
                 const cityContactsCount = roster.filter((p) => extractNormalizedRegion(p).city === cityName).length;
                 const strip = buildCityStrip(context, protyle, cityName, cityContactsCount);
                 const title = protyle.element.querySelector(".protyle-title");
@@ -191,7 +130,7 @@ export async function updateStrip(context: PanelContext, protyle: ProtyleLike, r
                 return;
             }
 
-            activeStrips.delete(protyle.element);
+            activeController?.unregisterActive(protyle.element);
             safePerfMark("lvct-strip-check-end");
             safePerfMeasure("lvct-strip-check", "lvct-strip-check-start", "lvct-strip-check-end");
             return;

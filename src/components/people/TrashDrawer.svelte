@@ -24,7 +24,7 @@
         i18n,
     }: {
         onListTrash?: () => Promise<TrashContactEntry[]>;
-        onRestoreContact?: (entryId: string) => Promise<{ docId: string; itemId: string; name: string }>;
+        onRestoreContact?: (entryId: string) => Promise<{ docId: string; itemId: string; name: string; warnings?: string[] }>;
         onEmptyTrash?: () => Promise<void>;
         onClose: () => void;
         onRestored?: () => void;
@@ -73,8 +73,13 @@
         restoringId = entry.id;
         errorText = "";
         try {
-            await onRestoreContact(entry.id);
-            entries = entries.filter((e) => e.id !== entry.id);
+            const res = await onRestoreContact(entry.id);
+            if (res?.warnings?.length) {
+                errorText = `已恢复「${entry.name}」主体资料，但部分关联关系未完成（快照已保留）：${res.warnings.join("；")}`;
+                await loadData();
+            } else {
+                entries = entries.filter((e) => e.id !== entry.id);
+            }
             if (onRestored) onRestored();
         } catch (e: unknown) {
             errorText = e instanceof Error ? e.message : String(e);

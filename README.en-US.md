@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.14** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.14) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
+**Latest stable release: v0.7.15** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.15) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -19,14 +19,14 @@ English | [简体中文](README.md)
 
 ---
 
-## 🚀 What's New in v0.7.14 (Cumulative Updates)
+## 🚀 What's New in v0.7.15 (2026-11-26 Milestone Release)
 
-- **First-Meeting Provenance & Introducer Network**: Tracks "Introduced by whom / Encounter occasion" directed links, rendering radial referral paths in Cytoscape graph view to uncover 1st-degree icebreaking mutual contacts;
-- **30-Second Pre-Meeting Brief Card**: Instant pre-meeting summary compiling shared organizations, recent interactions, social radar metrics, and outstanding promises, copyable as standard Markdown Callouts;
-- **Relationship Thermometer & Proactive Care Radar**: Categorizes contacts into active, cooling, and overdue based on contact cadences; pairs with reciprocity balance for proactive reconnect nudges;
-- **Daily Note Sync Hardening & Null-Safe Probing**: `findDailyNoteDocument` tolerates empty `notebookId` with graceful fallback to workspace-wide probing; `createDailyNote` defaults to native daily notes with double conflict file filtering;
-- **Launchpad Anchor Stabilization**: Jitter-free topbar presence with instant Bento Launchpad access even in single-plugin installations;
-- **Architecture Integrity & Accessible Settings**: Enforces strict CJS non-chunking discipline without runtime dynamic imports; modernizes settings UX per `$ui-checker` 47-point standards.
+- **Refined Dual-Theme Surfaces, Dark Overlays & WCAG AA Primary Controls**: Unified neutral light/charcoal surface tokens across all top-level and dialog containers, with 5 theme color schemes (`cognac`, `emerald`, `ocean`, `violet`, `amber`) featuring high-contrast primary buttons (`>= 4.5:1`), deep charcoal dark-mode confirmation overlays, and uncramped mobile search bars;
+- **Primary/Secondary Switch in Contact Merge Wizard**: One-click swap between primary (retained) and secondary (unlinked after merge) contacts in `ContactMergeWizard`, preserving person documents and interaction histories safely;
+- **Lunar Birthdays & Three-Level Region Picker**: Built-in 1900–2100 Chinese lunar calendar reminder engine paired with province/city/district cascading selectors and city/region roster filtering;
+- **Four-Level Folded Daily Note Zone & Unified LifeLog**: Daily note updates write cleanly into the `#### 🐴 小驴记录` folded zone with `findDailyNoteDocument` / `createDailyNote` conflict filtering and unified LifeLog rollback attributes;
+- **Shared Ecosystem Hubs & Block Assistant**: Direct Launchpad entry to the workbench home, unified AI Router, Block Assistant 1–8 native base + custom double-click, notification & activity bus, cancelable `.lv-ai-thinking` AI wait UX, and cross-plugin backup/restore;
+- **60fps Zero `:has()` / Zero Heavy-Blur Performance**: Strictly `0` `:has()` selectors, `0` `:root` leaks, and `0` `blur(>=15px)` in source and built CSS; O(1) `Set` filtering on document switches and deferred post-ready self-healing.
 
 ---
 
@@ -80,8 +80,6 @@ Lv Contacts is a **Local-First**, **privacy-centric**, and **bi-directionally li
 
 - Migration to `xiaolv-suite` organization; mobile full-screen exit flow via `openMobileFileById`; pull-down gesture input guards; instant haptic feedback.
 
-### v0.7.8 (2026-11-04)
-
 ### v0.7.7 (2026-11-02)
 
 Deep Native Document & Daily Note Synchronization, Xiaolv Federation SDK Integration, Multi-Granularity Graph Timeline & Full-Stack Isolated E2E Acceptance:
@@ -95,7 +93,7 @@ Deep Native Document & Daily Note Synchronization, Xiaolv Federation SDK Integra
   - **Department Tree Cascade**: Stable ID cascading across organizational departments (`cascadeRenameDepartmentMembers`);
   - **Editor Float Strip**: Native protyle top strip (`.lvct-doc-strip`) with full editing callbacks.
 - **Xiaolv Federation SDK Ecosystem Linkages (IDEA-15 ~ IDEA-18)**:
-  - **QuickGate Global Commands (IDEA-16)**: Registered `rm <name>` and `rm+ <name> <note>` slash commands via `executeCommand`;
+  - **Lv Launchpad & Ecosystem Commands**: Registered the `siyuan-contacts` Launchpad hub entry (quick lookup, due follow-ups, new contact, pre-meeting brief) and ecosystem `executeCommand` actions (`rm <name>` and `rm+ <name> <note>`);
   - **LvCards Review Deck Push (IDEA-15)**: 1-click flashcard generation for client preferences and taboos via `CardsBridgeApi.createCard`;
   - **Home Calendar Sync (IDEA-17)**: Automatic synchronization of anniversaries and birthdays to `siyuan-home` schedule;
   - **Raikiri Dynamic Widget (IDEA-18)**: Real-time action counts, upcoming birthdays, and overdue alerts in desktop dynamic widgets.
@@ -254,7 +252,7 @@ Requires **SiYuan 3.8.5 or later**.
 ### ❓ Frequently Asked Questions (FAQ)
 
 - **Q: Where is my data stored and how do I back it up?**
-  - **A**: All data is stored 100% locally in your SiYuan workspace. To migrate or backup, go to **Settings → Data & Fields → Export Center** and click **Export Migration Bundle (.zip)**. On your new device, click **Import Migration Bundle** to restore all 23 modules losslessly with current-first merge.
+  - **A**: All data is stored 100% locally in your SiYuan workspace. To migrate or backup, go to **Settings → Data & Fields → Export Center** and click **Export Migration Bundle (.zip)**. On your new device, click **Import Migration Bundle** to restore all 24 modules losslessly with current-first merge.
 - **Q: Will Lunar New Year's Eve (12/30) birthdays be missed in short years?**
   - **A**: No. Lv Contacts includes a Chinese calendar dual-track engine that automatically shifts 12/30 to 12/29 when a year only has 29 days in the 12th lunar month, ensuring celebrations are never missed.
 - **Q: Why does the exported CSV open cleanly without mojibake in Excel?**

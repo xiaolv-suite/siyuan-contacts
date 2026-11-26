@@ -81,6 +81,7 @@ export const simpleDialog = (args: {
         }
     });
     dialog.element.querySelector(".dialog-content")?.appendChild(args.ele);
+    dialog.element.classList.add("lvct-dialog-host");
     dialog.element.querySelector(".b3-dialog__container")?.classList.add("lvct-dialog");
 
     const outerClose = dialog.element.querySelector<HTMLElement | SVGElement>(".b3-dialog__container > .b3-dialog__close");
@@ -133,10 +134,18 @@ export const svelteDialog = (args: {
     container.style.display = "contents";
 
     const hostCloseChannel: HostCloseChannel = {};
+    const customOnClose = typeof args.props?.onClose === "function" ? args.props.onClose as () => void : undefined;
     let closeDialog: (() => void) | undefined;
     let componentInstance = mount(args.component, {
         target: container,
-        props: { ...args.props, onClose: () => closeDialog?.(), hostCloseChannel }
+        props: {
+            ...args.props,
+            onClose: () => {
+                closeDialog?.();
+                customOnClose?.();
+            },
+            hostCloseChannel,
+        },
     });
 
     const { dialog, close } = simpleDialog({

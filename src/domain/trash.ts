@@ -23,6 +23,8 @@ export interface TrashContactSnapshot {
     group?: string;
     tags: string[];
     avatar?: string;
+    relatedItemIds?: string[];
+    relatedDocIds?: string[];
 }
 
 export interface TrashContactEntry {
@@ -58,8 +60,14 @@ export function newTrashId(): string {
 }
 
 /** 创建一条软删除回收站记录 */
-export function createTrashEntry(person: ContactSummary, nowTime: number = Date.now()): TrashContactEntry {
+export function createTrashEntry(
+    person: ContactSummary,
+    nowTime: number = Date.now(),
+    relatedDocIds?: readonly string[],
+): TrashContactEntry {
     const msInDay = 86400 * 1000;
+    const cleanRelatedItemIds = [...new Set((person.relatedItemIds ?? []).filter((id) => typeof id === "string" && id.trim().length > 0))];
+    const cleanRelatedDocIds = [...new Set((relatedDocIds ?? []).filter((id) => typeof id === "string" && DOC_ID_RE.test(id) && id !== person.docId))];
     return {
         id: newTrashId(),
         docId: person.docId,
@@ -75,6 +83,8 @@ export function createTrashEntry(person: ContactSummary, nowTime: number = Date.
             group: person.group || undefined,
             tags: [...person.tags],
             avatar: person.avatar || undefined,
+            ...(cleanRelatedItemIds.length > 0 ? { relatedItemIds: cleanRelatedItemIds } : {}),
+            ...(cleanRelatedDocIds.length > 0 ? { relatedDocIds: cleanRelatedDocIds } : {}),
         },
         removedAt: nowTime,
         expiresAt: nowTime + TRASH_RETENTION_DAYS * msInDay,
@@ -154,6 +164,12 @@ export function normalizeTrashStore(raw: unknown): TrashStore {
         if (typeof candidate.expiresAt !== "number" || !Number.isFinite(candidate.expiresAt)) continue;
 
         const snapRaw = candidate.snapshot;
+        const relatedItemIds = Array.isArray(snapRaw?.relatedItemIds)
+            ? [...new Set(snapRaw.relatedItemIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0))]
+            : undefined;
+        const relatedDocIds = Array.isArray(snapRaw?.relatedDocIds)
+            ? [...new Set(snapRaw.relatedDocIds.filter((id): id is string => typeof id === "string" && DOC_ID_RE.test(id)))]
+            : undefined;
         const snapshot: TrashContactSnapshot = {
             phone: typeof snapRaw?.phone === "string" ? snapRaw.phone : undefined,
             email: typeof snapRaw?.email === "string" ? snapRaw.email : undefined,
@@ -163,6 +179,9 @@ export function normalizeTrashStore(raw: unknown): TrashStore {
             isLunar: Boolean(snapRaw?.isLunar),
             group: typeof snapRaw?.group === "string" ? snapRaw.group : undefined,
             tags: Array.isArray(snapRaw?.tags) ? snapRaw!.tags.filter((t): t is string => typeof t === "string") : [],
+            ...(typeof snapRaw?.avatar === "string" && snapRaw.avatar ? { avatar: snapRaw.avatar } : {}),
+            ...(relatedItemIds && relatedItemIds.length > 0 ? { relatedItemIds } : {}),
+            ...(relatedDocIds && relatedDocIds.length > 0 ? { relatedDocIds } : {}),
         };
 
         seen.add(candidate.id);

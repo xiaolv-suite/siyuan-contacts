@@ -92,8 +92,17 @@ export async function executeContactMerge(
     const primary = plan.primary;
     const secondary = plan.secondary;
 
-    // 1. 写回主人物属性视图
-    await writeDraftCells(settings, primary.itemId, draft, { mode: "edit" });
+    // 1. 写回主人物属性视图；未完全收敛前严禁迁移数据或解绑删除次人物
+    const writeReport = await writeDraftCells(settings, primary.itemId, draft, {
+        mode: "edit",
+        expected: { docId: primary.docId, itemId: primary.itemId },
+    });
+    if (!writeReport.complete) {
+        const failedDesc = writeReport.unresolved
+            .map((u) => `${u.label}（${u.message}）`)
+            .join("、") || "部分字段写入未核实";
+        throw new Error(`主人物「${primary.name}」资料写入未完成（${failedDesc}），已中止合并以保护次人物「${secondary.name}」`);
+    }
 
     const migrated = {
         interactions: 0,
@@ -151,38 +160,53 @@ export async function executeContactMerge(
     });
 
     // 4. 迁移会面谈资与备忘（person-topics.json）
+    // 允许合并保留超出常规单人新增上限的去重条目，绝不静默丢失次人物唯一谈资
     await withStoreLock(TOPICS_STORAGE_KEY, async () => {
         const store = await loadTopicsStoreStrict(plugin);
         const secondaryTopics = store.topics[secondary.docId];
         if (secondaryTopics && secondaryTopics.length > 0) {
             const primaryList = store.topics[primary.docId] ? [...store.topics[primary.docId]] : [];
-            // 将次要人物的话题合并进主人物（保持上限 15 条）
+            const remainingSecondary: typeof secondaryTopics = [];
             for (const item of secondaryTopics) {
-                if (primaryList.length < 15 && !primaryList.some((t) => t.id === item.id || t.text === item.text)) {
-                    primaryList.push(item);
-                    migrated.topics += 1;
-                }
+                const isDuplicate = primaryList.some((t) => t.id === item.id || t.text === item.text);
+                if (isDuplicate) continue;
+                primaryList.push(item);
+                migrated.topics += 1;
             }
-            store.topics[primary.docId] = primaryList;
-            delete store.topics[secondary.docId];
+            if (primaryList.length > 0) {
+                store.topics[primary.docId] = primaryList;
+            }
+            if (remainingSecondary.length === 0) {
+                delete store.topics[secondary.docId];
+            } else {
+                store.topics[secondary.docId] = remainingSecondary;
+            }
             await saveJsonVerified(plugin, TOPICS_STORAGE_KEY, store);
         }
     });
 
     // 5. 迁移礼物点子与偏好清单（gift-ideas.json）
+    // 允许合并保留超出常规单人新增上限的去重条目，绝不静默丢失次人物唯一礼物点子/偏好
     await withStoreLock(GIFT_IDEAS_STORAGE_KEY, async () => {
         const store = await loadGiftIdeaStoreStrict(plugin);
         const secondaryIdeas = store.ideas[secondary.docId];
         if (secondaryIdeas && secondaryIdeas.length > 0) {
             const primaryList = store.ideas[primary.docId] ? [...store.ideas[primary.docId]] : [];
+            const remainingSecondary: typeof secondaryIdeas = [];
             for (const item of secondaryIdeas) {
-                if (primaryList.length < 30 && !primaryList.some((idea) => idea.id === item.id)) {
-                    primaryList.push({ ...item, personDocId: primary.docId, updatedAt: Date.now() });
-                    migrated.giftIdeas += 1;
-                }
+                const isDuplicate = primaryList.some((idea) => idea.id === item.id);
+                if (isDuplicate) continue;
+                primaryList.push({ ...item, personDocId: primary.docId, updatedAt: Date.now() });
+                migrated.giftIdeas += 1;
             }
-            store.ideas[primary.docId] = primaryList;
-            delete store.ideas[secondary.docId];
+            if (primaryList.length > 0) {
+                store.ideas[primary.docId] = primaryList;
+            }
+            if (remainingSecondary.length === 0) {
+                delete store.ideas[secondary.docId];
+            } else {
+                store.ideas[secondary.docId] = remainingSecondary;
+            }
             await saveJsonVerified(plugin, GIFT_IDEAS_STORAGE_KEY, store);
         }
     });
@@ -228,7 +252,7 @@ export async function executeContactMerge(
         if (secondaryList && secondaryList.length > 0) {
             const primaryList = store.anniversaries[primary.docId] ? [...store.anniversaries[primary.docId]] : [];
             for (const item of secondaryList) {
-                if (primaryList.length < 20 && !primaryList.some((a) => a.id === item.id || (a.title === item.title && a.date === item.date))) {
+                if (!primaryList.some((a) => a.id === item.id || (a.title === item.title && a.date === item.date))) {
                     primaryList.push({ ...item, personDocId: primary.docId, updatedAt: Date.now() });
                     migrated.anniversaries += 1;
                 }
@@ -379,6 +403,7 @@ export async function executeContactMerge(
     await withStoreLock(PERSON_PROJECTS_STORAGE_KEY, async () => {
         const store = await loadPersonProjectsStoreStrict(plugin);
         const secondaryProjs = store.projects[secondary.docId];
+        let changed = false;
         if (secondaryProjs && secondaryProjs.length > 0) {
             const primaryList = store.projects[primary.docId] ? [...store.projects[primary.docId]] : [];
             for (const proj of secondaryProjs) {
@@ -387,8 +412,27 @@ export async function executeContactMerge(
                     migrated.projects += 1;
                 }
             }
-            store.projects[primary.docId] = primaryList;
+            if (primaryList.length > 0) {
+                store.projects[primary.docId] = primaryList;
+                if (store.deletedAll) {
+                    delete store.deletedAll[primary.docId];
+                    if (Object.keys(store.deletedAll).length === 0) delete store.deletedAll;
+                }
+            }
             delete store.projects[secondary.docId];
+            changed = true;
+        }
+        if (store.deletedAll?.[secondary.docId]) {
+            delete store.deletedAll[secondary.docId];
+            if (Object.keys(store.deletedAll).length === 0) delete store.deletedAll;
+            changed = true;
+        }
+        if (store.docSyncPending?.[secondary.docId]) {
+            delete store.docSyncPending[secondary.docId];
+            if (Object.keys(store.docSyncPending).length === 0) delete store.docSyncPending;
+            changed = true;
+        }
+        if (changed) {
             await saveJsonVerified(plugin, PERSON_PROJECTS_STORAGE_KEY, store);
         }
     });

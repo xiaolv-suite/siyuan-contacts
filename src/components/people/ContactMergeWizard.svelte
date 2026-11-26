@@ -3,6 +3,7 @@
     import {
         buildDefaultMergePlan,
         resolveMergePlan,
+        swapMergePlanPrimarySecondary,
         validateMergePlan,
         type ContactMergePlan,
         type FieldMergeSelection,
@@ -35,6 +36,29 @@
 
     // svelte-ignore state_referenced_locally
     let plan = $state<ContactMergePlan>(buildDefaultMergePlan(primary, secondary));
+    let activePairKey = $state(
+        // svelte-ignore state_referenced_locally
+        `${primary.docId}::${primary.itemId}::${secondary.docId}::${secondary.itemId}`,
+    );
+    const propPairKey = $derived(`${primary.docId}::${primary.itemId}::${secondary.docId}::${secondary.itemId}`);
+    // svelte-ignore state_referenced_locally
+    let tagsInput = $state(plan.additionalTags?.join("、") ?? "");
+    let submitting = $state(false);
+    let errorText = $state("");
+    let liveAnnounce = $state("");
+
+    $effect(() => {
+        if (propPairKey !== activePairKey) {
+            activePairKey = propPairKey;
+            plan = buildDefaultMergePlan(primary, secondary);
+            tagsInput = plan.additionalTags?.join("、") ?? "";
+            errorText = "";
+            liveAnnounce = "";
+        }
+    });
+
+    const effectivePrimary = $derived(plan.primary);
+    const effectiveSecondary = $derived(plan.secondary);
     const validationErrors = $derived(validateMergePlan(plan));
     const resolved = $derived(validationErrors.length === 0 ? resolveMergePlan(plan) : null);
 
@@ -47,13 +71,8 @@
         birthday: "生日",
         group: "分组",
     };
-    const primaryValue = (key: keyof ContactMergePlan["fields"]): string => (primary as never)[key] ?? "";
-    const secondaryValue = (key: keyof ContactMergePlan["fields"]): string => (secondary as never)[key] ?? "";
-
-    // svelte-ignore state_referenced_locally
-    let tagsInput = $state(plan.additionalTags?.join("、") ?? "");
-    let submitting = $state(false);
-    let errorText = $state("");
+    const primaryValue = (key: keyof ContactMergePlan["fields"]): string => (effectivePrimary as never)[key] ?? "";
+    const secondaryValue = (key: keyof ContactMergePlan["fields"]): string => (effectiveSecondary as never)[key] ?? "";
 
     function updateFieldChoice(key: keyof ContactMergePlan["fields"], choice: FieldMergeSelection["choice"], customValue?: string): void {
         plan = { ...plan, fields: { ...plan.fields, [key]: { choice, customValue } } };
@@ -67,9 +86,9 @@
     }
 
     function switchPrimarySecondary(): void {
-        // 切换主次人物（用户可能想保留 B 资料）
-        const swapped: ContactMergePlan = buildDefaultMergePlan(secondary, primary);
-        plan = { ...swapped, fields: plan.fields, tagsMode: plan.tagsMode, additionalTags: plan.additionalTags };
+        // 切换主次人物（同步交换界面展示的主次引用与默认字段选择）
+        plan = swapMergePlanPrimarySecondary(plan);
+        liveAnnounce = `已切换主次：将保留「${plan.primary.name}」，合并后解绑「${plan.secondary.name}」。`;
     }
 
     function setTagsMode(mode: ContactMergePlan["tagsMode"]): void {
@@ -89,12 +108,15 @@
             errorText = validationErrors.join("；");
             return;
         }
+        const targetPrimary = plan.primary;
+        const targetSecondary = plan.secondary;
         const result = resolveMergePlan(plan);
         const confirm = await confirmDialog({
             title: text("mergeConfirmTitle", "确认合并"),
             message: text(
                 "mergeConfirmMsg",
-                `将「${secondary.name}」的资料合并到「${primary.name}」并从名册解绑次人物。人物文档与互动/关系历史保留。`,
+                `将「${targetSecondary.name}」的资料合并到「${targetPrimary.name}」并从名册解绑次人物。人物文档与互动/关系历史保留。`,
+                { primary: targetPrimary.name, secondary: targetSecondary.name },
             ),
             confirmLabel: text("mergeConfirmBtn", "执行合并"),
             cancelLabel: text("mergeCancelBtn", "取消"),
@@ -105,10 +127,10 @@
         errorText = "";
         try {
             await onConfirm({
-                primaryDocId: primary.docId,
+                primaryDocId: targetPrimary.docId,
                 draft: result.draft,
                 auditSnapshot: result.auditSnapshot,
-                removedSecondaryDocId: secondary.docId,
+                removedSecondaryDocId: targetSecondary.docId,
                 plan,
             });
             onClose();
@@ -119,7 +141,6 @@
         }
     }
 
-    let liveAnnounce = $state("");
     $effect(() => {
         // 焦点管理：进入弹窗时自动聚焦主标题，便于读屏
         tick().then(() => {
@@ -134,7 +155,7 @@
     <header class="lvct-merge__head">
         <h3 id="lvct-merge-title" class="lvct-merge__title">{translateText(i18n, "mergeTitle", "合并重复联系人")}</h3>
         <p class="ft__smaller ft__on-surface" style="margin-top: 0;">
-            并排比对 <b>{primary.name}</b> 与 <b>{secondary.name}</b>，逐字段选择保留方。可随时重置默认值。人物文档与互动、关系历史会保留。
+            并排比对 <b>{effectivePrimary.name}</b> 与 <b>{effectiveSecondary.name}</b>，逐字段选择保留方。可随时重置默认值。人物文档与互动、关系历史会保留。
         </p>
         <div class="lvct-merge__switch" role="group" aria-label="切换主次人物">
             <button class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={switchPrimarySecondary}>
@@ -145,8 +166,8 @@
 
     <div class="lvct-merge__headrow" role="row">
         <div class="lvct-merge__col lvct-merge__col--label">字段</div>
-        <div class="lvct-merge__col">主人物（保留）：<b>{primary.name}</b></div>
-        <div class="lvct-merge__col">次人物（合并后解绑）：<b>{secondary.name}</b></div>
+        <div class="lvct-merge__col">主人物（保留）：<b>{effectivePrimary.name}</b></div>
+        <div class="lvct-merge__col">次人物（合并后解绑）：<b>{effectiveSecondary.name}</b></div>
         <div class="lvct-merge__col lvct-merge__col--choice">选择保留方</div>
     </div>
 
@@ -211,8 +232,8 @@
 
     <div class="lvct-merge__row lvct-merge__row--tags" role="row">
         <div class="lvct-merge__col lvct-merge__col--label">标签</div>
-        <div class="lvct-merge__col" data-field-primary="tags">{primary.tags.join("、") || "—"}</div>
-        <div class="lvct-merge__col" data-field-secondary="tags">{secondary.tags.join("、") || "—"}</div>
+        <div class="lvct-merge__col" data-field-primary="tags">{effectivePrimary.tags.join("、") || "—"}</div>
+        <div class="lvct-merge__col" data-field-secondary="tags">{effectiveSecondary.tags.join("、") || "—"}</div>
         <div class="lvct-merge__col lvct-merge__col--choice" role="group" aria-label="标签合并模式">
             <label class="lvct-merge__radio">
                 <input type="radio" name="merge-tags" value="union" checked={plan.tagsMode === "union"} onchange={() => setTagsMode("union")} />
@@ -263,8 +284,8 @@
     <p class="ft__smaller ft__on-surface" role="status" aria-live="polite">{liveAnnounce}</p>
 
     <footer class="lvct-merge__footer">
-        <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={onClose} disabled={submitting}>取消</button>
-        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={handleConfirm} disabled={submitting || validationErrors.length > 0}>
+        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={onClose} disabled={submitting}>取消</button>
+        <button class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" type="button" onclick={handleConfirm} disabled={submitting || validationErrors.length > 0}>
             {submitting ? "执行中…" : "执行合并"}
         </button>
     </footer>
@@ -336,14 +357,25 @@
     border-radius: var(--lv-r-pill, 9999px);
 }
 .lvct-merge__footer {
+    position: sticky;
+    bottom: calc(-1 * var(--lvct-sp-4, 16px));
+    background: var(--lvct-bg-elevated);
+    padding: 10px 0 var(--lvct-sp-4, 16px);
     display: flex;
     gap: 8px;
     justify-content: flex-end;
     margin-top: 8px;
+    border-top: 1px solid var(--lvct-border-subtle);
+    z-index: 2;
 
     button {
         border-radius: var(--lv-r-pill, 9999px);
     }
+}
+:global(html[data-theme-mode="dark"]) .lvct-merge__footer,
+:global(body[data-theme-mode="dark"]) .lvct-merge__footer,
+:global(.theme--dark) .lvct-merge__footer {
+    background: var(--lvct-bg-base);
 }
 @media (max-width: 640px) {
     .lvct-merge__headrow { display: none; }

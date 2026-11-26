@@ -8,8 +8,9 @@
 import { escapeMarkdown } from "./format.ts";
 import { graphEdgeLabel } from "./graph-query.ts";
 import type { GraphQuerySnapshot } from "./graph-query.ts";
+import type { GraphQueryKind } from "./graph-types.ts";
 
-export type GraphQueryKind = "path" | "common" | "second" | "direct";
+export type { GraphQueryKind };
 
 export interface GraphPathSegment {
     from: string;

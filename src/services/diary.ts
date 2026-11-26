@@ -6,23 +6,50 @@
 import {
     appendBlockMd,
     deleteBlock,
+    diaryZoneKernelPost,
     findDailyNoteDocument,
     flushBlockIndex,
+    insertBlockAfterMd,
     setBlockAttrs,
     updateBlockMd,
 } from "../api/blocks";
-import { createDailyNote, querySql } from "../api/client";
+import { createDailyNote, listNotebooks, querySql } from "../api/client";
 import { buildDailyNoteInteractionMarkdown, buildDailyNoteOccasionMarkdown, buildDailyNoteFollowUpTaskMarkdown, type DiaryFollowUpTaskInput } from "../domain/diary-sync.ts";
 import type { InteractionType } from "../domain/interactions.ts";
 import { toLocalDateKey } from "../domain/interactions.ts";
-import { findTodayDailyNoteDocId, resolveDailyNotebookId } from "../libs/lv-notice-kit";
+import { buildXiaolvLifeLogAttrs, ensureXiaolvDiaryZone, findTodayDailyNoteDocId, resolveDailyNotebookId } from "../libs/lv-notice-kit";
 
 async function resolveSafeDailyNotebookId(fallbackNb?: string): Promise<string> {
     try {
         const resolved = await resolveDailyNotebookId();
         if (resolved) return resolved;
     } catch { /* ignore */ }
-    return fallbackNb || "";
+    if (fallbackNb?.trim()) return fallbackNb.trim();
+    try {
+        const notebooks = await listNotebooks();
+        const openNb = notebooks.find((nb) => !nb.closed && nb.id?.trim());
+        if (openNb?.id) return openNb.id.trim();
+    } catch { /* ignore */ }
+    return "";
+}
+
+async function createDailyNoteWithValidNotebook(primaryNb: string, fallbackNb?: string): Promise<string> {
+    const candidates: string[] = [];
+    if (primaryNb.trim()) candidates.push(primaryNb.trim());
+    if (fallbackNb?.trim() && !candidates.includes(fallbackNb.trim())) candidates.push(fallbackNb.trim());
+    try {
+        const notebooks = await listNotebooks();
+        for (const nb of notebooks) {
+            if (!nb.closed && nb.id?.trim() && !candidates.includes(nb.id.trim())) {
+                candidates.push(nb.id.trim());
+            }
+        }
+    } catch { /* ignore */ }
+    for (const nbId of candidates) {
+        const created = await createDailyNote(nbId).catch(() => "");
+        if (created) return created;
+    }
+    return "";
 }
 
 export interface AppendInteractionToDailyNoteInput {
@@ -53,8 +80,7 @@ export async function appendInteractionToDailyNote(
                 if (foundToday) {
                     dailyDoc = { docId: foundToday, hpath: "" };
                 } else {
-                    let createdDocId = await createDailyNote(targetNb).catch(() => "");
-                    if (!createdDocId) createdDocId = await createDailyNote().catch(() => "");
+                    const createdDocId = await createDailyNoteWithValidNotebook(targetNb, notebookId);
                     if (createdDocId) {
                         await flushBlockIndex();
                         dailyDoc = (await findDailyNoteDocument(targetNb, input.localDate)) ?? { docId: createdDocId, hpath: "" };
@@ -85,10 +111,29 @@ export async function appendInteractionToDailyNote(
             occurredTimeStr,
         });
 
-        const blockId = await appendBlockMd(dailyDoc.docId, markdown);
-        if (input.eventId) {
-            await setBlockAttrs(blockId, { "custom-lvct-event-id": input.eventId }).catch(() => {});
+        let blockId = "";
+        try {
+            const zone = await ensureXiaolvDiaryZone(dailyDoc.docId, { postFn: diaryZoneKernelPost });
+            blockId = await insertBlockAfterMd(zone.anchorBlockId, dailyDoc.docId, markdown);
+        } catch {
+            blockId = await appendBlockMd(dailyDoc.docId, markdown);
         }
+        const unifiedAttrs = buildXiaolvLifeLogAttrs({
+            date: input.localDate,
+            time: occurredTimeStr,
+            type: `人脉互动-${input.type || "note"}`,
+            body: `${input.personName}${input.note ? `：${input.note}` : ""}`,
+            source: "siyuan-contacts",
+            module: "interactions",
+            eventId: input.eventId,
+            target: input.personDocId,
+            refDocId: input.personDocId,
+            refDocTitle: input.personName,
+        });
+        await setBlockAttrs(blockId, {
+            ...unifiedAttrs,
+            ...(input.eventId ? { "custom-lvct-event-id": input.eventId } : {}),
+        }).catch(() => {});
         await flushBlockIndex();
         return { dailyDocId: dailyDoc.docId, blockId };
     } catch (err) {
@@ -122,8 +167,7 @@ export async function appendOccasionToDailyNote(
                 if (foundToday) {
                     dailyDoc = { docId: foundToday, hpath: "" };
                 } else {
-                    let createdDocId = await createDailyNote(targetNb).catch(() => "");
-                    if (!createdDocId) createdDocId = await createDailyNote().catch(() => "");
+                    const createdDocId = await createDailyNoteWithValidNotebook(targetNb, notebookId);
                     if (createdDocId) {
                         await flushBlockIndex();
                         dailyDoc = (await findDailyNoteDocument(targetNb, input.date)) ?? { docId: createdDocId, hpath: "" };
@@ -144,7 +188,21 @@ export async function appendOccasionToDailyNote(
             attendees: input.attendees,
         });
 
-        const blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        let blockId = "";
+        try {
+            const zone = await ensureXiaolvDiaryZone(dailyDoc.docId, { postFn: diaryZoneKernelPost });
+            blockId = await insertBlockAfterMd(zone.anchorBlockId, dailyDoc.docId, markdown);
+        } catch {
+            blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        }
+        const unifiedAttrs = buildXiaolvLifeLogAttrs({
+            date: input.date,
+            type: `人脉活动-${input.type || "occasion"}`,
+            body: input.title,
+            source: "siyuan-contacts",
+            module: "occasions",
+        });
+        await setBlockAttrs(blockId, unifiedAttrs).catch(() => {});
         await flushBlockIndex();
         return { dailyDocId: dailyDoc.docId, blockId };
     } catch (err) {
@@ -174,8 +232,7 @@ export async function appendFollowUpToDailyNote(
                 if (foundToday) {
                     dailyDoc = { docId: foundToday, hpath: "" };
                 } else {
-                    let createdDocId = await createDailyNote(targetNb).catch(() => "");
-                    if (!createdDocId) createdDocId = await createDailyNote().catch(() => "");
+                    const createdDocId = await createDailyNoteWithValidNotebook(targetNb, notebookId);
                     if (createdDocId) {
                         await flushBlockIndex();
                         dailyDoc = (await findDailyNoteDocument(targetNb, input.dueDate)) ?? { docId: createdDocId, hpath: "" };
@@ -189,7 +246,24 @@ export async function appendFollowUpToDailyNote(
         if (!dailyDoc?.docId) return null;
 
         const markdown = buildDailyNoteFollowUpTaskMarkdown(input);
-        const blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        let blockId = "";
+        try {
+            const zone = await ensureXiaolvDiaryZone(dailyDoc.docId, { postFn: diaryZoneKernelPost });
+            blockId = await insertBlockAfterMd(zone.anchorBlockId, dailyDoc.docId, markdown);
+        } catch {
+            blockId = await appendBlockMd(dailyDoc.docId, markdown);
+        }
+        const unifiedAttrs = buildXiaolvLifeLogAttrs({
+            date: input.dueDate,
+            type: "人脉跟进",
+            body: `${input.personName}：${input.title}`,
+            source: "siyuan-contacts",
+            module: "followups",
+            target: input.personDocId,
+            refDocId: input.personDocId,
+            refDocTitle: input.personName,
+        });
+        await setBlockAttrs(blockId, unifiedAttrs).catch(() => {});
         await flushBlockIndex();
         return { dailyDocId: dailyDoc.docId, blockId };
     } catch (err) {

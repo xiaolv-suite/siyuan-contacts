@@ -8,7 +8,7 @@ import { loadJson, withStoreLock } from "../data/storage.ts";
 import { documentHPath, markdownHeading, orgDocumentHPath, validateDocumentTitle } from "../domain/format.ts";
 import { ORGANIZATION_DRAFT_ATTR, organizationIalAttributes, organizationMarkerMarkdown, organizationOperationComplete, organizationRenameConflict } from "../domain/organization-operations.ts";
 import type { OrganizationCreateOperation, OrganizationOperation, OrganizationOperationReport, OrganizationRenameOperation } from "../domain/organization-operations.ts";
-import { scanOrganizations } from "./org";
+import { scanOrganizations } from "./org-query";
 
 function report(operation: OrganizationOperation, status: OrganizationOperationReport["status"], message: string): OrganizationOperationReport {
     const states = operation.kind === "create" ? [operation.createState] : [operation.titleState, operation.markerState];

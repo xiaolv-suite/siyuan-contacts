@@ -103,6 +103,36 @@ export function buildDefaultMergePlan(primary: ContactSummary, secondary: Contac
 }
 
 /**
+ * 切换合并计划的主次人物：
+ * - 交换 primary 与 secondary；
+ * - 基于新主次重算字段默认选择（保留已手动填写的 custom 值）；
+ * - 反转仅主/仅次标签策略并保留追加标签。
+ */
+export function swapMergePlanPrimarySecondary(plan: ContactMergePlan): ContactMergePlan {
+    const nextPrimary = plan.secondary;
+    const nextSecondary = plan.primary;
+    const base = buildDefaultMergePlan(nextPrimary, nextSecondary);
+    const fields = { ...base.fields };
+    for (const key of Object.keys(fields) as Array<keyof ContactMergePlan["fields"]>) {
+        if (plan.fields[key]?.choice === "custom") {
+            fields[key] = { choice: "custom", customValue: plan.fields[key].customValue ?? "" };
+        }
+    }
+    const tagsMode =
+        plan.tagsMode === "primary"
+            ? "secondary"
+            : plan.tagsMode === "secondary"
+                ? "primary"
+                : "union";
+    return {
+        ...base,
+        fields,
+        tagsMode,
+        ...(plan.additionalTags ? { additionalTags: [...plan.additionalTags] } : {}),
+    };
+}
+
+/**
  * 执行合并计划求值，输出最终写回主人物的 ContactDraft 及可逆审计快照
  */
 export function resolveMergePlan(plan: ContactMergePlan, nowTime: number = Date.now()): {

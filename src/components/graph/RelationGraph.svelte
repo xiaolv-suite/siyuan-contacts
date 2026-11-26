@@ -512,7 +512,12 @@
         const pad = (value: number) => String(value).padStart(2, "0");
         const now = new Date();
         const palette = themeColors();
-        const svg = exportCytoscapeSvg(graphInstance, { bg: palette.surface, title: "小驴人脉关系图谱" });
+        const svg = exportCytoscapeSvg(graphInstance, {
+            bg: palette.surface,
+            textColor: palette.text,
+            edgeColor: palette.edge,
+            title: "小驴人脉关系图谱",
+        });
         const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
@@ -654,7 +659,25 @@
         return `rgba(${channels.join(", ")}, ${alpha})`;
     }
 
-    function themeColors(): { text: string; edge: string; surface: string; focus: string } {
+    const GROUP_COLOR_VARS: Record<string, string> = {
+        "家人": "--lvct-group-family",
+        "朋友": "--lvct-group-friend",
+        "同事": "--lvct-group-work",
+        "同学": "--lvct-group-school",
+        "组织": "--lvct-group-org",
+        "其他": "--lvct-group-other",
+    };
+
+    type GraphThemePalette = {
+        text: string;
+        edge: string;
+        surface: string;
+        focus: string;
+        groupColors: Record<string, string>;
+        defaultGroupColor: string;
+    };
+
+    function themeColors(): GraphThemePalette {
         const probe = container ?? document.body;
         const style = getComputedStyle(probe);
         const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme-mode") === "dark" || document.body.classList.contains("body--dark"));
@@ -662,6 +685,7 @@
         const defaultEdge = isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.18)";
         const defaultSurface = isDark ? "#1e293b" : "#ffffff";
         const defaultFocus = "#ea580c";
+        const defaultGroupFallback = isDark ? "#94a3b8" : "#64748b";
 
         const resolve = (name: string, fallback: string): string => {
             const value = style.getPropertyValue(name).trim();
@@ -673,40 +697,60 @@
             swatch.remove();
             return normalizeGraphColor(resolved, fallback);
         };
+
+        const accent = style.getPropertyValue("--lvct-accent").trim();
+        const groupColors: Record<string, string> = {};
+        for (const [groupName, varName] of Object.entries(GROUP_COLOR_VARS)) {
+            const value = style.getPropertyValue(varName).trim();
+            groupColors[groupName] = normalizeGraphColor(value || accent, defaultGroupFallback);
+        }
+        const defaultGroupColor = groupColors["其他"] ?? normalizeGraphColor(accent, defaultGroupFallback);
+
         return {
             text: resolve("--lvct-graph-text", defaultText),
             edge: resolve("--lvct-graph-edge", defaultEdge),
             surface: resolve("--lvct-graph-surface", defaultSurface),
             focus: resolve("--lvct-accent", defaultFocus),
+            groupColors,
+            defaultGroupColor,
         };
     }
 
-    function groupColorValue(group: string): string {
-        const key: Record<string, string> = {
-            "家人": "--lvct-group-family",
-            "朋友": "--lvct-group-friend",
-            "同事": "--lvct-group-work",
-            "同学": "--lvct-group-school",
-            "组织": "--lvct-group-org",
-            "其他": "--lvct-group-other",
-        };
+    function groupColorValue(group: string, palette?: GraphThemePalette): string {
+        if (palette) {
+            return palette.groupColors[group] ?? palette.defaultGroupColor;
+        }
         const probe = container ?? document.body;
+        const style = getComputedStyle(probe);
         const isDark = typeof document !== "undefined" && (document.documentElement.getAttribute("data-theme-mode") === "dark" || document.body.classList.contains("body--dark"));
         const defaultColor = isDark ? "#94a3b8" : "#64748b";
-        const value = getComputedStyle(probe).getPropertyValue(key[group] ?? "--lvct-group-other").trim();
-        return normalizeGraphColor(value || getComputedStyle(probe).getPropertyValue("--lvct-accent"), defaultColor);
+        const value = style.getPropertyValue(GROUP_COLOR_VARS[group] ?? "--lvct-group-other").trim();
+        return normalizeGraphColor(value || style.getPropertyValue("--lvct-accent"), defaultColor);
     }
 
     onMount(() => {
+        const readThemeSignature = () => {
+            const root = document.documentElement;
+            const body = document.body;
+            return `${root.getAttribute("data-theme-mode") ?? ""}|${root.className}|${root.getAttribute("style") ?? ""}|${body.getAttribute("data-theme-mode") ?? ""}|${body.className}|${body.getAttribute("style") ?? ""}`;
+        };
+        let lastThemeSignature = readThemeSignature();
+        let lastPaletteKey = "";
+        let themeTimer: ReturnType<typeof setTimeout> | undefined;
+
         const updateTheme = () => {
+            themeTimer = undefined;
             const instance = graphInstance;
             if (!instance || instance.destroyed()) return;
             const palette = themeColors();
+            const paletteKey = JSON.stringify(palette);
+            if (paletteKey === lastPaletteKey) return;
+            lastPaletteKey = paletteKey;
             instance.batch(() => {
                 // 更新绘图数据让 stylesheet 重算，避免 element.style bypass 压过选中/搜索高亮。
                 instance.nodes().forEach((node) => {
                     node.data({
-                        color: groupColorValue(node.data("group")),
+                        color: groupColorValue(node.data("group"), palette),
                         themeText: palette.text,
                         themeSurface: palette.surface,
                         themeFocus: palette.focus,
@@ -715,11 +759,21 @@
                 instance.edges().data("themeEdge", palette.edge);
             });
         };
-        const observer = new MutationObserver(updateTheme);
+
+        const observer = new MutationObserver(() => {
+            const nextSignature = readThemeSignature();
+            if (nextSignature === lastThemeSignature) return;
+            lastThemeSignature = nextSignature;
+            if (themeTimer !== undefined) clearTimeout(themeTimer);
+            themeTimer = setTimeout(updateTheme, 100);
+        });
         for (const target of [document.documentElement, document.body]) {
             observer.observe(target, { attributes: true, attributeFilter: ["class", "style", "data-theme-mode"] });
         }
-        return () => observer.disconnect();
+        return () => {
+            if (themeTimer !== undefined) clearTimeout(themeTimer);
+            observer.disconnect();
+        };
     });
 
     async function refresh(queueIfBusy = false): Promise<void> {
@@ -1141,7 +1195,7 @@
                         degree: node.degree,
                         group: node.group,
                         kind: node.kind ?? "person",
-                        color: groupColorValue(node.group),
+                        color: groupColorValue(node.group, palette),
                         themeText: palette.text,
                         themeSurface: palette.surface,
                         themeFocus: palette.focus,
@@ -1190,12 +1244,12 @@
                         "text-outline-color": palette.surface,
                         "text-valign": "bottom",
                         "text-margin-y": 4,
-                        /* UX-02.4 表面色描边环 + 同色 underlay 光晕 */
+                        /* UX-02.4 表面色描边环 + 克制同色微晕 */
                         "border-width": 2,
                         "border-color": palette.surface,
                         "underlay-color": palette.focus,
-                        "underlay-opacity": 0.16,
-                        "underlay-padding": 6,
+                        "underlay-opacity": 0.08,
+                        "underlay-padding": 4,
                         "underlay-shape": "ellipse",
                     },
                 },
@@ -1253,8 +1307,8 @@
                 { selector: ".lvct-graph-focus", style: { "border-color": "data(themeFocus)", "border-width": 4 } },
                 { selector: "node.lvct-graph-neighbor-focus", style: { "border-width": 3, "border-color": palette.focus, "underlay-opacity": 0.28 } },
                 { selector: "edge.lvct-graph-neighbor-focus", style: { width: 3.5, "line-color": palette.focus, opacity: 1, "z-index": 5 } },
-                { selector: "node.lvct-graph-path-highlight", style: { "border-color": "#ea580c", "border-width": 4, "underlay-color": "#ea580c", "underlay-opacity": 0.35, "underlay-padding": 8, "z-index": 20 } },
-                { selector: "edge.lvct-graph-path-highlight", style: { "line-color": "#ea580c", width: 4.5, "target-arrow-color": "#ea580c", opacity: 1, "z-index": 20 } },
+                { selector: "node.lvct-graph-path-highlight", style: { "border-color": palette.focus, "border-width": 3, "underlay-color": palette.focus, "underlay-opacity": 0.25, "underlay-padding": 6, "z-index": 20 } },
+                { selector: "edge.lvct-graph-path-highlight", style: { "line-color": palette.focus, width: 4, "target-arrow-color": palette.focus, opacity: 1, "z-index": 20 } },
                 /* B14.6：组织节点方形、成员边虚线——与 related 边视觉分源 */
                 { selector: 'node[kind = "org"]', style: { shape: "round-rectangle" } },
                 { selector: 'edge[kind = "member"]', style: { "line-style": "dashed" } },
@@ -1482,7 +1536,7 @@
         searchInput = "";
         debouncedSearchText = "";
         if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
-        groupFilter = ""; isolatedOnly = false; orgNarrowId = "";
+        groupFilter = ""; tagFilter = ""; isolatedOnly = false; orgNarrowId = "";
         hiddenEdgeKinds = new Set();
         if (relationScope === "org") relationScope = "global";
         if (nativeScope === "org") nativeScope = "global";
@@ -1556,13 +1610,17 @@
         align-items: center;
         gap: 2px;
         padding: 3px;
-        border: 1px solid var(--lvct-color-border-200);
+        border: 1px solid var(--lvct-border-subtle);
         border-radius: var(--lv-r-pill, 9999px);
-        background: var(--lvct-bg-app);
+        background: var(--lvct-surface-inset);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button {
-        min-height: var(--lvct-touch-min);
+        min-height: var(--lvct-control-h-small);
         border-radius: var(--lv-r-pill, 9999px);
+        border-color: transparent;
+        background: transparent;
+        color: var(--lvct-text-2);
+        box-shadow: none;
         transition:
             background var(--lvct-dur-fast) var(--lvct-ease),
             border-color var(--lvct-dur-fast) var(--lvct-ease),
@@ -1570,10 +1628,11 @@
             transform var(--lvct-dur-fast) var(--lvct-ease);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button[aria-pressed="true"] {
-        border-color: var(--lv-brand);
-        background: var(--lv-brand);
-        color: var(--lvct-on-accent);
+        border-color: var(--lvct-border-subtle);
+        background: var(--lvct-bg-surface);
+        color: var(--lvct-accent-text);
         font-weight: var(--lvct-fw-medium);
+        box-shadow: var(--lvct-shadow-1);
     }
     .lvct-graph-toolbar__actions > [role="group"] > .b3-button:focus-visible {
         outline: 2px solid var(--lvct-accent);
@@ -2073,6 +2132,20 @@
             {/if}
             <button class="b3-button b3-button--text" onclick={() => onOpenPeople()}>{text("graphGoContacts", "前往联系人")}</button>
         </ViewState>
+    {:else if displayGraph.nodes.length === 0}
+        <ViewState
+            title={text("graphFilteredZeroTitle", "当前视图下节点已归零")}
+            description={timelineEnabled
+                ? text("graphFilteredZeroTimelineDesc", "当前时间切片或边类型过滤后暂无可见节点，可重置时间轴或清除筛选以恢复显示。")
+                : text("graphFilteredZeroDesc", "当前边类型过滤后暂无可见节点，可清除筛选以恢复显示。")}
+        >
+            {#if timelineEnabled}
+                <button class="b3-button b3-button--primary" onclick={resetTimeline}>{text("graphTimelineAll", "查看全部时间")}</button>
+            {/if}
+            {#if hiddenEdgeKinds.size > 0 || activeFilterCount > 0}
+                <button class="b3-button b3-button--outline" onclick={clearFilters}>{text("graphClearFilters", "清除筛选")}</button>
+            {/if}
+        </ViewState>
     {:else if presentation === "text"}
         <section class="lvct-graph-text" aria-label={text("graphTextResults", "图谱文本结果")}>
             <h3>{text("graphTextNodes", "节点")}（{snapshot.graph.nodes.length}）</h3>
@@ -2105,7 +2178,16 @@
             ></div>
 
             <!-- 时间轴演化回放浮动条 -->
-            {#if timelineEnabled && timeSpan.years.length > 0}
+            {#if timelineEnabled && timeSpan.years.length === 0}
+                <div class="lvct-graph-timeline-player" role="status">
+                    <span class="ft__smaller ft__on-surface">当前图谱暂无可按时间回放的记录（节点缺少创建/互动日期），可先关闭或补充记录后再试。</span>
+                    <button
+                        type="button"
+                        class="b3-button b3-button--small b3-button--text lvct-graph-timeline-reset"
+                        onclick={() => { timelineEnabled = false; resetTimeline(); }}
+                    >退出时间演化</button>
+                </div>
+            {:else if timelineEnabled && timeSpan.years.length > 0}
                 <div class="lvct-graph-timeline-player" role="toolbar" aria-label="人脉时间演化回放">
                     <button
                         type="button"

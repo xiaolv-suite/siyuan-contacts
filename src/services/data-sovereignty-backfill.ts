@@ -9,11 +9,14 @@
 
 import type { Plugin } from "siyuan";
 import type { ContactsSettings } from "../domain/model.ts";
-import { getRoster } from "./roster.ts";
-import { readMarkedBlocksByRoots } from "../api/blocks.ts";
-import { syncFullPersonDocument, syncChannelsDocSection, CHANNELS_SECTION_ATTR } from "./doc-section.ts";
+import { getRoster, invalidateRoster } from "./roster.ts";
+import { readMarkedBlocksByRoots, setBlockAttrs } from "../api/blocks.ts";
+import { syncFullPersonDocument, syncChannelsDocSection, CHANNELS_SECTION_ATTR, PROJECTS_SECTION_ATTR } from "./doc-section.ts";
 import { querySql, assertKernelRecord } from "../api/client.ts";
 import { normalizeChannels } from "../domain/person-channels.ts";
+import { LOCATIONS_ATTR, serializeContactLocationsAttr } from "../domain/china-regions.ts";
+import { extractLegacyLocationsForMigration } from "../domain/one-doc-migration.ts";
+import { loadPersonProjectsStore } from "../data/projects.ts";
 
 export interface DataSovereigntyReport {
     totalPeople: number;
@@ -26,7 +29,7 @@ export interface DataSovereigntyReport {
  * 检查当前工作区联系人文档的“数据主权/正文落盘”就绪状态
  */
 export async function checkDataSovereigntyStatus(
-    _plugin: Plugin,
+    plugin: Plugin,
     settings: ContactsSettings,
 ): Promise<DataSovereigntyReport> {
     const people = await getRoster(settings);
@@ -39,15 +42,22 @@ export async function checkDataSovereigntyStatus(
         return { totalPeople: people.length, syncedChannelsCount: 0, pendingChannelsCount: 0, pendingDocIds: [] };
     }
 
-    // 批量探测已经落盘了 ## 📞 通讯与联系方式 的文档块
-    const markedByRoots = await readMarkedBlocksByRoots(docIds, CHANNELS_SECTION_ATTR).catch(() => ({}));
+    // 批量探测已经落盘了 ## 📞 通讯与联系方式 与 ## 📁 协作项目与主题 的文档块
+    const [markedByRoots, markedProjectsByRoots, projectsStore] = await Promise.all([
+        readMarkedBlocksByRoots(docIds, CHANNELS_SECTION_ATTR).catch(() => ({} as Record<string, string>)),
+        readMarkedBlocksByRoots(docIds, PROJECTS_SECTION_ATTR).catch(() => ({} as Record<string, string>)),
+        loadPersonProjectsStore(plugin).catch(() => ({ schemaVersion: 1 as const, projects: {} as Record<string, unknown[]> })),
+    ]);
     const syncedDocIds = new Set(Object.keys(markedByRoots));
+    const syncedProjectDocIds = new Set(Object.keys(markedProjectsByRoots));
 
     const pendingDocIds: string[] = [];
     for (const person of people) {
         if (!person.docId) continue;
-        // 如果未落盘通讯区块，且拥有 channels 或隐藏 custom-lvct-channels 属性
-        if (!syncedDocIds.has(person.docId)) {
+        const hasProjects = (projectsStore.projects[person.docId]?.length ?? 0) > 0;
+        const missingProjects = hasProjects && !syncedProjectDocIds.has(person.docId);
+        // 如果未落盘通讯区块或未落盘协作项目区块，加入待自愈队列
+        if (!syncedDocIds.has(person.docId) || missingProjects) {
             pendingDocIds.push(person.docId);
         }
     }
@@ -113,7 +123,13 @@ export async function backfillAllPersonDocuments(
             }
             if (options?.shouldAbort?.()) break;
 
-            const personToSync = { ...person, channels: channels || [] };
+            const locations = person.locations ?? extractLegacyLocationsForMigration({ ...person, channels: channels || [] });
+            const serializedLocs = serializeContactLocationsAttr(locations);
+            if (serializedLocs && (!person.locations?.resident && !person.locations?.hometown)) {
+                await setBlockAttrs(person.docId, { [LOCATIONS_ATTR]: serializedLocs }).catch(() => {});
+            }
+
+            const personToSync = { ...person, channels: channels || [], locations };
             await syncFullPersonDocument(plugin, personToSync);
             if (options?.shouldAbort?.()) break;
             if (channels && channels.length > 0) {
@@ -132,6 +148,9 @@ export async function backfillAllPersonDocuments(
         }
     }
 
+    if (success > 0) {
+        invalidateRoster();
+    }
     return { total, success, failed };
 }
 

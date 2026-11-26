@@ -5,6 +5,7 @@
     import type { AnchorCandidate } from "../services/init";
     import type { AnchorScanCursor } from "../domain/init-plan";
     import type { SettingsRebindPreview, SettingsAnchorPatch } from "../services/settings-health";
+    import { attachDialogRootClass } from "../shared/modal-host";
 
     let { facade, workspace, onReady, onRetry, onStartInit }: {
         facade: ContactsPluginFacade;
@@ -106,7 +107,7 @@
     }
 </script>
 
-<div class="lvct-recovery-scroll-wrapper">
+<div class="lvct-recovery-scroll-wrapper" use:attachDialogRootClass={"lvct-dialog-root--scrollable"}>
     <section class="lvct-recovery" aria-live="polite">
     <div class="lvct-recovery__icon">!</div>
     <h1>{labels[workspace.kind]}</h1>

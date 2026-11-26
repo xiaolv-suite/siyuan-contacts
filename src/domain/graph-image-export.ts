@@ -5,11 +5,35 @@ export interface SvgExportOptions {
     padding?: number;
     title?: string;
     textColor?: string;
+    edgeColor?: string;
 }
 
 export interface PngExportOptions {
     bg?: string;
     scale?: number;
+}
+
+function isDarkBackgroundColor(color?: string): boolean {
+    if (!color) return false;
+    const normalized = color.trim().toLowerCase();
+    if (!normalized || normalized === "transparent") return false;
+    if (normalized === "black") return true;
+    const hexMatch = normalized.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/);
+    if (hexMatch) {
+        const hex = hexMatch[1];
+        const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
+        const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
+        const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
+    }
+    const rgbMatch = normalized.match(/^rgba?\(\s*([\d.]+)\s*[,\s]\s*([\d.]+)\s*[,\s]\s*([\d.]+)/);
+    if (rgbMatch) {
+        const r = Number(rgbMatch[1]);
+        const g = Number(rgbMatch[2]);
+        const b = Number(rgbMatch[3]);
+        return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
+    }
+    return false;
 }
 
 function escapeXml(unsafe: string): string {
@@ -31,8 +55,15 @@ function escapeXml(unsafe: string): string {
 export function exportCytoscapeSvg(cy: cytoscape.Core, options: SvgExportOptions = {}): string {
     const nodes = cy.nodes();
     const edges = cy.edges();
+    const isDarkBg = isDarkBackgroundColor(options.bg);
+    const defaultTextColor = isDarkBg ? "#f8fafc" : "#1e293b";
+    const textColor = options.textColor || defaultTextColor;
+    const defaultEdgeColor = options.edgeColor || (isDarkBg ? "#64748b" : "#94a3b8");
+    const nodeStrokeColor = options.bg || (isDarkBg ? "#1e293b" : "#ffffff");
+
     if (nodes.length === 0) {
-        return '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><text x="200" y="150" text-anchor="middle" fill="#888">图谱无节点</text></svg>';
+        const emptyBg = options.bg ? `<rect x="0" y="0" width="400" height="300" fill="${escapeXml(options.bg)}" />` : "";
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">${emptyBg}<text x="200" y="150" text-anchor="middle" fill="${escapeXml(textColor)}">图谱无节点</text></svg>`;
     }
 
     const bb = cy.elements().boundingBox();
@@ -43,9 +74,6 @@ export function exportCytoscapeSvg(cy: cytoscape.Core, options: SvgExportOptions
     const height = Math.max(100, Math.ceil(bb.h + padding * 2));
 
     const bgRect = options.bg ? `<rect x="${minX}" y="${minY}" width="${width}" height="${height}" fill="${escapeXml(options.bg)}" />` : "";
-    const isDarkBg = options.bg ? /^#(?:[0-2][0-9a-f]{5}|[0-2][0-9a-f]{2})$/i.test(options.bg) || options.bg === "black" : false;
-    const defaultTextColor = isDarkBg ? "#f8fafc" : "#1e293b";
-    const textColor = options.textColor || defaultTextColor;
 
     // 绘制边
     const edgeSvgLines: string[] = [];
@@ -58,7 +86,7 @@ export function exportCytoscapeSvg(cy: cytoscape.Core, options: SvgExportOptions
         const p2 = tgt.position();
         const kind = edge.data("kind") || "related";
         const isDashed = kind === "member" || kind === "co_occurrence" || kind === "introducer";
-        const strokeColor = edge.data("themeEdge") || "#94a3b8";
+        const strokeColor = edge.data("themeEdge") || defaultEdgeColor;
         const strokeWidth = kind === "member" ? "1.5" : "2";
         const dashArray = kind === "member" ? 'stroke-dasharray="4,4"' : kind === "co_occurrence" ? 'stroke-dasharray="3,3"' : isDashed ? 'stroke-dasharray="5,3"' : "";
         const markerEnd = kind === "introducer" ? 'marker-end="url(#arrow)"' : "";
@@ -84,11 +112,11 @@ export function exportCytoscapeSvg(cy: cytoscape.Core, options: SvgExportOptions
             const x = (pos.x - radius).toFixed(1);
             const y = (pos.y - radius).toFixed(1);
             nodeSvgLines.push(
-                `<rect x="${x}" y="${y}" width="${side}" height="${side}" rx="4" fill="${escapeXml(color)}" stroke="#ffffff" stroke-width="2" />`
+                `<rect x="${x}" y="${y}" width="${side}" height="${side}" rx="4" fill="${escapeXml(color)}" stroke="${escapeXml(nodeStrokeColor)}" stroke-width="2" />`
             );
         } else {
             nodeSvgLines.push(
-                `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${radius}" fill="${escapeXml(color)}" stroke="#ffffff" stroke-width="2" />`
+                `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${radius}" fill="${escapeXml(color)}" stroke="${escapeXml(nodeStrokeColor)}" stroke-width="2" />`
             );
         }
 
@@ -105,7 +133,7 @@ export function exportCytoscapeSvg(cy: cytoscape.Core, options: SvgExportOptions
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${width} ${height}" width="${width}" height="${height}">`,
         `  <defs>`,
         `    <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">`,
-        `      <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />`,
+        `      <path d="M 0 1 L 10 5 L 0 9 z" fill="${escapeXml(defaultEdgeColor)}" />`,
         `    </marker>`,
         `  </defs>`,
         bgRect ? `  ${bgRect}` : "",

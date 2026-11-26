@@ -382,7 +382,7 @@ export function findDanglingOrgLinks(
 
 /* ---------- B13.6 共同背景：同组织联系人投影（纯展示，零写入，不写 related/称谓） ---------- */
 
-export interface CommonOrgPeer {
+export interface CommonOrgPeer<TContact = any> {
     docId: string;
     name: string;
     /** 与本人该组织的重叠期间文本（两端时间未知显示占位） */
@@ -390,13 +390,13 @@ export interface CommonOrgPeer {
     /** 仅当双方加入时间均已知且期间有交集才为 true（时间未知不推断同期，B13.6 验收口径） */
     samePeriod: boolean;
     /** 名册命中的联系人摘要（B13.6 点击同伴开详情；解绑/不在名册时缺省，UI 隐藏入口） */
-    contact?: import("./person").ContactSummary;
+    contact?: TContact;
 }
 
-export interface CommonOrgBackground {
+export interface CommonOrgBackground<TContact = any> {
     orgDocId: string;
     orgName: string;
-    peers: CommonOrgPeer[];
+    peers: CommonOrgPeer<TContact>[];
 }
 
 const DATE_MIN = "0000-01-01";
@@ -436,15 +436,15 @@ function startKnown(membership: OrgMembership): boolean {
  * - B13.5b 查询规模：一次遍历建「组织 → 成员记录」索引后按组织直取候选，同伴查重用
  *   Set——不再对每段归属全索引扫描、不对 peers 做线性 some；输出语义与全量扫描一致。
  */
-export function buildCommonOrgBackground(options: {
+export function buildCommonOrgBackground<TContact = any>(options: {
     personDocId: string;
     membershipIndex: ReadonlyMap<string, readonly OrgMembership[]>;
     namesByDoc: ReadonlyMap<string, string>;
     /** docId → 组织名（含归档组织——共同背景是历史事实，活跃口径过滤在调用方） */
     orgNames?: ReadonlyMap<string, string>;
     /** docId → 联系人摘要（B13.6 点击同伴开详情；缺省时 UI 隐藏入口） */
-    contactsByDoc?: ReadonlyMap<string, import("./person").ContactSummary>;
-}): CommonOrgBackground[] {
+    contactsByDoc?: ReadonlyMap<string, TContact>;
+}): CommonOrgBackground<TContact>[] {
     const { personDocId, membershipIndex, namesByDoc, orgNames, contactsByDoc } = options;
     const ownRecords = membershipIndex.get(personDocId) ?? [];
     if (ownRecords.length === 0) return [];

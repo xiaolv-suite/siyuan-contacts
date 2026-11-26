@@ -567,9 +567,9 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
             </span>
         </nav>
         <p class="ft__smaller ft__on-surface lvct-form__hint">
-            {text("captureSourceNote", "笔记：")}{preview.docName || docId}
+            {text("captureSourceNote", "笔记：")}{preview.docName || text("captureCurrentNote", "当前笔记")}
         </p>
-        <p class="ft__smaller">{text("captureSourceNoteDesc", "来源 {docId} · 双链按文档 ID 核对。保留原文，仅追加/更新插件标记区块。", { docId })}</p>
+        <p class="ft__smaller">{text("captureSourceNoteDesc", "基于当前笔记双链自动核对联系人；保留原文，仅追加或更新插件标记区块。")}</p>
 
         {#if step === 1}
         <div id="lvct-capture-panel-1" role="region" aria-labelledby="lvct-capture-step-1">
@@ -641,7 +641,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                 </fieldset>
                 <p class="ft__smaller">{text("captureAiPreflightPrivacyNotice", "只发送下方最终全文，名册仅本地核对。去除策略不能保证识别自由文本中的微信号或秘密，请自行核对。原文/回复不写日志。")}</p>
                 {#if aiPreflight}
-                    <p class="ft__smaller">POST {aiPreflight.endpoint} · 下游地址/宿主附加上下文未验证（HOST pending）</p>
+                    <p class="ft__smaller">POST {aiPreflight.endpoint}（严格直连思源内置 AI 接口，不暗中改道外部网关；下游地址/宿主附加上下文未验证 HOST pending）</p>
                     <p class="ft__smaller">来源 {aiPreflight.sourceDocId} · {aiPreflight.sourceKind} · 字段 {aiPreflight.fields.join("、")}</p>
                     <p class="ft__smaller">最终 {aiPreflight.characters} 字符 / {aiPreflight.bytes} UTF-8 字节；去除联系方式 {aiPreflight.removed.contacts} 项、元数据 {aiPreflight.removed.metadata} 项；截断 {aiPreflight.removed.truncated} 字符</p>
                     <label class="lvct-form__item"><span>{text("captureAiFinalPromptLabel", "最终实际发送文本（包含提示词）")}</span><textarea class="b3-text-field fn__block" rows="9" readonly value={aiPreflight.msg}></textarea></label>

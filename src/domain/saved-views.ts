@@ -3,7 +3,7 @@
  * 应用时对当次名册重新求值；存储契约见 docs/DATA-CONTRACT.md §3 view-preferences.json#savedViews。
  * 纯函数：无 DOM、无 IO，node --test 直接可测。
  */
-import type { PeopleSortMode } from "./preferences";
+import type { PeopleSortMode } from "./sort-modes.ts";
 import type { ProfileGap, TagMatchMode } from "./people-filters";
 import { isValidDateKey } from "./date-key.ts";
 

@@ -217,6 +217,7 @@ export async function loadDashboard(
         if (!Array.isArray(list)) continue;
         const validProjs: { id: string; title: string; daysUntil: number; date: string; yearsCount?: number }[] = [];
         for (const item of list) {
+            if (item.remindDisabled === true) continue;
             const proj = nextAnniversary(item, now);
             if (proj && proj.daysUntil >= 0 && proj.daysUntil <= (item.remindDaysBefore ?? 7)) {
                 validProjs.push({

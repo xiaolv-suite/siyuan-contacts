@@ -1632,7 +1632,7 @@
   "captureSelectTargetTitle": "选择已建立的人物目标（不按姓名自动关联）",
   "capturePendingTargetDoc": "待选择稳定人物 ID",
   "captureRejectDraft": "拒绝本项",
-  "captureSourceNoteDesc": "来源 {docId} · 双链按文档 ID 核对。保留原文，仅追加/更新插件标记区块。",
+  "captureSourceNoteDesc": "基于当前笔记双链自动核对联系人；保留原文，仅追加或更新插件标记区块。",
   "captureBadgeMention": "正文提及",
   "captureCancelAi": "取消 AI，忽略结果",
   "captureAiPreflightTitle": "AI 调用前确认",

@@ -5,7 +5,7 @@
  */
 import type { Plugin } from "siyuan";
 import { flushBlockIndex, readMarkedBlocks, readOrganizationFact, updateBlockMd, upsertMarkedBlock, findBlockIdByCustomAttr, deleteBlock } from "../api/blocks";
-import { querySql, assertSafeBlockId } from "../api/client";
+import { querySql } from "../api/client";
 import { withStoreLock, saveJsonVerified } from "../data/storage";
 import { loadOrganizationOperations } from "../data/organization-operations";
 import { organizationIalAttributes, organizationOperationComplete } from "../domain/organization-operations";
@@ -45,55 +45,8 @@ function stripProjectionIal(markdown: string): string {
         .replace(/\n\s*\{:[^\n]*\}\s*$/, "").trim();
 }
 
-/*
- * 组织扫描是多个页面共享的只读数据源。人物档案、图谱和组织管理经常
- * 在同一轮刷新中同时请求它；合并同一时刻的扫描可以避免重复执行两次
- * SQL，同时保留“写入后立即失效”的事实源语义。这里不做长期缓存，
- * 因而外部编辑仍会在下一次没有并发请求时被重新读取。
- */
-let pendingOrganizationScan: Promise<OrganizationSummary[]> | null = null;
-
-/** 组织标记或文档标题发生写入后调用，丢弃当前共享读取引用。 */
-export function invalidateOrganizationScan(): void {
-    pendingOrganizationScan = null;
-}
-
-/** 全库组织文档列举（单 SQL 找标记含归档值 + 单 SQL 取文档名，性能预算见 §4；零写入） */
-export async function scanOrganizations(): Promise<OrganizationSummary[]> {
-    if (pendingOrganizationScan) return pendingOrganizationScan;
-    const request = (async () => {
-        const roots = await querySql<unknown>(
-            `SELECT root_id, ial, COUNT(*) AS markerCount FROM blocks WHERE ial LIKE '%${ORG_SECTION_ATTR}="%' GROUP BY root_id, ial ORDER BY root_id, ial LIMIT 2000`,
-            { dedupe: false },
-        );
-        const states = organizationMarkerStates(roots);
-        const ids = [...states.keys()];
-        if (ids.length === 0) return [];
-        ids.forEach((id) => assertSafeBlockId(id, "组织文档 ID"));
-        const idList = ids.map((id) => `'${id}'`).join(",");
-        const docs = await querySql<unknown>(
-            `SELECT id, content, hpath, box FROM blocks WHERE type='d' AND id IN (${idList}) LIMIT 2000`,
-            { dedupe: false },
-        );
-        const orgs = organizationsFromDocs(states, docs);
-        for (const org of orgs) {
-            if (org.docId) {
-                if (!org.removed && !org.archived) {
-                    registerRelatedDocId(org.docId);
-                } else {
-                    unregisterRelatedDocId(org.docId);
-                }
-            }
-        }
-        return orgs;
-    })();
-    pendingOrganizationScan = request;
-    try {
-        return await request;
-    } finally {
-        if (pendingOrganizationScan === request) pendingOrganizationScan = null;
-    }
-}
+import { scanOrganizations, invalidateOrganizationScan } from "./org-query";
+export { scanOrganizations, invalidateOrganizationScan };
 
 /** B13.9：组织标记冲突体检数据源。 */
 export async function countOrgMarkers(): Promise<Map<string, number>> {

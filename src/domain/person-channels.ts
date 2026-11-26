@@ -145,58 +145,56 @@ export function alignChannelsWithContact(
     contact: { phone?: string; wechat?: string; email?: string; website?: string },
     channels: readonly ContactChannel[],
 ): ContactChannel[] {
-    const list = [...channels];
+    const list = channels.map((c) => ({ ...c }));
     const phoneVal = contact.phone?.trim() || "";
     const wechatVal = contact.wechat?.trim() || "";
     const emailVal = contact.email?.trim() || "";
     const websiteVal = contact.website?.trim() || "";
 
-    const hasPhone = phoneVal ? list.some((c) => c.type === "phone" && (c.value === phoneVal || c.isPrimary)) : true;
-    const hasWechat = wechatVal ? list.some((c) => c.type === "wechat" && (c.value === wechatVal || c.isPrimary)) : true;
-    const hasEmail = emailVal ? list.some((c) => c.type === "email" && (c.value === emailVal || c.isPrimary)) : true;
-    const hasWebsite = websiteVal ? list.some((c) => (c.type === "social" || c.type === "custom") && (c.value === websiteVal || c.label.includes("网站"))) : true;
+    const syncPrimaryField = (
+        type: ChannelType,
+        val: string,
+        defaultLabel: string,
+        idPrefix: string,
+        prepend: boolean,
+        matchesType: (c: ContactChannel) => boolean,
+    ) => {
+        if (!val) return;
+        const exact = list.find((c) => matchesType(c) && c.value === val);
+        if (exact) return;
 
-    // 若 contact 有单值且 channels 里还没有对应条目或主条目，补充进去
-    if (phoneVal && !hasPhone) {
-        list.unshift({
-            id: `primary-phone-${Date.now().toString(36)}`,
-            type: "phone",
-            label: "手机",
-            value: phoneVal,
+        const existingPrimary = list.find((c) => matchesType(c) && c.isPrimary);
+        if (existingPrimary) {
+            if (existingPrimary.id.startsWith(`${idPrefix}-`)) {
+                existingPrimary.value = val;
+                return;
+            }
+            existingPrimary.isPrimary = false;
+        }
+
+        const entry: ContactChannel = {
+            id: `${idPrefix}-${Date.now().toString(36)}`,
+            type,
+            label: defaultLabel,
+            value: val,
             isPrimary: true,
             createdAt: Date.now(),
-        });
-    }
-    if (wechatVal && !hasWechat) {
-        list.push({
-            id: `primary-wechat-${Date.now().toString(36)}`,
-            type: "wechat",
-            label: "微信",
-            value: wechatVal,
-            isPrimary: true,
-            createdAt: Date.now(),
-        });
-    }
-    if (emailVal && !hasEmail) {
-        list.push({
-            id: `primary-email-${Date.now().toString(36)}`,
-            type: "email",
-            label: "邮箱",
-            value: emailVal,
-            isPrimary: true,
-            createdAt: Date.now(),
-        });
-    }
-    if (websiteVal && !hasWebsite) {
-        list.push({
-            id: `primary-website-${Date.now().toString(36)}`,
-            type: "social",
-            label: "个人网站",
-            value: websiteVal,
-            isPrimary: true,
-            createdAt: Date.now(),
-        });
-    }
+        };
+        if (prepend) list.unshift(entry);
+        else list.push(entry);
+    };
+
+    syncPrimaryField("phone", phoneVal, "手机", "primary-phone", true, (c) => c.type === "phone");
+    syncPrimaryField("wechat", wechatVal, "微信", "primary-wechat", false, (c) => c.type === "wechat");
+    syncPrimaryField("email", emailVal, "邮箱", "primary-email", false, (c) => c.type === "email");
+    syncPrimaryField(
+        "social",
+        websiteVal,
+        "个人网站",
+        "primary-website",
+        false,
+        (c) => c.type === "social" || c.type === "custom",
+    );
 
     return list;
 }

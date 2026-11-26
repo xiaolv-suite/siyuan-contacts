@@ -208,7 +208,7 @@
                 </span>
                 <span class="lvct-person-card__compact-name-wrap">
                     <strong class="lvct-person-card__name" title={person.name}>{person.name}</strong>
-                    {#if person.isSelf}<span class="lvct-chip lvct-bucket--today font-size-10">本人</span>{/if}
+                    {#if person.isSelf}<span class="lvct-chip lvct-chip--group font-size-10">本人</span>{/if}
                     {#if isFieldVisible("tags") && person.group}<span class="lvct-chip lvct-chip--group font-size-10">{person.group}</span>{/if}
                     {#if isFieldVisible("region") && regionText}<span class="lvct-chip lvct-chip--region font-size-10">{regionText}</span>{/if}
                 </span>
@@ -289,7 +289,7 @@
                 <span class="lvct-person-card__main">
                     <span class="lvct-person-card__name" title={person.name}>
                         {person.name}
-                        {#if person.isSelf}<span class="lvct-chip lvct-bucket--today">本人</span>{/if}
+                        {#if person.isSelf}<span class="lvct-chip lvct-chip--group">本人</span>{/if}
                     </span>
                     {#if isFieldVisible("birthday")}
                         <span class="lvct-person-card__sub">
@@ -426,7 +426,8 @@
             </div>
         {/if}
         {#if (isFieldVisible("tags") && (person.group || (person.tags && person.tags.length > 0))) || onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
-            <div class="lvct-person-card__footer">
+            {@const hasFooterTags = isFieldVisible("tags") && (Boolean(person.group) || (person.tags?.length ?? 0) > 0)}
+            <div class="lvct-person-card__footer" class:lvct-person-card__footer--no-tags={!hasFooterTags}>
                 {#if isFieldVisible("tags") && (person.group || (person.tags && person.tags.length > 0))}
                     <div class="lvct-person-card__tags">
                         {#if person.group}<span class="lvct-chip lvct-chip--group">{person.group}</span>{/if}

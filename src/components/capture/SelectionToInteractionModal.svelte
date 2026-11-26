@@ -14,6 +14,7 @@
     } from "../../domain/selection-resolver.ts";
     import { lvLaunchpad } from "../../libs/lv-notice-kit";
     import { Users, X } from "@lucide/svelte";
+    import { acquireModalBodyClass } from "../../shared/modal-host";
 
     let {
         initialText = "",
@@ -88,6 +89,7 @@
     }
 
     onMount(() => {
+        const releaseModalClass = acquireModalBodyClass();
         updatePopoverPlacement();
         void tick().then(() => {
             if (isChangingPerson) {
@@ -96,6 +98,7 @@
                 noteTextarea?.focus();
             }
         });
+        return () => releaseModalClass();
     });
 
     function selectType(newType: InteractionType) {

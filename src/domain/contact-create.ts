@@ -1,5 +1,6 @@
 import type { OrgAffiliationKind, OrgMembershipStatus } from "./org-membership.ts";
 import { isOrgAffiliationKind, isValidMembershipPeriod, isValidOrgMembershipNote, isValidOrgStatusLabel } from "./org-membership.ts";
+import type { ContactLocations } from "./china-regions.ts";
 
 export interface ContactOrgAffiliationDraft {
     orgDocId: string;
@@ -26,6 +27,7 @@ export interface ContactExtendedDraft {
     aliases: string;
     relationshipLabels: string;
     note: string;
+    locations?: ContactLocations;
 }
 
 export function validateContactExtendedDraft(details: ContactExtendedDraft): string[] {

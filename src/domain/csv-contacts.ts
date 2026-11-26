@@ -77,6 +77,7 @@ const COLUMN_ALIASES: Record<string, string[]> = {
     phone: ["电话", "手机", "手机号", "电话号码", "移动电话", "手机号码", "phone", "mobile", "tel", "cell"],
     wechat: ["微信", "微信号", "wechat", "weixin", "wx"],
     email: ["邮箱", "电子邮箱", "邮件", "email", "mail"],
+    website: ["网站", "网址", "主页", "个人网站", "个人主页", "website", "url", "homepage", "site"],
     birthday: ["生日", "出生日期", "公历生日", "birthday", "bday"],
     isLunar: ["是否农历", "农历", "阴历", "是否阴历", "islunar", "lunar"],
     group: ["分组", "群组", "类别", "分类", "group", "category"],
@@ -89,15 +90,30 @@ const COLUMN_ALIASES: Record<string, string[]> = {
 
 function matchColumn(header: string): string | null {
     const normalized = header.toLowerCase().replace(/[\s*_#()（）*]/g, "").trim();
+    if (!normalized) return null;
+
+    let bestKey: string | null = null;
+    let bestScore = 0;
+
     for (const [key, aliases] of Object.entries(COLUMN_ALIASES)) {
         for (const alias of aliases) {
             const normalizedAlias = alias.toLowerCase().replace(/[\s*_#()（）*]/g, "").trim();
-            if (normalized === normalizedAlias || normalized.startsWith(normalizedAlias)) {
-                return key;
+            if (!normalizedAlias) continue;
+            let score = 0;
+            if (normalized === normalizedAlias) {
+                score = 1000 + normalizedAlias.length;
+            } else if (normalized.endsWith(normalizedAlias)) {
+                score = 500 + normalizedAlias.length;
+            } else if (normalized.startsWith(normalizedAlias)) {
+                score = 100 + normalizedAlias.length;
+            }
+            if (score > bestScore) {
+                bestScore = score;
+                bestKey = key;
             }
         }
     }
-    return null;
+    return bestKey;
 }
 
 function parseBooleanValue(val: string): boolean {
@@ -166,12 +182,15 @@ export function parseCsvContacts(csvText: string): VCardContact[] {
         const phone = fieldIndices.phone !== undefined ? (row[fieldIndices.phone] ?? "").trim() : "";
         const email = fieldIndices.email !== undefined ? (row[fieldIndices.email] ?? "").trim() : "";
         const wechat = fieldIndices.wechat !== undefined ? (row[fieldIndices.wechat] ?? "").trim() : "";
+        const website = fieldIndices.website !== undefined ? (row[fieldIndices.website] ?? "").trim() : "";
         const bdayRaw = fieldIndices.birthday !== undefined ? (row[fieldIndices.birthday] ?? "").trim() : "";
         const isLunarRaw = fieldIndices.isLunar !== undefined ? (row[fieldIndices.isLunar] ?? "").trim() : "";
+        const group = fieldIndices.group !== undefined ? (row[fieldIndices.group] ?? "").trim() : "";
         const tagsRaw = fieldIndices.tags !== undefined ? (row[fieldIndices.tags] ?? "").trim() : "";
-        const org = fieldIndices.org !== undefined ? (row[fieldIndices.org] ?? "").trim() : undefined;
-        const title = fieldIndices.title !== undefined ? (row[fieldIndices.title] ?? "").trim() : undefined;
-        const note = fieldIndices.note !== undefined ? (row[fieldIndices.note] ?? "").trim() : undefined;
+        const org = fieldIndices.org !== undefined ? (row[fieldIndices.org] ?? "").trim() : "";
+        const department = fieldIndices.department !== undefined ? (row[fieldIndices.department] ?? "").trim() : "";
+        const title = fieldIndices.title !== undefined ? (row[fieldIndices.title] ?? "").trim() : "";
+        const note = fieldIndices.note !== undefined ? (row[fieldIndices.note] ?? "").trim() : "";
 
         const birthday = normalizeBirthday(bdayRaw);
         const isLunar = parseBooleanValue(isLunarRaw);
@@ -185,13 +204,15 @@ export function parseCsvContacts(csvText: string): VCardContact[] {
             phone,
             email,
             wechat,
-            website: "",
+            website,
             birthday,
             isLunar,
             tags,
-            org,
-            title,
-            note,
+            ...(group ? { group } : {}),
+            ...(org ? { org } : {}),
+            ...(department ? { department } : {}),
+            ...(title ? { title } : {}),
+            ...(note ? { note } : {}),
         });
     }
 

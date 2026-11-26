@@ -52,8 +52,12 @@ export interface VCardContact {
     methodPreview?: VCardMethodPreview[];
     /** 组织/公司名称 */
     org?: string;
+    /** 部门 */
+    department?: string;
     /** 职位/头衔 */
     title?: string;
+    /** 分组 */
+    group?: string;
     /** 常驻城市或地址 */
     city?: string;
     /** 备注说明 */
@@ -324,6 +328,7 @@ function contactFromCard(lines: string[], options: ContactFromCardOptions = {}):
         tags,
         ...(wechat ? { wechat } : {}),
         ...(org ? { org } : {}),
+        ...(orgDept ? { department: orgDept } : {}),
         ...(title ? { title } : {}),
         ...(rawNote ? { note: rawNote } : {}),
         ...(city ? { city } : {}),
@@ -364,7 +369,12 @@ function parsePropertyLine(line: string): VCardProperty | null {
     for (const segment of segments.slice(1)) {
         const eq = segment.indexOf("=");
         if (eq < 0) {
-            types.push(...splitPreviewTypes(segment));
+            const bare = segment.trim().replace(/^"|"$/g, "").toUpperCase();
+            if (bare === "QUOTED-PRINTABLE") {
+                params.ENCODING = "QUOTED-PRINTABLE";
+            } else {
+                types.push(...splitPreviewTypes(segment));
+            }
             continue;
         }
         const key = segment.slice(0, eq).trim().toUpperCase();
@@ -404,7 +414,11 @@ function hasQuotedPrintableEncoding(line: string): boolean {
     const segments = line.slice(0, colon).split(";");
     for (const segment of segments.slice(1)) {
         const eq = segment.indexOf("=");
-        if (eq < 0) continue;
+        if (eq < 0) {
+            const bare = segment.trim().replace(/^"|"$/g, "").toUpperCase();
+            if (bare === "QUOTED-PRINTABLE") return true;
+            continue;
+        }
         const key = segment.slice(0, eq).trim().toUpperCase();
         const value = segment.slice(eq + 1).trim().replace(/^"|"$/g, "").toUpperCase();
         if (key === "ENCODING" && (value === "QP" || value === "QUOTED-PRINTABLE")) return true;
@@ -451,6 +465,7 @@ export function normalizeVcfDate(raw: string): string {
 /** QP 解码：=XX 十六进制字节序列按字符集还原；残留软换行（=后接换行）剔除 */
 function decodeQuotedPrintable(value: string, charset: string): string {
     const bytes: number[] = [];
+    const utf8Encoder = new TextEncoder();
     for (let i = 0; i < value.length; i++) {
         const ch = value[i];
         if (ch === "=") {
@@ -469,7 +484,13 @@ function decodeQuotedPrintable(value: string, charset: string): string {
                 continue;
             }
         }
-        bytes.push(ch.charCodeAt(0) & 0xff);
+        const code = value.codePointAt(i)!;
+        if (code <= 0x7f) {
+            bytes.push(code);
+        } else {
+            for (const b of utf8Encoder.encode(String.fromCodePoint(code))) bytes.push(b);
+            if (code > 0xffff) i += 1;
+        }
     }
     try {
         return new TextDecoder(charset.trim() || "utf-8").decode(new Uint8Array(bytes));
@@ -505,11 +526,11 @@ export function unescapeVcf(value: string): string {
     return value.replace(/\\(.)/g, (_, ch: string) => (ch === "n" || ch === "N" ? "\n" : ch));
 }
 
-/** vCard 转义：反斜杠、换行、逗号、分号 */
+/** vCard 转义：反斜杠、换行（CRLF / CR / LF）、逗号、分号 */
 export function escapeVcf(value: string): string {
     return value
         .replace(/\\/g, "\\\\")
-        .replace(/\r?\n/g, "\\n")
+        .replace(/\r\n|\r|\n/g, "\\n")
         .replace(/,/g, "\\,")
         .replace(/;/g, "\\;");
 }

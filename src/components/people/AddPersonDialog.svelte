@@ -11,6 +11,8 @@
     import QuickFillDialog from "./QuickFillDialog.svelte";
     import GroupField from "./GroupField.svelte";
     import BirthdayField from "./BirthdayField.svelte";
+    import RegionPicker from "./RegionPicker.svelte";
+    import type { ContactLocation } from "../../domain/china-regions";
     import OrgMultiSelect from "../org/OrgMultiSelect.svelte";
     import { registerDialogEscapeScope } from "../../libs/dialog-escape-scope";
     import { ClipboardPaste } from "@lucide/svelte";
@@ -97,6 +99,8 @@
     let aliases = $state("");
     let relationshipLabels = $state("");
     let note = $state("");
+    let residentLocation = $state<ContactLocation | undefined>(undefined);
+    let hometownLocation = $state<ContactLocation | undefined>(undefined);
     let selfSetupOpen = $state(false);
     let selfSetupBusy = $state(false);
     let selfSetupError = $state("");
@@ -229,9 +233,13 @@
         running = true;
         try {
             const firstOrg = orgAffiliations.find((entry) => entry.orgDocId) ?? emptyOrgAffiliation();
+            const locations = (residentLocation || hometownLocation)
+                ? { ...(residentLocation ? { resident: residentLocation } : {}), ...(hometownLocation ? { hometown: hometownLocation } : {}) }
+                : undefined;
             const extendedDetails = { orgMemberships: orgAffiliations.filter((entry) => entry.orgDocId).map((entry) => ({ ...entry })),
                 orgDocId: firstOrg.orgDocId, orgDepartment: firstOrg.orgDepartment, orgTitle: firstOrg.orgTitle,
-                orgJoinedOn: firstOrg.orgJoinedOn, orgAffiliationKind: firstOrg.orgAffiliationKind, aliases, relationshipLabels, note };
+                orgJoinedOn: firstOrg.orgJoinedOn, orgAffiliationKind: firstOrg.orgAffiliationKind, aliases, relationshipLabels, note,
+                ...(locations ? { locations } : {}) };
             const affiliationErrors = validateContactExtendedDraft(extendedDetails);
             if (affiliationErrors.length) {
                 expandedOrgDetails = Object.fromEntries(orgAffiliationKeys.map((key) => [key, true]));
@@ -377,12 +385,13 @@
         if (orgAffiliations.some((entry) => entry.orgDocId || entry.orgDepartment || entry.orgTitle || entry.orgJoinedOn || entry.orgLeftOn || entry.orgStatusLabel.trim() || entry.orgNote?.trim())) changes.push("组织归属补充资料已填写");
         if (relationshipLabels.trim()) changes.push("与我的关系称谓已填写");
         if (aliases.trim()) changes.push("别名/称呼已填写");
+        if (residentLocation || hometownLocation) changes.push("常住地/籍贯已填写");
         if (note.trim()) changes.push("人物备注已填写");
         return changes;
     }
     const guardedClose = useCloseGuard({
         busy: () => running || creatingOrganization || extraLoading || Boolean(removingOrganization),
-        dirty: () => !saved && (JSON.stringify(draft) !== JSON.stringify(emptyDraft()) || tagsText.trim().length > 0 || orgAffiliations.some((entry) => Boolean(entry.orgDocId || entry.orgDepartment || entry.orgTitle || entry.orgJoinedOn || entry.orgLeftOn || entry.orgStatusLabel.trim() || entry.orgNote?.trim())) || Boolean(aliases.trim() || relationshipLabels.trim() || note.trim())),
+        dirty: () => !saved && (JSON.stringify(draft) !== JSON.stringify(emptyDraft()) || tagsText.trim().length > 0 || orgAffiliations.some((entry) => Boolean(entry.orgDocId || entry.orgDepartment || entry.orgTitle || entry.orgJoinedOn || entry.orgLeftOn || entry.orgStatusLabel.trim() || entry.orgNote?.trim())) || Boolean(aliases.trim() || relationshipLabels.trim() || note.trim() || residentLocation || hometownLocation)),
         changes: () => [...draftChanges(), ...(creationRequest ? [text("contactCheckpointWarning", "原请求断点仅保留在当前窗口。关闭不会删除已保存文档；请核实后继续，不能凭同名重新建档。")] : [])],
         save: persist,
     });
@@ -534,6 +543,8 @@
                         {#if extraError}<p class="lvct-form__error" role="alert">组织读取失败：{extraError} <button type="button" class="b3-button b3-button--text" onclick={() => void openExtended()}>重试</button></p>{/if}
                     {/if}
                     <label class="lvct-form__item"><span>别名 / 常用称呼</span><input class="b3-text-field fn__block" maxlength="80" bind:value={aliases} disabled={running} placeholder="例如：张老师、英文名；多个称呼用顿号分隔" /></label>
+                    <RegionPicker kind="resident" label="常住地（同城匹配依据）" value={residentLocation} disabled={running} onChange={(next) => (residentLocation = next)} />
+                    <RegionPicker kind="hometown" label="籍贯 / 老家" value={hometownLocation} disabled={running} onChange={(next) => (hometownLocation = next)} />
                     <label class="lvct-form__item"><span>与我的关系称谓</span><input class="b3-text-field fn__block" maxlength="1600" bind:value={relationshipLabels} disabled={running} placeholder="例如：同事、朋友、校友；多个称谓用顿号分隔" /><small class="lvct-form__hint">需先在设置中指定“我”的档案；不填写无需设置。{#if onCreateSelfProfile}<button type="button" class="b3-button b3-button--text lvct-form__inline-action" onclick={() => void openSelfSetup()} disabled={running || selfSetupBusy}>设置本人档案</button>{/if}</small></label>
                     <label class="lvct-form__item"><span>人物备注</span><textarea class="b3-text-field fn__block" rows="3" maxlength="5000" bind:value={note} disabled={running} placeholder="记录你希望长期保留的补充信息"></textarea></label>
                 </div>

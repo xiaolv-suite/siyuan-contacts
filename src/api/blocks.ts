@@ -102,6 +102,35 @@ export async function appendBlockMd(parentId: string, markdown: string): Promise
     return id;
 }
 
+/** 在指定前置块之后插入同级 markdown 块（用于落入「#### 🐴 小驴记录」折叠区），返回新块 ID */
+export async function insertBlockAfterMd(previousId: string, parentId: string, markdown: string): Promise<string> {
+    assertNodeId(previousId, "前置块 ID");
+    assertNodeId(parentId, "父块 ID");
+    if (typeof markdown !== "string") throw new Error("块内容必须是文本");
+    const data = await kernelPost("/api/block/insertBlock", {
+        dataType: "markdown",
+        previousID: previousId,
+        parentID: parentId,
+        data: markdown,
+    }, { decode: (value) => decodeInsertBlockData("/api/block/insertBlock", value) });
+    const id = firstOperationId(data);
+    if (!id) throw new KernelProtocolError("/api/block/insertBlock", "/api/block/insertBlock 返回异常形状（未返回新块 ID）");
+    return id;
+}
+
+/** 供共享 lv-notice-kit.ensureXiaolvDiaryZone 复用的 api 层内核通道适配器 */
+export async function diaryZoneKernelPost(
+    endpoint: string,
+    payload: Record<string, unknown>,
+): Promise<{ code: number; msg?: string; data?: any }> {
+    try {
+        const data = await kernelPost<any>(endpoint, payload);
+        return { code: 0, data };
+    } catch (err) {
+        return { code: -1, msg: err instanceof Error ? err.message : String(err) };
+    }
+}
+
 /** 整块更新为新的 markdown（保留原块 ID） */
 export async function updateBlockMd(blockId: string, markdown: string): Promise<void> {
     assertNodeId(blockId);

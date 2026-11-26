@@ -40,7 +40,11 @@ export async function saveJsonVerified(plugin: Plugin, key: string, value: unkno
     for (let attempt = 0; attempt < 2; attempt += 1) {
         await plugin.saveData(key, value);
         const reread = await loadJsonStrict(plugin, key);
-        if (JSON.stringify(reread) === expected) return;
+        let comparable = reread;
+        if (typeof reread === "string" && typeof value === "object" && value !== null) {
+            try { comparable = JSON.parse(reread); } catch {}
+        }
+        if (JSON.stringify(comparable) === expected) return;
     }
     throw new Error(`存储写入未收敛: ${key}`);
 }

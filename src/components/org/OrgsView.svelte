@@ -4,14 +4,13 @@
     import { Building2, Plus, Users, Network, ExternalLink } from "@lucide/svelte";
     import ViewState from "../ViewState.svelte";
     import { translateText } from "../../domain/translation";
-    import type { ContactsPluginFacade } from "../../types";
+    import { CONTACTS_CONTEXT_KEY, type IOrgContext } from "../../core/context";
     import type { OrganizationWithMembers } from "../../services/org";
     import { filterOrganizations, type OrganizationStatusFilter } from "../../domain/organization-scan";
-    import { onDestroy, untrack, tick } from "svelte";
+    import { getContext, onDestroy, untrack, tick } from "svelte";
     import { requestErrorMessage } from "../../shared/error-presenter";
 
     let {
-        facade,
         revision = 0,
         i18n,
         onOpenOrgManager,
@@ -21,7 +20,6 @@
         onOpenGraphOrg,
         onOpenPerson,
     }: {
-        facade: ContactsPluginFacade;
         revision?: number;
         i18n?: Readonly<Record<string, string>>;
         onOpenOrgManager: (docId?: string) => void;
@@ -31,6 +29,12 @@
         onOpenGraphOrg?: (orgDocId: string) => void;
         onOpenPerson?: (docId: string) => void;
     } = $props();
+
+    // 真正从 Context 消费 IOrgContext 窄契约！
+    const activeOrg = getContext<IOrgContext & { openDoc?: (docId: string) => void; openDocMenu?: (docId: string, e: MouseEvent) => void }>(CONTACTS_CONTEXT_KEY);
+    if (!activeOrg) {
+        throw new Error("[OrgsView] 缺少必要的 IOrgContext 上下文");
+    }
     const text = $derived.by(() => (key: string, fallback: string, values?: Record<string, string | number>) =>
         translateText(i18n, key, fallback, values));
 
@@ -66,8 +70,8 @@
         organizationHasMore = false;
         const generation = ++organizationLoadGeneration;
         try {
-            if (facade.listOrganizationsPage) {
-                const page = await facade.listOrganizationsPage({ limit: 200 });
+            if (activeOrg?.listOrganizationsPage) {
+                const page = await activeOrg.listOrganizationsPage({ limit: 200 });
                 if (!alive || version !== refreshVersion || generation !== organizationLoadGeneration) return;
                 if (page.hasMore && !page.nextRootId) throw new Error("组织首屏分页缺少后续游标，已停止继续读取");
                 orgs = page.organizations;
@@ -77,7 +81,7 @@
                 void loadRemainingOrganizations(version, generation);
                 return;
             }
-            const result = await facade.listOrganizations();
+            const result = activeOrg ? await activeOrg.listOrganizations() : [];
             // 旧版全量入口没有分页代际可依赖；组件卸载后也必须丢弃迟到结果，
             // 否则切页期间会向已销毁视图回填旧组织列表并触发响应式更新。
             if (alive && version === refreshVersion && generation === organizationLoadGeneration) orgs = result;
@@ -93,13 +97,13 @@
     }
 
     async function loadRemainingOrganizations(version: number, generation: number) {
-        if (!facade.listOrganizationsPage || !organizationHasMore || !organizationCursor) return;
+        if (!activeOrg?.listOrganizationsPage || !organizationHasMore || !organizationCursor) return;
         organizationLoadingMore = true;
         organizationLoadError = "";
         try {
             while (organizationHasMore && organizationCursor && alive
                 && version === refreshVersion && generation === organizationLoadGeneration) {
-                const page = await facade.listOrganizationsPage({ afterRootId: organizationCursor, limit: 200 });
+                const page = await activeOrg.listOrganizationsPage({ afterRootId: organizationCursor, limit: 200 });
                 if (!alive || version !== refreshVersion || generation !== organizationLoadGeneration) return;
                 if (page.organizations.length === 0 && page.hasMore && !page.scannedRootCount) throw new Error("组织分页返回空页但仍有后续数据，已停止继续读取");
                 const known = new Set(orgs.map((org) => org.docId));
@@ -174,6 +178,7 @@
     let activeOrgDocId = $state<string>("");
     let activeOrgMembers = $state<import("../../services/org").OrganizationMember[]>([]);
     let activeOrgMembersLoading = $state(false);
+    let activeOrgMembersError = $state("");
     let selectedDept = $state("");
 
     $effect(() => {
@@ -197,20 +202,29 @@
     });
 
     $effect(() => {
+        revision;
         const docId = activeOrgDocId;
-        if (!docId || typeof facade?.listOrganizationMembers !== "function") {
+        if (!docId || typeof activeOrg?.listOrganizationMembers !== "function") {
             activeOrgMembers = [];
+            activeOrgMembersError = "";
             return;
         }
         let cancelled = false;
         activeOrgMembersLoading = true;
-        facade.listOrganizationMembers(docId).then((members) => {
+        activeOrgMembersError = "";
+        activeOrgMembers = [];
+        activeOrg.listOrganizationMembers(docId).then((members) => {
             if (!cancelled) {
                 activeOrgMembers = members;
+                activeOrgMembersError = "";
                 activeOrgMembersLoading = false;
             }
-        }).catch(() => {
-            if (!cancelled) activeOrgMembersLoading = false;
+        }).catch((error) => {
+            if (!cancelled) {
+                activeOrgMembers = [];
+                activeOrgMembersError = requestErrorMessage(error);
+                activeOrgMembersLoading = false;
+            }
         });
         return () => { cancelled = true; };
     });
@@ -394,10 +408,10 @@
                             title="在关系图谱中聚焦该组织的人脉网络"
                             onclick={() => onOpenGraphOrg?.(org.docId)}>
                             <Network size={13} /> {text("orgsViewGraph", "图谱")}</button>{/if}
-                        {#if facade?.openDoc}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
+                        {#if activeOrg?.openDoc}<button type="button" class="b3-button b3-button--text" disabled={loading || !!errorText}
                             title="在思源笔记中打开该组织的实体文档，撰写会议记录与组织随笔（右键呼出原生菜单）"
-                            onclick={() => facade.openDoc?.(org.docId)}
-                            oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(org.docId, e); }}>
+                            onclick={() => activeOrg.openDoc?.(org.docId)}
+                            oncontextmenu={(e) => { e.preventDefault(); void activeOrg.openDocMenu?.(org.docId, e); }}>
                             <ExternalLink size={13} /> {text("detailOpenDoc", "文档")}</button>{/if}
                     </div>
                 </div>
@@ -411,15 +425,23 @@
                     <div class="lvct-orgs-cockpit__title-wrap">
                         <span class="lvct-orgs-cockpit__tag" style="display: inline-flex; align-items: center;"><Building2 size={13} class="lvct-icon-inline" /> 组织人脉全貌</span>
                         <h4>{activeSelectedOrg.name}</h4>
-                        <span class="lvct-text-muted font-size-12">（共 {activeOrgMembers.length} 名成员）</span>
+                        <span class="lvct-text-muted font-size-12">
+                            {#if activeOrgMembersLoading}
+                                （正在读取成员…）
+                            {:else if activeOrgMembersError}
+                                （成员读取失败）
+                            {:else}
+                                （共 {activeOrgMembers.length} 名成员）
+                            {/if}
+                        </span>
                     </div>
                     <div class="lvct-orgs-cockpit__actions">
-                        {#if facade?.openDoc}
+                        {#if activeOrg?.openDoc}
                             <button
                                 type="button"
                                 class="b3-button b3-button--text b3-button--small"
-                                onclick={() => facade.openDoc?.(activeSelectedOrg.docId)}
-                                oncontextmenu={(e) => { e.preventDefault(); void facade.openDocMenu?.(activeSelectedOrg.docId, e); }}
+                                onclick={() => activeOrg.openDoc?.(activeSelectedOrg.docId)}
+                                oncontextmenu={(e) => { e.preventDefault(); void activeOrg.openDocMenu?.(activeSelectedOrg.docId, e); }}
                                 title="在思源笔记中打开该组织的实体文档（右键呼出原生菜单）"
                             >
                                 <ExternalLink size={13} class="lvct-icon-inline" /> 打开文档 &gt;
@@ -471,6 +493,10 @@
                 <!-- 成员小网格 -->
                 {#if activeOrgMembersLoading}
                     <div class="ft__smaller ft__on-surface">正在加载组织成员架构…</div>
+                {:else if activeOrgMembersError}
+                    <div class="lvct-inline-error" role="alert">
+                        成员读取失败，结果尚未核实：{activeOrgMembersError}
+                    </div>
                 {:else if displayedMembers.length > 0}
                     <div class="lvct-orgs-cockpit__members">
                         {#each displayedMembers as member (member.id)}

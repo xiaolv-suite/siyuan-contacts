@@ -28,17 +28,15 @@ import type { ViewPreferences } from "../domain/preferences";
     import OrgProjectionRepair from "./org/OrgProjectionRepair.svelte";
     import PersonPicker from "./people/PersonPicker.svelte";
     import type { MigrationImportResult } from "../services/migration-bundle";
+    import type {
+        OneDocMigrationDryRun,
+        OneDocMigrationResult,
+        OneDocMigrationRollbackResult,
+    } from "../domain/one-doc-migration";
 import { isSemanticallyMatchingColumn, fieldSpec } from "../domain/fields.ts";
 import { toLocalDateKey } from "../domain/date-key.ts";
 import { lvEcosystem } from "../libs/lv-notice-kit";
-// DL2 阶段0：生态统一「外观与动效」偏好分组（庆祝/吉祥物/光效可关）
-import { createLvUiPrefsSection } from "../libs/lv-ui-prefs";
-
-/** 挂载生态外观偏好分组（svelte action：随通用面板挂载/卸载） */
-function mountLvUiPrefsSectionAction(node: HTMLElement) {
-    node.appendChild(createLvUiPrefsSection());
-    return {};
-}
+import { attachDialogRootClass } from "../shared/modal-host";
 
     let {
         facade,
@@ -325,7 +323,9 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
             const result = facade.listTrash ? await facade.listTrash() : [];
             if (!selfAlive || request !== trashRequest) return;
             trashEntries = result;
-            trashMessage = `已恢复「${restored.name}」，资料按移除时的快照写回。`;
+            trashMessage = restored.warnings?.length
+                ? `已恢复「${restored.name}」基础资料，但部分关联恢复存在告警（快照已保留）：${restored.warnings.join("；")}`
+                : `已恢复「${restored.name}」，资料按移除时的快照写回。`;
         } catch (error) {
             if (selfAlive && request === trashRequest) trashError = requestErrorMessage(error);
         } finally {
@@ -457,7 +457,8 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
     $effect(() => {
         const latest = preferences;
         untrack(() => {
-            if (latest.revision < savedDraft.revision) return;
+            if (!latest || typeof latest !== "object") return;
+            if ((latest?.revision ?? 0) < (savedDraft?.revision ?? 0)) return;
             draft = rebasePreferenceDraft(latest, draft, savedDraft);
             savedDraft = normalizeViewPreferences(latest);
         });
@@ -545,7 +546,8 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
             || savingPreferences || rebinding || mappingBusy || importingInteractions || previewingImport
             || scanningAnchors || rebuilding
             || loadingSummary || exportingInteractions || exportingRoster || exportingIcs || exportingFollowUps || exportingBundle
-            || previewingBundle || importingBundle || fuPreviewing || fuImporting,
+            || previewingBundle || importingBundle || fuPreviewing || fuImporting
+            || oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy,
         dirty: () => JSON.stringify(draft) !== JSON.stringify(savedDraft) || importText.trim().length > 0 || selfPreview !== null
             || rebuildPreview !== null || rebindPreview !== null,
         changes: () => [
@@ -910,6 +912,94 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
         }
     }
 
+    // ---- 老用户存量数据一键迁入「一人一档」 ----
+    let oneDocPreviewBusy = $state(false);
+    let oneDocMigrating = $state(false);
+    let oneDocRollbackBusy = $state(false);
+    let oneDocPreview = $state<OneDocMigrationDryRun | null>(null);
+    let oneDocResult = $state<OneDocMigrationResult | null>(null);
+    let oneDocRollbackResult = $state<OneDocMigrationRollbackResult | null>(null);
+    let oneDocMessage = $state("");
+    let oneDocProgress = $state("");
+
+    async function runPreviewOneDocMigration() {
+        if (oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy || !facade.previewOneDocMigration) return;
+        oneDocPreviewBusy = true;
+        oneDocMessage = "";
+        oneDocRollbackResult = null;
+        try {
+            const preview = await facade.previewOneDocMigration();
+            if (!selfAlive) return;
+            oneDocPreview = preview;
+            oneDocMessage = preview.pendingCount > 0
+                ? `预检完成：共 ${preview.totalPeople} 位联系人，待迁入 ${preview.pendingCount} 篇文档，已同步 ${preview.alreadySyncedCount} 篇`
+                : `预检完成：共 ${preview.totalPeople} 位联系人，均已落盘「一人一档」标准文档`;
+        } catch (error) {
+            if (selfAlive) oneDocMessage = requestErrorMessage(error);
+        } finally {
+            if (selfAlive) oneDocPreviewBusy = false;
+        }
+    }
+
+    async function runExecuteOneDocMigration() {
+        if (oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy || !facade.executeOneDocMigration) return;
+        oneDocMigrating = true;
+        oneDocMessage = "";
+        oneDocProgress = "";
+        oneDocRollbackResult = null;
+        try {
+            const res = await facade.executeOneDocMigration({
+                onProgress: (cur, total) => {
+                    if (selfAlive) oneDocProgress = `正在迁移 ${cur} / ${total}…`;
+                },
+            });
+            if (!selfAlive) return;
+            oneDocResult = res;
+            oneDocMessage = res.failed === 0
+                ? `迁移完成：已迁入 ${res.migrated} 篇，跳过已同步 ${res.skipped} 篇（已自动生成 30 天安全备份）`
+                : `迁移部分完成：成功 ${res.migrated} 篇，跳过 ${res.skipped} 篇，未完成 ${res.failed} 篇（原 JSON 数据均已完整保留，可重试）`;
+            if (facade.previewOneDocMigration) {
+                oneDocPreview = await facade.previewOneDocMigration().catch(() => oneDocPreview);
+            }
+            onInteractionsUpdated();
+        } catch (error) {
+            if (selfAlive) oneDocMessage = requestErrorMessage(error);
+        } finally {
+            if (selfAlive) {
+                oneDocMigrating = false;
+                oneDocProgress = "";
+            }
+        }
+    }
+
+    async function runRollbackOneDocMigration() {
+        if (oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy || !facade.rollbackOneDocMigration) return;
+        const ok = await confirmDialog({
+            title: "回滚一人一档迁移",
+            message: "将从 30 天备份包恢复迁移前地区属性与迁移新增区块；若您迁移后手工修改过思源正文，将保留您的正文内容并仅剥离迁移标记。确认继续？",
+            confirmLabel: "确认回滚",
+            cancelLabel: "取消",
+            danger: true,
+        });
+        if (!ok) return;
+        oneDocRollbackBusy = true;
+        oneDocMessage = "";
+        try {
+            const res = await facade.rollbackOneDocMigration();
+            if (!selfAlive) return;
+            oneDocRollbackResult = res;
+            oneDocMessage = `已回滚 ${res.restoredCount} 篇人物设置、移除 ${res.removedBlocksCount} 个迁移块${res.userModifiedPreserved.length > 0 ? `；保留用户手工修改正文 ${res.userModifiedPreserved.length} 处` : ""}`;
+            if (facade.previewOneDocMigration) {
+                oneDocPreview = await facade.previewOneDocMigration().catch(() => null);
+            }
+            onInteractionsUpdated();
+        } catch (error) {
+            if (selfAlive) oneDocMessage = requestErrorMessage(error);
+        } finally {
+            if (selfAlive) oneDocRollbackBusy = false;
+        }
+    }
+
     async function runExportRoster() {
         if (exportingRoster) return;
         exportingRoster = true;
@@ -1131,7 +1221,7 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
     }
 </script>
 
-<div class="lvct-settings" data-lvct-theme={draft.themeScheme || "cognac"}>
+<div class="lvct-settings" data-lvct-theme={draft.themeScheme || "cognac"} use:attachDialogRootClass={"lvct-dialog-root--settings"}>
     <div class="lvct-settings__topbar">
         <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onBack)}>← {text("settingsBack", "返回工作台")}</button>
         <div class="lvct-settings__heading">
@@ -1388,7 +1478,7 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
 
                     <div style="margin: 10px 0 14px 0; padding: 12px 14px; background: color-mix(in srgb, var(--lvct-bg-elevated) 70%, transparent); border: 1px solid var(--lvct-border-subtle); border-radius: var(--lvct-r-md, 10px);">
                         <div style="margin-bottom: 8px;">
-                            <b>名册卡片展示字段（IDEA-06）</b>
+                            <b>名册卡片展示字段</b>
                             <div class="ft__smaller ft__on-surface">选择在名册卡片常驻展示的辅助字段，满足销售、HR、校友多场景诉求</div>
                         </div>
                         <div style="display: flex; flex-wrap: wrap; gap: 12px 16px;">
@@ -1421,9 +1511,6 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
                             {draft.onboardingDismissed ? text("onboardingReopen", "重新显示引导") : text("onboardingAlreadyVisible", "当前已显示")}
                         </button>
                     </div>
-
-                    <!-- DL2 阶段0：生态统一外观与动效偏好分组 -->
-                    <div class="lvct-settings__row" use:mountLvUiPrefsSectionAction></div>
 
                     <div class="lvct-settings__actions">
                         <button class="b3-button b3-button--outline" onclick={savePreferences} disabled={savingPreferences || !preferencesDirty} title={!preferencesDirty ? "当前没有待保存的偏好修改" : undefined}>
@@ -1641,6 +1728,69 @@ function mountLvUiPrefsSectionAction(node: HTMLElement) {
                         </button>
                     </div>
                     <StatusNotice message={followUpsExportMessage} onDismiss={() => (followUpsExportMessage = "")} actionLabel="再次导出" onAction={runExportFollowUps} />
+
+                    {#if facade.previewOneDocMigration && facade.executeOneDocMigration}
+                    <div class="lvct-settings__row" data-testid="one-doc-migration-panel">
+                        <div>
+                            <b>老数据一键迁入「一人一档」</b>
+                            <small>将存量自由文本地区、协作项目与未落盘明细幂等迁入人物思源文档；支持 Dry-Run 预检与 30 天安全回滚</small>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" class="b3-button b3-button--outline" onclick={runPreviewOneDocMigration} disabled={oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy}>
+                                {oneDocPreviewBusy ? "预检中…" : "预检待迁数据"}
+                            </button>
+                            <button type="button" class="b3-button b3-button--primary" onclick={runExecuteOneDocMigration} disabled={oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy}>
+                                {oneDocMigrating ? (oneDocProgress || "迁移中…") : "一键迁入一人一档"}
+                            </button>
+                            {#if facade.rollbackOneDocMigration && oneDocPreview?.hasValidBackup}
+                                <button type="button" class="b3-button b3-button--cancel" onclick={runRollbackOneDocMigration} disabled={oneDocPreviewBusy || oneDocMigrating || oneDocRollbackBusy}>
+                                    {oneDocRollbackBusy ? "回滚中…" : "30 天备份回滚"}
+                                </button>
+                            {/if}
+                        </div>
+                    </div>
+                    <StatusNotice message={oneDocMessage} onDismiss={() => (oneDocMessage = "")} />
+                    {#if oneDocPreview}
+                        <div class="lvct-settings__migration-result" style="font-size: 12px; margin-bottom: 10px;">
+                            <p style="margin: 4px 0;">
+                                共 {oneDocPreview.totalPeople} 位联系人 · 待迁入 <b>{oneDocPreview.pendingCount}</b> 篇 · 已同步 {oneDocPreview.alreadySyncedCount} 篇
+                                {#if oneDocPreview.hasValidBackup && oneDocPreview.backupExpiresAt}
+                                    · 备份保留至 {new Date(oneDocPreview.backupExpiresAt).toLocaleDateString("zh-CN")}
+                                {/if}
+                            </p>
+                            {#if oneDocPreview.items.filter((i) => !i.alreadySynced).length > 0}
+                                <details>
+                                    <summary>查看待迁入明细（前 {Math.min(20, oneDocPreview.items.filter((i) => !i.alreadySynced).length)} 项）</summary>
+                                    <ul>
+                                        {#each oneDocPreview.items.filter((i) => !i.alreadySynced).slice(0, 20) as item (item.docId)}
+                                            <li>
+                                                <b>{item.name}</b>
+                                                {#if item.residentPreview} · 常住地：{item.residentPreview}{/if}
+                                                {#if item.hometownPreview} · 籍贯：{item.hometownPreview}{/if}
+                                                {#if item.projectsCount > 0} · 项目 {item.projectsCount} 项{/if}
+                                                {#if item.topicsCount > 0} · 谈资 {item.topicsCount} 条{/if}
+                                            </li>
+                                        {/each}
+                                    </ul>
+                                </details>
+                            {/if}
+                        </div>
+                    {/if}
+                    {#if oneDocResult && oneDocResult.failedDetails.length > 0}
+                        <ul class="lvct-settings__missing">
+                            {#each oneDocResult.failedDetails as f (f.docId)}
+                                <li>{f.name}（{f.docId}）：{f.error}（已保留原 JSON 数据）</li>
+                            {/each}
+                        </ul>
+                    {/if}
+                    {#if oneDocRollbackResult && oneDocRollbackResult.userModifiedPreserved.length > 0}
+                        <ul class="lvct-settings__missing">
+                            {#each oneDocRollbackResult.userModifiedPreserved as c (c.docId + c.attr)}
+                                <li>{c.name}（{c.attr}）：{c.reason}</li>
+                            {/each}
+                        </ul>
+                    {/if}
+                    {/if}
 
                     <div class="lvct-settings__row">
                         <div>

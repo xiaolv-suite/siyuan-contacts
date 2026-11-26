@@ -87,8 +87,8 @@
         line-height: 1.4;
         padding: 2px 8px;
         border-radius: var(--lv-r-pill, 9999px);
-        background: color-mix(in srgb, var(--lv-brand, #ea580c) 8%, var(--lvct-bg-app));
-        border: 1px solid color-mix(in srgb, var(--lv-brand, #ea580c) 15%, transparent);
+        background: var(--lvct-surface-inset);
+        border: 1px solid var(--lvct-border-subtle);
         color: var(--lvct-text-2);
         box-sizing: border-box;
     }

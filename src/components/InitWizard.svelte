@@ -11,6 +11,7 @@
     import { translateText } from "../domain/translation";
     import { useCloseGuard } from "./close-guard";
     import { requestErrorMessage } from "../shared/error-presenter";
+    import { attachDialogRootClass } from "../shared/modal-host";
 
     let {
         facade,
@@ -127,7 +128,7 @@
     }
 </script>
 
-<div class="lvct-wizard-scroll-wrapper">
+<div class="lvct-wizard-scroll-wrapper" use:attachDialogRootClass={"lvct-dialog-root--scrollable"}>
     <div class="lvct-wizard">
         <header class="lvct-wizard__header">
         <svg class="lvct-wizard__logo" viewBox="0 0 32 32" aria-hidden="true">

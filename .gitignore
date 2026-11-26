@@ -10,3 +10,8 @@ package-*.zip
 scripts/e2e/shots/
 output/
 .jeikcode/codegraph/
+
+# Spike runtime artifacts
+scripts/spike/*.json
+!scripts/spike/archive/*.json
+

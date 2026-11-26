@@ -66,7 +66,6 @@ export function normalizeTopicStore(raw: unknown): PersonTopicStore {
                 text: normalizeTopicText(candidate.text),
                 createdAt: typeof candidate.createdAt === "number" && Number.isFinite(candidate.createdAt) ? candidate.createdAt : Date.now(),
             });
-            if (validItems.length >= MAX_TOPICS_PER_PERSON) break;
         }
         if (validItems.length > 0) topics[docId] = validItems;
     }
@@ -113,9 +112,6 @@ export function normalizeTopicStoreForWrite(raw: unknown): PersonTopicStore {
             if (!isValidTopicText(candidate.text)) {
                 throw new StoreIntegrityError("谈资备忘", `话题内容格式无效或超长（${docId}）`, list.length, itemIdx);
             }
-        }
-        if (list.length > MAX_TOPICS_PER_PERSON) {
-            throw new StoreIntegrityError("谈资备忘", `单人话题数量超过上限 ${MAX_TOPICS_PER_PERSON}（${docId}）`, docEntries.length, docIdx);
         }
     }
     return normalizeTopicStore(raw);

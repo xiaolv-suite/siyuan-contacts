@@ -38,11 +38,12 @@ export async function listTrashEntries(plugin: Plugin): Promise<TrashContactEntr
 export async function pushTrashEntry(
     plugin: Plugin,
     person: ContactSummary,
+    relatedDocIds?: readonly string[],
 ): Promise<TrashContactEntry[]> {
     return withStoreLock(TRASH_STORAGE_KEY, async () => {
         const now = Date.now();
         const store = normalizeTrashStoreForWrite(await loadJsonStrict(plugin, TRASH_STORAGE_KEY));
-        const updated = addTrashEntry(store, createTrashEntry(person, now), now);
+        const updated = addTrashEntry(store, createTrashEntry(person, now, relatedDocIds), now);
         await saveJsonVerified(plugin, TRASH_STORAGE_KEY, updated);
         return updated.entries;
     });

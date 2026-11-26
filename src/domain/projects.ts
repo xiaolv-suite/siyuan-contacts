@@ -33,6 +33,10 @@ export interface PersonProjectItem {
 export interface PersonProjectsStore {
     schemaVersion: 1;
     projects: Record<string, PersonProjectItem[]>;
+    /** 显式清空/删除所有协作项目的人物墓碑（与「从未初始化」严格区分，防止从旧文档块复活） */
+    deletedAll?: Record<string, true>;
+    /** 正文受控区块同步失败待对账状态 */
+    docSyncPending?: Record<string, true>;
 }
 
 const DOC_ID_RE = /^\d{14}-[0-9a-z]{7}$/;
@@ -49,6 +53,10 @@ export function newProjectId(): string {
 
 export function validatePersonProject(item: Partial<PersonProjectItem>): string[] {
     const errors: string[] = [];
+
+    if (!item.id || !String(item.id).trim()) {
+        errors.push("项目 ID 不能为空");
+    }
 
     const title = item.title?.trim() ?? "";
     if (!title) {
@@ -90,12 +98,16 @@ export function addProjectToStore(
     }
 
     const updated = [item, ...existing.filter((p) => p.id !== item.id)];
+    const nextDeletedAll = store.deletedAll ? { ...store.deletedAll } : {};
+    delete nextDeletedAll[item.personDocId];
     return {
         schemaVersion: PERSON_PROJECTS_STORE_VERSION,
         projects: {
             ...store.projects,
             [item.personDocId]: updated,
         },
+        ...(Object.keys(nextDeletedAll).length > 0 ? { deletedAll: nextDeletedAll } : {}),
+        ...(store.docSyncPending && Object.keys(store.docSyncPending).length > 0 ? { docSyncPending: { ...store.docSyncPending } } : {}),
     };
 }
 
@@ -130,10 +142,12 @@ export function updateProjectInStore(
             ...store.projects,
             [personDocId]: nextList,
         },
+        ...(store.deletedAll && Object.keys(store.deletedAll).length > 0 ? { deletedAll: { ...store.deletedAll } } : {}),
+        ...(store.docSyncPending && Object.keys(store.docSyncPending).length > 0 ? { docSyncPending: { ...store.docSyncPending } } : {}),
     };
 }
 
-/** 移除指定人物的项目协作记录 */
+/** 移除指定人物的项目协作记录（清空最后一条时写入 deletedAll 墓碑，防止旧文档投影复活） */
 export function removeProjectFromStore(
     store: PersonProjectsStore,
     personDocId: string,
@@ -144,15 +158,46 @@ export function removeProjectFromStore(
 
     const remaining = list.filter((item) => item.id !== projectId);
     const updated = { ...store.projects };
+    const nextDeletedAll = store.deletedAll ? { ...store.deletedAll } : {};
     if (remaining.length > 0) {
         updated[personDocId] = remaining;
+        delete nextDeletedAll[personDocId];
     } else {
         delete updated[personDocId];
+        nextDeletedAll[personDocId] = true;
     }
 
     return {
         schemaVersion: PERSON_PROJECTS_STORE_VERSION,
         projects: updated,
+        ...(Object.keys(nextDeletedAll).length > 0 ? { deletedAll: nextDeletedAll } : {}),
+        ...(store.docSyncPending && Object.keys(store.docSyncPending).length > 0 ? { docSyncPending: { ...store.docSyncPending } } : {}),
+    };
+}
+
+/** 判断某人物是否已显式清空协作项目（区别于「从未初始化」） */
+export function isPersonProjectsDeletedAll(store: PersonProjectsStore, personDocId: string): boolean {
+    return Boolean(store.deletedAll?.[personDocId]) && (store.projects[personDocId]?.length ?? 0) === 0;
+}
+
+/** 更新某人物协作项目正文同步待对账标记 */
+export function setProjectDocSyncPending(
+    store: PersonProjectsStore,
+    personDocId: string,
+    pending: boolean,
+): PersonProjectsStore {
+    if (!DOC_ID_RE.test(personDocId)) return store;
+    const nextPending = store.docSyncPending ? { ...store.docSyncPending } : {};
+    if (pending) {
+        nextPending[personDocId] = true;
+    } else {
+        delete nextPending[personDocId];
+    }
+    return {
+        schemaVersion: PERSON_PROJECTS_STORE_VERSION,
+        projects: { ...store.projects },
+        ...(store.deletedAll && Object.keys(store.deletedAll).length > 0 ? { deletedAll: { ...store.deletedAll } } : {}),
+        ...(Object.keys(nextPending).length > 0 ? { docSyncPending: nextPending } : {}),
     };
 }
 
@@ -191,6 +236,20 @@ export function normalizePersonProjectsStore(raw: unknown): PersonProjectsStore 
     }
 
     const projects: Record<string, PersonProjectItem[]> = {};
+    const deletedAll: Record<string, true> = {};
+    const docSyncPending: Record<string, true> = {};
+
+    if (record.deletedAll && typeof record.deletedAll === "object" && !Array.isArray(record.deletedAll)) {
+        for (const [docId, flag] of Object.entries(record.deletedAll)) {
+            if (DOC_ID_RE.test(docId) && flag === true) deletedAll[docId] = true;
+        }
+    }
+    if (record.docSyncPending && typeof record.docSyncPending === "object" && !Array.isArray(record.docSyncPending)) {
+        for (const [docId, flag] of Object.entries(record.docSyncPending)) {
+            if (DOC_ID_RE.test(docId) && flag === true) docSyncPending[docId] = true;
+        }
+    }
+
     for (const [docId, list] of Object.entries(record.projects)) {
         if (!DOC_ID_RE.test(docId) || !Array.isArray(list)) continue;
         const validList: PersonProjectItem[] = [];
@@ -215,18 +274,37 @@ export function normalizePersonProjectsStore(raw: unknown): PersonProjectsStore 
                 createdAt: Number.isFinite(candidate.createdAt) ? candidate.createdAt! : Date.now(),
                 updatedAt: Number.isFinite(candidate.updatedAt) ? candidate.updatedAt! : Date.now(),
             });
-            if (validList.length >= MAX_PROJECTS_PER_PERSON) break;
         }
 
         if (validList.length > 0) {
             projects[docId] = validList;
+            delete deletedAll[docId];
+        } else if (list.length === 0) {
+            deletedAll[docId] = true;
         }
     }
 
     return {
         schemaVersion: PERSON_PROJECTS_STORE_VERSION,
         projects,
+        ...(Object.keys(deletedAll).length > 0 ? { deletedAll } : {}),
+        ...(Object.keys(docSyncPending).length > 0 ? { docSyncPending } : {}),
     };
+}
+
+function validateDocFlagMap(raw: unknown, label: string): void {
+    if (raw === undefined) return;
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+        throw new StoreIntegrityError(`项目协作存储 ${label} 容器损坏`, "项目协作", 0, 0);
+    }
+    for (const [docId, flag] of Object.entries(raw)) {
+        if (!DOC_ID_RE.test(docId)) {
+            throw new StoreIntegrityError(`项目协作 ${label} 人物文档 ID 非法：${docId}`, "项目协作", 1, 0);
+        }
+        if (flag !== true) {
+            throw new StoreIntegrityError(`项目协作 ${label} 标记值非法：${docId}`, "项目协作", 1, 0);
+        }
+    }
 }
 
 /** 写前检查严格归一化：坏条目抛出 StoreIntegrityError */
@@ -242,6 +320,8 @@ export function normalizePersonProjectsStoreForWrite(raw: unknown): PersonProjec
     if (typeof record.projects !== "object" || record.projects === null || Array.isArray(record.projects)) {
         throw new StoreIntegrityError("项目协作存储 projects 容器损坏", "项目协作", 0, 0);
     }
+    validateDocFlagMap(record.deletedAll, "deletedAll");
+    validateDocFlagMap(record.docSyncPending, "docSyncPending");
 
     for (const [docId, list] of Object.entries(record.projects)) {
         if (!DOC_ID_RE.test(docId)) {

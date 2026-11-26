@@ -1,6 +1,6 @@
 import type { ExchangeStore } from "./exchanges.ts";
-import { normalizeAliasKey } from "./person-aliases.ts";
-import type { PersonAliasStore } from "./person-aliases.ts";
+import { normalizeAliasKey } from "./alias-core.ts";
+import type { PersonAliasStore } from "./alias-core.ts";
 import type { OrgMembership, OrgMembershipStore } from "./org-membership.ts";
 
 export interface MigrationRecordIssue {

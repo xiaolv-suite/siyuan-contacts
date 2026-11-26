@@ -1,6 +1,6 @@
 <script lang="ts">
     /** 联系人视图：未过滤名册渐进读取，搜索与筛选共用本地投影；详情弹窗由 Workbench 统一承载 */
-    import { querySql, assertKernelRecord } from "../../api/client";
+    import { queryBlocksIal } from "../../api/sql-coalescer";
     import { organizationIalAttributes } from "../../domain/organization-operations";
     import { batchUpdateContacts, createContactListProjection, listContactPage, PAGE_SIZE, removeContacts, updateContactFields } from "../../services/contacts";
     import type { ContactPage } from "../../services/contacts";
@@ -43,6 +43,7 @@
     import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check, Sparkles, Clock } from "@lucide/svelte";
     import { computeRelationshipHealth } from "../../domain/cadence.ts";
     import { toLocalDateKey } from "../../domain/date-key.ts";
+    import { acquireModalBodyClass } from "../../shared/modal-host";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
     import { isAbortError } from "../../shared/async";
@@ -168,7 +169,7 @@
         /** E-59：批量获取全量联系人节奏配置表（可选） */
         onLoadCadences?: () => Promise<Record<string, import("../../domain/cadence").PersonCadence>>;
         onListTrash?: () => Promise<import("../../domain/trash").TrashContactEntry[]>;
-        onRestoreContactFromTrash?: (entryId: string) => Promise<{ docId: string; itemId: string; name: string }>;
+        onRestoreContactFromTrash?: (entryId: string) => Promise<{ docId: string; itemId: string; name: string; warnings?: string[] }>;
         onEmptyTrash?: () => Promise<void>;
         onListOccasions?: () => Promise<import("../../domain/occasion-cluster").OccasionEntity[]>;
         onDeleteOccasion?: (occasionId: string) => Promise<void>;
@@ -1380,18 +1381,13 @@
         if (missing.length === 0) return;
         const docIds = missing.map((c) => c.docId);
         try {
-            const inList = [...new Set(docIds)].map((id) => `'${id}'`).join(",");
-            const rows = await querySql<unknown>(`SELECT id, ial FROM blocks WHERE id IN (${inList}) AND type = 'd'`);
-            if (!Array.isArray(rows)) return;
+            const ialMap = await queryBlocksIal(docIds);
             const map = new Map<string, string>();
-            for (const r of rows) {
+            for (const [id, ial] of ialMap) {
                 try {
-                    const rec = assertKernelRecord("/api/query/sql", r);
-                    if (typeof rec.id === "string" && typeof rec.ial === "string") {
-                        const attrs = organizationIalAttributes(rec.ial);
-                        const av = attrs["custom-lvct-avatar"] || attrs["icon"];
-                        if (av) map.set(rec.id, av);
-                    }
+                    const attrs = organizationIalAttributes(ial);
+                    const av = attrs["custom-lvct-avatar"] || attrs["icon"];
+                    if (av) map.set(id, av);
                 } catch {}
             }
             if (map.size > 0 && peopleAlive) {
@@ -1964,6 +1960,15 @@
             searchInputElement?.select();
         }
     }
+
+    function mobileSheetModalHost(_node: HTMLElement) {
+        const release = acquireModalBodyClass();
+        return {
+            destroy() {
+                release();
+            },
+        };
+    }
 </script>
 
 <svelte:window onkeydown={handleGlobalKeydown} />
@@ -2255,7 +2260,7 @@
             {@render viewMenuControl()}
             {@render filterControls()}
 
-            <span class="lvct-people__viewtoggle">
+            <span class="lvct-people__viewtoggle" class:lvct-people__viewtoggle--dual={viewMode === "cards"}>
                 {#if viewMode === "cards"}
                     <span class="lvct-seg" role="group" aria-label="卡片密度" title="卡片密度">
                         <button
@@ -2517,6 +2522,7 @@
             aria-labelledby={mobileSheetTitleId}
             tabindex="-1"
             bind:this={mobileSheetPanel}
+            use:mobileSheetModalHost
             use:swipeDismiss={{ onDismiss: () => closeMobileSheet(), enabled: isMobile }}
             onkeydown={handleMobileSheetKeydown}
         >
@@ -3053,7 +3059,7 @@
                                 <button class="b3-button b3-button--outline" onclick={() => { dupOpen = false; onOpenDetail(pair.b); }}>查看 {pair.b.name}</button>
                             </div>
                             <div class="lvct-dup__actions">
-                                <button class="b3-button b3-button--cancel" onclick={() => (mergeTarget = pair)}>合并此对</button>
+                                <button class="b3-button b3-button--primary" onclick={() => (mergeTarget = pair)}>合并此对</button>
                             </div>
                         </div>
                     {/each}
@@ -3084,7 +3090,10 @@
                 {i18n}
                 primary={mergeTarget.a}
                 secondary={mergeTarget.b}
-                onConfirm={async ({ plan }) => {
+                onConfirm={async ({ primaryDocId, removedSecondaryDocId, plan }) => {
+                    if (plan.primary.docId !== primaryDocId || plan.secondary.docId !== removedSecondaryDocId) {
+                        throw new Error("合并主次对象校验不一致，已中止合并");
+                    }
                     if (onExecuteMerge) {
                         await onExecuteMerge(plan);
                     }

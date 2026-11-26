@@ -8,9 +8,12 @@ import { loadJson, loadJsonStrict, saveJsonVerified, withStoreLock } from "./sto
 import {
     addProjectToStore,
     findPeopleByProject,
+    isPersonProjectsDeletedAll,
+    newProjectId,
     normalizePersonProjectsStore,
     normalizePersonProjectsStoreForWrite,
     removeProjectFromStore,
+    setProjectDocSyncPending,
     updateProjectInStore,
     type PersonProjectItem,
     type PersonProjectsStore,
@@ -18,6 +21,13 @@ import {
 } from "../domain/projects.ts";
 
 export const PERSON_PROJECTS_STORAGE_KEY = "person-projects.json";
+
+export interface PersonProjectsLoadState {
+    items: PersonProjectItem[];
+    initialized: boolean;
+    deletedAll: boolean;
+    docSyncPending: boolean;
+}
 
 /** 容错读取（展示使用） */
 export async function loadPersonProjectsStore(plugin: Plugin): Promise<PersonProjectsStore> {
@@ -35,16 +45,45 @@ export async function loadPersonProjects(plugin: Plugin, personDocId: string): P
     return store.projects[personDocId] ? [...store.projects[personDocId]] : [];
 }
 
-/** 为指定人物新增项目协作并落盘 */
+/** 读取指定人物的协作项目完整状态（严格区分「从未初始化」与「已显式清空」） */
+export async function loadPersonProjectsState(plugin: Plugin, personDocId: string): Promise<PersonProjectsLoadState> {
+    const store = await loadPersonProjectsStore(plugin);
+    const items = store.projects[personDocId] ? [...store.projects[personDocId]] : [];
+    const deletedAll = isPersonProjectsDeletedAll(store, personDocId);
+    const initialized = items.length > 0 || deletedAll;
+    const docSyncPending = Boolean(store.docSyncPending?.[personDocId]);
+    return { items, initialized, deletedAll, docSyncPending };
+}
+
+/** 标记或清除某人物协作项目正文投影待对账状态 */
+export async function markPersonProjectsDocSyncPending(
+    plugin: Plugin,
+    personDocId: string,
+    pending: boolean,
+): Promise<void> {
+    await withStoreLock(PERSON_PROJECTS_STORAGE_KEY, async () => {
+        const store = normalizePersonProjectsStoreForWrite(await loadJsonStrict(plugin, PERSON_PROJECTS_STORAGE_KEY));
+        const currentPending = Boolean(store.docSyncPending?.[personDocId]);
+        if (currentPending === pending) return;
+        const updated = setProjectDocSyncPending(store, personDocId, pending);
+        await saveJsonVerified(plugin, PERSON_PROJECTS_STORAGE_KEY, updated);
+    });
+}
+
+/** 为指定人物新增项目协作并落盘（缺少非空 id 时自动兜底生成） */
 export async function addPersonProject(
     plugin: Plugin,
     item: PersonProjectItem,
 ): Promise<PersonProjectItem[]> {
+    const normalizedItem: PersonProjectItem = {
+        ...item,
+        id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : newProjectId(),
+    };
     return withStoreLock(PERSON_PROJECTS_STORAGE_KEY, async () => {
         const store = normalizePersonProjectsStoreForWrite(await loadJsonStrict(plugin, PERSON_PROJECTS_STORAGE_KEY));
-        const updated = addProjectToStore(store, item);
+        const updated = addProjectToStore(store, normalizedItem);
         await saveJsonVerified(plugin, PERSON_PROJECTS_STORAGE_KEY, updated);
-        return updated.projects[item.personDocId] ? [...updated.projects[item.personDocId]] : [];
+        return updated.projects[normalizedItem.personDocId] ? [...updated.projects[normalizedItem.personDocId]] : [];
     });
 }
 
