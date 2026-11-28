@@ -17,6 +17,7 @@
     import { MapPin, Search, Copy, Check, Filter, Compass, Briefcase, Phone, FileText, ExternalLink, Sparkles } from "@lucide/svelte";
     import { syncCityTopicDocument, createTripItineraryDoc } from "../../services/city-topic";
     import { safeDocTitleFromHPath } from "../../libs/lv-notice-kit";
+    import { requestErrorMessage } from "../../shared/error-presenter";
 
     let {
         contacts = [],
@@ -54,8 +55,15 @@
     let creatingTripDoc = $state(false);
     let lastTripDocId = $state("");
     let lastTripDocPath = $state("");
+    let actionError = $state("");
+
+    function selectCity(city: string) {
+        selectedCity = city;
+        actionError = "";
+    }
 
     function handleKeydown(event: KeyboardEvent) {
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
             event.preventDefault();
             if (currentContacts.length > 0) {
@@ -71,6 +79,7 @@
     async function handleCreateTripDoc() {
         if (!notebookId || !selectedCity || currentContacts.length === 0 || creatingTripDoc) return;
         creatingTripDoc = true;
+        actionError = "";
         try {
             const res = await createTripItineraryDoc(notebookId, {
                 city: selectedCity,
@@ -82,6 +91,14 @@
             if (res?.docId) {
                 lastTripDocId = res.docId;
                 lastTripDocPath = res.hpath;
+            } else {
+                actionError = selectedCity === "未知"
+                    ? "「未知」地区无法生成实体行程文档，请先选择具体城市"
+                    : "未能生成行程文档，请检查思源笔记本状态后重试";
+            }
+        } catch (err) {
+            if (alive) {
+                actionError = `生成行程文档失败：${requestErrorMessage(err)}`;
             }
         } finally {
             if (alive) {
@@ -93,6 +110,7 @@
     async function handleSyncCityDoc() {
         if (!notebookId || !selectedCity || selectedCity === "未知" || currentContacts.length === 0 || syncingDoc) return;
         syncingDoc = true;
+        actionError = "";
         try {
             const organizations = extractCityOrganizations(currentContacts);
 
@@ -110,6 +128,12 @@
                 syncDocTimer = setTimeout(() => {
                     if (alive) syncDocSuccess = false;
                 }, 3000);
+            } else {
+                actionError = `同步《${selectedCity}》文档失败，请检查思源笔记本状态后重试`;
+            }
+        } catch (err) {
+            if (alive) {
+                actionError = `同步《${selectedCity}》文档失败：${requestErrorMessage(err)}`;
             }
         } finally {
             if (alive) {
@@ -279,7 +303,7 @@
                 type="button"
                 class="b3-chip lvct-region-dialog__chip-pill"
                 class:b3-chip--primary={selectedCity === hot}
-                onclick={() => (selectedCity = hot)}
+                onclick={() => selectCity(hot)}
             >
                 {hot}{#if group} ({group.count}){/if}
             </button>
@@ -289,7 +313,7 @@
                 type="button"
                 class="b3-chip b3-chip--dashed lvct-region-dialog__chip-pill"
                 class:b3-chip--primary={selectedCity === "未知"}
-                onclick={() => (selectedCity = "未知")}
+                onclick={() => selectCity("未知")}
                 title="查看尚未录入地址或城市的联系人"
             >
                 未填写地区 ({unknownCount})
@@ -314,7 +338,7 @@
                             type="button"
                             class="lvct-region-dialog__city-item"
                             class:lvct-region-dialog__city-item--active={selectedCity === group.city}
-                            onclick={() => (selectedCity = group.city)}
+                            onclick={() => selectCity(group.city)}
                         >
                             <div class="lvct-region-dialog__city-info">
                                 <span class="lvct-region-dialog__city-name">{group.city}</span>
@@ -356,7 +380,7 @@
                                     <button
                                         type="button"
                                         class="b3-chip font-size-11 lvct-region-dialog__chip-pill"
-                                        onclick={() => (selectedCity = near.city)}
+                                        onclick={() => selectCity(near.city)}
                                         title={`切换到周边城市 ${near.city}`}
                                     >
                                         {near.city} <b>{near.count}</b>
@@ -437,6 +461,10 @@
                         {/if}
                     </div>
                 </div>
+
+                {#if actionError}
+                    <p class="lvct-form__error" role="alert" style="margin: 0 0 8px;">{actionError}</p>
+                {/if}
 
                 <!-- 行程类型快速切换胶囊栏 -->
                 <div class="lvct-region-dialog__trip-contexts">
@@ -748,15 +776,15 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--lv-brand) 78%, var(--lvct-color-white)), var(--lv-brand));
-        color: var(--lvct-on-accent);
+        background: var(--lvct-btn-primary-bg, var(--lvct-accent-fill));
+        color: var(--lvct-on-accent, var(--lvct-btn-primary-fg));
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
         font-size: 13px;
         flex-shrink: 0;
-        box-shadow: 0 2px 6px color-mix(in srgb, var(--lv-brand) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--lvct-btn-primary-bg, var(--lvct-accent-fill)) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
     .lvct-region-dialog__person-basic {
         flex: 1;

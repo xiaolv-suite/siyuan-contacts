@@ -73,9 +73,9 @@
         letter-spacing: 0.01em;
     }
 
-    /* ---------- 按钮：公共基线（尺寸/大圆角胶囊/状态过渡/焦点环） ---------- */
+    /* ---------- 按钮：公共基线（尺寸/8px轻圆角/状态过渡/焦点环） ---------- */
     .b3-button {
-        border-radius: var(--lv-r-pill, 9999px);
+        border-radius: var(--lvct-r-control, 8px);
         font-size: var(--lvct-fs-body);
         min-height: var(--lvct-control-h);
         box-sizing: border-box;
@@ -108,32 +108,39 @@
         transform: translateY(1.5px) scale(0.985);
     }
 
-    /* 主按钮（无修饰类的填充按钮）：克制柔和阴影 + 悬停微上浮 + 独立高对比填充/前景令牌 (>= 4.5:1) */
-    .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text),
-    .lvct-btn--primary {
-        background: var(--lvct-btn-primary-bg);
-        color: var(--lvct-btn-primary-fg);
-        border: none;
-        box-shadow: 0 1px 2px color-mix(in srgb, var(--lvct-btn-primary-bg) 22%, transparent);
+    /* 主按钮（无修饰类或 --primary）：扁平沉静石墨，锁定 --lvct-btn-primary-bg 防止宿主主题 --b3-theme-primary 穿透 */
+    .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text):not(.b3-button--error):not(.lvct-btn--danger),
+    .b3-button.b3-button--primary,
+    .lvct-btn--primary,
+    .lvct-people__create {
+        background: var(--lvct-btn-primary-bg) !important;
+        background-color: var(--lvct-btn-primary-bg) !important;
+        color: var(--lvct-btn-primary-fg) !important;
+        border: 1px solid var(--lvct-btn-primary-bg) !important;
+        box-shadow: none !important;
 
         &:hover:not(:disabled) {
-            box-shadow: 0 3px 10px color-mix(in srgb, var(--lvct-btn-primary-bg) 28%, transparent);
-            background: var(--lvct-btn-primary-bg-hover);
-            color: var(--lvct-btn-primary-fg);
-            transform: translateY(-1px);
+            box-shadow: none !important;
+            background: var(--lvct-btn-primary-bg-hover) !important;
+            background-color: var(--lvct-btn-primary-bg-hover) !important;
+            border-color: var(--lvct-btn-primary-bg-hover) !important;
+            color: var(--lvct-btn-primary-fg) !important;
+            transform: none;
             filter: none;
         }
 
         &:active:not(:disabled) {
-            box-shadow: none;
-            background: var(--lvct-btn-primary-bg-active);
-            color: var(--lvct-btn-primary-fg);
-            transform: translateY(1.5px) scale(0.985);
+            box-shadow: none !important;
+            background: var(--lvct-btn-primary-bg-active) !important;
+            background-color: var(--lvct-btn-primary-bg-active) !important;
+            border-color: var(--lvct-btn-primary-bg-active) !important;
+            color: var(--lvct-btn-primary-fg) !important;
+            transform: none;
             filter: none;
         }
     }
 
-    /* 次按钮：表面底 + 清晰中性描边 */
+    /* 次按钮：纯白表面 + 极细中性描边，无位移跳跃 */
     .b3-button--outline {
         background: var(--lvct-bg-surface);
         color: var(--lvct-text-1);
@@ -144,15 +151,15 @@
 
         &:hover:not(:disabled) {
             background: var(--lvct-bg-hover);
-            border-color: color-mix(in srgb, var(--lvct-text-2) 32%, transparent);
+            border-color: var(--lvct-border-strong);
             color: var(--lvct-text-1);
-            transform: translateY(-1px);
+            transform: none;
         }
 
         &:active:not(:disabled) {
             background: var(--lvct-bg-active);
             box-shadow: none;
-            transform: translateY(1.5px) scale(0.985);
+            transform: none;
         }
     }
 
@@ -232,6 +239,7 @@
     /* 文字/幽灵按钮 */
     .b3-button--text {
         background: transparent;
+        border: 1px solid transparent;
         color: var(--lvct-accent-text);
 
         &:hover:not(:disabled) {
@@ -240,11 +248,12 @@
         }
     }
 
-    /* 危险动作（新代码显式选用）：实底危险色 */
-    .lvct-btn--danger {
+    /* 危险动作（显式选用）：实底危险色 */
+    .lvct-btn--danger,
+    .b3-button--error {
         background: var(--lvct-danger);
-        color: var(--lvct-on-accent);
-        border: none;
+        color: var(--lvct-color-white);
+        border: 1px solid var(--lvct-danger);
 
         &:hover:not(:disabled) {
             box-shadow: var(--lvct-shadow-2);
@@ -507,11 +516,13 @@
             background: Canvas;
         }
 
-        .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text),
-        .lvct-btn--primary {
-            background: Highlight;
-            color: HighlightText;
-            border: 1px solid Highlight;
+        .b3-button:not(.b3-button--outline):not(.b3-button--cancel):not(.b3-button--text):not(.b3-button--error):not(.lvct-btn--danger),
+        .b3-button.b3-button--primary,
+        .lvct-btn--primary,
+        .lvct-people__create {
+            background: Highlight !important;
+            color: HighlightText !important;
+            border: 1px solid Highlight !important;
         }
 
         .selected,

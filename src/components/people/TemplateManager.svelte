@@ -3,7 +3,7 @@
     import { newTemplateId, TEMPLATES_LIMIT, TEMPLATE_PLACEHOLDERS, getDefaultTemplates, insertPlaceholderToContent } from "../../domain/interaction-templates";
     import type { NoteTemplate } from "../../domain/interaction-templates";
     import StatusNotice from "../StatusNotice.svelte";
-    import { useCloseGuard } from "../close-guard";
+    import { checkCloseGuardItem, useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
     import { requestErrorMessage } from "../../shared/error-presenter";
     import { confirmDialog } from "../../libs/confirm-dialog";
@@ -38,12 +38,16 @@
         return JSON.stringify(draft) !== JSON.stringify(savedDraft);
     }
 
-    const guardedClose = useCloseGuard({
+    const closeGuardItem = {
         busy: () => busy,
         dirty: isDirty,
         changes: () => [text("tplManagerUnsaved", "互动备注模板修改尚未保存")],
         save: () => save(true),
-    });
+    };
+    const guardedClose = useCloseGuard(closeGuardItem);
+    export function requestClose(): Promise<boolean> {
+        return checkCloseGuardItem(closeGuardItem);
+    }
 
     function addTemplate() {
         if (busy || draft.length >= TEMPLATES_LIMIT) return;

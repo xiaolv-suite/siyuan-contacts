@@ -31,23 +31,30 @@ export function emptyDraft(): ContactDraft {
     return { name: "", phone: "", email: "", wechat: "", website: "", birthday: "", isLunar: false, group: "", tags: [] };
 }
 
-export function validateDraft(draft: ContactDraft): string[] {
+export function validateDraft(draft: ContactDraft, onlyFields?: readonly string[]): string[] {
     const errors: string[] = [];
-    const nameError = validatePersonName(draft.name);
-    if (nameError) errors.push(nameError);
-    const email = draft.email.trim();
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("邮箱格式不正确");
-    const birthday = draft.birthday.trim();
-    if (birthday && !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
-        errors.push("生日日期格式不正确");
-    } else if (birthday) {
-        const [year, month, day] = birthday.split("-").map(Number);
-        if (draft.isLunar) {
-            if (day > 30 || (!lunarToSolar(year, month, day) && (day !== 30 || !lunarToSolar(year, month, 29)))) {
-                errors.push("农历生日不是有效日期");
+    const checkAll = !onlyFields;
+    if (checkAll || onlyFields.includes("name")) {
+        const nameError = validatePersonName(draft.name ?? "");
+        if (nameError) errors.push(nameError);
+    }
+    if (checkAll || onlyFields.includes("email")) {
+        const email = (draft.email ?? "").trim();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("邮箱格式不正确");
+    }
+    if (checkAll || onlyFields.includes("birthday") || onlyFields.includes("isLunar") || onlyFields.includes("lunarBirthday")) {
+        const birthday = (draft.birthday ?? "").trim();
+        if (birthday && !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+            errors.push("生日日期格式不正确");
+        } else if (birthday) {
+            const [year, month, day] = birthday.split("-").map(Number);
+            if (draft.isLunar) {
+                if (day > 30 || (!lunarToSolar(year, month, day) && (day !== 30 || !lunarToSolar(year, month, 29)))) {
+                    errors.push("农历生日不是有效日期");
+                }
+            } else if (birthdayToMs(birthday) === null) {
+                errors.push("生日不是有效日期");
             }
-        } else if (birthdayToMs(birthday) === null) {
-            errors.push("生日不是有效日期");
         }
     }
     return errors;

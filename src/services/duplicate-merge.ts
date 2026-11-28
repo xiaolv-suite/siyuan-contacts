@@ -13,8 +13,9 @@ import {
     type MergeAuditSnapshot,
 } from "../domain/duplicate-merge.ts";
 import { writeDraftCells } from "./contacts.ts";
+import { getRoster, invalidateRoster } from "./roster.ts";
+import { addRelation } from "./relations.ts";
 import { removeContactToTrash } from "./trash.ts";
-import { invalidateRoster } from "./roster.ts";
 import { emitDataChanged } from "../libs/data-events.ts";
 import { saveJsonVerified, withStoreLock } from "../data/storage.ts";
 import { INTERACTION_STORAGE_KEY, loadInteractionStoreStrict } from "../data/interactions.ts";
@@ -229,18 +230,44 @@ export async function executeContactMerge(
         }
     });
 
-    // 7. 迁移组织成员归属（org-membership.json）
+    // 7. 迁移组织成员归属（org-membership.json）：若主人物在同组织已存在 active 身份，避免产生重复活跃身份
     await withStoreLock(ORG_MEMBERSHIP_STORAGE_KEY, async () => {
         const store = await loadOrgMembershipStore(plugin);
+        const primaryActiveOrgs = new Set(
+            store.memberships
+                .filter((m) => m.personDocId === primary.docId && m.status === "active")
+                .map((m) => m.orgDocId),
+        );
         let changed = false;
+        const nextMemberships = [];
         for (const membership of store.memberships) {
-            if (membership.personDocId === secondary.docId) {
-                membership.personDocId = primary.docId;
-                migrated.memberships += 1;
-                changed = true;
+            if (membership.personDocId !== secondary.docId) {
+                nextMemberships.push(membership);
+                continue;
             }
+            if (membership.status === "active" && primaryActiveOrgs.has(membership.orgDocId)) {
+                const duplicateExact = store.memberships.some(
+                    (m) => m.personDocId === primary.docId
+                        && m.orgDocId === membership.orgDocId
+                        && m.status === "active"
+                        && m.department === membership.department
+                        && m.title === membership.title,
+                );
+                if (duplicateExact) {
+                    changed = true;
+                    continue;
+                }
+                membership.status = "former";
+            } else if (membership.status === "active") {
+                primaryActiveOrgs.add(membership.orgDocId);
+            }
+            membership.personDocId = primary.docId;
+            migrated.memberships += 1;
+            changed = true;
+            nextMemberships.push(membership);
         }
         if (changed) {
+            store.memberships = nextMemberships;
             await saveJsonVerified(plugin, ORG_MEMBERSHIP_STORAGE_KEY, store);
         }
     });
@@ -619,6 +646,27 @@ export async function executeContactMerge(
             await saveJsonVerified(plugin, OCCASIONS_STORAGE_KEY, store);
         }
     });
+
+    // 20.5 迁移次人物在 AV 中的双向关联到主人物（避免解绑次人物后第三方丢失这段关系）
+    try {
+        invalidateRoster();
+        const roster = await getRoster(settings);
+        const freshPrimary = roster.find((p) => p.itemId === primary.itemId) ?? primary;
+        const freshSecondary = roster.find((p) => p.itemId === secondary.itemId) ?? secondary;
+        const existingPrimaryLinks = new Set(freshPrimary.relatedItemIds ?? []);
+        const relatedOthers = roster.filter(
+            (other) => other.docId !== primary.docId && other.docId !== secondary.docId
+                && other.itemId !== primary.itemId && other.itemId !== secondary.itemId
+                && !existingPrimaryLinks.has(other.itemId)
+                && ((freshSecondary.relatedItemIds ?? []).includes(other.itemId)
+                    || (other.relatedItemIds ?? []).includes(secondary.itemId)),
+        );
+        for (const other of relatedOthers) {
+            await addRelation(settings, freshPrimary, other);
+        }
+    } catch (relErr) {
+        console.warn("[LvContacts] 迁移次人物 AV 双向关联时出现异常:", relErr);
+    }
 
     // 21. 将次人物移入回收站缓冲 30 天，并从主库解绑
     await removeContactToTrash(plugin, settings, secondary);

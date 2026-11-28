@@ -128,8 +128,21 @@
         }
     }
 
+    let rootEl: HTMLDivElement | undefined = $state();
+
     function handleKeydown(event: KeyboardEvent) {
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && adding) {
+            const ownPanel = rootEl?.closest(".lvct-dialog-panel");
+            const ownHost = ownPanel ?? rootEl?.closest(".b3-dialog");
+            const panels = document.querySelectorAll(".lvct-dialog-panel");
+            const topPanel = panels.length > 0 ? panels[panels.length - 1] : null;
+            if (topPanel && (!ownPanel || ownPanel !== topPanel)) return;
+            const blockers = document.querySelectorAll<HTMLElement>(".b3-dialog, .lvct-confirm-dialog-root, .lvct-closeguard, .lvct-card-viewer-modal");
+            for (const blocker of blockers) {
+                if (ownHost && blocker.contains(ownHost)) continue;
+                return;
+            }
             event.preventDefault();
             if (!saving) void handleAdd();
         }
@@ -138,7 +151,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="lvct-scratchpad b3-card">
+<div class="lvct-scratchpad b3-card" bind:this={rootEl}>
     <div class="lvct-scratchpad__header">
         <div class="fn__flex" style="align-items: center; gap: 8px;">
             <StickyNote size={18} strokeWidth={1.6} class="ft__primary" />
@@ -196,7 +209,7 @@
                         type="button"
                         class="b3-button b3-button--cancel b3-button--small"
                         style="border-radius: var(--lv-r-pill, 9999px);"
-                        onclick={() => { adding = false; errorText = ""; }}
+                        onclick={() => { adding = false; newContent = ""; newColor = "warm"; newPinned = false; errorText = ""; }}
                         disabled={saving}
                     >
                         {text("commonCancel", "取消")}

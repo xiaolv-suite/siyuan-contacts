@@ -17,6 +17,15 @@ export interface PromptDialogOptions {
     cancelLabel?: string;
 }
 
+function escapeHtml(raw: string): string {
+    return raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 /**
  * 原生非阻塞输入对话框，彻底消除 window.prompt 在 Electron 宿主与触屏端引发的阻塞与失效
  */
@@ -28,12 +37,12 @@ export function promptDialog(options: PromptDialogOptions): Promise<string | nul
                 title: options.title ?? "请输入",
                 content: `
                     <div class="b3-dialog__content" style="padding: 16px 24px;">
-                        ${options.message ? `<div class="b3-label__text" style="margin-bottom: 8px; font-size: 13px; color: var(--b3-theme-on-surface);">${options.message}</div>` : ""}
-                        <input type="text" class="b3-text-field fn__block" placeholder="${(options.placeholder ?? "").replace(/"/g, '&quot;')}" value="${(options.defaultValue ?? "").replace(/"/g, '&quot;')}" style="width: 100%; box-sizing: border-box;" />
+                        ${options.message ? `<div class="b3-label__text" style="margin-bottom: 8px; font-size: 13px; color: var(--b3-theme-on-surface);">${escapeHtml(options.message)}</div>` : ""}
+                        <input type="text" class="b3-text-field fn__block" placeholder="${escapeHtml(options.placeholder ?? "")}" value="${escapeHtml(options.defaultValue ?? "")}" style="width: 100%; box-sizing: border-box;" />
                     </div>
                     <div class="b3-dialog__action">
-                        <button type="button" class="b3-button b3-button--cancel">${options.cancelLabel ?? "取消"}</button>
-                        <button type="button" class="b3-button b3-button--text">${options.confirmLabel ?? "确定"}</button>
+                        <button type="button" class="b3-button b3-button--cancel">${escapeHtml(options.cancelLabel ?? "取消")}</button>
+                        <button type="button" class="b3-button b3-button--text">${escapeHtml(options.confirmLabel ?? "确定")}</button>
                     </div>
                 `,
                 width: typeof window !== "undefined" && window.innerWidth < 640 ? "90vw" : "420px",
@@ -67,6 +76,7 @@ export function promptDialog(options: PromptDialogOptions): Promise<string | nul
             cancelBtn?.addEventListener("click", cancel);
             okBtn?.addEventListener("click", submit);
             inputEl?.addEventListener("keydown", (e) => {
+                if (e.isComposing || e.keyCode === 229) return;
                 if (e.key === "Enter") {
                     e.preventDefault();
                     submit();

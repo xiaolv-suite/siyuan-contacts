@@ -174,7 +174,7 @@
                 <button
                     type="button"
                     class="b3-button b3-button--cancel b3-button--small"
-                    onclick={() => { adding = false; errorText = ""; }}
+                    onclick={() => { adding = false; newCategory = "dietary"; newContent = ""; newIsTaboo = false; errorText = ""; }}
                     disabled={saving}
                 >
                     {text("commonCancel", "取消")}

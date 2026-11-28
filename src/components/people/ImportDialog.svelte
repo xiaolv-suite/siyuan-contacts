@@ -53,6 +53,7 @@
     let queue = $state.raw<DocumentImportQueue | null>(null);
     let pauseRequested = $state(false);
     let progress = $state("");
+    let rootEl: HTMLDivElement | undefined = $state();
     // 扫描/批量收编可能跨越弹窗卸载；卸载后禁止异步结果回写状态或通知父层。
     let alive = true;
     const guardedClose = useCloseGuard({
@@ -222,7 +223,19 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            const ownPanel = rootEl?.closest(".lvct-dialog-panel");
+            const ownHost = ownPanel ?? rootEl?.closest(".b3-dialog");
+            const panels = document.querySelectorAll(".lvct-dialog-panel");
+            const topPanel = panels.length > 0 ? panels[panels.length - 1] : null;
+            if (topPanel && (!ownPanel || ownPanel !== topPanel)) return;
+            const blockers = document.querySelectorAll<HTMLElement>(".b3-dialog, .lvct-confirm-dialog-root, .lvct-closeguard, .lvct-card-viewer-modal");
+            for (const blocker of blockers) {
+                if (ownHost && blocker.contains(ownHost)) continue;
+                return;
+            }
+            if (queue || importedCount !== null) return;
             event.preventDefault();
             if (!importing && !loading && !errorText && groupValid && notebookId && selectedIds.length > 0) {
                 void runImport();
@@ -235,7 +248,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="lvct-import">
+<div class="lvct-import" bind:this={rootEl}>
     {#if queue}
         <div role="status" aria-live="polite">
             <b>固定导入队列：{queue.items.length} 篇原文档</b>

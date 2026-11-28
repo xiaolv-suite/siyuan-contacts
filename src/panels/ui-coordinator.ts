@@ -697,6 +697,7 @@ export const uiCoordinatorMethods = {
             name: "人脉",
             fullName: "小驴人脉",
             svgIcon: "iconLvContacts",
+            topBarElement: this.topBarElement,
             color: "#f97316",
             desc: "关系图谱 · 联络提醒",
             digit: 7,

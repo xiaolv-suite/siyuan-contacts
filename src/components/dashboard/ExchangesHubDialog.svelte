@@ -65,6 +65,7 @@
 
     async function toggleRecordStatus(record: ExchangeRecordWithPerson) {
         if (!facade.changePersonExchangeStatus || Boolean(busyRecordId)) return;
+        if (record.status !== "open" && record.status !== "settled") return;
         busyRecordId = record.id;
         const nextStatus = record.status === "open" ? "settled" : "open";
         const today = toLocalDateKey(new Date());
@@ -237,24 +238,26 @@
                             {/if}
                         </div>
                         <div class="lvct-exchanges-hub__row-actions">
-                            <button
-                                type="button"
-                                class="b3-button b3-button--small"
-                                style="border-radius: var(--lv-r-pill, 9999px);"
-                                class:b3-button--outline={r.status === "open"}
-                                class:b3-button--text={r.status === "settled"}
-                                disabled={Boolean(busyRecordId)}
-                                onclick={() => void toggleRecordStatus(r)}
-                                title={r.status === "open" ? "标记为已结清/已答谢" : "重新设为待处理"}
-                            >
-                                {#if r.status === "open"}
-                                    ✓ 标为已结清
-                                {:else if r.status === "settled"}
-                                    <CheckCircle2 size={12} class="lvct-text-success lvct-icon-inline" /> 已结清
-                                {:else}
-                                    已取消
-                                {/if}
-                            </button>
+                            {#if r.status === "cancelled"}
+                                <span class="lvct-chip lvct-chip--tag">已取消</span>
+                            {:else}
+                                <button
+                                    type="button"
+                                    class="b3-button b3-button--small"
+                                    style="border-radius: var(--lv-r-pill, 9999px);"
+                                    class:b3-button--outline={r.status === "open"}
+                                    class:b3-button--text={r.status === "settled"}
+                                    disabled={Boolean(busyRecordId)}
+                                    onclick={() => void toggleRecordStatus(r)}
+                                    title={r.status === "open" ? "标记为已结清/已答谢" : "重新设为待处理"}
+                                >
+                                    {#if r.status === "open"}
+                                        ✓ 标为已结清
+                                    {:else}
+                                        <CheckCircle2 size={12} class="lvct-text-success lvct-icon-inline" /> 已结清
+                                    {/if}
+                                </button>
+                            {/if}
                         </div>
                     </div>
                 {/each}

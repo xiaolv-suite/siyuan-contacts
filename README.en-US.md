@@ -9,7 +9,7 @@
 
 **Manage people, relationships, organizations, and milestones in SiYuan: person records are documents backed by a native SiYuan database.**
 
-**Latest stable release: v0.7.15** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.15) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
+**Latest stable release: v0.7.16** · [Download and install](https://github.com/xiaolv-suite/siyuan-contacts/releases/tag/v0.7.16) · [Open an issue](https://github.com/xiaolv-suite/siyuan-contacts/issues)
 
 English | [简体中文](README.md)
 
@@ -19,14 +19,11 @@ English | [简体中文](README.md)
 
 ---
 
-## 🚀 What's New in v0.7.15 (2026-11-26 Milestone Release)
+## 🚀 What's New in v0.7.16 (2026-11-27 Maintenance Release)
 
-- **Refined Dual-Theme Surfaces, Dark Overlays & WCAG AA Primary Controls**: Unified neutral light/charcoal surface tokens across all top-level and dialog containers, with 5 theme color schemes (`cognac`, `emerald`, `ocean`, `violet`, `amber`) featuring high-contrast primary buttons (`>= 4.5:1`), deep charcoal dark-mode confirmation overlays, and uncramped mobile search bars;
-- **Primary/Secondary Switch in Contact Merge Wizard**: One-click swap between primary (retained) and secondary (unlinked after merge) contacts in `ContactMergeWizard`, preserving person documents and interaction histories safely;
-- **Lunar Birthdays & Three-Level Region Picker**: Built-in 1900–2100 Chinese lunar calendar reminder engine paired with province/city/district cascading selectors and city/region roster filtering;
-- **Four-Level Folded Daily Note Zone & Unified LifeLog**: Daily note updates write cleanly into the `#### 🐴 小驴记录` folded zone with `findDailyNoteDocument` / `createDailyNote` conflict filtering and unified LifeLog rollback attributes;
-- **Shared Ecosystem Hubs & Block Assistant**: Direct Launchpad entry to the workbench home, unified AI Router, Block Assistant 1–8 native base + custom double-click, notification & activity bus, cancelable `.lv-ai-thinking` AI wait UX, and cross-plugin backup/restore;
-- **60fps Zero `:has()` / Zero Heavy-Blur Performance**: Strictly `0` `:has()` selectors, `0` `:root` leaks, and `0` `blur(>=15px)` in source and built CSS; O(1) `Set` filtering on document switches and deferred post-ready self-healing.
+- **Flat Graphite-Mist Redesign**: Redesigned Contact Overview, People List, and Dashboard with aligned Graphite Mist family pixels and light/dark contrast;
+- **30-Day Trash Safety & Walkthrough Polish**: Routed bulk remove into the 30-day recoverable trash; added IME submit guards, cross-tab note draft preservation, stale inline quick-form focus, null-days fallbacks, Esc guards, and `390×844` mobile KPI/card fixes;
+- **Ecosystem `lv-kit` Alignment**: Synced zero-Protyle-DOM-residue fixes and Batch 1 A1–A4 updates with zero `:has(` and zero heavy blur.
 
 ---
 

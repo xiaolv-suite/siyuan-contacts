@@ -94,13 +94,13 @@ export function buildContactWritePlan(
         writes.push({ field, label: labelOf(field), value });
     };
 
-    const phone = draft.phone.trim();
-    const email = draft.email.trim();
-    const wechat = draft.wechat.trim();
-    const website = draft.website.trim();
-    const group = draft.group.trim();
-    const tags = normalizedTags(draft.tags);
-    const birthday = draft.birthday.trim();
+    const phone = (draft.phone ?? "").trim();
+    const email = (draft.email ?? "").trim();
+    const wechat = (draft.wechat ?? "").trim();
+    const website = (draft.website ?? "").trim();
+    const group = (draft.group ?? "").trim();
+    const tags = normalizedTags(draft.tags ?? []);
+    const birthday = (draft.birthday ?? "").trim();
     // 遵循 DATA-CONTRACT §1：常规农历日期仍按 YYYY-MM-DD 毫秒保存以保证 summaryFromRow 无损回读；
     // 仅当公历日历校验不通过（如农历二月廿九/三十）且 isLunar=true 时，按农历换算编码避免被抹空。
     const birthdayMs = birthday
@@ -112,7 +112,7 @@ export function buildContactWritePlan(
     add("wechat", wechat, wechat.length > 0);
     add("website", website, website.length > 0);
     add("birthday", birthdayMs, birthday.length > 0);
-    add("lunarBirthday", draft.isLunar, draft.isLunar);
+    add("lunarBirthday", Boolean(draft.isLunar), Boolean(draft.isLunar));
     add("group", group, group.length > 0);
     add("tags", tags, tags.length > 0);
 

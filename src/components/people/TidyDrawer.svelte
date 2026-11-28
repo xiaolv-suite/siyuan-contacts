@@ -39,16 +39,16 @@
         };
     }
 
-    function adoptGroup(itemId: string, group: string) {
-        const cur = drafts[itemId] || { group: "", tags: [] };
-        drafts = { ...drafts, [itemId]: { ...cur, group } };
+    function adoptGroup(item: TidyPlanItem, group: string) {
+        const cur = getDraft(item);
+        drafts = { ...drafts, [item.person.itemId]: { ...cur, group } };
     }
 
-    function toggleTag(itemId: string, tag: string) {
-        const cur = drafts[itemId] || { group: "", tags: [] };
+    function toggleTag(item: TidyPlanItem, tag: string) {
+        const cur = getDraft(item);
         const has = cur.tags.includes(tag);
         const nextTags = has ? cur.tags.filter((t) => t !== tag) : [...cur.tags, tag];
-        drafts = { ...drafts, [itemId]: { ...cur, tags: nextTags } };
+        drafts = { ...drafts, [item.person.itemId]: { ...cur, tags: nextTags } };
     }
 
     function adoptAllForPerson(item: TidyPlanItem) {
@@ -173,7 +173,7 @@
                                 <button
                                     type="button"
                                     class="b3-chip sugg-chip {d.group === item.suggestedGroup ? 'is-adopted' : ''}"
-                                    onclick={() => adoptGroup(item.person.itemId, item.suggestedGroup)}
+                                    onclick={() => adoptGroup(item, item.suggestedGroup)}
                                 >
                                     {#if d.group === item.suggestedGroup}<Check size={11} class="lvct-icon-inline" />{:else}<Plus size={11} class="lvct-icon-inline" />{/if}
                                     {item.suggestedGroup}
@@ -191,7 +191,7 @@
                                         <button
                                             type="button"
                                             class="b3-chip sugg-tag-chip {isTagged ? 'is-adopted' : ''}"
-                                            onclick={() => toggleTag(item.person.itemId, stag)}
+                                            onclick={() => toggleTag(item, stag)}
                                         >
                                             {#if isTagged}<Check size={10} class="lvct-icon-inline" />{:else}<Plus size={10} class="lvct-icon-inline" />{/if}
                                             {stag}

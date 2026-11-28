@@ -11,6 +11,66 @@ export const TRASH_STORE_VERSION = 1;
 export const TRASH_RETENTION_DAYS = 30;
 export const MAX_TRASH_ENTRIES = 200;
 
+export class TrashCapacityError extends Error {
+    readonly limit: number;
+    readonly existingUnexpiredCount: number;
+    readonly incomingCount: number;
+    readonly availableSlots: number;
+
+    constructor(existingUnexpiredCount: number, incomingCount: number, limit: number = MAX_TRASH_ENTRIES) {
+        const availableSlots = Math.max(0, limit - existingUnexpiredCount);
+        const message = availableSlots === 0
+            ? `回收站已满（当前有 ${existingUnexpiredCount}/${limit} 条未到期 30 天快照），无法继续移入 ${incomingCount} 位联系人；为避免丢失恢复保障，已取消本次移除（未解绑任何联系人）。请先在回收站清理或恢复部分记录后再试。`
+            : `回收站剩余容量不足（上限 ${limit} 条，已有未到期 ${existingUnexpiredCount} 条，仅剩 ${availableSlots} 个空位，本次需移入 ${incomingCount} 位联系人）；为避免丢失恢复保障，已取消本次移除（未解绑任何联系人）。请先清理回收站或分批移除。`;
+        super(message);
+        this.name = "TrashCapacityError";
+        this.limit = limit;
+        this.existingUnexpiredCount = existingUnexpiredCount;
+        this.incomingCount = incomingCount;
+        this.availableSlots = availableSlots;
+    }
+}
+
+export interface BatchTrashResolution {
+    ok: boolean;
+    targets: ContactSummary[];
+    missingIds: string[];
+    error?: string;
+}
+
+/**
+ * 批量移入回收站前解析每位选中联系人的完整快照；
+ * 若存在任何未能解析到完整快照的 itemId，整批拒绝（绝不回退直接解绑 AV 行）。
+ */
+export function resolveBatchTrashTargets(
+    selectedIds: readonly string[],
+    lookup: (itemId: string) => ContactSummary | undefined,
+): BatchTrashResolution {
+    const uniqueIds = [...new Set(selectedIds.map((id) => id.trim()).filter(Boolean))];
+    if (uniqueIds.length === 0) {
+        return { ok: false, targets: [], missingIds: [], error: "未选中任何联系人。" };
+    }
+    const targets: ContactSummary[] = [];
+    const missingIds: string[] = [];
+    for (const itemId of uniqueIds) {
+        const person = lookup(itemId);
+        if (person && person.itemId === itemId && typeof person.docId === "string" && person.docId.trim().length > 0) {
+            targets.push(person);
+        } else {
+            missingIds.push(itemId);
+        }
+    }
+    if (missingIds.length > 0) {
+        return {
+            ok: false,
+            targets: [],
+            missingIds,
+            error: `有 ${missingIds.length} 位选中联系人未在当前名册快照中解析到完整资料，为避免跳过 30 天回收站保护，已拒绝本次批量移除（未解绑任何联系人）。请刷新名册后重试。`,
+        };
+    }
+    return { ok: true, targets, missingIds: [] };
+}
+
 const DOC_ID_RE = /^\d{14}-[0-9a-z]{7}$/;
 
 export interface TrashContactSnapshot {
@@ -101,17 +161,42 @@ export function pruneExpiredTrash(store: TrashStore, nowTime: number = Date.now(
     };
 }
 
-/** 添加或更新回收站记录（若同一人物多次删除，更新为最新删除快照；最多保留 200 条） */
-export function addTrashEntry(store: TrashStore, entry: TrashContactEntry, nowTime: number = Date.now()): TrashStore {
+/**
+ * 批量添加或更新回收站记录：
+ * 1. 先清理真正超过 30 天保留期的过期条目；
+ * 2. 同 docId 去重合并（保留本次批量中的最新快照并置顶）；
+ * 3. 严禁驱逐尚未到期的有效 30 天快照——若未到期总数超过上限 200，原子抛出 TrashCapacityError。
+ */
+export function addTrashEntries(
+    store: TrashStore,
+    entries: readonly TrashContactEntry[],
+    nowTime: number = Date.now(),
+): TrashStore {
     const unexpired = pruneExpiredTrash(store, nowTime);
-    // 移除同 docId 旧条目
-    const filtered = unexpired.entries.filter((item) => item.docId !== entry.docId);
-    // 新增置顶
-    const updated = [entry, ...filtered].slice(0, MAX_TRASH_ENTRIES);
+    if (entries.length === 0) return unexpired;
+
+    const latestByDocId = new Map<string, TrashContactEntry>();
+    for (const entry of entries) {
+        latestByDocId.delete(entry.docId);
+        latestByDocId.set(entry.docId, entry);
+    }
+    const incoming = [...latestByDocId.values()].reverse();
+    const incomingDocIds = new Set(incoming.map((item) => item.docId));
+    const remainingExisting = unexpired.entries.filter((item) => !incomingDocIds.has(item.docId));
+
+    if (incoming.length + remainingExisting.length > MAX_TRASH_ENTRIES) {
+        throw new TrashCapacityError(remainingExisting.length, incoming.length, MAX_TRASH_ENTRIES);
+    }
+
     return {
         schemaVersion: TRASH_STORE_VERSION,
-        entries: updated,
+        entries: [...incoming, ...remainingExisting],
     };
+}
+
+/** 添加或更新回收站记录（若同一人物多次删除，更新为最新删除快照；严禁驱逐未到期记录） */
+export function addTrashEntry(store: TrashStore, entry: TrashContactEntry, nowTime: number = Date.now()): TrashStore {
+    return addTrashEntries(store, [entry], nowTime);
 }
 
 /** 移除某条回收站记录（恢复或永久物理清除时使用） */
@@ -216,6 +301,9 @@ export function normalizeTrashStoreForWrite(raw: unknown): TrashStore {
     }
     if (!Array.isArray(record.entries)) {
         throw new StoreIntegrityError("回收站", "条目容器必须为数组");
+    }
+    if (record.entries.length > MAX_TRASH_ENTRIES) {
+        throw new StoreIntegrityError("回收站", `条目数超出上限（${record.entries.length}/${MAX_TRASH_ENTRIES}）`, record.entries.length);
     }
 
     const seen = new Set<string>();

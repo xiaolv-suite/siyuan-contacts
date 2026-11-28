@@ -48,6 +48,7 @@ import {
 } from "./health-audit";
 import { reconcileFollowUpTasksFromDoc } from "./followup-sync";
 import { updateContactFields, applyContactCandidateFields } from "./contacts";
+import { emptyDraft } from "../domain/person";
 import type { WritableContactField } from "../domain/contact-write";
 import { addRelation, removeRelation, discoverConnections } from "./relations";
 import { ensureSelfIdentity, designateSelfIdentity, previewSelfIdentityChange, applySelfIdentityChange } from "./self-identity";
@@ -96,7 +97,7 @@ import {
     type ExchangePatch,
 } from "./exchanges";
 import { listPersonAliases, addPersonAlias, removePersonAlias, resolveAlias } from "./person-aliases";
-import { listTrash, restoreContactFromTrash, removeContactToTrash, emptyTrash } from "./trash";
+import { listTrash, restoreContactFromTrash, removeContactToTrash, removeContactsToTrash, emptyTrash } from "./trash";
 import { executeContactMerge } from "./duplicate-merge";
 import { loadPersonGiftIdeas, addPersonGiftIdea, updatePersonGiftIdea, removePersonGiftIdea } from "../data/gift-ideas";
 import { listOccasions, createOccasion, deleteOccasion } from "./occasions";
@@ -433,6 +434,7 @@ export const contactFacadeMethods = {
             console.warn("[LvContacts] 通讯条目落盘至正文未完成:", docErr);
         }
 
+        let avSyncError: unknown;
         try {
             if (this.settings?.avId) {
                 const primaryPhone = channels.find((c) => c.type === "phone" && c.isPrimary)?.value
@@ -442,11 +444,11 @@ export const contactFacadeMethods = {
                 const primaryEmail = channels.find((c) => c.type === "email" && c.isPrimary)?.value
                     || channels.find((c) => c.type === "email")?.value;
 
-                const mapping: Record<string, string> = await mapBoundDocIds(this.settings.avId, [personDocId]).catch(() => ({}));
+                const mapping: Record<string, string> = await mapBoundDocIds(this.settings.avId, [personDocId]);
                 const itemId = mapping[personDocId];
                 if (itemId) {
                     const fieldsToWrite: WritableContactField[] = [];
-                    const partialDraft: any = { name: "" };
+                    const partialDraft = emptyDraft();
                     if (primaryPhone !== undefined) {
                         partialDraft.phone = primaryPhone;
                         fieldsToWrite.push("phone");
@@ -460,16 +462,23 @@ export const contactFacadeMethods = {
                         fieldsToWrite.push("email");
                     }
                     if (fieldsToWrite.length > 0) {
-                        await updateContactFields(this.settings, itemId, partialDraft, { onlyFields: fieldsToWrite });
+                        const report = await updateContactFields(this.settings, itemId, partialDraft, { onlyFields: fieldsToWrite });
+                        if (!report.complete) {
+                            const detail = report.unresolved.map((u) => `${u.label}（${u.message}）`).join("、") || "字段写入未完成";
+                            throw new Error(`同步回写主联系方式到总表失败：${detail}`);
+                        }
                     }
                 }
             }
         } catch (avErr) {
-            console.warn("[LvContacts] 核心通讯同步回写 AttributeView 数据库未完成:", avErr);
+            avSyncError = avErr;
         }
 
         await flushBlockIndex();
         emitDataChanged({ topics: ["people"], docIds: [personDocId] }, this.lifecycleToken);
+        if (avSyncError) {
+            throw avSyncError instanceof Error ? avSyncError : new Error(String(avSyncError));
+        }
     },
 
     async loadPersonChannels(this: any, personDocId: string): Promise<ContactChannel[]> {
@@ -956,6 +965,14 @@ export const contactFacadeMethods = {
         const token = this.lifecycleToken;
         await removeContactToTrash(this, this.settings, person);
         emitDataChanged({ topics: ["people"], docIds: [person.docId] }, token);
+    },
+
+    async removeContactsToTrash(this: any, people: readonly ContactSummary[]) {
+        if (!this.settings) throw new Error("人脉工作空间尚未初始化");
+        const token = this.lifecycleToken;
+        const count = await removeContactsToTrash(this, this.settings, people);
+        emitDataChanged({ topics: ["people"], docIds: people.map((p) => p.docId).filter(Boolean) }, token);
+        return count;
     },
 
     async listTrash(this: any) {

@@ -2,7 +2,7 @@
     /** 关系图谱：cytoscape 力导向布局，节点=联系人，边=related 关系，点击节点开文档 */
     import cytoscape from "cytoscape/dist/cytoscape.esm.min.mjs";
     import { onDestroy, onMount, tick, untrack } from "svelte";
-    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw, Share2 } from "@lucide/svelte";
+    import { Scan, ZoomIn, ZoomOut, Network, RefreshCw, Maximize2, Minimize2, Target, GitFork, CircleDot, Building2, Users, X, Copy, Check, ExternalLink, MapPin, Phone, MessageSquare, Mail, Briefcase, Sparkles, MessageSquarePlus, Eye, EyeOff, Shield, Play, Pause, RotateCcw, Share2, Clock, Zap, Lightbulb, Heart, Pin } from "@lucide/svelte";
     import { maskPhone, maskEmail, maskWechat } from "../../domain/privacy-mask.ts";
     import { copyPlainText } from "../../shared/clipboard";
     import { lvNotify, pushDiagError } from "../../libs/lv-notice-kit";
@@ -756,7 +756,12 @@
                         themeFocus: palette.focus,
                     });
                 });
-                instance.edges().data("themeEdge", palette.edge);
+                instance.edges().forEach((edge) => {
+                    edge.data({
+                        themeEdge: palette.edge,
+                        themeFocus: palette.focus,
+                    });
+                });
             });
         };
 
@@ -1203,7 +1208,7 @@
                     classes: searchNeedle ? "lvct-graph-hit" : "",
                 })),
                 ...graph.edges.map((edge) => ({
-                    data: { source: edge.source, target: edge.target, kind: edge.kind ?? "related", memberStatus: edge.memberStatus, coCount: edge.coCount, themeEdge: palette.edge },
+                    data: { source: edge.source, target: edge.target, kind: edge.kind ?? "related", memberStatus: edge.memberStatus, coCount: edge.coCount, themeEdge: palette.edge, themeFocus: palette.focus },
                 })),
             ],
             // 同步完成布局，避免筛选/切页销毁画布后动画帧继续访问 renderer。
@@ -1305,10 +1310,10 @@
                 { selector: ".lvct-graph-muted", style: { opacity: 0.18 } },
                 { selector: ".lvct-graph-dimmed", style: { opacity: 0.15 } },
                 { selector: ".lvct-graph-focus", style: { "border-color": "data(themeFocus)", "border-width": 4 } },
-                { selector: "node.lvct-graph-neighbor-focus", style: { "border-width": 3, "border-color": palette.focus, "underlay-opacity": 0.28 } },
-                { selector: "edge.lvct-graph-neighbor-focus", style: { width: 3.5, "line-color": palette.focus, opacity: 1, "z-index": 5 } },
-                { selector: "node.lvct-graph-path-highlight", style: { "border-color": palette.focus, "border-width": 3, "underlay-color": palette.focus, "underlay-opacity": 0.25, "underlay-padding": 6, "z-index": 20 } },
-                { selector: "edge.lvct-graph-path-highlight", style: { "line-color": palette.focus, width: 4, "target-arrow-color": palette.focus, opacity: 1, "z-index": 20 } },
+                { selector: "node.lvct-graph-neighbor-focus", style: { "border-width": 3, "border-color": "data(themeFocus)", "underlay-opacity": 0.28 } },
+                { selector: "edge.lvct-graph-neighbor-focus", style: { width: 3.5, "line-color": "data(themeFocus)", opacity: 1, "z-index": 5 } },
+                { selector: "node.lvct-graph-path-highlight", style: { "border-color": "data(themeFocus)", "border-width": 3, "underlay-color": "data(themeFocus)", "underlay-opacity": 0.25, "underlay-padding": 6, "z-index": 20 } },
+                { selector: "edge.lvct-graph-path-highlight", style: { "line-color": "data(themeFocus)", width: 4, "target-arrow-color": "data(themeFocus)", opacity: 1, "z-index": 20 } },
                 /* B14.6：组织节点方形、成员边虚线——与 related 边视觉分源 */
                 { selector: 'node[kind = "org"]', style: { shape: "round-rectangle" } },
                 { selector: 'edge[kind = "member"]', style: { "line-style": "dashed" } },
@@ -1319,7 +1324,7 @@
                 // E-34：共同出席弱联系（推断关联），细虚线与半透明强调，仅展示，不参与关系查询
                 { selector: 'edge[kind = "co_occurrence"]', style: { "line-style": "dashed", "line-dash-pattern": [4, 4], width: 2, opacity: 0.7 } },
                 // Monica 标杆融合：初识引荐人有向虚线边，带箭头指向被引荐人
-                { selector: 'edge[kind = "introducer"]', style: { "line-style": "dashed", "line-dash-pattern": [6, 3], width: 2.2, "target-arrow-shape": "triangle", "target-arrow-color": palette.edge, "curve-style": "bezier" } },
+                { selector: 'edge[kind = "introducer"]', style: { "line-style": "dashed", "line-dash-pattern": [6, 3], width: 2.2, "target-arrow-shape": "triangle", "target-arrow-color": "data(themeEdge)", "curve-style": "bezier" } },
             ],
         });
         graphInstance = instance;
@@ -1957,7 +1962,7 @@
                 }}
                 title={text("graphTimelineToggleTitle", "按年份切片观察人脉关系网络随时间的生长演化")}
             >
-                ⏳ {text("graphTimelineBtn", "时间演化")}
+                <Clock size={13.5} strokeWidth={1.6} /> {text("graphTimelineBtn", "时间演化")}
             </button>
             <div role="group" aria-label={text("graphPresentation", "图谱阅读方式")}>
                 <button class="b3-button b3-button--text" aria-pressed={presentation === "text"} onclick={() => (presentation = "text")}>{text("graphTextView", "文本视图")}</button>
@@ -2526,8 +2531,8 @@
                     {/if}
                     <button class="b3-button b3-button--text" onclick={openHoveredPerson}>{text("graphOpenDetail", "查看人物详情")}</button>
                     <div style="display: flex; gap: 4px; margin: 2px 0;">
-                        <button type="button" class="b3-chip font-size-11" onclick={() => { const p = hoveredPerson; clearHover(); if (p) openSnapshotPerson(p, "activity"); }} title="直达交往互动时间流并记录">⚡ 记互动</button>
-                        <button type="button" class="b3-chip font-size-11" onclick={() => { const docId = hoveredPerson?.docId; clearHover(); if (docId) { focusId = docId; compareId = ""; } }} title="将该节点设为关系分析中心">🎯 设为中心</button>
+                        <button type="button" class="b3-chip font-size-11" onclick={() => { const p = hoveredPerson; clearHover(); if (p) openSnapshotPerson(p, "activity"); }} title="直达交往互动时间流并记录"><Zap size={11} strokeWidth={1.6} /> 记互动</button>
+                        <button type="button" class="b3-chip font-size-11" onclick={() => { const docId = hoveredPerson?.docId; clearHover(); if (docId) { focusId = docId; compareId = ""; } }} title="将该节点设为关系分析中心"><Target size={11} strokeWidth={1.6} /> 设为中心</button>
                     </div>
                     <button class="b3-button b3-button--text" onclick={() => { if (hoveredPerson) onOpenPeople({ itemIds: [hoveredPerson.itemId], label: `图谱定位 · ${hoveredPerson.name}` }); }}>{text("graphFocusInPeople", "在名册中定位")}</button>
                     {#if facade?.openDoc}<button class="b3-button b3-button--text" disabled={Boolean(sourceOpeningDocId)} aria-busy={sourceOpeningDocId === hoveredPerson.docId} title="点击打开来源文档（右键呼出原生菜单）" onclick={() => { if (hoveredPerson) void openSourceDocument(hoveredPerson.docId); }} oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); if (hoveredPerson) void facade.openDocMenu?.(hoveredPerson.docId, e); }}>{sourceOpeningDocId === hoveredPerson.docId ? "正在打开…" : "打开来源文档"}</button>{/if}
@@ -2674,8 +2679,11 @@
                                 <div style="display: flex; flex-direction: column; gap: 5px;">
                                     {#each drawerFacts.slice(0, 5) as f (f.id)}
                                         <div class="ft__smaller ft__on-surface lvct-drawer-fact-item" style="padding: 5px 8px; background: var(--lvct-bg-elevated); border-radius: var(--lvct-r-sm); border: 1px solid var(--lvct-border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                            <div style="flex: 1 1 0; min-width: 0; word-break: break-word;">
-                                                <b>{f.category === "quote" ? "💡" : f.category === "preference" ? "❤️" : f.category === "background" ? "💼" : "📌"}</b> {f.text}
+                                            <div style="flex: 1 1 0; min-width: 0; word-break: break-word; display: inline-flex; align-items: flex-start; gap: 5px;">
+                                                <span style="flex-shrink: 0; margin-top: 2px; color: var(--lvct-text-3);">
+                                                    {#if f.category === "quote"}<Lightbulb size={12} strokeWidth={1.6} />{:else if f.category === "preference"}<Heart size={12} strokeWidth={1.6} />{:else if f.category === "background"}<Briefcase size={12} strokeWidth={1.6} />{:else}<Pin size={12} strokeWidth={1.6} />{/if}
+                                                </span>
+                                                <span>{f.text}</span>
                                             </div>
                                             <button
                                                 type="button"
@@ -2877,7 +2885,7 @@
     </section>
 
     {#if hubsModalOpen}
-        <LvctDialog title={text("graphHubsModalTitle", "🌐 人脉网络核心枢纽与跨界桥梁人分析")} wide onClose={() => (hubsModalOpen = false)}>
+        <LvctDialog title={text("graphHubsModalTitle", "🌐 人脉网络核心枢纽与跨界桥梁人分析")} wide beforeClose={() => Promise.resolve(true)} onClose={() => (hubsModalOpen = false)}>
             <NetworkHubsModal
                 {people}
                 graph={snapshot.graph}

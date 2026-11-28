@@ -40,9 +40,11 @@
     import { PROFILE_GAPS } from "../../domain/people-filters";
     import ViewState from "../ViewState.svelte";
     import { useCloseGuard } from "../close-guard";
+    import { emitDataChanged } from "../../libs/data-events";
     import { LayoutGrid, List, FolderInput, ContactRound, UserPlus, ExternalLink, Columns3, SlidersHorizontal, Bookmark, Pencil, Trash2, Calendar, Compass, Network, Star, Zap, Layers, FileSpreadsheet, Copy, Check, Sparkles, Clock } from "@lucide/svelte";
     import { computeRelationshipHealth } from "../../domain/cadence.ts";
     import { toLocalDateKey } from "../../domain/date-key.ts";
+    import { resolveBatchTrashTargets } from "../../domain/trash.ts";
     import { acquireModalBodyClass } from "../../shared/modal-host";
     import { buildDraftFromQuickInput } from "../../domain/quick-fill.ts";
     import { translateText } from "../../domain/translation";
@@ -100,6 +102,8 @@
         onBatchUpdateLifecycleStages,
         onLoadCadences,
         onListTrash,
+        onRemoveContactToTrash,
+        onRemoveContactsToTrash,
         onRestoreContactFromTrash,
         onEmptyTrash,
         onListOccasions,
@@ -169,6 +173,8 @@
         /** E-59：批量获取全量联系人节奏配置表（可选） */
         onLoadCadences?: () => Promise<Record<string, import("../../domain/cadence").PersonCadence>>;
         onListTrash?: () => Promise<import("../../domain/trash").TrashContactEntry[]>;
+        onRemoveContactToTrash?: (person: ContactSummary) => Promise<void>;
+        onRemoveContactsToTrash?: (people: readonly ContactSummary[]) => Promise<number>;
         onRestoreContactFromTrash?: (entryId: string) => Promise<{ docId: string; itemId: string; name: string; warnings?: string[] }>;
         onEmptyTrash?: () => Promise<void>;
         onListOccasions?: () => Promise<import("../../domain/occasion-cluster").OccasionEntity[]>;
@@ -280,27 +286,30 @@
     let filterStarredOnly = $state(false);
     let isDraggingOver = $state(false);
     let addPersonInitial = $state<ContactDraft | undefined>(undefined);
+    let addPersonDialogRef: { requestClose?: () => Promise<boolean> } | undefined = $state();
     let lifecycleStages: Record<string, RelationshipStageKey> = $state({});
     let cadences: Record<string, import("../../domain/cadence").PersonCadence> = $state({});
+    let lifecycleLoadGen = 0;
+    let cadenceLoadGen = 0;
 
     $effect(() => {
         void revision;
         if (!onLoadLifecycleStages) return;
+        const gen = ++lifecycleLoadGen;
         void onLoadLifecycleStages().then((res) => {
-            lifecycleStages = res || {};
-        }).catch(() => {
-            lifecycleStages = {};
-        });
+            if (!peopleAlive || gen !== lifecycleLoadGen) return;
+            if (res) lifecycleStages = res;
+        }).catch(() => {});
     });
 
     $effect(() => {
         void revision;
         if (!onLoadCadences) return;
+        const gen = ++cadenceLoadGen;
         void onLoadCadences().then((res) => {
-            cadences = res || {};
-        }).catch(() => {
-            cadences = {};
-        });
+            if (!peopleAlive || gen !== cadenceLoadGen) return;
+            if (res) cadences = res;
+        }).catch(() => {});
     });
 
     const starredCount = $derived(people.filter((p) => isPersonStarred(preferences, p.docId)).length);
@@ -355,27 +364,6 @@
         adding = true;
     }
 
-    onDestroy(() => {
-        if (typeof window !== "undefined") {
-            window.removeEventListener("keydown", handleGlobalSlashKey);
-        }
-    });
-
-    function handleGlobalSlashKey(event: KeyboardEvent) {
-        if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
-            const active = document.activeElement;
-            const isEditing = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement || (active as HTMLElement)?.isContentEditable;
-            if (!isEditing) {
-                event.preventDefault();
-                searchInputElement?.focus();
-                searchInputElement?.select();
-            }
-        }
-    }
-
-    if (typeof window !== "undefined") {
-        window.addEventListener("keydown", handleGlobalSlashKey);
-    }
     const duplicatePairs: DuplicatePair[] = $derived(findDuplicatePairs(people));
     const duplicatePairsCapped = $derived(duplicatePairs.length >= DUPLICATE_PAIRS_LIMIT);
     // svelte-ignore state_referenced_locally
@@ -628,7 +616,12 @@
         changes: () => [text("guardBatchDraft", "批量编辑尚未应用")],
     });
     function closeBatch() {
-        void guardedClose(() => (batchOpen = false));
+        void guardedClose(() => {
+            batchOpen = false;
+            batchGroup = GROUP_KEEP_OPTION;
+            batchGroupValid = true;
+            batchTagsText = "";
+        });
     }
     let selectedIds: string[] = $state([]);
     let selectedScope = $state<"manual" | "page" | "filtered">("manual");
@@ -675,7 +668,7 @@
     const VIRTUAL_OVERSCAN_ROWS = 3;
     const CARD_ROW_ESTIMATE = 202;
     const TABLE_ROW_ESTIMATE = 48;
-    const VIRTUAL_ROW_GAP = 16;
+    const VIRTUAL_ROW_GAP = 12;
     let peopleListElement: HTMLDivElement | null = $state(null);
     let virtualScrollTop = $state(0);
     let virtualViewportHeight = $state(0);
@@ -697,7 +690,7 @@
             const active = document.activeElement;
             const focusedItem = active instanceof HTMLElement ? active.closest<HTMLElement>("[data-person-item-id]") : null;
             if (focusedItem && element.contains(focusedItem) && visible.length > VIRTUAL_LIST_THRESHOLD) {
-                const index = filtered.findIndex((person) => person.itemId === focusedItem.dataset.personItemId);
+                const index = letterFiltered.findIndex((person) => person.itemId === focusedItem.dataset.personItemId);
                 const height = element.clientHeight;
                 const range = currentVirtualRange(element.scrollTop, height);
                 const start = range.start * virtualColumnCount;
@@ -846,7 +839,7 @@
     const virtualRowSize = $derived(viewMode === "table" ? TABLE_ROW_ESTIMATE : CARD_ROW_ESTIMATE);
     const virtualColumnCount = $derived(viewMode === "table"
         ? 1
-        : Math.max(1, Math.floor((virtualViewportWidth + 16) / (285 + 16))));
+        : Math.max(1, Math.floor((virtualViewportWidth + VIRTUAL_ROW_GAP) / (270 + VIRTUAL_ROW_GAP))));
     const virtualCardWidth = $derived(virtualColumnCount > 0
         ? Math.max(0, (virtualViewportWidth - VIRTUAL_ROW_GAP * (virtualColumnCount - 1)) / virtualColumnCount)
         : 0);
@@ -1035,7 +1028,7 @@
             request.resolve("cancelled");
             return;
         }
-        const index = filtered.findIndex((person) => person.itemId === request.itemId);
+        const index = letterFiltered.findIndex((person) => person.itemId === request.itemId);
         if (index >= visibleCount) {
             // 编辑或互动可能改变排序位置，先展示新的所在页，再恢复该入口。
             visibleCount = index + 1;
@@ -1602,6 +1595,9 @@
         batchAnchor = JSON.stringify([settings.avId, settings.dbBlockId, settings.fieldMap]);
         batchHiddenCount = hiddenSelectionCount;
         includeHidden = false;
+        batchGroup = GROUP_KEEP_OPTION;
+        batchGroupValid = true;
+        batchTagsText = "";
         batchError = "";
         batchFailedFieldsByItem = {};
         batchOpen = true;
@@ -1794,6 +1790,7 @@
                 ...(tagsToAdd.length > 0 ? { tagsToAdd } : {}),
             })), onlyFailed ? { onlyFieldsByItem: batchFailedFieldsByItem } : { verifyBeforeWrite });
             await refresh();
+            emitDataChanged({ topics: ["people"] });
             if (!peopleAlive) return;
             const failedResults = results.filter((result) => result.report.unresolved.length > 0);
             if (failedResults.length > 0) {
@@ -1923,11 +1920,23 @@
     async function removeSelected() {
         if (batchBusy || batchOrgBusy || exportingSelected || selectedIds.length === 0) return;
         if (selectionScopePending) { batchError = pendingScopeMessage; return; }
-        const names = selectedPeople.map((person) => person.name).slice(0, 5).join("、");
-        const suffix = selectedPeople.length > 5 ? ` 等 ${selectedPeople.length} 人` : "";
+        const resolution = resolveBatchTrashTargets(
+            selectedIds,
+            (itemId) => selectedPeopleCache[itemId] || people.find((p) => p.itemId === itemId),
+        );
+        if (!resolution.ok) {
+            batchError = resolution.error ?? "存在未在当前名册快照中解析到的联系人，已拒绝批量移除（未解绑任何联系人）。";
+            return;
+        }
+        const targets = resolution.targets;
+        const names = targets.map((person) => person.name).slice(0, 5).join("、");
+        const suffix = targets.length > 5 ? ` 等 ${targets.length} 人` : "";
+        const trashSupported = Boolean(onRemoveContactsToTrash || onRemoveContactToTrash);
         const confirmed = await confirmDialog({
             title: "批量移除联系人",
-            message: `将从人脉名册移除「${names}${suffix}」，共 ${selectedPeople.length} 人（筛选外 ${hiddenSelectionCount} 人）。人物文档和互动记录会保留，确定继续吗？`,
+            message: trashSupported
+                ? `将从人脉名册移除「${names}${suffix}」，共 ${targets.length} 人（筛选外 ${hiddenSelectionCount} 人）。人物文档和互动记录会保留，并可在回收站保留 30 天内一键撤回恢复，确定继续吗？`
+                : `将从人脉名册移除「${names}${suffix}」，共 ${targets.length} 人（筛选外 ${hiddenSelectionCount} 人）。人物文档和互动记录会保留，确定继续吗？`,
             confirmLabel: "确认移除",
             cancelLabel: "取消",
             danger: true,
@@ -1936,9 +1945,18 @@
         batchBusy = true;
         batchError = "";
         try {
-            await removeContacts(settings, selectedIds);
+            if (onRemoveContactsToTrash) {
+                await onRemoveContactsToTrash(targets);
+            } else if (onRemoveContactToTrash) {
+                for (const person of targets) {
+                    await onRemoveContactToTrash(person);
+                }
+            } else {
+                await removeContacts(settings, targets.map((p) => p.itemId));
+            }
             selectedIds = [];
             await refresh();
+            emitDataChanged({ topics: ["people"], docIds: targets.map((p) => p.docId).filter(Boolean) });
         } catch (error) {
             batchError = requestErrorMessage(error);
         } finally {
@@ -1948,10 +1966,10 @@
 
     function handleGlobalKeydown(event: KeyboardEvent) {
         const active = document.activeElement;
-        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) {
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement || (active as HTMLElement | null)?.isContentEditable) {
             return;
         }
-        if (typeof document !== "undefined" && document.querySelector(".lvct-dialog-mask, [role=dialog][aria-modal=true], .lvct-sheet--open")) {
+        if (typeof document !== "undefined" && document.querySelector(".lvct-dialog-mask, .lvct-confirm-dialog-root, .lvct-closeguard, .lvct-card-viewer-modal, [role=dialog][aria-modal=true], .lvct-sheet--open")) {
             return;
         }
         if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -2186,8 +2204,8 @@
                 <input
                     class="b3-text-field fn__flex-1 lvct-people__mobile-search"
                     type="search"
-                    aria-label={text("peopleSearchPlaceholder", "搜索联系人")}
-                    placeholder={text("peopleSearchPlaceholder", "搜索姓名/电话/微信/邮箱/标签…")}
+                    aria-label={text("peopleMobileSearchPlaceholder", "搜索姓名或电话")}
+                    placeholder={text("peopleMobileSearchPlaceholder", "搜索姓名或电话")}
                     value={searchInput}
                     oninput={(event) => handleSearchInput((event.currentTarget as HTMLInputElement).value)}
                     onkeydown={(event) => {
@@ -2222,8 +2240,8 @@
                 bind:this={searchInputElement}
                 class="b3-text-field lvct-people__desktop-search"
                 type="search"
-                aria-label={text("peopleSearchPlaceholder", "搜索联系人")}
-                placeholder={text("peopleSearchPlaceholder", "搜索姓名/拼音/电话/微信… (按 / 聚焦，Esc 清空)")}
+                aria-label={text("peopleSearchPlaceholder", "搜索姓名、电话或标签")}
+                placeholder={text("peopleSearchPlaceholder", "搜索姓名、电话或标签")}
                 value={searchInput}
                 oninput={(event) => handleSearchInput((event.currentTarget as HTMLInputElement).value)}
                 onkeydown={(event) => {
@@ -2257,8 +2275,20 @@
                 </button>
             {/if}
 
-            {@render viewMenuControl()}
-            {@render filterControls()}
+            <select
+                class="b3-select lvct-people__sort-select"
+                bind:value={sortMode}
+                aria-label={text("peopleSortLabel", "排序方式")}
+                title={text("peopleSortLabel", "排序方式")}
+                onchange={() => (visibleCount = PAGE_SIZE)}
+            >
+                <option value="name">{text("peopleSortName", "按姓名")}</option>
+                <option value="group">{text("peopleSortGroup", "按分组")}</option>
+                <option value="birthday">{text("peopleSortBirthday", "按生日临近")}</option>
+                <option value="recent" disabled={recentState !== "ready"}>{recentState === "error" ? "按最近互动（读取失败）" : recentState === "loading" ? "按最近互动（读取中）" : text("peopleSortRecent", "按最近互动")}</option>
+                <option value="frequency" disabled={recentState !== "ready"}>{recentState === "error" ? "按交往密度（读取失败）" : recentState === "loading" ? "按交往密度（读取中）" : text("peopleSortFrequency", "按交往密度")}</option>
+                <option value="created">{text("peopleSortCreated", "按最新录入")}</option>
+            </select>
 
             <span class="lvct-people__viewtoggle" class:lvct-people__viewtoggle--dual={viewMode === "cards"}>
                 {#if viewMode === "cards"}
@@ -2342,8 +2372,8 @@
 
             <button
                 type="button"
-                class="b3-button b3-button--outline lvct-people__narrow-filter-btn"
-                class:lvct-people__narrow-filter-btn--active={narrowDrawerOpen || conditionChips.length > 0 || activeLetterFilter !== ""}
+                class="b3-button b3-button--outline lvct-people__narrow-filter-btn lvct-people__filter-toggle-btn"
+                class:lvct-people__narrow-filter-btn--active={narrowDrawerOpen || conditionChips.length > 0 || activeLetterFilter !== "" || isExtraFilterActive(extraFilter)}
                 aria-expanded={narrowDrawerOpen}
                 onclick={() => (narrowDrawerOpen = !narrowDrawerOpen)}
             >
@@ -2490,26 +2520,33 @@
         {/if}
     {/snippet}
 
-    <!-- 拼音首字母 A-Z 跳跃索引条（桌面常驻，窄屏/手机端收进筛选抽屉） -->
-    {#if !isMobile}
-        {@render alphabetBarBlock()}
-    {/if}
-    {#if !isMobile && localViews.length > 0}
-        <div class="lvct-people__savedviews" aria-label="已保存视图">
-            <span class="lvct-people__savedviews-label">已保存视图</span>
-            {#each localViews.slice(0, 3) as view (view.id)}
-                <button
-                    type="button"
-                    class="lvct-people__savedview"
-                    class:lvct-people__savedview--active={currentViewId === view.id}
-                    aria-pressed={currentViewId === view.id}
-                    title={`应用视图 ${view.name}`}
-                    onclick={() => applySavedView(view)}
-                >{view.name}</button>
-            {/each}
-            <button type="button" class="b3-button b3-button--text lvct-people__savedviews-manage" onclick={() => (viewsOpen = true)}>
-                管理视图
-            </button>
+    <!-- 拼音首字母 A-Z、已保存视图与标签筛选：按需展开于筛选抽屉中，保持默认顶栏清爽 2 层 -->
+    {#if !isMobile && narrowDrawerOpen}
+        <div class="lvct-people__filter-drawer" role="region" aria-label="展开筛选与视图选项">
+            <div class="lvct-people__filter-drawer-row">
+                {@render viewMenuControl()}
+                {@render filterControls()}
+                {#if localViews.length > 0}
+                    <div class="lvct-people__savedviews" aria-label="已保存视图">
+                        <span class="lvct-people__savedviews-label">已保存视图</span>
+                        {#each localViews.slice(0, 3) as view (view.id)}
+                            <button
+                                type="button"
+                                class="lvct-people__savedview"
+                                class:lvct-people__savedview--active={currentViewId === view.id}
+                                aria-pressed={currentViewId === view.id}
+                                title={`应用视图 ${view.name}`}
+                                onclick={() => applySavedView(view)}
+                            >{view.name}</button>
+                        {/each}
+                        <button type="button" class="b3-button b3-button--text lvct-people__savedviews-manage" onclick={() => (viewsOpen = true)}>
+                            管理视图
+                        </button>
+                    </div>
+                {/if}
+            </div>
+            {@render alphabetBarBlock()}
+            {@render tagFiltersBlock()}
         </div>
     {/if}
     {#if isMobile && mobileSheetOpen}
@@ -2608,10 +2645,6 @@
             <span style="flex:1"></span>
             <button type="button" class="lvct-people__filter-clear" onclick={clearAllConditions}>清除全部</button>
         </div>
-    {/if}
-
-    {#if !isMobile}
-        {@render tagFiltersBlock()}
     {/if}
 
     {#if selectedIds.length > 0}
@@ -2804,10 +2837,11 @@
         </div>
     {:else if viewMode === "cards"}
         <div class="lvct-people__cards" bind:this={peopleListElement} tabindex="-1" aria-label="联系人列表">
-            {#if virtualized}<div class="lvct-people__virtual-spacer" style={`height:${virtualTopSpacer}px`} aria-hidden="true"></div>{/if}
+            {#if virtualized && virtualTopSpacer > 0}<div class="lvct-people__virtual-spacer" style={`height:${virtualTopSpacer}px`} aria-hidden="true"></div>{/if}
             {#each renderedVisible as person (person.itemId)}
                 <PersonCard
                     {person}
+                    {isMobile}
                     compact={cardDensity === "compact"}
                     cardFields={preferences.cardFields}
                     starred={isPersonStarred(preferences, person.docId)}
@@ -2823,7 +2857,7 @@
                     onOpenActivity={(p) => onOpenDetail(p, "activity")}
                 />
             {/each}
-            {#if virtualized}<div class="lvct-people__virtual-spacer" style={`height:${virtualBottomSpacer}px`} aria-hidden="true"></div>{/if}
+            {#if virtualized && virtualBottomSpacer > 0}<div class="lvct-people__virtual-spacer" style={`height:${virtualBottomSpacer}px`} aria-hidden="true"></div>{/if}
         </div>
     {:else}
         {#if isMobile}<p class="lvct-people__scroll-hint">左右滑动查看更多字段</p>{/if}
@@ -2895,8 +2929,9 @@
     {/if}
 
     {#if adding}
-        <LvctDialog title="新建联系人" onClose={() => { adding = false; addPersonInitial = undefined; }}>
+        <LvctDialog title="新建联系人" beforeClose={() => addPersonDialogRef?.requestClose?.() ?? Promise.resolve(true)} onClose={() => { adding = false; addPersonInitial = undefined; }}>
             <AddPersonDialog
+                bind:this={addPersonDialogRef}
                 {settings}
                 {i18n}
                 initial={addPersonInitial}
@@ -2946,7 +2981,7 @@
     {/if}
 
     {#if batchOpen}
-        <LvctDialog title={`批量编辑 · ${batchTargets.length} 人`} onClose={() => (batchOpen = false)}>
+        <LvctDialog title={`批量编辑 · ${batchTargets.length} 人`} onClose={() => { batchOpen = false; batchGroup = GROUP_KEEP_OPTION; batchGroupValid = true; batchTagsText = ""; }}>
             <div class="lvct-form">
                 <p>已固定{batchScopeLabel}的 {batchTargets.length} 人，包含筛选外 {batchHiddenCount} 人。筛选和后台刷新不会增加或替换本次目标。</p>
                 {#if batchScopePending}<p role="status">{pendingScopeMessage}</p>{/if}
@@ -3029,7 +3064,7 @@
     {/if}
 
     {#if dupOpen}
-        <LvctDialog title={`重复候选 · ${duplicatePairs.length} 组`} wide onClose={() => (dupOpen = false)}>
+        <LvctDialog title={`重复候选 · ${duplicatePairs.length} 组`} wide beforeClose={() => Promise.resolve(true)} onClose={() => (dupOpen = false)}>
             <div class="lvct-form">
                 <p class="ft__smaller ft__on-surface">
                     匹配规则：电话去格式后纯数字比较（不猜测补全国家码）、邮箱忽略大小写、姓名同名。
@@ -3085,7 +3120,7 @@
     {/if}
 
     {#if mergeTarget}
-        <LvctDialog title={`合并联系人 · ${mergeTarget.a.name} ↔ ${mergeTarget.b.name}`} wide onClose={() => (mergeTarget = null)}>
+        <LvctDialog title={`合并联系人 · ${mergeTarget.a.name} ↔ ${mergeTarget.b.name}`} wide beforeClose={() => Promise.resolve(true)} onClose={() => (mergeTarget = null)}>
             <ContactMergeWizard
                 {i18n}
                 primary={mergeTarget.a}
@@ -3106,7 +3141,7 @@
     {/if}
 
     {#if occasioning}
-        <LvctDialog title={text("occDialogTitle", "记录群体活动与场合")} wide onClose={() => (occasioning = false)}>
+        <LvctDialog title={text("occDialogTitle", "记录群体活动与场合")} wide beforeClose={() => Promise.resolve(true)} onClose={() => (occasioning = false)}>
             <OccasionDialog
                 {i18n}
                 {people}
@@ -3122,7 +3157,7 @@
     {/if}
 
     {#if regionExploring}
-        <LvctDialog title={text("regionExplorerTitle", "城市人脉与行程助手")} wide onClose={() => (regionExploring = false)}>
+        <LvctDialog title={text("regionExplorerTitle", "城市人脉与行程助手")} wide beforeClose={() => Promise.resolve(true)} onClose={() => (regionExploring = false)}>
             <RegionExplorerDialog
                 contacts={people}
                 notebookId={settings.notebookId}
@@ -3142,7 +3177,7 @@
     {/if}
 
     {#if batchStageModalOpen}
-        <LvctDialog title={text("batchStageTitle", "批量设置交往生命周期阶段")} onClose={() => (batchStageModalOpen = false)}>
+        <LvctDialog title={text("batchStageTitle", "批量设置交往生命周期阶段")} beforeClose={() => Promise.resolve(true)} onClose={() => (batchStageModalOpen = false)}>
             <BatchLifecycleStageModal
                 selectedPeopleCount={selectedIds.length}
                 onConfirm={async (stage, note) => {
@@ -3155,6 +3190,7 @@
                         if (res?.currentStages) {
                             lifecycleStages = { ...lifecycleStages, ...res.currentStages };
                         }
+                        emitDataChanged({ topics: ["people"], docIds });
                     }
                 }}
                 onClose={() => (batchStageModalOpen = false)}
@@ -3164,11 +3200,13 @@
     {/if}
 
     {#if tidyDrawerOpen}
-        <LvctDialog title={text("tidyDrawerTitle", "人脉待安顿整理与智能归纳")} wide onClose={() => (tidyDrawerOpen = false)}>
+        <LvctDialog title={text("tidyDrawerTitle", "人脉待安顿整理与智能归纳")} wide beforeClose={() => Promise.resolve(true)} onClose={() => (tidyDrawerOpen = false)}>
             <TidyDrawer
                 {people}
                 availableGroups={groups}
                 onSaveBatch={async (updates) => {
+                    const failures: string[] = [];
+                    const touchedDocIds: string[] = [];
                     for (const u of updates) {
                         const target = people.find((p) => p.itemId === u.itemId);
                         if (target) {
@@ -3177,10 +3215,23 @@
                                 group: u.group !== undefined ? u.group : target.group,
                                 tags: u.tags !== undefined ? u.tags : target.tags,
                             };
-                            await updateContactFields(settings, u.itemId, draft, { onlyFields: ["group", "tags"] });
+                            const onlyFields: ("group" | "tags")[] = [];
+                            if (u.group !== undefined) onlyFields.push("group");
+                            if (u.tags !== undefined) onlyFields.push("tags");
+                            if (onlyFields.length === 0) continue;
+                            const report = await updateContactFields(settings, u.itemId, draft, { onlyFields });
+                            if (!report.complete) {
+                                failures.push(`${target.name}（${report.unresolved.map((f) => `${f.label}：${f.message}`).join("、")}）`);
+                            } else if (target.docId) {
+                                touchedDocIds.push(target.docId);
+                            }
                         }
                     }
                     await refresh();
+                    emitDataChanged({ topics: ["people"], docIds: touchedDocIds });
+                    if (failures.length > 0) {
+                        throw new Error(`部分联系人未能完成保存：${failures.join("；")}`);
+                    }
                 }}
                 onClose={() => (tidyDrawerOpen = false)}
                 {i18n}
@@ -3189,7 +3240,7 @@
     {/if}
 
     {#if trashDrawerOpen}
-        <LvctDialog title={text("peopleTrashDialogTitle", "🗑️ 联系人回收站（30天安全缓冲）")} wide onClose={() => (trashDrawerOpen = false)}>
+        <LvctDialog title={text("peopleTrashDialogTitle", "🗑️ 联系人回收站（30天安全缓冲）")} wide beforeClose={() => Promise.resolve(true)} onClose={() => (trashDrawerOpen = false)}>
             <TrashDrawer
                 {onListTrash}
                 onRestoreContact={onRestoreContactFromTrash}
@@ -3204,7 +3255,7 @@
     {/if}
 
     {#if occasionsHubOpen}
-        <LvctDialog title={text("occasionsHubDialogTitle", "🎪 群体活动与场合大事记大盘")} wide onClose={() => (occasionsHubOpen = false)}>
+        <LvctDialog title={text("occasionsHubDialogTitle", "🎪 群体活动与场合大事记大盘")} wide beforeClose={() => Promise.resolve(true)} onClose={() => (occasionsHubOpen = false)}>
             <OccasionsHubDialog
                 {people}
                 {onListOccasions}

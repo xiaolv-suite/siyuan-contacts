@@ -23,7 +23,7 @@ import type { ViewPreferences } from "../domain/preferences";
     import type { TrashContactEntry } from "../domain/trash";
     import { daysUntilTrashExpiration } from "../domain/trash";
     import { confirmDialog } from "../libs/confirm-dialog";
-    import { subscribeDataChanged } from "../libs/data-events";
+    import { emitDataChanged, subscribeDataChanged } from "../libs/data-events";
     import type { SelfIdentityChangePreview } from "../domain/self-identity";
     import OrgProjectionRepair from "./org/OrgProjectionRepair.svelte";
     import PersonPicker from "./people/PersonPicker.svelte";
@@ -320,6 +320,7 @@ import { attachDialogRootClass } from "../shared/modal-host";
         trashMessage = "";
         try {
             const restored = await facade.restoreContactFromTrash(entryId);
+            emitDataChanged({ topics: ["people"], ...(restored?.docId ? { docIds: [restored.docId] } : {}) });
             const result = facade.listTrash ? await facade.listTrash() : [];
             if (!selfAlive || request !== trashRequest) return;
             trashEntries = result;
@@ -1221,7 +1222,7 @@ import { attachDialogRootClass } from "../shared/modal-host";
     }
 </script>
 
-<div class="lvct-settings" data-lvct-theme={draft.themeScheme || "cognac"} use:attachDialogRootClass={"lvct-dialog-root--settings"}>
+<div class="lvct-settings" data-lvct-theme={draft.themeScheme && draft.themeScheme !== "cognac" ? draft.themeScheme : undefined} use:attachDialogRootClass={"lvct-dialog-root--settings"}>
     <div class="lvct-settings__topbar">
         <button class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onBack)}>← {text("settingsBack", "返回工作台")}</button>
         <div class="lvct-settings__heading">

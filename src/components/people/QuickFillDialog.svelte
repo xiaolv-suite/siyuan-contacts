@@ -5,7 +5,7 @@
     import type { QuickFillItem, QuickFillResult } from "../../domain/quick-fill";
     import { quickFillDefaultIndexes } from "../../domain/import.ts";
     import LvctDialog from "../LvctDialog.svelte";
-    import { useCloseGuard } from "../close-guard";
+    import { checkCloseGuardItem, useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
     import { Copy, Check } from "@lucide/svelte";
     import { onDestroy, tick } from "svelte";
@@ -193,8 +193,18 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            const blockers = document.querySelectorAll<HTMLElement>(".b3-dialog, .lvct-confirm-dialog-root, .lvct-closeguard, .lvct-card-viewer-modal");
+            for (const blocker of blockers) {
+                if (blocker.querySelector(".lvct-dialog-panel--qf")) continue;
+                return;
+            }
+            const panels = document.querySelectorAll(".lvct-dialog-panel");
+            const topPanel = panels.length > 0 ? panels[panels.length - 1] : null;
+            if (topPanel && !topPanel.classList.contains("lvct-dialog-panel--qf")) return;
             event.preventDefault();
+            event.stopImmediatePropagation();
             if (!previewed) {
                 if (pasteText.trim().length > 0) recognize();
             } else {
@@ -209,10 +219,11 @@
         if (previewed) return pasteText.trim().length > 0 || visibleItems().length > 0 || (result?.unrecognized.length ?? 0) > 0;
         return pasteText.trim().length > 0;
     }
-    const guardedClose = useCloseGuard({
+    const qfGuardItem = {
         busy: () => applying,
         dirty: () => hasUnsavedDraft(),
-    });
+    };
+    const guardedClose = useCloseGuard(qfGuardItem);
     function requestClose(): void {
         void guardedClose(onClose);
     }
@@ -220,7 +231,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<LvctDialog title={text("qfTitle", "粘贴并识别")} maskClass="lvct-dialog-mask--qf" panelClass="lvct-dialog-panel--qf" onClose={requestClose}>
+<LvctDialog title={text("qfTitle", "粘贴并识别")} maskClass="lvct-dialog-mask--qf" panelClass="lvct-dialog-panel--qf" beforeClose={() => checkCloseGuardItem(qfGuardItem)} onClose={onClose}>
     <div class="lvct-qf">
         {#if !previewed}
             <p class="ft__smaller ft__on-surface">
@@ -280,7 +291,7 @@
             {#if (result?.unrecognized.length ?? 0) > 0}
                 <div class="lvct-qf__unrecognized">
                     <b class="ft__smaller">{text("qfUnrecognized", "无法识别（已保留原文，未做任何写入）")}</b>
-                    {#each result!.unrecognized as line (line)}
+                    {#each result!.unrecognized as line, index (`${index}:${line}`)}
                         <div class="ft__smaller ft__on-surface">{line}</div>
                     {/each}
                 </div>

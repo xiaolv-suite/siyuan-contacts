@@ -6,7 +6,8 @@
     import { emptyDraft } from "../../domain/person";
     import type { ContactDraft, ContactSummary } from "../../domain/person";
     import type { ContactsSettings } from "../../domain/model";
-    import { useCloseGuard } from "../close-guard";
+    import { checkCloseGuardItem, useCloseGuard } from "../close-guard";
+    import { emitDataChanged } from "../../libs/data-events";
     import { translateText } from "../../domain/translation";
     import QuickFillDialog from "./QuickFillDialog.svelte";
     import GroupField from "./GroupField.svelte";
@@ -252,6 +253,7 @@
                 reuseDocId: currentPreview && creationChoice !== "new" ? creationChoice || undefined : undefined,
             });
             createdPerson = person;
+            emitDataChanged({ topics: ["people"], docIds: [person.docId] });
             if (onSaveExtended) {
                 try {
                     await onSaveExtended($state.snapshot(person), extendedDetails);
@@ -389,12 +391,17 @@
         if (note.trim()) changes.push("人物备注已填写");
         return changes;
     }
-    const guardedClose = useCloseGuard({
+    let formRoot: HTMLDivElement | undefined = $state();
+    const closeGuardItem = {
         busy: () => running || creatingOrganization || extraLoading || Boolean(removingOrganization),
         dirty: () => !saved && (JSON.stringify(draft) !== JSON.stringify(emptyDraft()) || tagsText.trim().length > 0 || orgAffiliations.some((entry) => Boolean(entry.orgDocId || entry.orgDepartment || entry.orgTitle || entry.orgJoinedOn || entry.orgLeftOn || entry.orgStatusLabel.trim() || entry.orgNote?.trim())) || Boolean(aliases.trim() || relationshipLabels.trim() || note.trim() || residentLocation || hometownLocation)),
         changes: () => [...draftChanges(), ...(creationRequest ? [text("contactCheckpointWarning", "原请求断点仅保留在当前窗口。关闭不会删除已保存文档；请核实后继续，不能凭同名重新建档。")] : [])],
         save: persist,
-    });
+    };
+    const guardedClose = useCloseGuard(closeGuardItem);
+    export function requestClose(): Promise<boolean> {
+        return checkCloseGuardItem(closeGuardItem);
+    }
     /* D-40：宿主 X/Esc/遮罩经同一守卫路由（返回 Promise 供拦截层重入门） */
     $effect(() => {
         if (hostCloseChannel) hostCloseChannel.request = (close) => guardedClose(close);
@@ -429,8 +436,18 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-            if (removingOrganization || removingOrgEntryKey !== null || selfSetupOpen) return;
+            if (quickFillOpen || removingOrganization || removingOrgEntryKey !== null || selfSetupOpen) return;
+            const ownPanel = formRoot?.closest(".lvct-dialog-panel");
+            const panels = document.querySelectorAll(".lvct-dialog-panel");
+            const topPanel = panels.length > 0 ? panels[panels.length - 1] : null;
+            if (ownPanel && topPanel && ownPanel !== topPanel) return;
+            const blockers = document.querySelectorAll<HTMLElement>(".b3-dialog, .lvct-confirm-dialog-root, .lvct-closeguard, .lvct-card-viewer-modal");
+            for (const blocker of blockers) {
+                if (ownPanel && blocker.contains(ownPanel)) continue;
+                return;
+            }
             event.preventDefault();
             void submit();
         }
@@ -439,9 +456,9 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="lvct-form">
+<div class="lvct-form" bind:this={formRoot}>
     <div class="lvct-form__toolbar">
-        <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" style="border-radius: var(--lv-r-pill, 9999px);" disabled={baseFieldsLocked} onclick={() => (quickFillOpen = true)}>
+        <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" disabled={baseFieldsLocked} onclick={() => (quickFillOpen = true)}>
             <ClipboardPaste size={14} strokeWidth={1.6} />{text("qfOpen", "粘贴并识别")}
         </button>
     </div>
@@ -483,7 +500,7 @@
 
     {#if extendedSupported}
         <section class="lvct-form__optional" aria-labelledby="lvct-contact-extra-toggle">
-            <button id="lvct-contact-extra-toggle" type="button" class="b3-button b3-button--text lvct-form__optional-toggle" style="border-radius: var(--lv-r-pill, 9999px);" aria-expanded={extraOpen} aria-controls={extraOpen ? "lvct-contact-extra-body" : undefined} onclick={toggleExtended} disabled={running || !!creationRequest}>
+            <button id="lvct-contact-extra-toggle" type="button" class="b3-button b3-button--text lvct-form__optional-toggle" aria-expanded={extraOpen} aria-controls={extraOpen ? "lvct-contact-extra-body" : undefined} onclick={toggleExtended} disabled={running || !!creationRequest}>
                 {extraOpen ? "收起补充资料" : "补充资料（可选）"}
             </button>
             {#if extraOpen}
@@ -504,16 +521,16 @@
                                     {@const pendingIndex = orgAffiliationKeys.indexOf(removingOrgEntryKey as number)}
                                     <p>移除「{pendingIndex >= 0 ? organizationName(orgAffiliations[pendingIndex].orgDocId) : "该组织"}」这条经历将丢失已填写的组织资料。</p>
                                 {/if}
-                                <button type="button" class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={keepOrganizationAffiliations}>保留经历</button>
-                                <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => removingOrganization ? removeOrganizationAffiliations(removingOrganization) : removePendingOrgAffiliation()}>{removingOrganization ? "确认移除全部经历" : "确认移除这条经历"}</button>
+                                <button type="button" class="b3-button b3-button--cancel" onclick={keepOrganizationAffiliations}>保留经历</button>
+                                <button type="button" class="b3-button b3-button--outline" onclick={() => removingOrganization ? removeOrganizationAffiliations(removingOrganization) : removePendingOrgAffiliation()}>{removingOrganization ? "确认移除全部经历" : "确认移除这条经历"}</button>
                             </div>
                         {/if}
                         {#each orgAffiliations as affiliation, index (orgAffiliationKeys[index])}
                             <div class="lvct-add-person__org-draft" data-org-doc-id={affiliation.orgDocId} data-entry-id={orgAffiliationKeys[index]}>
                                 <div class="lvct-add-person__org-head">
                                     <strong>{organizationName(affiliation.orgDocId)}</strong>
-                                    <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => appendOrgAffiliation(affiliation.orgDocId, true)} disabled={running || creatingOrganization}>补录历史</button>
-                                    <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" aria-label={`移除这条${organizationName(affiliation.orgDocId)}`} onclick={() => requestRemoveOrgAffiliation(index)} disabled={running || creatingOrganization || removingOrganization !== "" || removingOrgEntryKey !== null}>移除这条</button>
+                                    <button type="button" class="b3-button b3-button--text" onclick={() => appendOrgAffiliation(affiliation.orgDocId, true)} disabled={running || creatingOrganization}>补录历史</button>
+                                    <button type="button" class="b3-button b3-button--text" aria-label={`移除这条${organizationName(affiliation.orgDocId)}`} onclick={() => requestRemoveOrgAffiliation(index)} disabled={running || creatingOrganization || removingOrganization !== "" || removingOrgEntryKey !== null}>移除这条</button>
                                 </div>
                                 <div class="lvct-form__grid">
                                 <label class="lvct-form__item"><span>归属分类</span><select class="b3-select fn__block" value={affiliation.orgAffiliationKind} onchange={(event) => patchOrgAffiliation(index, { orgAffiliationKind: event.currentTarget.value as ContactOrgAffiliationDraft["orgAffiliationKind"] })} disabled={running || !affiliation.orgDocId}>
@@ -585,7 +602,7 @@
                 <b>设置本人档案</b>
                 <p class="lvct-form__hint">设置完成后会回到这里；当前联系人及补充资料草稿会保留。</p>
                 {#if onCreateSelfProfile}
-                    <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={selfSetupBusy} onclick={() => void createSelfProfileFromContact()}>
+                    <button type="button" class="b3-button b3-button--outline" disabled={selfSetupBusy} onclick={() => void createSelfProfileFromContact()}>
                         {selfSetupBusy ? "处理中…" : "创建本人档案「我自己」"}
                     </button>
                 {/if}
@@ -598,7 +615,7 @@
                         </select>
                     </label>
                     {#if !selfPreview}
-                        <button type="button" class="b3-button b3-button--outline" style="border-radius: var(--lv-r-pill, 9999px);" disabled={selfSetupBusy || !selfCandidateItemId || !onPreviewSelfIdentityChange} onclick={() => void previewSelfCandidate()}>
+                        <button type="button" class="b3-button b3-button--outline" disabled={selfSetupBusy || !selfCandidateItemId || !onPreviewSelfIdentityChange} onclick={() => void previewSelfCandidate()}>
                             {selfSetupBusy ? "核对中…" : "预览指定本人"}
                         </button>
                     {/if}
@@ -610,8 +627,8 @@
                         <p>{selfPreview.previousName} → {selfPreview.target?.name ?? "未指定本人"}</p>
                         <p>普通联系人统计：{selfPreview.ordinaryBefore} → {selfPreview.ordinaryAfter}</p>
                         <p class="lvct-form__hint">首页行动和统计、图谱默认中心将随本人变化；原人物资料与历史记录保留。</p>
-                        <button type="button" class="b3-button" style="border-radius: var(--lv-r-pill, 9999px);" disabled={selfSetupBusy} onclick={() => void confirmSelfCandidate()}>{selfSetupBusy ? "保存中…" : "确认指定本人"}</button>
-                        <button type="button" class="b3-button b3-button--text" style="border-radius: var(--lv-r-pill, 9999px);" disabled={selfSetupBusy} onclick={() => (selfPreview = null)}>取消预览</button>
+                        <button type="button" class="b3-button" disabled={selfSetupBusy} onclick={() => void confirmSelfCandidate()}>{selfSetupBusy ? "保存中…" : "确认指定本人"}</button>
+                        <button type="button" class="b3-button b3-button--text" disabled={selfSetupBusy} onclick={() => (selfPreview = null)}>取消预览</button>
                     </div>
                 {/if}
                 {#if selfSetupError}<p class="lvct-form__error" role="alert">{selfSetupError}</p>{/if}
@@ -620,8 +637,8 @@
         {#if selfSetupNotice}<p class="lvct-form__hint" role="status">{selfSetupNotice}</p>{/if}
 
     <div class="lvct-form__actions">
-        <button class="b3-button b3-button--cancel" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => guardedClose(onClose)} disabled={running}>{text("formCancel", "取消")}</button>
-        <button class="b3-button b3-button--primary" style="border-radius: var(--lv-r-pill, 9999px);" onclick={submit} disabled={running || creatingOrganization || extraLoading || Boolean(removingOrganization) || removingOrgEntryKey !== null || !groupValid || !!currentPreview && !creationRequest && !creationChoice}>
+        <button class="b3-button b3-button--cancel" onclick={() => guardedClose(onClose)} disabled={running}>{text("formCancel", "取消")}</button>
+        <button class="b3-button b3-button--primary" onclick={submit} disabled={running || creatingOrganization || extraLoading || Boolean(removingOrganization) || removingOrgEntryKey !== null || !groupValid || !!currentPreview && !creationRequest && !creationChoice}>
             {running ? text("formCreating", "创建中…") : createdPerson ? "继续保存补充资料" : creationRequest ? text("contactContinueCreation", "核实并继续原请求") : text("formCreate", "创建联系人")}
         </button>
     </div>

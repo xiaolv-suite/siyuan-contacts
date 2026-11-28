@@ -369,7 +369,7 @@
                     type="button"
                     class="b3-button b3-button--cancel"
                     disabled={saving}
-                    onclick={() => { adding = false; errorText = ""; }}
+                    onclick={() => { adding = false; newRole = "spouse"; newLabel = ""; newName = ""; newBirth = ""; newNote = ""; errorText = ""; }}
                 >
                     取消
                 </button>

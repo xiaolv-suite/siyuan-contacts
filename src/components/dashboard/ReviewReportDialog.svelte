@@ -393,7 +393,7 @@
                         disabled={creatingDoc || !report}
                         onclick={handleCreateDoc}
                     >
-                        {creatingDoc ? "正在沉淀文档…" : "✨ 沉淀为思源文档 ↗"}
+                        {creatingDoc ? "正在沉淀文档…" : "沉淀为思源文档 ↗"}
                     </button>
                     {#if createdDocInfo}
                         <span class="ft__smaller" style="color: var(--lvct-success, #16a34a);">

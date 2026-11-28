@@ -252,6 +252,7 @@ export interface IWorkspaceManagementContext {
     addPersonTopic?(personDocId: string, text: string): Promise<any>;
     removePersonTopic?(personDocId: string, topicId: string): Promise<any>;
     removeContactToTrash?(person: any): Promise<void>;
+    removeContactsToTrash?(people: readonly any[]): Promise<number>;
     openDoc(docId: string, options?: any): void | Promise<void>;
     openDocMenu?(docId: string, event: MouseEvent): Promise<boolean>;
     openHostDoc(): void | Promise<void>;

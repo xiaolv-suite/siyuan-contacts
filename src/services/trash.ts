@@ -6,13 +6,14 @@
 import type { Plugin } from "siyuan";
 import type { ContactsSettings } from "../domain/model.ts";
 import { validateDraft, type ContactDraft, type ContactSummary } from "../domain/person.ts";
-import { dropTrashEntry, listTrashEntries, loadTrashStoreStrict, pushTrashEntry, clearTrashBin } from "../data/trash.ts";
+import { dropTrashEntry, listTrashEntries, loadTrashStoreStrict, pushTrashEntries, pushTrashEntry, clearTrashBin } from "../data/trash.ts";
 import type { TrashContactEntry } from "../domain/trash.ts";
-import { removeContact, writeDraftCells } from "./contacts.ts";
+import { removeContact, removeContacts, writeDraftCells } from "./contacts.ts";
 import { bindDocsAsRows, mapBoundDocIds } from "../api/av.ts";
 import { documentExists } from "../api/blocks.ts";
 import { getRoster, invalidateRoster } from "./roster.ts";
 import { addRelation } from "./relations.ts";
+import { emitDataChanged } from "../libs/data-events.ts";
 
 /**
  * 移入回收站并解绑联系人：
@@ -41,6 +42,57 @@ export async function removeContactToTrash(
     await pushTrashEntry(plugin, { ...person, relatedItemIds: allRelatedItemIds }, relatedDocIds);
     await removeContact(settings, person);
     invalidateRoster();
+}
+
+/**
+ * 批量移入回收站并解绑联系人（与单人 removeContactToTrash 保持一致的 30 天撤回能力）：
+ * 1. 基于移除前名册一次性收集每位联系人的双向关联人物（relatedItemIds + relatedDocIds）；
+ * 2. 在单把回收站锁内批量写入 30 天软删除缓冲快照；
+ * 3. 调用批量安全移除从属性视图解绑数据库行（保留思源人物文档）；
+ * 4. 失效名册缓存。
+ */
+export async function removeContactsToTrash(
+    plugin: Plugin,
+    settings: ContactsSettings,
+    people: readonly ContactSummary[],
+): Promise<number> {
+    const uniqueByItem = new Map<string, ContactSummary>();
+    for (const person of people) {
+        const itemId = person.itemId?.trim();
+        if (!itemId || uniqueByItem.has(itemId)) continue;
+        uniqueByItem.set(itemId, person);
+    }
+    const targets = [...uniqueByItem.values()];
+    if (targets.length === 0) return 0;
+
+    let roster: ContactSummary[] = [];
+    try {
+        roster = await getRoster(settings);
+    } catch {
+        /* 名册旁路失败时不阻断软删除 */
+    }
+
+    const itemsToPush = targets.map((person) => {
+        let relatedDocIds: string[] = [];
+        let allRelatedItemIds = [...(person.relatedItemIds ?? [])];
+        if (roster.length > 0) {
+            const linkedOthers = roster.filter(
+                (other) => other.docId !== person.docId && other.itemId !== person.itemId
+                    && ((person.relatedItemIds ?? []).includes(other.itemId) || (other.relatedItemIds ?? []).includes(person.itemId)),
+            );
+            relatedDocIds = linkedOthers.map((other) => other.docId).filter(Boolean);
+            allRelatedItemIds = [...new Set([...allRelatedItemIds, ...linkedOthers.map((other) => other.itemId).filter(Boolean)])];
+        }
+        return {
+            person: { ...person, relatedItemIds: allRelatedItemIds },
+            relatedDocIds,
+        };
+    });
+
+    await pushTrashEntries(plugin, itemsToPush);
+    const removedCount = await removeContacts(settings, targets.map((p) => p.itemId));
+    invalidateRoster();
+    return removedCount;
 }
 
 /**
@@ -149,6 +201,7 @@ export async function restoreContactFromTrash(
         await dropTrashEntry(plugin, entry.id);
     }
     invalidateRoster();
+    emitDataChanged({ topics: ["people"], docIds: [entry.docId] });
 
     return {
         docId: entry.docId,

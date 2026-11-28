@@ -37,8 +37,8 @@ export interface CloseGuardSummary {
 }
 
 export interface CloseScope {
-    hasBlocked: () => boolean;
-    dirtyChanges: () => CloseGuardSummary | null;
+    hasBlocked: (panel?: HTMLElement | null) => boolean;
+    dirtyChanges: (panel?: HTMLElement | null) => CloseGuardSummary | null;
     requestClose: () => Promise<boolean>;
     addItem: (item: CloseGuardItem) => void;
     removeItem: (item: CloseGuardItem) => void;
@@ -46,7 +46,8 @@ export interface CloseScope {
 
 interface ScopeInternals {
     parent?: CloseScope & ScopeInternals;
-    children: Set<CloseScope>;
+    children: Set<CloseScope & ScopeInternals>;
+    getPanel?: () => HTMLElement | undefined;
 }
 
 let guardI18n: Readonly<Record<string, string>> | undefined;
@@ -85,18 +86,31 @@ function combineSummaries(summaries: Array<CloseGuardSummary | null>): CloseGuar
     };
 }
 
-function createRegistryScope(): CloseScope & ScopeInternals {
+function createRegistryScope(getPanel?: () => HTMLElement | undefined): CloseScope & ScopeInternals {
     const items = new Set<CloseGuardItem>();
-    const children = new Set<CloseScope>();
+    const children = new Set<CloseScope & ScopeInternals>();
+    const sameOrUnscopedPanel = (child: CloseScope & ScopeInternals, panel?: HTMLElement | null): boolean => {
+        if (!panel) return true;
+        const childPanel = child.getPanel?.() ?? null;
+        return !childPanel || childPanel === panel;
+    };
     const scope: CloseScope & ScopeInternals = {
         children,
-        hasBlocked: () => [...items].some((item) => decideClose(readGuardState(item)) === "blocked")
-            || [...children].some((child) => child.hasBlocked()),
-        dirtyChanges: () => combineSummaries([aggregate(items), ...[...children].map((child) => child.dirtyChanges())]),
+        getPanel,
+        hasBlocked: (panel?: HTMLElement | null) =>
+            [...items].some((item) => decideClose(readGuardState(item)) === "blocked")
+            || [...children].some((child) => sameOrUnscopedPanel(child, panel) && child.hasBlocked(panel)),
+        dirtyChanges: (panel?: HTMLElement | null) => combineSummaries([
+            aggregate(items),
+            ...[...children]
+                .filter((child) => sameOrUnscopedPanel(child, panel))
+                .map((child) => child.dirtyChanges(panel)),
+        ]),
         /* CODE-02.1：busy 独立于脏草稿阻断——不脏也可能在写入/AI/迁移/扫描/导出中 */
         requestClose: async () => {
-            if (scope.hasBlocked()) return false;
-            return requestScopeClose(scope.dirtyChanges());
+            const panel = getPanel?.() ?? null;
+            if (scope.hasBlocked(panel)) return false;
+            return requestScopeClose(scope.dirtyChanges(panel));
         },
         addItem: (item) => { items.add(item); allGuardItems.add(item); },
         removeItem: (item) => { items.delete(item); allGuardItems.delete(item); },
@@ -124,14 +138,14 @@ export function anyDirtyChanges(): CloseGuardSummary | null {
 /** 无上下文的独立挂载内容（svelteDialog 直挂的弹窗等）兜底作用域 */
 const orphanScope: CloseScope & ScopeInternals = createRegistryScope();
 
-export function createCloseScope(): CloseScope {
+export function createCloseScope(getPanel?: () => HTMLElement | undefined): CloseScope {
     const parent = getContext<CloseScope & ScopeInternals | undefined>(KEY) ?? orphanScope;
-    const scope = createRegistryScope();
+    const scope = createRegistryScope(getPanel);
     const withParent = scope as CloseScope & ScopeInternals;
     withParent.parent = parent;
-    parent.children.add(scope);
-    onDestroy(() => parent.children.delete(scope));
-    // 对话框的 X 按钮走「busy 阻断 → 自身 → 父链 → 孤儿」解析：内容守卫按 snippet 语义落在根作用域
+    parent.children.add(withParent);
+    onDestroy(() => parent.children.delete(withParent));
+    // 对话框的 X 按钮走「busy 阻断 → 自身 → 父链 → 孤儿」解析；禁止跨不同 .lvct-dialog-panel 上溯父作用域
     scope.requestClose = async () => {
         if (resolveBusy(withParent)) return false; /* CODE-02.1：忙碌即不关（静默），无论有无脏草稿 */
         return requestScopeClose(resolveSummary(withParent));
@@ -140,29 +154,39 @@ export function createCloseScope(): CloseScope {
     return scope;
 }
 
-/** 关闭解析：自身 → 沿父链到根 → 孤儿作用域，第一个非空聚合生效 */
+/** 关闭解析：自身 → 沿同弹窗父链到根 → 孤儿作用域（不跨不同 .lvct-dialog-panel 上溯），第一个非空聚合生效 */
 function resolveSummary(scope: CloseScope): CloseGuardSummary | null {
+    const originPanel = (scope as CloseScope & ScopeInternals).getPanel?.() ?? null;
     let current: (CloseScope & ScopeInternals) | undefined = scope as CloseScope & ScopeInternals;
     const visited = new Set<CloseScope>();
     while (current && !visited.has(current)) {
         visited.add(current);
-        const summary = current.dirtyChanges();
+        const currentPanel = current.getPanel?.() ?? null;
+        if (originPanel && currentPanel && currentPanel !== originPanel) {
+            return null;
+        }
+        const summary = current.dirtyChanges(originPanel);
         if (summary) return summary;
         current = current.parent;
     }
-    return orphanScope.dirtyChanges();
+    return originPanel ? null : orphanScope.dirtyChanges();
 }
 
 /** CODE-02.1：作用域链上是否存在忙碌项——busy 不再依赖「恰好也脏」才阻断 */
 function resolveBusy(scope: CloseScope): boolean {
+    const originPanel = (scope as CloseScope & ScopeInternals).getPanel?.() ?? null;
     let current: (CloseScope & ScopeInternals) | undefined = scope as CloseScope & ScopeInternals;
     const visited = new Set<CloseScope>();
     while (current && !visited.has(current)) {
         visited.add(current);
-        if (current.hasBlocked()) return true;
+        const currentPanel = current.getPanel?.() ?? null;
+        if (originPanel && currentPanel && currentPanel !== originPanel) {
+            return false;
+        }
+        if (current.hasBlocked(originPanel)) return true;
         current = current.parent;
     }
-    return orphanScope.hasBlocked();
+    return originPanel ? false : orphanScope.hasBlocked();
 }
 
 /** 作用域关闭：有脏项先弹三选一；「保存并离开」执行聚合保存，失败留在原地 */
@@ -181,6 +205,26 @@ async function requestScopeClose(summary: CloseGuardSummary | null): Promise<boo
     return false;
 }
 
+export async function checkCloseGuardItem(item: CloseGuardItem): Promise<boolean> {
+    const decision = decideClose(readGuardState(item));
+    if (decision === "blocked") return false;
+    if (decision === "allow") return true;
+    const choice = await openGuardDialog({
+        changes: item.changes?.() ?? [text("guardGenericChange", "有未保存的修改")],
+        canSave: Boolean(item.save),
+    });
+    if (choice === "discard") return true;
+    if (choice === "save") {
+        try {
+            await item.save?.();
+            return true;
+        } catch {
+            return false;
+        }
+    }
+    return false;
+}
+
 export function useCloseGuard(item: CloseGuardItem): (close: () => void) => Promise<void> {
     const scope = getContext<CloseScope | undefined>(KEY) ?? orphanScope;
     onMount(() => {
@@ -188,25 +232,7 @@ export function useCloseGuard(item: CloseGuardItem): (close: () => void) => Prom
         return () => { scope.removeItem(item); };
     });
     return async (close: () => void) => {
-        const decision = decideClose(readGuardState(item));
-        if (decision === "blocked") return;
-        if (decision === "allow") {
-            close();
-            return;
-        }
-        const choice = await openGuardDialog({
-            changes: item.changes?.() ?? [text("guardGenericChange", "有未保存的修改")],
-            canSave: Boolean(item.save),
-        });
-        if (choice === "discard") close();
-        else if (choice === "save") {
-            try {
-                await item.save?.();
-                close();
-            } catch {
-                // 保存失败：留在原地，错误由调用方的界面提示
-            }
-        }
+        if (await checkCloseGuardItem(item)) close();
     };
 }
 

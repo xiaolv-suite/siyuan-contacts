@@ -21,6 +21,7 @@
     import { lvNotify, lvActivity, lvLaunchpad } from "../../libs/lv-notice-kit";
     import type { ContactsSettings } from "../../domain/model";
     import { onMount } from "svelte";
+    import { Briefcase, Heart, Lightbulb, Mail, MessageCircle, Phone, Pin, Sparkles, Users, Utensils, FileText } from "@lucide/svelte";
 
     let {
         plugin,
@@ -202,7 +203,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        if (busy) return;
+        if (busy || event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
             event.preventDefault();
             void handleSave();
@@ -247,12 +248,13 @@
                     <button
                         type="button"
                         class="b3-chip font-size-11"
-                        style="border-radius: var(--lv-r-pill, 9999px);"
+                        style="border-radius: var(--lv-r-pill, 9999px); gap: 4px;"
                         class:b3-chip--primary={type === itype}
                         disabled={busy}
                         onclick={() => (type = itype)}
                     >
-                        {INTERACTION_TYPE_LABELS[itype].icon} {INTERACTION_TYPE_LABELS[itype].label}
+                        {#if itype === "meeting"}<Users size={11} strokeWidth={1.6} />{:else if itype === "call"}<Phone size={11} strokeWidth={1.6} />{:else if itype === "message"}<MessageCircle size={11} strokeWidth={1.6} />{:else if itype === "email"}<Mail size={11} strokeWidth={1.6} />{:else if itype === "meal"}<Utensils size={11} strokeWidth={1.6} />{:else}<FileText size={11} strokeWidth={1.6} />{/if}
+                        <span>{INTERACTION_TYPE_LABELS[itype].label}</span>
                     </button>
                 {/each}
             </div>
@@ -267,24 +269,24 @@
                 <button
                     type="button"
                     class="b3-chip font-size-11"
-                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px;"
+                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px; gap: 4px;"
                     disabled={busy}
                     onclick={() => applyQuickInteractionChip("call", "电话联络 30 分钟")}
-                >📞 电话 30m</button>
+                ><Phone size={11} strokeWidth={1.6} /> 电话 30m</button>
                 <button
                     type="button"
                     class="b3-chip font-size-11"
-                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px;"
+                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px; gap: 4px;"
                     disabled={busy}
                     onclick={() => applyQuickInteractionChip("message", "微信互动")}
-                >💬 微信互动</button>
+                ><MessageCircle size={11} strokeWidth={1.6} /> 微信互动</button>
                 <button
                     type="button"
                     class="b3-chip font-size-11"
-                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px;"
+                    style="border-radius: var(--lv-r-pill, 9999px); cursor: pointer; touch-action: manipulation; padding: 1px 8px; gap: 4px;"
                     disabled={busy}
                     onclick={() => applyQuickInteractionChip("meeting", "见面交流")}
-                >🤝 见面交流</button>
+                ><Users size={11} strokeWidth={1.6} /> 见面交流</button>
             </div>
         </div>
         <textarea
@@ -307,14 +309,14 @@
     <div style="display: flex; flex-direction: column; gap: 6px; margin-top: -6px;">
         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--lvct-text-2);">
             <input type="checkbox" bind:checked={saveAsFact} disabled={busy} />
-            <span>💡 同时沉淀为社交画像事实（提炼观点与关键备忘）</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;"><Sparkles size={12} strokeWidth={1.6} /> 同时沉淀为社交画像事实（提炼观点与关键备忘）</span>
         </label>
         {#if saveAsFact}
             <div style="display: flex; gap: 4px; padding-left: 20px; flex-wrap: wrap;">
-                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "quote"} disabled={busy} onclick={() => (factCategory = "quote")}>💡 观点见解</button>
-                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "preference"} disabled={busy} onclick={() => (factCategory = "preference")}>❤️ 喜好忌口</button>
-                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "background"} disabled={busy} onclick={() => (factCategory = "background")}>💼 背景经历</button>
-                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px);" class:b3-chip--primary={factCategory === "fact"} disabled={busy} onclick={() => (factCategory = "fact")}>📌 关键事实</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px); gap: 4px;" class:b3-chip--primary={factCategory === "quote"} disabled={busy} onclick={() => (factCategory = "quote")}><Lightbulb size={11} strokeWidth={1.6} /> 观点见解</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px); gap: 4px;" class:b3-chip--primary={factCategory === "preference"} disabled={busy} onclick={() => (factCategory = "preference")}><Heart size={11} strokeWidth={1.6} /> 喜好忌口</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px); gap: 4px;" class:b3-chip--primary={factCategory === "background"} disabled={busy} onclick={() => (factCategory = "background")}><Briefcase size={11} strokeWidth={1.6} /> 背景经历</button>
+                <button type="button" class="b3-chip font-size-11" style="border-radius: var(--lv-r-pill, 9999px); gap: 4px;" class:b3-chip--primary={factCategory === "fact"} disabled={busy} onclick={() => (factCategory = "fact")}><Pin size={11} strokeWidth={1.6} /> 关键事实</button>
             </div>
         {/if}
     </div>
@@ -329,7 +331,7 @@
         >{text("commonCancel", "取消")}</button>
         <button
             type="button"
-            class="b3-button b3-button--text"
+            class="b3-button b3-button--primary"
             style="border-radius: var(--lv-r-pill, 9999px);"
             disabled={busy}
             onclick={handleSave}

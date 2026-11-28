@@ -8,11 +8,20 @@ export async function copyPlainText(value: string): Promise<void> {
     copyPending = true;
     try {
         if (typeof navigator !== "undefined" && typeof navigator.clipboard?.writeText === "function") {
-            // A rejected asynchronous request is reported to the caller. Starting a
-            // second copy after navigation could steal focus from a different view.
-            await navigator.clipboard.writeText(value);
-            notifyCopySuccess(value);
-            return;
+            const initialActive = typeof document !== "undefined" ? document.activeElement : null;
+            try {
+                await navigator.clipboard.writeText(value);
+                notifyCopySuccess(value);
+                return;
+            } catch (clipboardErr) {
+                const sameFocus = typeof document === "undefined" || !initialActive || document.activeElement === initialActive;
+                if (sameFocus && typeof document !== "undefined" && typeof document.execCommand === "function") {
+                    copyWithSelection(value);
+                    notifyCopySuccess(value);
+                    return;
+                }
+                throw clipboardErr;
+            }
         }
         copyWithSelection(value);
         notifyCopySuccess(value);

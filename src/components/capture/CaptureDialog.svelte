@@ -17,6 +17,7 @@
     import type { AiCandidateCaptureEffect, AiCandidateDraft, AiCaptureDraft } from "../../domain/ai-candidates";
     import { applyAcceptedAiDrafts } from "../../services/ai-extract";
     import type { ContactSummary } from "../../domain/person";
+    import { mountLvAiThinkingCard } from "../../libs/lv-notice-kit";
 
     let {
         facade,
@@ -53,27 +54,26 @@
     let result: CaptureResult | null = $state(null);
     let loadError: string = $state("");
     let aiRunning: boolean = $state(false);
-    let aiElapsedSec: number = $state(0);
+    let aiThinkingHost: HTMLElement | undefined = $state();
     $effect(() => {
-        let timer: any = null;
-        if (aiRunning) {
-            aiElapsedSec = 0;
-            timer = setInterval(() => {
-                aiElapsedSec += 1;
-            }, 1000);
-        } else {
-            aiElapsedSec = 0;
-            if (timer) clearInterval(timer);
-        }
+        const host = aiThinkingHost;
+        if (!aiRunning || !host) return;
+        const handle = mountLvAiThinkingCard(host, {
+            scenario: "extract-contacts",
+            defaultIcon: "👥",
+            compact: true,
+            stages: [
+                { afterSec: 0, icon: "🔍", text: "正在通读上下文并识别文本段落…" },
+                { afterSec: 3, icon: "👥", text: "正在智能识别人名、企业职位、联系方式与称谓…" },
+                { afterSec: 8, icon: "🏷️", text: "正在归纳关键互动场景、约定事项与标签…" },
+                { afterSec: 16, icon: "✨", text: "正在结构化生成人脉候选卡片，马上就好…" },
+            ],
+            cancelLabel: text("captureCancelAi", "取消 AI，忽略结果"),
+            onCancel: cancelAi,
+        });
         return () => {
-            if (timer) clearInterval(timer);
+            handle.destroy();
         };
-    });
-    const aiStageText = $derived.by(() => {
-        if (aiElapsedSec < 3) return "🔍 正在通读上下文并识别文本段落…";
-        if (aiElapsedSec < 8) return "👥 正在智能识别人名、企业职位、联系方式与称谓…";
-        if (aiElapsedSec < 16) return "🏷️ 正在归纳关键互动场景、约定事项与标签…";
-        return "✨ 正在结构化生成人脉候选卡片，马上就好…";
     });
     let aiError: string = $state("");
     let aiDone: boolean = $state(false);
@@ -601,15 +601,7 @@ const allCandidates = $derived.by<ContactSummary[]>(() => {
                     {aiRunning ? text("captureAiRunning", "AI 分析中…") : aiDone ? text("captureAiDone", "AI 已分析（可再次分析）") : text("captureAiButton", "AI 分析本页（识别未链接的人名/日期/地点）")}
                 </button>
                 {#if aiRunning}
-                    <div class="lv-ai-thinking" role="status" aria-live="polite" style="margin-top: 8px; padding: 14px 10px; background: color-mix(in srgb, var(--lvct-bg-surface) 95%, transparent); border: 1px solid var(--lvct-border-subtle); border-radius: 10px;">
-                        <div class="lv-ai-thinking__glow" style="width: 40px; height: 40px;">
-                            <span class="lv-ai-thinking__icon" style="font-size: 20px;">👥</span>
-                        </div>
-                        <div class="lv-ai-thinking__stage">{aiStageText}</div>
-                        <div class="lv-ai-thinking__timer">已分析 <b>{aiElapsedSec}</b> 秒</div>
-                        <div class="lv-ai-thinking__progress"><div class="lv-ai-thinking__bar"></div></div>
-                        <button class="b3-button b3-button--cancel lv-ai-thinking__cancel" onclick={cancelAi}>{text("captureCancelAi", "取消 AI，忽略结果")}</button>
-                    </div>
+                    <div bind:this={aiThinkingHost} style="margin-top: 8px;"></div>
                 {/if}
                 {#if aiError}
                     <p class="ft__smaller lvct-text-danger" role="alert">{aiError}</p>

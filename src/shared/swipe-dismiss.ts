@@ -47,7 +47,7 @@ export function swipeDismiss(node: HTMLElement, options: SwipeDismissOptions) {
 
         // 如果触摸发生在可滚动的子容器内且子容器未滚动到顶部，则允许正常内部滚动，不抢手势
         const scrollable = typeof target?.closest === "function"
-            ? target.closest(".lvct-sheet__body, .trash-content-list, .lvct-dialog-panel")
+            ? target.closest(".lvct-sheet__body, .trash-content-list, .lvct-dialog-panel__body, .lvct-dialog-panel")
             : null;
         if (scrollable && scrollable.scrollTop > 0) {
             return;

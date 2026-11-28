@@ -348,7 +348,7 @@
             <div class="form-actions">
                 <button
                     class="b3-button b3-button--cancel b3-button--small"
-                    onclick={() => { adding = false; errorText = ""; }}
+                    onclick={() => { adding = false; newDirection = "i_promised"; newTitle = ""; newPromisedOn = todayStr; newDueOn = ""; newDetail = ""; errorText = ""; }}
                     disabled={saving}
                 >
                     {text("common.cancel", "取消")}

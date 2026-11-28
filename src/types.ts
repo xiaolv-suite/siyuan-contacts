@@ -159,6 +159,7 @@ export interface ContactsPluginFacade extends ContactsPluginContext {
     removePersonTopic?(personDocId: string, topicId: string): Promise<import("./domain/topics").PersonTopicItem[]>;
     /** E-33：联系人软删除回收站（Trash & Soft Delete Buffer） */
     removeContactToTrash?(person: import("./domain/person").ContactSummary): Promise<void>;
+    removeContactsToTrash?(people: readonly import("./domain/person").ContactSummary[]): Promise<number>;
     listTrash?(): Promise<import("./domain/trash").TrashContactEntry[]>;
     restoreContactFromTrash?(entryId: string): Promise<{ docId: string; itemId: string; name: string; warnings?: string[] }>;
     emptyTrash?(): Promise<void>;

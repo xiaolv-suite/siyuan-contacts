@@ -12,7 +12,7 @@
     import OrgMultiSelect from "../org/OrgMultiSelect.svelte";
     import OrgMembershipResult from "../org/OrgMembershipResult.svelte";
     import type { RelationshipLabelEditorState } from "../../services/people-profiles";
-    import { useCloseGuard } from "../close-guard";
+    import { checkCloseGuardItem, useCloseGuard } from "../close-guard";
     import { translateText } from "../../domain/translation";
     import { confirmDialog } from "../../libs/confirm-dialog";
     import QuickFillDialog from "./QuickFillDialog.svelte";
@@ -65,7 +65,7 @@
         onLoadLocations?: (personDocId: string) => Promise<ContactLocations>;
         onSaveLocations?: (personDocId: string, locations: ContactLocations) => Promise<void>;
         /** D-40：libs/dialog 注入的宿主关闭通道（X/Esc/遮罩经守卫路由）；缺省保持宿主原行为 */
-        hostCloseChannel?: { request?: (close: () => void) => void };
+        hostCloseChannel?: { request?: (close: () => void) => void; check?: () => Promise<boolean> };
         onSaved: () => void;
         onClose: () => void;
     } = $props();
@@ -463,7 +463,7 @@
         const input = field ? card?.querySelector<HTMLElement>(`[data-org-field="${field}"]:not([disabled])`) : undefined;
         (input ?? card?.querySelector<HTMLElement>(".lvct-person-edit__org-error"))?.focus({ preventScroll: true });
         if (card && profileSection) {
-            const container = profileSection.closest<HTMLElement>(".lvct-dialog-panel, .b3-dialog__body");
+            const container = profileSection.closest<HTMLElement>(".lvct-dialog-panel__body, .lvct-dialog-panel, .b3-dialog__body");
             const node = input ?? card;
             if (container) {
                 const rect = node.getBoundingClientRect(), frame = container.getBoundingClientRect();
@@ -717,15 +717,20 @@
             if (profileError) throw new Error(profileError);
         }
     }
-    const guardedClose = useCloseGuard({
+    let formRoot: HTMLDivElement | undefined = $state();
+    const closeGuardItem = {
         busy: () => running || profileBusy || profileLoading || creatingOrganization,
         dirty: () => baseDraftDirty() || profileDirty || locationsDirty,
         changes: () => [...draftChanges(), ...(locationsDirty ? ["常住地/籍贯地区有未保存修改"] : []), ...profileChanges()],
         save: persistAll,
-    });
+    };
+    const guardedClose = useCloseGuard(closeGuardItem);
     /* D-40：宿主 X/Esc/遮罩经同一守卫路由（返回 Promise 供拦截层重入门） */
     // svelte-ignore state_referenced_locally
-    if (hostCloseChannel) hostCloseChannel.request = (close) => guardedClose(close);
+    if (hostCloseChannel) {
+        hostCloseChannel.request = (close) => guardedClose(close);
+        hostCloseChannel.check = () => checkCloseGuardItem(closeGuardItem);
+    }
 
     /* D-35：错误出现时焦点迁入错误块 */
     let errorEl: HTMLElement | undefined = $state();
@@ -760,8 +765,18 @@
     }
 
     function handleKeydown(event: KeyboardEvent) {
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-            if (removingOrgDocId || removingMembershipId) return;
+            if (quickFillOpen || removingOrgDocId || removingMembershipId) return;
+            const ownPanel = formRoot?.closest(".lvct-dialog-panel");
+            const panels = document.querySelectorAll(".lvct-dialog-panel");
+            const topPanel = panels.length > 0 ? panels[panels.length - 1] : null;
+            if (ownPanel && topPanel && ownPanel !== topPanel) return;
+            const blockers = document.querySelectorAll<HTMLElement>(".b3-dialog, .lvct-confirm-dialog-root, .lvct-closeguard, .lvct-card-viewer-modal");
+            for (const blocker of blockers) {
+                if (ownPanel && blocker.contains(ownPanel)) continue;
+                return;
+            }
             event.preventDefault();
             void submit();
         }
@@ -770,7 +785,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="lvct-form">
+<div class="lvct-form" bind:this={formRoot}>
     <div class="lvct-form__toolbar">
         <button type="button" class="b3-button b3-button--text lvct-form__toolbar-btn" style="border-radius: var(--lv-r-pill, 9999px);" onclick={() => (quickFillOpen = true)} disabled={running}>
             <ClipboardPaste size={14} strokeWidth={1.6} />{text("qfOpen", "粘贴并识别")}

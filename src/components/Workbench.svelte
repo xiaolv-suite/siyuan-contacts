@@ -5,6 +5,7 @@
      * 人物详情弹窗在此层统一承载，各视图共用。
      */
     import PeopleView from "./people/PeopleView.svelte";
+    import { DETAIL_DIALOG_SIZE_STORAGE_KEY } from "../domain/dialog-resize";
     import PersonDetail from "./people/PersonDetail.svelte";
     import RelationGraphLoader from "./graph/RelationGraphLoader.svelte";
     import DashboardView from "./dashboard/DashboardView.svelte";
@@ -310,8 +311,12 @@
         showCreateOrganization();
     }
 
+    let orgProfileLoadSeq = 0;
+
     async function openEditOrganizationProfile(docId: string) {
         if (!(await canLeave.requestClose()) || !lifecycleToken.isAlive()) return;
+        const seq = ++orgProfileLoadSeq;
+        const expectedView = current;
         navigationError = "";
         organizationProfileError = "";
         organizationProfileReadOnly = true;
@@ -332,7 +337,7 @@
         } catch (error) {
             profileError ||= requestErrorMessage(error);
         }
-        if (!lifecycleToken.isAlive() || organizationProfileDocId !== docId) return;
+        if (!lifecycleToken.isAlive() || seq !== orgProfileLoadSeq || organizationProfileDocId !== docId || current !== expectedView) return;
         organizationProfileInitial = profile ?? { name: org?.name ?? "" };
         organizationProfileExpected = profile ?? null;
         organizationProfileReadOnly = Boolean(profileError);
@@ -524,21 +529,28 @@
         await selectView("people");
     }
 
+    let openPeopleSeq = 0;
+
     async function openPeople(focus?: { itemIds?: readonly string[]; label?: string; sort?: "name" | "group" | "birthday" | "recent"; workQuery?: string; memberDocIds?: readonly string[] }) {
         if (!lifecycleToken.isAlive()) return;
-        if (current !== "people" && !(await canLeave.requestClose())) return;
+        if ((current !== "people" || detailPerson || organizationOpen) && !(await canLeave.requestClose())) return;
         if (!lifecycleToken.isAlive()) return;
+        const seq = ++openPeopleSeq;
         const previousView = current;
         current = "people";
-        if (previousView !== "people") syncViewHistory("people", "push");
+        detailPerson = null;
+        detailReturn = null;
+        organizationOpen = false;
+        navigationRequest += 1;
+        if (previousView !== "people" || detailPerson || organizationOpen) syncViewHistory("people", "push");
 
         let targetItemIds: string[] = [];
         if (focus?.itemIds && focus.itemIds.length > 0) {
             targetItemIds = [...focus.itemIds];
         } else if (focus?.memberDocIds && focus.memberDocIds.length > 0) {
             const docIdSet = new Set(focus.memberDocIds);
-            const source = peopleOrder.length > 0 ? peopleOrder : await facade.listContacts().catch(() => []);
-            if (!lifecycleToken.isAlive()) return;
+            const source = await facade.listContacts().catch(() => peopleOrder);
+            if (!lifecycleToken.isAlive() || seq !== openPeopleSeq) return;
             targetItemIds = source.filter((p: any) => docIdSet.has(p.docId)).map((p: any) => p.itemId);
         }
 
@@ -740,7 +752,7 @@
     class:lvct-workbench--keyboard-open={keyboardOpen}
     class:lvct-workbench--hide-bottom-nav={shouldHideBottomNav}
     data-narrow={isMobile ? "true" : undefined}
-    data-lvct-theme={currentPreferences.themeScheme || "cognac"}
+    data-lvct-theme={currentPreferences.themeScheme && currentPreferences.themeScheme !== "cognac" ? currentPreferences.themeScheme : undefined}
     bind:this={workbenchElement}
 >
     {#if isMobile}
@@ -893,6 +905,8 @@
 			                    onBatchUpdateLifecycleStages={facade.batchUpdatePersonLifecycleStages ? (docIds, stage, date, note) => facade.batchUpdatePersonLifecycleStages!(docIds, stage, date, note) : undefined}
                     onLoadCadences={facade.loadAllCadences ? () => facade.loadAllCadences!() : undefined}
                     onListTrash={facade.listTrash ? () => facade.listTrash!() : undefined}
+                    onRemoveContactToTrash={facade.removeContactToTrash ? (person) => facade.removeContactToTrash!(person) : undefined}
+                    onRemoveContactsToTrash={facade.removeContactsToTrash ? (people) => facade.removeContactsToTrash!(people) : undefined}
                     onRestoreContactFromTrash={facade.restoreContactFromTrash ? (id) => facade.restoreContactFromTrash!(id) : undefined}
                     onEmptyTrash={facade.emptyTrash ? () => facade.emptyTrash!() : undefined}
                     onListOccasions={facade.listOccasions ? () => facade.listOccasions!() : undefined}
@@ -1025,7 +1039,7 @@
 {/if}
 
 {#if detailPerson}
-    <LvctDialog title={text("personDetailTitle", "人物详情 · {name}", { name: detailPerson.name })} closeLabel={detailCloseLabel} wide closeOnBackdrop={false} panelClass="lvct-dialog-panel--detail" onClose={() => void closeDetail()}>
+    <LvctDialog title={text("personDetailTitle", "人物详情 · {name}", { name: detailPerson.name })} closeLabel={detailCloseLabel} wide resizable maximizable sizeStorageKey={DETAIL_DIALOG_SIZE_STORAGE_KEY} closeOnBackdrop={false} panelClass="lvct-dialog-panel--detail" onClose={() => void closeDetail()}>
         {#key detailKey}
         <PersonDetail
             settings={currentSettings}

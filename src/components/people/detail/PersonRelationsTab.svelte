@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Sparkles, User } from "@lucide/svelte";
+    import { List, Network, Sparkles, User } from "@lucide/svelte";
     import ViewState from "../../ViewState.svelte";
     import MiniRelationRadar from "../MiniRelationRadar.svelte";
     import PersonPicker from "../PersonPicker.svelte";
@@ -53,19 +53,21 @@
     <div class="fn__flex" style="align-items: center; justify-content: space-between; margin-bottom: 8px;">
         <h4 style="margin: 0;">相关人（{relatedPeople.length}）</h4>
         {#if relatedPeople.length > 0}
-            <div class="fn__flex" style="gap: 4px;">
+            <div class="lvct-seg" role="group" aria-label="关系展示方式">
                 <button
                     type="button"
-                    class="b3-chip font-size-11"
-                    class:b3-chip--primary={relationViewMode === "radar"}
+                    class="lvct-seg__item"
+                    class:lvct-seg__item--active={relationViewMode === "radar"}
+                    aria-pressed={relationViewMode === "radar"}
                     onclick={() => (relationViewMode = "radar")}
-                >📡 关系雷达</button>
+                ><Network size={12} strokeWidth={1.6} /> <span>关系雷达</span></button>
                 <button
                     type="button"
-                    class="b3-chip font-size-11"
-                    class:b3-chip--primary={relationViewMode === "list"}
+                    class="lvct-seg__item"
+                    class:lvct-seg__item--active={relationViewMode === "list"}
+                    aria-pressed={relationViewMode === "list"}
                     onclick={() => (relationViewMode = "list")}
-                >📋 清单</button>
+                ><List size={12} strokeWidth={1.6} /> <span>清单</span></button>
             </div>
         {/if}
     </div>

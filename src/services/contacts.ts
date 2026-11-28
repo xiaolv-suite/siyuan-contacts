@@ -517,7 +517,7 @@ export async function writeDraftCells(
         canWrite?: () => boolean;
     } = {},
 ): Promise<ContactWriteReport> {
-    const errors = validateDraft(draft);
+    const errors = validateDraft(draft, options.onlyFields);
     if (errors.length > 0) throw new Error(`资料校验失败，未做任何写入：${errors.join("；")}`);
     return withStoreLock(contactWriteLock(settings), async () => {
         if (options.canWrite && !options.canWrite()) throw new Error("编辑窗口已关闭，排队写入未执行");
@@ -554,7 +554,7 @@ export async function retryContactFields(
     expected?: Pick<ContactSummary, "docId" | "itemId">,
     canWrite?: () => boolean,
 ): Promise<ContactWriteReport> {
-    const errors = validateDraft(draft);
+    const errors = validateDraft(draft, fields);
     if (errors.length > 0) throw new Error(`资料校验失败，未做任何写入：${errors.join("；")}`);
     return withStoreLock(contactWriteLock(settings), async () => {
         if (canWrite && !canWrite()) throw new Error("编辑窗口已关闭，排队重试未执行");
@@ -817,7 +817,7 @@ export async function adoptDocs(
     if (unbound.length > 0 && (group || tags.length > 0)) {
         // 绑定完成后再换算 itemID；一次映射覆盖整批，避免逐文档往返。
         const itemIds = await mapBoundDocIds(settings.avId, unbound.map((candidate) => candidate.docId));
-        await batchUpdateContacts(
+        const results = await batchUpdateContacts(
             settings,
             unbound
                 .map((candidate) => itemIds[candidate.docId])
@@ -828,6 +828,11 @@ export async function adoptDocs(
                     ...(tags.length > 0 ? { tags } : {}),
                 })),
         );
+        const incomplete = results.filter((result) => !result.report.complete);
+        if (incomplete.length > 0) {
+            invalidateRoster();
+            throw new Error(`已绑定 ${unbound.length} 篇文档，但有 ${incomplete.length} 位联系人写入分组/标签未完成`);
+        }
     }
     invalidateRoster();
     return unbound.length;

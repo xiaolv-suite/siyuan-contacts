@@ -2,7 +2,7 @@
   "name": "siyuan-contacts",
   "author": "xiaolv-suite",
   "url": "https://github.com/xiaolv-suite/siyuan-contacts",
-  "version": "0.7.15",
+  "version": "0.7.16",
   "minAppVersion": "3.8.5",
   "settingsWindow": true,
   "disabledInPublish": false,

@@ -6,7 +6,7 @@
 import type { Plugin } from "siyuan";
 import { loadJson, loadJsonStrict, saveJsonVerified, withStoreLock } from "./storage.ts";
 import {
-    addTrashEntry,
+    addTrashEntries,
     createTrashEntry,
     normalizeTrashStore,
     normalizeTrashStoreForWrite,
@@ -40,10 +40,20 @@ export async function pushTrashEntry(
     person: ContactSummary,
     relatedDocIds?: readonly string[],
 ): Promise<TrashContactEntry[]> {
+    return pushTrashEntries(plugin, [{ person, relatedDocIds }]);
+}
+
+/** 批量把多位联系人移除写入同一把回收站锁，先清过期再校验容量，绝不驱逐未到期 30 天快照 */
+export async function pushTrashEntries(
+    plugin: Plugin,
+    items: ReadonlyArray<{ person: ContactSummary; relatedDocIds?: readonly string[] }>,
+): Promise<TrashContactEntry[]> {
+    if (items.length === 0) return listTrashEntries(plugin);
     return withStoreLock(TRASH_STORAGE_KEY, async () => {
         const now = Date.now();
         const store = normalizeTrashStoreForWrite(await loadJsonStrict(plugin, TRASH_STORAGE_KEY));
-        const updated = addTrashEntry(store, createTrashEntry(person, now, relatedDocIds), now);
+        const entries = items.map((item) => createTrashEntry(item.person, now, item.relatedDocIds));
+        const updated = addTrashEntries(store, entries, now);
         await saveJsonVerified(plugin, TRASH_STORAGE_KEY, updated);
         return updated.entries;
     });

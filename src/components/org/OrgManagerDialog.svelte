@@ -1206,8 +1206,8 @@
                             onclick={cancelRename}>{text("orgMemberCancel", "取消")}</button>
                     </div>
                 {:else}
-                    <div class="fn__flex" style="align-items: center; gap: 8px;">
-                        <b class="fn__flex-1">{currentOrg.name}{currentOrg.removed ? "（已移除）" : currentOrg.archived ? text("orgArchivedTag", "（已归档）") : ""}</b>
+                    <div class="fn__flex" style="align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <b class="fn__flex-1" style="min-width: 0; overflow-wrap: anywhere;">{currentOrg.name}{currentOrg.removed ? "（已移除）" : currentOrg.archived ? text("orgArchivedTag", "（已归档）") : ""}</b>
                         {#if onEditOrganization && !currentOrg.removed}
                             <button type="button" class="b3-button b3-button--text" disabled={busy || organizationsRefreshing || memberLoading || hasDraft}
                                 onclick={() => onEditOrganization?.(currentOrg.docId)}>{text("orgEditProfile", "编辑资料")}</button>

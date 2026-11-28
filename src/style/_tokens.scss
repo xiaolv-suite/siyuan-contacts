@@ -29,117 +29,130 @@
 .b3-dialog__container.lvct-dialog,
 .lvct-confirm-dialog-root {
 
-    /* ---------- 0. 原始值（Primitive） ----------
+    /* ---------- 0. 原始值（Primitive · 风格 A 石墨清雾） ----------
      * 原始值只在这一层出现；组件应使用下方语义/组件令牌。保留少量
      * 原始值便于主题覆写，也让审计可以准确识别重复色值。 */
     --lvct-color-white: #ffffff;
-    --lvct-color-ink-900: #111827; /* 现代克制深墨 */
-    --lvct-color-ink-700: #374151; /* 现代中灰 */
-    --lvct-color-ink-500: #6B7280; /* 辅助灰 */
+    --lvct-color-ink-900: #16181D; /* 沉静石墨黑 */
+    --lvct-color-ink-700: #4A505E; /* 次级深灰 */
+    --lvct-color-ink-500: #5A6275; /* 静谧辅助灰 (WCAG >= 4.5:1) */
+    --lvct-color-ink-400: #A1A8B8; /* 弱化占位灰 */
     --lvct-color-brand-500: var(--lv-brand);
     --lvct-color-brand-700: var(--lv-brand-hover);
     --lvct-color-brand-800: var(--lv-brand-hover);
     --lvct-color-brand-soft: color-mix(in srgb, var(--lv-brand) 10%, transparent);
-    --lvct-color-border-200: rgba(15, 23, 42, 0.08); /* 纯净通透中性边框 */
-    --lvct-color-border-300: rgba(15, 23, 42, 0.14);
-    --lvct-color-canvas: #F6F7F9; /* 中性清爽浅灰画布，与思源宿主原生融为一体 */
-    --lvct-color-surface: #ffffff; /* 内容卡片纯白浮起 */
-    --lvct-color-danger: #DC2626;
-    --lvct-color-success: #16A34A;
-    --lvct-color-info: #0284C7;
+    --lvct-color-border-200: rgba(15, 23, 42, 0.08); /* 极细通透中性分割线 */
+    --lvct-color-border-300: #D6DCE6;
+    --lvct-color-canvas: #F7F8FA; /* 极浅冷雾背景 */
+    --lvct-color-surface: #FFFFFF; /* 纯白主画布 */
+    --lvct-color-danger: #B43C32;
+    --lvct-color-success: #2A7A56;
+    --lvct-color-info: #2F699C;
 
-    /* ---------- 1. 品牌操作色与数据语义色两色分工 ---------- */
-    /* 操作语义色：主按钮、选中状态、导航、焦点环，统一陶土橙（Warm Cognac / Terracotta） */
-    --lv-brand: #C2410C;
-    --lv-brand-hover: #9A3412;
-    --lv-brand-soft: color-mix(in srgb, var(--lv-brand) 10%, transparent);
-    --lv-accent-cyan: #0284C7; /* 绿松石天青点缀 */
-    --lv-accent-cyan-hover: #0369A1;
-    --lv-accent-cyan-soft: color-mix(in srgb, var(--lv-accent-cyan) 10%, transparent);
+    /* ---------- 1. 沉静石墨主色与克制柔雾靛青微点缀 ---------- */
+    --lv-brand: #5B6AD0;
+    --lv-brand-hover: #4756BC;
+    --lv-brand-soft: #EEF0FD;
+    --lv-accent-cyan: #2F699C;
+    --lv-accent-cyan-hover: #24537D;
+    --lv-accent-cyan-soft: #EDF5FB;
     --lv-r-sm: 8px;
-    --lv-r-md: 12px;
-    --lv-r-lg: 16px;
+    --lv-r-md: 10px;
+    --lv-r-lg: 12px;
     --lv-r-pill: 9999px;
 
     /* 数据语义色 */
-    --lv-data-amber: #D97706; /* 浅色正向数据主色 */
-    --lv-data-amber-hover: #B45309;
-    --lv-data-amber-soft: rgba(217, 119, 6, 0.10);
-    --lv-data-amber-glow: #FBBF24; /* 深色/暗底发光数据色 */
+    --lv-data-amber: #855818;
+    --lv-data-amber-hover: #6D4712;
+    --lv-data-amber-soft: #FCF6EB;
+    --lv-data-amber-glow: #DFA953;
 
-    /* 重点深色对比块令牌（中性深石板，避免浑浊咖啡棕） */
-    --lv-dark-block-bg: #1E293B;
-    --lv-dark-block-gradient: linear-gradient(145deg, #1E293B 0%, #273449 100%);
-    --lv-dark-block-text: #F8FAFC;
-    --lv-dark-block-sub: #94A3B8;
-    --lv-dark-block-data: #FBBF24;
+    /* 重点深色对比块令牌 */
+    --lv-dark-block-bg: #1E2430;
+    --lv-dark-block-gradient: #1E2430;
+    --lv-dark-block-text: #FFFFFF;
+    --lv-dark-block-sub: #A1A8B8;
+    --lv-dark-block-data: #DFA953;
 
-    /* 小驴人脉品牌标识渐变：克制陶土橙渐变 */
-    --lvct-brand-from: var(--lv-brand);
-    --lvct-brand-to: #EA580C;
-    --lvct-brand-gradient: linear-gradient(135deg, var(--lvct-brand-from) 0%, var(--lvct-brand-to) 100%);
-    /* 点缀珊瑚提醒色 */
-    --lvct-highlight: #E11D48;
-    --lvct-highlight-soft: color-mix(in srgb, var(--lvct-highlight) 9%, transparent);
+    /* 扁平品牌标识：去除高饱和渐变，统一沉静石墨 */
+    --lvct-brand-from: #1E2430;
+    --lvct-brand-to: #1E2430;
+    --lvct-brand-gradient: #1E2430;
+    /* 极克制提醒色 */
+    --lvct-highlight: #5B6AD0;
+    --lvct-highlight-soft: #EEF0FD;
 
-    /* ---------- 2. 语义色：表面层级（中性浅灰托底、纯白卡浮起双层结构） ---------- */
-    --lvct-bg-app: #F5F6F8; /* 侧栏 / 外壳底，与思源文件树一致 */
-    --lvct-bg-base: #F7F8FA; /* 内容区轻灰底 */
+    /* ---------- 2. 语义色：表面层级（纯白画布 + 静谧冷雾侧栏） ---------- */
+    --lvct-bg-app: #FAFBFD; /* 侧栏静谧雾底 */
+    --lvct-bg-base: #F7F8FA; /* 极浅冷雾背景 */
     --lvct-bg-canvas: #F7F8FA;
     --lvct-canvas-glow: transparent;
-    --lvct-bg-sidebar: #F5F6F8; /* 导航侧栏 */
-    --lvct-bg-surface: #FFFFFF; /* 卡片 / 面板纯白浮起 */
-    --lvct-surface-2: #FFFFFF; /* 次级卡片 / 可选区块 */
-    --lvct-surface-muted: #F0F2F5; /* 工具栏 / 低强调区域 */
-    --lvct-surface-tint: #FFFFFF; /* 卡片顶部高光 */
-    --lvct-surface-inset: #F1F3F6; /* 控件内层 / 中性徽章底 */
-    --lvct-bg-elevated: #FFFFFF; /* 弹窗 / 下拉 / 悬停卡 */
-    --lvct-bg-elevated-glass: color-mix(in srgb, #ffffff 90%, transparent); /* 浮层玻璃底 */
-    --lvct-bg-hover: #ECEEF2; /* 行/项悬停 */
-    --lvct-bg-active: #E3E7EE; /* 按下/选中底 */
-    --lvct-bg-raised: var(--lvct-bg-elevated); /* 原型命名别名 */
-    --lvct-bg-selected: var(--lvct-bg-active); /* 原型命名别名 */
+    --lvct-bg-sidebar: #FAFBFD; /* 导航侧栏 */
+    --lvct-bg-rail: #FAFBFD; /* 右侧信息侧栏 */
+    --lvct-bg-surface: #FFFFFF; /* 纯白主画布/卡片 */
+    --lvct-surface-2: #FFFFFF;
+    --lvct-surface-muted: #F1F3F7; /* 工具栏 / 柔和徽章底 */
+    --lvct-surface-tint: #FFFFFF;
+    --lvct-surface-inset: #F1F3F7;
+    --lvct-bg-elevated: #FFFFFF;
+    --lvct-bg-elevated-glass: #FFFFFF;
+    --lvct-bg-hover: #F5F7FA;
+    --lvct-bg-active: #E8EBF0;
+    --lvct-bg-raised: var(--lvct-bg-elevated);
+    --lvct-bg-selected: var(--lvct-bg-active);
 
     /* ---------- 3. 语义色：文字三级 ---------- */
-    --lvct-text-1: var(--lvct-color-ink-900); /* 标题、正文 */
-    --lvct-text-2: var(--lvct-color-ink-700); /* 描述、字段值 */
-    --lvct-text-3: var(--lvct-color-ink-500); /* 占位、辅助说明（非关键信息） */
+    --lvct-text-1: var(--lvct-color-ink-900);
+    --lvct-text-2: var(--lvct-color-ink-700);
+    --lvct-text-3: var(--lvct-color-ink-500);
+    --lvct-text-faint: var(--lvct-color-ink-400);
 
     /* ---------- 4. 语义色：描边两级 ---------- */
-    --lvct-border-subtle: var(--lvct-color-border-200);
-    --lvct-border-strong: var(--lvct-color-border-300);
-    --lvct-border-hairline: rgba(15, 23, 42, 0.07);
+    --lvct-border-subtle: rgba(15, 23, 42, 0.08);
+    --lvct-border-strong: #D6DCE6;
+    --lvct-border-hairline: #E8EBF0;
 
-    /* ---------- 5. 语义色：主色与状态色 ---------- */
-    --lvct-accent: var(--lv-brand);
-    /* accent 用于图标/装饰；实心主按钮与强填充采用独立高对比令牌（>= 4.5:1 WCAG AA）。 */
-    --lvct-btn-primary-bg: #C2410C;
-    --lvct-btn-primary-bg-hover: #9A3412;
-    --lvct-btn-primary-bg-active: #7C2D12;
-    --lvct-btn-primary-fg: #ffffff;
+    /* ---------- 5. 语义色：主钮（沉静石墨 #1E2430）与靛青微点缀 ---------- */
+    --lvct-accent: #5B6AD0;
+    --lvct-accent-ink: #4756BC;
+    --lvct-accent-line: #D7DCF9;
+    --lvct-btn-primary-bg: #1E2430;
+    --lvct-btn-primary-bg-hover: #2C3445;
+    --lvct-btn-primary-bg-active: #141821;
+    --lvct-btn-primary-fg: #FFFFFF;
     --lvct-accent-fill: var(--lvct-btn-primary-bg);
-    --lvct-accent-text: var(--lv-brand);
+    --lvct-accent-text: #4756BC;
     --lvct-accent-hover: var(--lvct-btn-primary-bg-hover);
     --lvct-on-accent: var(--lvct-btn-primary-fg);
-    --lvct-accent-soft: var(--lv-brand-soft);
+    --lvct-accent-soft: #EEF0FD;
+    --lvct-fresh: #2A7A56;
+    --lvct-fresh-wash: #EDF7F2;
+    --lvct-warn: #855818;
+    --lvct-warn-wash: #FCF6EB;
     --lvct-success: var(--lvct-color-success);
-    --lvct-success-soft: rgba(22, 163, 74, 0.10);
+    --lvct-success-soft: #EDF7F2;
     --lvct-danger: var(--lvct-color-danger);
-    --lvct-danger-soft: rgba(220, 38, 38, 0.09);
+    --lvct-danger-soft: rgba(180, 60, 50, 0.09);
     --lvct-info: var(--lvct-color-info);
-    --lvct-info-soft: rgba(2, 132, 199, 0.10);
+    --lvct-info-soft: #EDF5FB;
 
-    /* ---------- 5b. 人脉关系温度克制色谱（Relationship Heat Spectrum） ---------- */
-    --lv-heat-hot: #EA580C;       /* 温热：暖干邑橙 */
-    --lv-heat-hot-soft: color-mix(in srgb, var(--lv-heat-hot) 10%, transparent);
-    --lv-heat-warm: #16A34A;      /* 常温：翡翠绿 */
-    --lv-heat-warm-soft: color-mix(in srgb, var(--lv-heat-warm) 10%, transparent);
-    --lv-heat-cool: #D97706;      /* 微凉：琥珀金 */
-    --lv-heat-cool-soft: color-mix(in srgb, var(--lv-heat-cool) 10%, transparent);
-    --lv-heat-cold: #0284C7;      /* 渐冻：天青蓝 */
-    --lv-heat-cold-soft: color-mix(in srgb, var(--lv-heat-cold) 10%, transparent);
-    --lv-heat-muted: #64748B;     /* 未互动/暂停：雅致冷蓝灰 */
-    --lv-heat-muted-soft: color-mix(in srgb, var(--lv-heat-muted) 10%, transparent);
+    /* 柔和低饱和字母头像环色板 */
+    --lvct-avatar-1-bg: #EEF0FD; --lvct-avatar-1-fg: #4756BC; --lvct-avatar-1-bd: #DCE0FA;
+    --lvct-avatar-2-bg: #EDF5FB; --lvct-avatar-2-fg: #2F699C; --lvct-avatar-2-bd: #D6E7F6;
+    --lvct-avatar-3-bg: #EDF7F2; --lvct-avatar-3-fg: #2A7A56; --lvct-avatar-3-bd: #D2EBDF;
+    --lvct-avatar-4-bg: #F3F1FA; --lvct-avatar-4-fg: #6651A8; --lvct-avatar-4-bd: #E3DDF6;
+
+    /* ---------- 5b. 人脉关系温度克制色谱 ---------- */
+    --lv-heat-hot: #4756BC;       /* 温热：静谧靛青 */
+    --lv-heat-hot-soft: #EEF0FD;
+    --lv-heat-warm: #2A7A56;      /* 常温：清雅松绿 */
+    --lv-heat-warm-soft: #EDF7F2;
+    --lv-heat-cool: #855818;      /* 微凉：克制暖棕 */
+    --lv-heat-cool-soft: #FCF6EB;
+    --lv-heat-cold: #2F699C;      /* 渐冻：沉静钢蓝 */
+    --lv-heat-cold-soft: #EDF5FB;
+    --lv-heat-muted: #5A6275;     /* 未互动/暂停：雾灰 */
+    --lv-heat-muted-soft: #F1F3F7;
 
     /* Cytoscape 不能直接消费 CSS 变量；图谱文本固定使用插件自有文本色，
        不读取宿主主题变量，避免宿主换主题时图谱配色被污染。 */
@@ -165,11 +178,11 @@
     --lvct-font-code: var(--b3-font-family-code, monospace);
     --lvct-fs-display: 20px;   /* 向导标题、页头问候 */
     --lvct-fs-title: 20px;     /* 视图页头；与原型 page title 层级对齐 */
-    --lvct-fs-page-title: 26px; /* 工作台/设置页标题，对齐原型 page title */
-    --lvct-fs-subtitle: 14px;  /* 页头副标题，对齐原型正文层级 */
+    --lvct-fs-page-title: 20px; /* 工作台/设置页标题，对齐 Graphite Mist 家族阶梯 */
+    --lvct-fs-subtitle: 12px;  /* 页头副标题，对齐石墨清雾辅文层级 */
     --lvct-fs-heading: 13.5px; /* 面板/弹窗标题 */
-    --lvct-fs-body: 14px;      /* 正文、列表主行 */
-    --lvct-fs-caption: 13px;   /* 次级信息、元数据 */
+    --lvct-fs-body: 13px;      /* 正文、列表主行 */
+    --lvct-fs-caption: 12px;   /* 次级信息、元数据 */
     --lvct-fs-micro: 12px;     /* 分区标签、徽标 */
     --lvct-fs-section-title: 16px; /* 区块标题 */
     /* 有限的字号梯度：display/title/section/body/caption/micro。历史别名
@@ -201,20 +214,20 @@
     --lvct-r-md: 12px;   /* 次级卡片、嵌套分组容器 */
     --lvct-r-lg: 16px;   /* 主卡片（PersonCard、统计卡、行动面板）大圆角 */
     --lvct-r-xl: 20px;   /* 弹窗模态大圆角 */
-    --lvct-r-pill: 9999px; /* 胶囊控件：按钮、药丸筛选、徽标全量采用胶囊 */
-    --lvct-r-card: 16px; /* 卡片大圆角 */
-    --lvct-r-panel: 16px;
+    --lvct-r-pill: 9999px; /* 胶囊控件：药丸筛选、徽标采用胶囊 */
+    --lvct-r-card: 10px; /* 石墨清雾家族统一卡片圆角 */
+    --lvct-r-panel: 10px;
     --lvct-r-dialog: 20px;
 
-    /* ---------- 10. 阴影（中性石板漫反射，告别浑浊棕影） ---------- */
+    /* ---------- 10. 阴影（扁平极简：去厚重阴影，仅浮层保留轻薄层深） ---------- */
     --lvct-card-inner-glow: none;
-    --lvct-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 3px 10px -2px rgba(15, 23, 42, 0.04);   /* 白卡静止自然浮起 */
-    --lvct-shadow-2: 0 2px 6px rgba(15, 23, 42, 0.05), 0 10px 24px -4px rgba(15, 23, 42, 0.08);  /* 卡片悬停提升 */
-    --lvct-shadow-3: 0 8px 20px rgba(15, 23, 42, 0.08), 0 22px 48px -6px rgba(15, 23, 42, 0.14); /* 浮层与弹窗 */
-    --lvct-shadow-card: var(--lvct-shadow-1);
-    --lvct-shadow-card-hover: var(--lvct-shadow-2);
-    --lvct-shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.03), 0 4px 14px -2px rgba(15, 23, 42, 0.04); /* 面板静止 */
-    --lvct-shadow-float: var(--lvct-shadow-3); /* 内容浮起 */
+    --lvct-shadow-1: none;
+    --lvct-shadow-2: 0 2px 8px rgba(15, 23, 42, 0.06);
+    --lvct-shadow-3: 0 8px 24px rgba(15, 23, 42, 0.10);
+    --lvct-shadow-card: none;
+    --lvct-shadow-card-hover: 0 2px 8px rgba(15, 23, 42, 0.05);
+    --lvct-shadow-panel: none;
+    --lvct-shadow-float: var(--lvct-shadow-3);
 
     /* ---------- 11. 动效 ----------
      * 不对称过渡曲线：进入偏快偏缓出（140ms），退出干脆（100ms） */
@@ -236,7 +249,7 @@
     --lvct-mask-opaque: #000;
 
     /* ---------- 13. 布局尺寸 ---------- */
-    --lvct-sidebar-w: 192px;         /* 桌面端左侧栏导航；对齐原型与 R54 的紧凑工作台 */
+    --lvct-sidebar-w: 204px;         /* 桌面端左侧栏导航；对齐石墨清雾家族统一 204px */
     --lvct-dialog-w: 560px;          /* 标准模态（与 libs/dialog.ts 一致） */
     --lvct-dialog-w-wide: 920px;     /* 宽版模态（详情/导入/vCard/合并向导） */
     --lvct-touch-min: 40px;          /* 桌面交互目标下限 */
@@ -247,9 +260,9 @@
     /* ---------- 13b. D-31 键盘焦点环令牌 ---------- */
     --lvct-focus-ring-color: var(--lvct-accent);
 
-    /* 第二层尺寸令牌：卡片和面板比弹窗更克制，避免页面被圆角切碎。 */
-    --lvct-r-card: 14px;
-    --lvct-r-panel: 14px;
+    /* 第二层尺寸令牌：卡片和面板比弹窗更克制，对齐家族 10px。 */
+    --lvct-r-card: 10px;
+    --lvct-r-panel: 10px;
     --lvct-r-dialog: 18px;
 
     /* ---------- 14. 组件尺寸 ---------- */
@@ -258,7 +271,7 @@
     --lvct-avatar-lg: 56px;
 
     /* ---------- 15. 组件令牌（Component） ---------- */
-    --lvct-control-h: var(--lvct-touch-min);
+    --lvct-control-h: 36px;
     --lvct-control-h-compact: 36px;
     --lvct-control-h-small: 32px;
     --lvct-control-padding-inline: var(--lvct-sp-3);
@@ -315,7 +328,7 @@
     .lvct-dialog,
     .b3-dialog__container.lvct-dialog,
     .lvct-confirm-dialog-root {
-        --lvct-fs-page-title: 23px;
+        --lvct-fs-page-title: 20px;
         --lvct-graph-height: clamp(400px, 58dvh, 640px);
         --lvct-graph-height-expanded: clamp(480px, 76dvh, 800px);
     }
@@ -354,80 +367,94 @@ body[data-theme-mode="dark"] .lvct-confirm-dialog-root,
 .theme--dark .lvct-dialog,
 .theme--dark .b3-dialog__container.lvct-dialog,
 .theme--dark .lvct-confirm-dialog-root {
-    --lv-brand: #EA580C;
-    --lv-brand-hover: #F97316;
-    --lv-brand-soft: color-mix(in srgb, var(--lv-brand) 14%, transparent);
-    --lv-accent-cyan: #38BDF8;
-    --lv-accent-cyan-hover: #7DD3FC;
-    --lv-accent-cyan-soft: color-mix(in srgb, var(--lv-accent-cyan) 14%, transparent);
+    --lv-brand: #8492EA;
+    --lv-brand-hover: #9AA6F0;
+    --lv-brand-soft: rgba(91, 106, 208, 0.16);
+    --lv-accent-cyan: #84BAF0;
+    --lv-accent-cyan-hover: #A5CDF5;
+    --lv-accent-cyan-soft: rgba(74, 144, 217, 0.16);
 
-    /* 数据语义色（暗色暖阳琥珀金） */
-    --lv-data-amber: #FBBF24;
-    --lv-data-amber-hover: #FCD34D;
-    --lv-data-amber-soft: rgba(251, 191, 36, 0.14);
-    --lv-data-amber-glow: #FDE047;
+    /* 数据语义色（护眼暖琥珀） */
+    --lv-data-amber: #DFA953;
+    --lv-data-amber-hover: #E7BC75;
+    --lv-data-amber-soft: rgba(223, 169, 83, 0.14);
+    --lv-data-amber-glow: #E7BC75;
 
-    /* 重点对比块（中性深石板） */
-    --lv-dark-block-bg: #16181D;
-    --lv-dark-block-gradient: linear-gradient(145deg, #16181D 0%, #1F2229 100%);
-    --lv-dark-block-text: #F1F3F6;
-    --lv-dark-block-sub: #9AA1AE;
-    --lv-dark-block-data: #FDE047;
+    /* 重点对比块（深炭） */
+    --lv-dark-block-bg: #14161B;
+    --lv-dark-block-gradient: #14161B;
+    --lv-dark-block-text: #ECEFF4;
+    --lv-dark-block-sub: #939BAD;
+    --lv-dark-block-data: #DFA953;
 
-    --lvct-brand-from: #EA580C;
-    --lvct-brand-to: #F97316;
-    --lvct-brand-gradient: linear-gradient(135deg, #EA580C 0%, #F97316 100%);
-    --lvct-highlight: #FB7185;
-    --lvct-highlight-soft: color-mix(in srgb, var(--lvct-highlight) 14%, transparent);
+    --lvct-brand-from: #ECEFF4;
+    --lvct-brand-to: #ECEFF4;
+    --lvct-brand-gradient: #ECEFF4;
+    --lvct-highlight: #8492EA;
+    --lvct-highlight-soft: rgba(91, 106, 208, 0.16);
 
-    --lvct-bg-app: #191A1D;
-    --lvct-bg-base: #1D1E22;
-    --lvct-bg-canvas: #1D1E22;
-    --lvct-bg-sidebar: #191A1D;
-    --lvct-bg-surface: #25272C;
-    --lvct-surface-2: #2C2E35;
-    --lvct-surface-muted: #212328;
-    --lvct-surface-tint: #25272C;
-    --lvct-surface-inset: #1E2025;
-    --lvct-bg-elevated: #282A30;
-    --lvct-bg-elevated-glass: color-mix(in srgb, #25272C 92%, transparent);
-    --lvct-bg-hover: #30333B;
-    --lvct-bg-active: #383C45;
-    --lvct-text-1: #F1F3F6;
-    --lvct-text-2: #C2C7D0;
-    --lvct-text-3: #8B929E;
-    --lvct-border-subtle: rgba(255, 255, 255, 0.09);
-    --lvct-border-strong: rgba(255, 255, 255, 0.16);
-    --lvct-border-hairline: rgba(255, 255, 255, 0.07);
-    --lvct-accent: var(--lv-brand);
-    --lvct-btn-primary-bg: #C2410C;
-    --lvct-btn-primary-bg-hover: #CC4710;
-    --lvct-btn-primary-bg-active: #9A3412;
-    --lvct-btn-primary-fg: #ffffff;
+    --lvct-bg-app: #181B22;
+    --lvct-bg-base: #14161B;
+    --lvct-bg-canvas: #14161B;
+    --lvct-bg-sidebar: #181B22;
+    --lvct-bg-rail: #181B22;
+    --lvct-bg-surface: #1C1F26;
+    --lvct-surface-2: #222630;
+    --lvct-surface-muted: #1F242E;
+    --lvct-surface-tint: #1C1F26;
+    --lvct-surface-inset: #232732;
+    --lvct-bg-elevated: #222630;
+    --lvct-bg-elevated-glass: #222630;
+    --lvct-bg-hover: #252A35;
+    --lvct-bg-active: #2E3442;
+    --lvct-text-1: #ECEFF4;
+    --lvct-text-2: #B9C0CE;
+    --lvct-text-3: #939BAD;
+    --lvct-text-faint: #5B6273;
+    --lvct-border-subtle: rgba(236, 239, 244, 0.08);
+    --lvct-border-strong: #323846;
+    --lvct-border-hairline: #252A35;
+    --lvct-accent: #8492EA;
+    --lvct-accent-ink: #9AA6F0;
+    --lvct-accent-line: rgba(132, 146, 234, 0.30);
+    --lvct-btn-primary-bg: #ECEFF4;
+    --lvct-btn-primary-bg-hover: #FFFFFF;
+    --lvct-btn-primary-bg-active: #D8DEE9;
+    --lvct-btn-primary-fg: #14171D;
     --lvct-accent-fill: var(--lvct-btn-primary-bg);
-    --lvct-accent-text: #FB923C;
+    --lvct-accent-text: #9AA6F0;
     --lvct-accent-hover: var(--lvct-btn-primary-bg-hover);
     --lvct-on-accent: var(--lvct-btn-primary-fg);
-    --lvct-accent-soft: var(--lv-brand-soft);
+    --lvct-accent-soft: rgba(91, 106, 208, 0.16);
+    --lvct-fresh: #55BD8D;
+    --lvct-fresh-wash: rgba(85, 189, 141, 0.14);
+    --lvct-warn: #DFA953;
+    --lvct-warn-wash: rgba(223, 169, 83, 0.14);
     --lvct-primary: var(--lvct-accent);
     --lvct-r-xs: 6px;
     --lvct-radius-sm: var(--lvct-r-sm);
     --lvct-sp-1_5: 6px;
-    --lvct-success: #4ADE80;
-    --lvct-success-soft: rgba(74, 222, 128, 0.14);
-    --lvct-danger: #F87171;
-    --lvct-danger-soft: rgba(248, 113, 113, 0.14);
-    --lvct-info: #60A5FA;
-    --lvct-info-soft: rgba(96, 165, 250, 0.14);
-    --lvct-graph-text: #E2E6ED;
+    --lvct-success: #55BD8D;
+    --lvct-success-soft: rgba(85, 189, 141, 0.14);
+    --lvct-danger: #E07A73;
+    --lvct-danger-soft: rgba(224, 122, 115, 0.14);
+    --lvct-info: #84BAF0;
+    --lvct-info-soft: rgba(74, 144, 217, 0.16);
+    --lvct-graph-text: #ECEFF4;
     --lvct-graph-edge: #6E7685;
-    --lvct-graph-surface: #25272C;
+    --lvct-graph-surface: #1C1F26;
+
+    /* 柔和低饱和字母头像环色板（深色） */
+    --lvct-avatar-1-bg: rgba(91, 106, 208, 0.18); --lvct-avatar-1-fg: #A2AEF3; --lvct-avatar-1-bd: rgba(132, 146, 234, 0.30);
+    --lvct-avatar-2-bg: rgba(74, 144, 217, 0.16); --lvct-avatar-2-fg: #84BAF0; --lvct-avatar-2-bd: rgba(132, 186, 240, 0.28);
+    --lvct-avatar-3-bg: rgba(85, 189, 141, 0.16); --lvct-avatar-3-fg: #75CFA5; --lvct-avatar-3-bd: rgba(117, 207, 165, 0.28);
+    --lvct-avatar-4-bg: rgba(145, 124, 219, 0.16); --lvct-avatar-4-fg: #B8A8F0; --lvct-avatar-4-bd: rgba(184, 168, 240, 0.28);
 
     /* 宿主主题隔离屏障暗色对齐 */
     --b3-theme-primary: var(--lv-brand);
-    --b3-theme-primary-light: color-mix(in srgb, var(--lv-brand) 14%, transparent);
-    --b3-theme-primary-lighter: color-mix(in srgb, var(--lv-brand) 7%, transparent);
-    --b3-theme-on-primary: #ffffff;
+    --b3-theme-primary-light: rgba(91, 106, 208, 0.16);
+    --b3-theme-primary-lighter: rgba(91, 106, 208, 0.08);
+    --b3-theme-on-primary: #14171D;
     --b3-theme-background: var(--lvct-bg-canvas);
     --b3-theme-background-light: var(--lvct-bg-app);
     --b3-theme-surface: var(--lvct-bg-surface);
@@ -441,30 +468,30 @@ body[data-theme-mode="dark"] .lvct-confirm-dialog-root,
     --b3-theme-error-soft: var(--lvct-danger-soft);
     --b3-theme-success: var(--lvct-success);
     --b3-theme-info: var(--lvct-info);
-    --b3-theme-secondary: #F59E0B;
+    --b3-theme-secondary: #DFA953;
 
     --lvct-canvas-glow: transparent;
     --lvct-card-inner-glow: none;
-    --lvct-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.20);
-    --lvct-shadow-2: 0 3px 10px rgba(0, 0, 0, 0.36), 0 10px 24px rgba(0, 0, 0, 0.28);
-    --lvct-shadow-3: 0 10px 28px rgba(0, 0, 0, 0.48), 0 22px 54px rgba(0, 0, 0, 0.56);
-    --lvct-shadow-card: var(--lvct-shadow-1);
-    --lvct-shadow-card-hover: var(--lvct-shadow-2);
-    --lvct-shadow-panel: 0 1px 4px rgba(0, 0, 0, 0.24), 0 6px 18px rgba(0, 0, 0, 0.24);
-    --lvct-shadow-float: 0 6px 16px rgba(0, 0, 0, 0.38), 0 18px 40px rgba(0, 0, 0, 0.45);
+    --lvct-shadow-1: none;
+    --lvct-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.28);
+    --lvct-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --lvct-shadow-card: none;
+    --lvct-shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.24);
+    --lvct-shadow-panel: none;
+    --lvct-shadow-float: var(--lvct-shadow-3);
     --lvct-overlay: rgba(0, 0, 0, 0.58);
 
     /* 人脉关系温度暗色克制色谱 */
-    --lv-heat-hot: #FB923C;
-    --lv-heat-hot-soft: color-mix(in srgb, var(--lv-heat-hot) 15%, transparent);
-    --lv-heat-warm: #4ADE80;
-    --lv-heat-warm-soft: color-mix(in srgb, var(--lv-heat-warm) 14%, transparent);
-    --lv-heat-cool: #FBBF24;
-    --lv-heat-cool-soft: color-mix(in srgb, var(--lv-heat-cool) 14%, transparent);
-    --lv-heat-cold: #38BDF8;
-    --lv-heat-cold-soft: color-mix(in srgb, var(--lv-heat-cold) 14%, transparent);
-    --lv-heat-muted: #94A3B8;
-    --lv-heat-muted-soft: color-mix(in srgb, var(--lv-heat-muted) 14%, transparent);
+    --lv-heat-hot: #9AA6F0;
+    --lv-heat-hot-soft: rgba(91, 106, 208, 0.16);
+    --lv-heat-warm: #55BD8D;
+    --lv-heat-warm-soft: rgba(85, 189, 141, 0.14);
+    --lv-heat-cool: #DFA953;
+    --lv-heat-cool-soft: rgba(223, 169, 83, 0.14);
+    --lv-heat-cold: #84BAF0;
+    --lv-heat-cold-soft: rgba(74, 144, 217, 0.16);
+    --lv-heat-muted: #848C9E;
+    --lv-heat-muted-soft: rgba(132, 140, 158, 0.14);
 
     /* 分组色暗色配方：柔和明度，与中性深底协调 */
     --lvct-group-family: #E07A86;

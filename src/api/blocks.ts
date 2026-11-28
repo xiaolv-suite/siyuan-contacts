@@ -29,6 +29,13 @@ function assertNodeId(value: string, label = "块 ID"): void {
     if (typeof value !== "string" || !NODE_ID.test(value)) throw new Error(`${label}不是合法的思源 ID`);
 }
 
+function escapeSqlLike(value: string): string {
+    return escapeSqlString(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+}
+
 export async function readOrganizationFact(docId: string): Promise<OrganizationFact> {
     if (!/^\d{14}-[0-9a-z]{7}$/.test(docId)) throw new Error("组织文档 ID 非法");
     await flushBlockIndex();
@@ -472,13 +479,13 @@ export async function findPersonBacklinks(personDocId: string, personName?: stri
     let mentionItems: BacklinkMentionItem[] = [];
     const name = personName?.trim();
     if (name && name.length >= 2) {
-        const safeName = escapeSqlString(name);
+        const safeName = escapeSqlLike(name);
         try {
             const mentionRows = await querySql<unknown>(
                 `SELECT id AS blockId, root_id AS rootId, content, hpath, created, updated ` +
                 `FROM blocks ` +
                 `WHERE type IN ('p', 'i', 'h') ` +
-                `  AND content LIKE '%${safeName}%' ` +
+                `  AND content LIKE '%${safeName}%' ESCAPE '\\' ` +
                 `  AND root_id != '${personDocId}' ` +
                 `ORDER BY updated DESC LIMIT ${safeLimit}`,
             );
@@ -689,9 +696,9 @@ export async function findDailyNoteDocument(notebookId: string | undefined, date
 /** 查询指定城市的专题文档（按 custom-lvct-city 属性反查） */
 export async function findCityTopicDocument(notebookId: string, city: string): Promise<{ docId: string; hpath: string } | null> {
     assertSafeBlockId(notebookId, "notebookId");
-    const safeCity = escapeSqlString(city);
+    const safeCity = escapeSqlLike(city);
     const rows = await querySql<unknown>(
-        `SELECT id, hpath FROM blocks WHERE type='d' AND box='${notebookId}' AND ial LIKE '%custom-lvct-city="${safeCity}"%' LIMIT 1`,
+        `SELECT id, hpath FROM blocks WHERE type='d' AND box='${notebookId}' AND ial LIKE '%custom-lvct-city="${safeCity}"%' ESCAPE '\\' LIMIT 1`,
     );
     if (!rows.length) return null;
     const row = assertKernelRecord("/api/query/sql", rows[0]);

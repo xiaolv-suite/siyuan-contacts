@@ -4,8 +4,8 @@
     import { formatBirthdayDisplay, nextBirthday } from "../../domain/occasions";
     import { formatRelativeInteraction } from "../../domain/format";
     import { computeRelationshipHealth, heatLevelColorClass } from "../../domain/cadence";
-    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake, MapPin, Copy, MessageSquare } from "@lucide/svelte";
-    import PersonProfileSummary from "./PersonProfileSummary.svelte";
+    import { ExternalLink, Phone, MessageCircle, Mail, Clock3, Network, Star, MessageSquarePlus, Cake, Copy, MessageSquare } from "@lucide/svelte";
+    import { profileText } from "../../domain/people-profiles";
     import { copyPlainText } from "../../shared/clipboard";
     import { extractNormalizedRegion } from "../../domain/region";
     import type { PersonCardField } from "../../domain/preferences";
@@ -61,6 +61,20 @@
     });
     const regionInfo = $derived(extractNormalizedRegion(person as any));
     const regionText = $derived(regionInfo.city && regionInfo.city !== "未知" ? regionInfo.city : "");
+    const workText = $derived.by(() => {
+        if (orgLine) return orgLine;
+        const w = profileText(person.profile, "work");
+        return w && w !== "—" && w !== "未填写" ? w : "";
+    });
+    const cardSubtitle = $derived.by(() => {
+        const parts: string[] = [];
+        if (isFieldVisible("org") && workText) parts.push(workText);
+        if (isFieldVisible("region") && regionText) parts.push(regionText);
+        if (parts.length === 0 && isFieldVisible("tags") && person.tags?.length) {
+            parts.push(person.tags.slice(0, 2).join(" · "));
+        }
+        return parts.join(" · ");
+    });
 
     function telHref(phone: string): string {
         return `tel:${phone}`;
@@ -264,7 +278,7 @@
             </div>
         </div>
     {:else}
-        <!-- 舒适模式：呼吸感与完整字段展示 -->
+        <!-- 扁平极简名片（风格 A · 石墨清雾，行高齐整） -->
         <div class="lvct-person-card__top">
             {#if onToggleSelected}
                 <label class="lvct-person-card__select-hit-area" onclick={(event) => event.stopPropagation()}>
@@ -288,14 +302,13 @@
                 </span>
                 <span class="lvct-person-card__main">
                     <span class="lvct-person-card__name" title={person.name}>
-                        {person.name}
-                        {#if person.isSelf}<span class="lvct-chip lvct-chip--group">本人</span>{/if}
+                        <span class="lvct-person-card__name-text">{person.name}</span>
+                        {#if person.isSelf}<span class="lvct-p-role-chip">本人</span>{/if}
+                        {#if isFieldVisible("tags") && person.group}<span class="lvct-p-role-chip">{person.group}</span>{/if}
                     </span>
-                    {#if isFieldVisible("birthday")}
-                        <span class="lvct-person-card__sub">
-                            {#if birthday}{formatBirthdayDisplay(person.birthday, person.isLunar)} · {birthday.daysUntil === 0 ? "今天" : `${birthday.daysUntil} 天后`}{:else}生日未填写{/if}
-                        </span>
-                    {/if}
+                    <span class="lvct-person-card__sub" title={cardSubtitle || undefined}>
+                        {cardSubtitle || (isFieldVisible("birthday") && birthday ? `${formatBirthdayDisplay(person.birthday, person.isLunar)} · ${birthday.daysUntil === 0 ? "今天生日" : `${birthday.daysUntil} 天后生日`}` : "未补充单位或地区")}
+                    </span>
                 </span>
             </button>
             {#if onToggleStarred}
@@ -307,28 +320,22 @@
                     aria-label={starred ? `取消 ${person.name} 的星标` : `将 ${person.name} 设为星标`}
                     onclick={(event) => { event.stopPropagation(); onToggleStarred?.(!starred); }}
                 >
-                    <Star size={16} strokeWidth={1.6} fill={starred ? "#f59e0b" : "none"} color={starred ? "#f59e0b" : "currentColor"} />
+                    <Star size={16} strokeWidth={1.6} fill={starred ? "#DFA953" : "none"} color={starred ? "#DFA953" : "currentColor"} />
                 </button>
             {/if}
         </div>
-        {#if isFieldVisible("org")}
-            {#if person.profile}<PersonProfileSummary profile={person.profile} compact hideEmpty />
-            {:else if orgLine}
-                <div class="lvct-person-card__org" aria-label="单位" title={orgLine}>{orgLine}</div>
-            {/if}
-        {/if}
-        {#if isFieldVisible("region") && regionText}
-            <div class="lvct-person-card__org" aria-label="常驻城市" title={regionText} style="display: flex; align-items: center; gap: 4px;">
-                <MapPin size={12} strokeWidth={1.6} /> <span>{regionText}</span>
-            </div>
-        {/if}
         <div class="lvct-person-card__meta">
-            {#if isFieldVisible("phone") && person.phone}<div><span aria-hidden="true"><Phone size={13} strokeWidth={1.6} /></span><a class="lvct-person-card__meta-value" href={telHref(person.phone)} onclick={(event) => event.stopPropagation()}>{person.phone}</a></div>{/if}
+            {#if isFieldVisible("phone") && person.phone}
+                <div class="lvct-person-card__contact-item">
+                    <span aria-hidden="true"><Phone size={13} strokeWidth={1.6} /></span>
+                    <a class="lvct-person-card__meta-value lvct-mono" href={telHref(person.phone)} onclick={(event) => event.stopPropagation()}>{person.phone}</a>
+                </div>
+            {/if}
             {#if isFieldVisible("wechat") && person.wechat}
-                <div>
+                <div class="lvct-person-card__contact-item">
                     <span aria-hidden="true"><MessageCircle size={13} strokeWidth={1.6} /></span>
                     <span
-                        class="lvct-person-card__meta-value"
+                        class="lvct-person-card__meta-value lvct-mono"
                         class:lvct-text-success={wechatCopied}
                         role="button"
                         tabindex="0"
@@ -341,12 +348,11 @@
                         }}
                     >{wechatCopied ? "已复制微信号 ✓" : person.wechat}</span>
                 </div>
-            {/if}
-            {#if isFieldVisible("email") && person.email}
-                <div>
+            {:else if isFieldVisible("email") && person.email}
+                <div class="lvct-person-card__contact-item">
                     <span aria-hidden="true"><Mail size={13} strokeWidth={1.6} /></span>
                     <a
-                        class="lvct-person-card__meta-value"
+                        class="lvct-person-card__meta-value lvct-mono"
                         class:lvct-text-success={emailCopied}
                         href={mailHref(person.email)}
                         title={emailCopied ? "邮箱已复制到剪贴板" : "点击发信（按住 Ctrl 点击复制）"}
@@ -360,18 +366,10 @@
                     >{emailCopied ? "已复制邮箱 ✓" : person.email}</a>
                 </div>
             {/if}
-            {#if isFieldVisible("recent")}
-                <div>
+            {#if !((isFieldVisible("phone") && person.phone) || (isFieldVisible("wechat") && person.wechat) || (isFieldVisible("email") && person.email))}
+                <div class="lvct-person-card__contact-item lvct-person-card__contact-item--empty">
                     <span aria-hidden="true"><Clock3 size={13} strokeWidth={1.6} /></span>
-                    <span class="lvct-person-card__meta-value">{recentLabel}</span>
-                    {#if recent && recent.count && recent.count > 0}
-                        <span class="lvct-text-muted font-size-11" style="margin-left: 2px;">({recent.count}次)</span>
-                    {/if}
-                    {#if recent && health.level !== "unknown"}
-                        <span class={`lvct-heat ${heatLevelColorClass(health.level)} font-size-11 lvct-person-card__heat-pill`} title={recent.count ? `共交往 ${recent.count} 次` : undefined}>
-                            {health.level === "hot" ? "温热" : health.level === "warm" ? "常温" : health.level === "cool" ? "微凉" : health.level === "cold" ? "渐冻" : "已暂停"}
-                        </span>
-                    {/if}
+                    <span class="lvct-person-card__meta-value">{recentLabel}{recent?.count ? ` · 共 ${recent.count} 次` : ""}</span>
                 </div>
             {/if}
         </div>
@@ -425,30 +423,27 @@
                 {/if}
             </div>
         {/if}
-        {#if (isFieldVisible("tags") && (person.group || (person.tags && person.tags.length > 0))) || onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
-            {@const hasFooterTags = isFieldVisible("tags") && (Boolean(person.group) || (person.tags?.length ?? 0) > 0)}
-            <div class="lvct-person-card__footer" class:lvct-person-card__footer--no-tags={!hasFooterTags}>
-                {#if isFieldVisible("tags") && (person.group || (person.tags && person.tags.length > 0))}
-                    <div class="lvct-person-card__tags">
-                        {#if person.group}<span class="lvct-chip lvct-chip--group">{person.group}</span>{/if}
-                        {#if person.tags}
-                            {#each person.tags.slice(0, 3) as tag (tag)}<span class="lvct-chip"># {tag}</span>{/each}
-                            {#if person.tags.length > 3}
-                                <span class="lvct-chip" title={person.tags.slice(3).join("、")}>+{person.tags.length - 3}</span>
-                            {/if}
-                        {/if}
-                    </div>
+        <div class="lvct-person-card__footer">
+            <span class="lvct-person-card__health" class:is-warn={health.overdue || health.level === "cold" || health.level === "cool"}>
+                <span class="lvct-person-card__health-dot" class:is-warn={health.overdue || health.level === "cold" || health.level === "cool"}></span>
+                {#if isFieldVisible("recent")}
+                    <span>{recentLabel}{recent?.count ? ` · 共 ${recent.count} 次` : ""}</span>
+                {:else if isFieldVisible("birthday") && birthday}
+                    <span>{birthday.daysUntil === 0 ? "今天生日" : `生日 ${birthday.daysUntil} 天后`}</span>
                 {/if}
-                {#if onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
-                    <span class="lvct-person-card__actions" role="presentation" onclick={(event) => event.stopPropagation()}>
-                        {#if onOpenActivity}
-                            <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={(event) => { event.stopPropagation(); onOpenActivity?.(person); }}><MessageSquarePlus size={16} strokeWidth={1.6} /></button>
-                        {/if}
-                        {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={(event) => { event.stopPropagation(); onOpenGraphPerson?.(person.docId); }}><Network size={16} strokeWidth={1.6} /></button>{/if}
-                        {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={(event) => { event.stopPropagation(); onOpenPersonDoc(person.docId); }}><ExternalLink size={16} strokeWidth={1.6} /></button>{/if}
-                    </span>
-                {/if}
-            </div>
-        {/if}
+            </span>
+            {#if isFieldVisible("birthday") && birthday && isFieldVisible("recent")}
+                <span class="lvct-person-card__bday-hint">{birthday.daysUntil === 0 ? "今天生日" : `生日 ${birthday.daysUntil} 天后`}</span>
+            {/if}
+            {#if onOpenActivity || onOpenGraphPerson || onOpenPersonDoc}
+                <span class="lvct-person-card__actions" role="presentation" onclick={(event) => event.stopPropagation()}>
+                    {#if onOpenActivity}
+                        <button type="button" class="lvct-person-card__open-doc" title={`为 ${person.name} 记一笔互动`} aria-label={`为 ${person.name} 记一笔互动`} onclick={(event) => { event.stopPropagation(); onOpenActivity?.(person); }}><MessageSquarePlus size={16} strokeWidth={1.6} /></button>
+                    {/if}
+                    {#if onOpenGraphPerson}<button type="button" class="lvct-person-card__open-doc" title={`在关系图谱中查看 ${person.name}`} aria-label={`在关系图谱中查看 ${person.name}`} onclick={(event) => { event.stopPropagation(); onOpenGraphPerson?.(person.docId); }}><Network size={16} strokeWidth={1.6} /></button>{/if}
+                    {#if onOpenPersonDoc}<button type="button" class="lvct-person-card__open-doc" title={`打开 ${person.name} 的文档`} aria-label={`打开 ${person.name} 的文档`} onclick={(event) => { event.stopPropagation(); onOpenPersonDoc(person.docId); }}><ExternalLink size={16} strokeWidth={1.6} /></button>{/if}
+                </span>
+            {/if}
+        </div>
     {/if}
 </article>

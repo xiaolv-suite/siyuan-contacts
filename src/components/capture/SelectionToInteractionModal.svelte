@@ -13,7 +13,7 @@
         searchPeopleForSelection,
     } from "../../domain/selection-resolver.ts";
     import { lvLaunchpad } from "../../libs/lv-notice-kit";
-    import { Users, X } from "@lucide/svelte";
+    import { Link2, MessageCircle, Phone, Users, X } from "@lucide/svelte";
     import { acquireModalBodyClass } from "../../shared/modal-host";
 
     let {
@@ -140,6 +140,7 @@
     }
 
     function handleKeydown(e: KeyboardEvent) {
+        if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
         if (e.key === "Escape") {
             e.preventDefault();
             onClose();
@@ -249,7 +250,7 @@
                     class:lvct-selection-modal__type-chip--active={type === "meeting"}
                     onclick={() => selectType("meeting")}
                 >
-                    <span>🤝</span> 面谈
+                    <Users size={13} strokeWidth={1.6} /> 面谈
                 </button>
                 <button
                     type="button"
@@ -257,7 +258,7 @@
                     class:lvct-selection-modal__type-chip--active={type === "call"}
                     onclick={() => selectType("call")}
                 >
-                    <span>📞</span> 电话
+                    <Phone size={13} strokeWidth={1.6} /> 电话
                 </button>
                 <button
                     type="button"
@@ -265,7 +266,7 @@
                     class:lvct-selection-modal__type-chip--active={type === "message"}
                     onclick={() => selectType("message")}
                 >
-                    <span>💬</span> 微信
+                    <MessageCircle size={13} strokeWidth={1.6} /> 微信
                 </button>
             </div>
 
@@ -280,8 +281,8 @@
                     bind:value={note}
                 ></textarea>
                 {#if blockId}
-                    <div class="lvct-selection-modal__backlink-hint ft__smaller lvct-text-muted">
-                        🔗 自动附带源笔记块链接
+                    <div class="lvct-selection-modal__backlink-hint ft__smaller lvct-text-muted" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <Link2 size={12} strokeWidth={1.6} /> 自动附带源笔记块链接
                     </div>
                 {/if}
             </div>
